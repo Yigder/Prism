@@ -1,0 +1,120 @@
+package com.prism.music.ui.player
+
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.SkipPrevious
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import com.prism.music.ui.components.Artwork
+import com.prism.music.ui.theme.GlassSurface
+import com.prism.music.ui.theme.LocalContainer
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
+
+@Composable
+fun MiniPlayer(modifier: Modifier = Modifier, onOpen: () -> Unit) {
+    val pc = LocalContainer.current.player
+    val song by pc.currentSong.collectAsState()
+    val playing by pc.isPlaying.collectAsState()
+    val s = song ?: return
+    val position = rememberPosition(fast = false)
+    val drag = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
+    val scheme = MaterialTheme.colorScheme
+    val haptics = com.prism.music.ui.theme.rememberHaptics()
+
+    GlassSurface(
+        modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .offset { IntOffset(drag.value.roundToInt(), 0) }
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures(
+                    onDragEnd = {
+                        scope.launch {
+                            when {
+                                drag.value < -140 -> { haptics.gestureEnd(); pc.next() }
+                                drag.value > 140 -> { haptics.gestureEnd(); pc.previous() }
+                            }
+                            drag.animateTo(0f)
+                        }
+                    },
+                ) { _, d ->
+                    val before = drag.value
+                    val after = before + d
+                    if ((kotlin.math.abs(before) < 140f) != (kotlin.math.abs(after) < 140f)) haptics.threshold()
+                    scope.launch { drag.snapTo(after) }
+                }
+            },
+        shape = RoundedCornerShape(22.dp),
+    ) {
+        Row(
+            Modifier.fillMaxSize().clickable(onClick = onOpen).padding(start = 8.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Artwork(s.thumbnail, Modifier.size(48.dp), RoundedCornerShape(12.dp), size = 226)
+            Spacer(Modifier.width(12.dp))
+            AnimatedContent(
+                s,
+                transitionSpec = { (slideInHorizontally { it / 3 } + fadeIn()) togetherWith (slideOutHorizontally { -it / 3 } + fadeOut()) },
+                modifier = Modifier.weight(1f),
+                label = "mini",
+            ) { song ->
+                Column {
+                    Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Text(song.artistText, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
+                }
+            }
+            IconButton(onClick = { haptics.click(); pc.previous() }, modifier = Modifier.size(40.dp)) { Icon(Icons.Rounded.SkipPrevious, "Previous") }
+            IconButton(onClick = { haptics.click(); pc.togglePlay() }, modifier = Modifier.size(44.dp)) {
+                Icon(if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, "Play/pause", Modifier.size(30.dp))
+            }
+            IconButton(onClick = { haptics.click(); pc.next() }, modifier = Modifier.size(40.dp)) { Icon(Icons.Rounded.SkipNext, "Next") }
+        }
+        val fraction = (position.toFloat() / pc.duration.coerceAtLeast(1)).coerceIn(0f, 1f)
+        Canvas(Modifier.fillMaxWidth().height(2.dp).align(Alignment.BottomCenter).padding(horizontal = 18.dp)) {
+            drawLine(scheme.onSurface.copy(alpha = 0.12f), Offset(0f, 0f), Offset(size.width, 0f), 4f, StrokeCap.Round)
+            drawLine(scheme.primary, Offset(0f, 0f), Offset(size.width * fraction, 0f), 4f, StrokeCap.Round)
+        }
+    }
+}

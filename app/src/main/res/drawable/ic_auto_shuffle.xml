@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "Shuffle play" tile in Android Auto's lists. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:fillColor="#FF5B3DD6"
+        android:pathData="M10,0 L38,0 Q48,0 48,10 L48,38 Q48,48 38,48 L10,48 Q0,48 0,38 L0,10 Q0,0 10,0 Z" />
+    <group
+        android:scaleX="1.25"
+        android:scaleY="1.25"
+        android:translateX="9"
+        android:translateY="9">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M10.59,9.17L5.41,4 4,5.41l5.17,5.17 1.42,-1.41zM14.5,4l2.04,2.04L4,18.59 5.41,20 17.96,7.46 20,9.5L20,4h-5.5zM14.83,13.41l-1.41,1.41 3.13,3.13L14.5,20L20,20v-5.5l-2.04,2.04 -3.13,-3.13z" />
+    </group>
+</vector>

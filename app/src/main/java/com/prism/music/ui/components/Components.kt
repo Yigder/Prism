@@ -1,0 +1,492 @@
+package com.prism.music.ui.components
+
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.automirrored.rounded.Sort
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
+import androidx.compose.material.icons.automirrored.rounded.QueueMusic
+import androidx.compose.material.icons.rounded.Album
+import androidx.compose.material.icons.rounded.ArrowForward
+import androidx.compose.material.icons.rounded.CloudOff
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.DownloadDone
+import androidx.compose.material.icons.rounded.Explicit
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.PlaylistPlay
+import androidx.compose.material.icons.rounded.Radio
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
+import com.prism.music.data.model.AlbumItem
+import com.prism.music.data.model.ArtistItem
+import com.prism.music.data.model.BrowseItem
+import com.prism.music.data.model.MoodItem
+import com.prism.music.data.model.PlaylistItem
+import com.prism.music.data.model.Song
+import com.prism.music.data.model.SongItem
+import com.prism.music.data.model.formatDuration
+import com.prism.music.data.model.hiRes
+import com.prism.music.ui.LocalNavigator
+import com.prism.music.ui.Routes
+import com.prism.music.ui.theme.LocalContainer
+import kotlinx.coroutines.launch
+
+@Composable
+fun Artwork(
+    url: String?,
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(12.dp),
+    size: Int = 544,
+    placeholderIcon: ImageVector = Icons.Rounded.MusicNote,
+) {
+    val scheme = MaterialTheme.colorScheme
+    Box(
+        modifier
+            .clip(shape)
+            .background(Brush.linearGradient(listOf(scheme.primaryContainer, scheme.tertiaryContainer))),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(placeholderIcon, null, tint = scheme.onPrimaryContainer.copy(alpha = 0.5f), modifier = Modifier.fillMaxSize(0.38f))
+        if (url != null) AsyncImage(
+            model = hiRes(url, size),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
+}
+
+@Composable
+fun SectionHeader(title: String, modifier: Modifier = Modifier, strapline: String? = null, onMore: (() -> Unit)? = null) {
+    Row(
+        modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 22.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        Column(Modifier.weight(1f)) {
+            if (!strapline.isNullOrBlank()) Text(
+                strapline.uppercase(), style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold,
+            )
+            Text(title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        if (onMore != null) IconButton(onClick = onMore) {
+            Icon(Icons.Rounded.ArrowForward, "More", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun SongRow(
+    song: Song,
+    modifier: Modifier = Modifier,
+    index: Int? = null,
+    playing: Boolean = false,
+    trailingInfo: String? = null,
+    onLongClick: (() -> Unit)? = null,
+    /** Marks one of an album's most-played tracks with a star, as Apple Music does. */
+    starred: Boolean = false,
+    onClick: () -> Unit,
+) {
+    val c = LocalContainer.current
+    val liked by c.library.likedIds.collectAsState()
+    val downloads by c.downloads.downloads.collectAsState()
+    var menu by remember { mutableStateOf(false) }
+    val scheme = MaterialTheme.colorScheme
+    Row(
+        modifier
+            .fillMaxWidth()
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick ?: { menu = true })
+            .padding(horizontal = 16.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (index != null) {
+            Row(Modifier.width(38.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (starred) Icon(Icons.Rounded.Star, "Popular", Modifier.size(12.dp), tint = scheme.primary)
+                else Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(3.dp))
+                Text(
+                    "$index", style = MaterialTheme.typography.bodyMedium,
+                    color = if (playing) scheme.primary else scheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold,
+                )
+            }
+        }
+        Box {
+            Artwork(song.thumbnail, Modifier.size(50.dp), RoundedCornerShape(10.dp), size = 226)
+            if (playing) Box(
+                Modifier.size(50.dp).clip(RoundedCornerShape(10.dp)).background(Color.Black.copy(alpha = 0.45f)),
+                contentAlignment = Alignment.Center,
+            ) { PlayingBars(Modifier.size(20.dp)) }
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                song.title, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium,
+                color = if (playing) scheme.primary else scheme.onSurface,
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (song.explicit) Icon(Icons.Rounded.Explicit, null, Modifier.size(14.dp).padding(end = 2.dp), tint = scheme.onSurfaceVariant)
+                if (downloads[song.id]?.state == androidx.media3.exoplayer.offline.Download.STATE_COMPLETED) {
+                    Icon(Icons.Rounded.DownloadDone, null, Modifier.size(14.dp).padding(end = 3.dp), tint = scheme.primary)
+                }
+                Text(
+                    listOfNotNull(song.artistText, trailingInfo ?: song.album?.title).joinToString(" • "),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
+                )
+            }
+        }
+        if (song.id in liked) Icon(Icons.Rounded.Favorite, null, Modifier.size(16.dp), tint = scheme.primary)
+        IconButton(onClick = { menu = true }) { Icon(Icons.Rounded.MoreVert, "More", tint = scheme.onSurfaceVariant) }
+    }
+    if (menu) SongActionsSheet(song) { menu = false }
+}
+
+@Composable
+fun PlayingBars(modifier: Modifier = Modifier, color: Color = Color.White) {
+    val t = rememberInfiniteTransition(label = "bars")
+    val a by t.animateFloat(0.3f, 1f, infiniteRepeatable(tween(420), RepeatMode.Reverse), label = "a")
+    val b by t.animateFloat(1f, 0.25f, infiniteRepeatable(tween(530), RepeatMode.Reverse), label = "b")
+    val d by t.animateFloat(0.5f, 0.9f, infiniteRepeatable(tween(370), RepeatMode.Reverse), label = "d")
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.Bottom) {
+        listOf(a, b, d).forEach { h ->
+            Box(Modifier.weight(1f).fillMaxSize().graphicsLayer {
+                scaleY = h; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f)
+            }.clip(RoundedCornerShape(2.dp)).background(color))
+        }
+    }
+}
+
+@Composable
+fun ItemCard(item: BrowseItem, modifier: Modifier = Modifier, width: Dp = 152.dp, onClick: () -> Unit) {
+    val round = item is ArtistItem
+    Column(modifier.width(width).clip(RoundedCornerShape(16.dp)).clickable(onClick = onClick).padding(4.dp)) {
+        when (item) {
+            is MoodItem -> MoodTile(item, Modifier.fillMaxWidth().aspectRatio(1.6f), onClick)
+            else -> {
+                val video = item is SongItem && item.song.isVideo
+                Artwork(
+                    LocalContainer.current.covers.art(item),
+                    Modifier.fillMaxWidth().aspectRatio(if (video) 16f / 9f else 1f),
+                    if (round) CircleShape else RoundedCornerShape(14.dp),
+                    placeholderIcon = when (item) {
+                        is ArtistItem -> Icons.Rounded.Person
+                        is AlbumItem -> Icons.Rounded.Album
+                        is PlaylistItem -> Icons.AutoMirrored.Rounded.QueueMusic
+                        else -> Icons.Rounded.MusicNote
+                    },
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    item.title, maxLines = if (video) 1 else 2, overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = if (round) Modifier.align(Alignment.CenterHorizontally) else Modifier,
+                )
+                if (item.subtitle.isNotBlank()) Text(
+                    item.subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = if (round) Modifier.align(Alignment.CenterHorizontally) else Modifier,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun MoodTile(item: MoodItem, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val color = Color(item.color or 0xFF000000)
+    Box(
+        modifier
+            .clip(RoundedCornerShape(14.dp))
+            .background(Brush.linearGradient(listOf(color, color.copy(alpha = 0.55f).compositeOverBlack())))
+            .clickable(onClick = onClick)
+            .padding(12.dp),
+        contentAlignment = Alignment.BottomStart,
+    ) {
+        Text(item.title, color = Color.White, style = MaterialTheme.typography.titleMedium, maxLines = 2)
+    }
+}
+
+private fun Color.compositeOverBlack(): Color = Color(red * alpha, green * alpha, blue * alpha, 1f)
+
+@Composable
+fun ItemCarousel(items: List<BrowseItem>, onClick: (BrowseItem) -> Unit, cardWidth: Dp = 152.dp) {
+    LazyRow(contentPadding = PaddingValues(horizontal = 14.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        items(items, key = { it.id + it.title }) { item ->
+            ItemCard(item, width = if (item is SongItem && item.song.isVideo) cardWidth * 1.5f else cardWidth) { onClick(item) }
+        }
+    }
+}
+
+@Composable
+fun LoadingState(modifier: Modifier = Modifier) {
+    Box(modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator(strokeWidth = 3.dp)
+    }
+}
+
+@Composable
+fun ErrorState(message: String, modifier: Modifier = Modifier, onRetry: (() -> Unit)? = null) {
+    Column(modifier.fillMaxWidth().padding(40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(Icons.Rounded.CloudOff, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(12.dp))
+        Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (onRetry != null) {
+            Spacer(Modifier.height(16.dp))
+            FilledTonalButton(onClick = onRetry) { Text("Try again") }
+        }
+    }
+}
+
+@Composable
+fun EmptyState(icon: ImageVector, title: String, body: String, modifier: Modifier = Modifier) {
+    Column(modifier.fillMaxWidth().padding(40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            Modifier.size(72.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center,
+        ) { Icon(icon, null, Modifier.size(34.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer) }
+        Spacer(Modifier.height(16.dp))
+        Text(title, style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(4.dp))
+        Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+fun MarqueeText(text: String, modifier: Modifier = Modifier, style: androidx.compose.ui.text.TextStyle, color: Color = Color.Unspecified) {
+    Text(text, modifier.basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 2500), style = style, color = color, maxLines = 1)
+}
+
+// ---------------------------------------------------------------- Song actions
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SongActionsSheet(song: Song, playerActions: List<SheetItem> = emptyList(), onDismiss: () -> Unit) {
+    val c = LocalContainer.current
+    val nav = LocalNavigator.current
+    val context = LocalContext.current
+    val liked by c.library.likedIds.collectAsState()
+    val downloads by c.downloads.downloads.collectAsState()
+    val state = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
+    var pickPlaylist by remember { mutableStateOf(false) }
+    val isLiked = song.id in liked
+    val dl = downloads[song.id]
+
+    fun close(action: () -> Unit) {
+        action()
+        scope.launch { state.hide() }.invokeOnCompletion { onDismiss() }
+    }
+
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = state) {
+      Column(Modifier.verticalScroll(rememberScrollState())) {
+        Row(Modifier.padding(horizontal = 20.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Artwork(song.thumbnail, Modifier.size(56.dp), RoundedCornerShape(12.dp), size = 226)
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(song.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(song.artistText, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+            }
+            if (song.durationSec > 0) Text(formatDuration(song.durationSec), style = MaterialTheme.typography.labelMedium)
+        }
+        HorizontalDivider(Modifier.padding(vertical = 10.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        // Player-only extras (lyrics source, timing, stats, sleep timer) lead when opened from Now Playing.
+        if (playerActions.isNotEmpty()) {
+            playerActions.forEach { item -> SheetAction(item.icon, item.label) { close(item.onClick) } }
+            HorizontalDivider(Modifier.padding(vertical = 6.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        }
+        SheetAction(Icons.Rounded.PlaylistPlay, "Play next") { close { c.player.playNext(song) } }
+        SheetAction(Icons.AutoMirrored.Rounded.QueueMusic, "Add to queue") { close { c.player.addToQueue(song) } }
+        SheetAction(Icons.Rounded.Radio, "Start radio") { close { c.player.playRadio(song) } }
+        SheetAction(if (isLiked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, if (isLiked) "Remove from liked songs" else "Add to liked songs") {
+            close { c.library.toggleLike(song) }
+        }
+        val downloaded = dl?.state == androidx.media3.exoplayer.offline.Download.STATE_COMPLETED
+        SheetAction(if (downloaded) Icons.Rounded.DownloadDone else Icons.Rounded.Download, if (downloaded) "Remove download" else if (dl != null) "Downloading… ${dl.percent.toInt().coerceAtLeast(0)}%" else "Download") {
+            close { if (dl != null) c.downloads.remove(song.id) else c.downloads.download(song) }
+        }
+        if (c.settings.current.isLoggedIn) SheetAction(Icons.AutoMirrored.Rounded.PlaylistAdd, "Add to playlist") { pickPlaylist = true }
+        song.album?.id?.let { id -> SheetAction(Icons.Rounded.Album, "Go to album") { close { nav.go(Routes.album(id)) } } }
+        song.artists.firstOrNull { it.id != null }?.let { a -> SheetAction(Icons.Rounded.Person, "Go to ${a.name}") { close { nav.go(Routes.artist(a.id!!)) } } }
+        SheetAction(Icons.Rounded.Share, "Share") {
+            close {
+                val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(android.content.Intent.EXTRA_TEXT, "https://music.youtube.com/watch?v=${song.id}")
+                }
+                context.startActivity(android.content.Intent.createChooser(send, "Share song"))
+            }
+        }
+        Spacer(Modifier.height(24.dp))
+      }
+    }
+    if (pickPlaylist) PlaylistPicker(song) { pickPlaylist = false; onDismiss() }
+}
+
+/** One extra row for [SongActionsSheet]. */
+data class SheetItem(val icon: ImageVector, val label: String, val onClick: () -> Unit)
+
+@Composable
+fun SheetAction(icon: ImageVector, label: String, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 24.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.width(20.dp))
+        Text(label, style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+@Composable
+fun PlaylistPicker(song: Song, onDismiss: () -> Unit) {
+    val c = LocalContainer.current
+    val playlists by c.library.playlists.collectAsState()
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add to playlist") },
+        text = {
+            Column {
+                if (playlists.isEmpty()) Text("Sync your library first (Library → refresh).")
+                playlists.filterIsInstance<PlaylistItem>().filter { !it.id.startsWith("LM") && !it.isMix }.take(30).forEach { p ->
+                    Row(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable {
+                            scope.launch {
+                                val ok = runCatching { c.ytm.addToPlaylist(p.id, song.id) }.isSuccess
+                                android.widget.Toast.makeText(context, if (ok) "Added to ${p.title}" else "Couldn't add to ${p.title}", android.widget.Toast.LENGTH_SHORT).show()
+                                onDismiss()
+                            }
+                        }.padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Artwork(c.covers.art(p), Modifier.size(40.dp), RoundedCornerShape(8.dp), size = 120)
+                        Spacer(Modifier.width(12.dp))
+                        Text(p.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
+    )
+}
+
+/** Chips that follow a pager: tap to jump, or swipe the pages and the chip moves along. */
+@Composable
+fun PagerChips(labels: List<String>, pager: androidx.compose.foundation.pager.PagerState, modifier: Modifier = Modifier) {
+    val scope = rememberCoroutineScope()
+    val row = androidx.compose.foundation.lazy.rememberLazyListState()
+    LaunchedEffect(pager.currentPage) { row.animateScrollToItem((pager.currentPage - 1).coerceAtLeast(0)) }
+    androidx.compose.foundation.lazy.LazyRow(
+        modifier, state = row,
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(labels.size) { i ->
+            androidx.compose.material3.FilterChip(
+                pager.currentPage == i,
+                { scope.launch { pager.animateScrollToPage(i) } },
+                { Text(labels[i]) },
+            )
+        }
+    }
+}
+/** "⇅ Title" — opens a menu of sort orders; the current one is ticked. */
+@Composable
+fun <T> SortButton(options: List<T>, selected: T, label: (T) -> String, modifier: Modifier = Modifier, onSelect: (T) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box(modifier) {
+        TextButton(onClick = { open = true }) {
+            Icon(Icons.AutoMirrored.Rounded.Sort, null, Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(label(selected))
+        }
+        androidx.compose.material3.DropdownMenu(open, { open = false }) {
+            options.forEach { o ->
+                androidx.compose.material3.DropdownMenuItem(
+                    text = { Text(label(o), fontWeight = if (o == selected) FontWeight.SemiBold else FontWeight.Normal) },
+                    onClick = { onSelect(o); open = false },
+                    trailingIcon = if (o == selected) ({ Icon(Icons.Rounded.Check, null, tint = MaterialTheme.colorScheme.primary) }) else null,
+                )
+            }
+        }
+    }
+}
+
+/** A list's count on the left and its [SortButton] on the right. */
+@Composable
+fun <T> SortBar(count: String, options: List<T>, selected: T, label: (T) -> String, modifier: Modifier = Modifier, onSelect: (T) -> Unit) {
+    Row(modifier.fillMaxWidth().padding(start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(count, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+        SortButton(options, selected, label, onSelect = onSelect)
+    }
+}
