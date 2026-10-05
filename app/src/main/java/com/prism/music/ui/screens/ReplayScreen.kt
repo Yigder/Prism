@@ -74,7 +74,9 @@ import com.prism.music.ui.components.Artwork
 import com.prism.music.ui.components.EmptyState
 import com.prism.music.ui.components.LoadingState
 import com.prism.music.ui.components.SectionHeader
+import com.prism.music.ui.theme.LocalAppSettings
 import com.prism.music.ui.theme.LocalContainer
+import androidx.compose.runtime.ReadOnlyComposable
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
@@ -192,7 +194,7 @@ fun ReplayScreen(bottomPadding: Dp) {
             }
         }
         if (d.months.size > 1) item {
-            SectionHeader("Minutes by month")
+            SectionHeader(if (LocalAppSettings.current.replayHours) "Hours by month" else "Minutes by month")
             MonthChart(d.months, Modifier.padding(horizontal = 20.dp).fillMaxWidth().height(160.dp))
         }
         if (d.artists.isNotEmpty()) item {
@@ -218,7 +220,7 @@ fun ReplayScreen(bottomPadding: Dp) {
                         }
                         Spacer(Modifier.height(6.dp))
                         Text(a.artistName, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text("${a.ms / 60_000} min", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(listenTime(a.ms), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -233,7 +235,7 @@ fun ReplayScreen(bottomPadding: Dp) {
                     Box(Modifier.fillMaxWidth().height(40.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
                         Box(Modifier.fillMaxWidth(anim.value).height(40.dp).background(Brush.horizontalGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary))))
                         Text(g, style = MaterialTheme.typography.labelLarge, color = Color.White, modifier = Modifier.align(Alignment.CenterStart).padding(start = 12.dp))
-                        Text("${ms / 60_000} min", style = MaterialTheme.typography.labelMedium, modifier = Modifier.align(Alignment.CenterEnd).padding(end = 12.dp))
+                        Text(listenTime(ms), style = MaterialTheme.typography.labelMedium, modifier = Modifier.align(Alignment.CenterEnd).padding(end = 12.dp))
                     }
                 }
             }
@@ -266,9 +268,9 @@ fun ReplayScreen(bottomPadding: Dp) {
 
 @Composable
 private fun HeroCard(d: ReplayData, period: Period, year: Int, loading: Boolean, onOpen: () -> Unit) {
-    val minutes = d.totalMs / 60_000
-    val anim = remember(period) { Animatable(0f) }
-    LaunchedEffect(period, minutes) { anim.animateTo(minutes.toFloat(), tween(1400)) }
+    val (total, unit) = listenTotal(d.totalMs)
+    val anim = remember(period, unit) { Animatable(0f) }
+    LaunchedEffect(period, total, unit) { anim.animateTo(total.toFloat(), tween(1400)) }
     val top = d.songs.firstOrNull()
     Box(
         Modifier.padding(16.dp).fillMaxWidth().clip(RoundedCornerShape(30.dp))
@@ -282,8 +284,10 @@ private fun HeroCard(d: ReplayData, period: Period, year: Int, loading: Boolean,
                 color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black,
             )
             Spacer(Modifier.height(4.dp))
-            Text("%,d".format(anim.value.toLong()), color = Color.White, style = MaterialTheme.typography.displayLarge)
-            Text("minutes listened", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.titleMedium)
+            Column(Modifier.toggleListenUnit()) {
+                Text("%,d".format(anim.value.toLong()), color = Color.White, style = MaterialTheme.typography.displayLarge)
+                Text("$unit listened", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.titleMedium)
+            }
             Spacer(Modifier.height(18.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
                 Stat("${d.plays}", if (d.plays == 1) "play" else "plays")
@@ -320,11 +324,45 @@ private fun HeroCard(d: ReplayData, period: Period, year: Int, loading: Boolean,
     }
 }
 
-/** "1 min", "37 min", "1,204 min" — songs under a minute still show "<1 min". */
-private fun minutes(ms: Long): String {
+/**
+ * Listening time the way Replay is set to show it: "1,204 min", or "20h 4m" with hours on.
+ * Anything under a minute shows "<1 min".
+ */
+@Composable
+@ReadOnlyComposable
+fun listenTime(ms: Long): String = listenTime(ms, LocalAppSettings.current.replayHours)
+
+fun listenTime(ms: Long, hours: Boolean): String {
     val m = ms / 60_000
-    return if (m == 0L && ms > 0) "<1 min" else "%,d min".format(m)
+    return when {
+        m == 0L && ms > 0 -> "<1 min"
+        !hours || m < 60 -> "%,d min".format(m)
+        m % 60 == 0L -> "%,dh".format(m / 60)
+        else -> "%,dh %dm".format(m / 60, m % 60)
+    }
 }
+
+@Composable
+@ReadOnlyComposable
+private fun minutes(ms: Long): String = listenTime(ms)
+
+/** Tapping the headline listening time flips Replay between minutes and hours. */
+@Composable
+fun Modifier.toggleListenUnit(): Modifier {
+    val c = LocalContainer.current
+    val hours = LocalAppSettings.current.replayHours
+    return clickable(interactionSource = null, indication = null, onClickLabel = if (hours) "Show minutes" else "Show hours") {
+        c.settings.setReplayHours(!hours)
+    }
+}
+
+/** The big headline number: whole minutes, or hours with hours on. Returns the number and its unit. */
+@Composable
+@ReadOnlyComposable
+fun listenTotal(ms: Long): Pair<Long, String> =
+    // Under an hour stays in minutes, so the hours view never shows "0 hours".
+    if (LocalAppSettings.current.replayHours && ms >= 3_600_000) ms / 3_600_000 to (if (ms < 7_200_000) "hour" else "hours")
+    else ms / 60_000 to "minutes"
 
 @Composable
 private fun Stat(value: String, label: String) {

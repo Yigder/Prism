@@ -58,6 +58,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -266,7 +267,8 @@ private fun PlayerSettings() {
         Group("Artwork") {
             Toggle("Full-bleed artwork", "Cover art runs edge to edge at the top of the player", s.fullBleedArtwork) { prefs.setFullBleedArtwork(it) }
             Toggle("Animated cover art", "Motion artwork and video covers, when a song has one. You can also turn it off for single songs from the player's ⋯ menu", s.canvasEnabled) { prefs.setCanvasEnabled(it) }
-            if (s.canvasEnabled) Toggle("Animated covers on mobile data", null, s.canvasOnCellular) { prefs.setCanvasOnCellular(it) }
+            if (s.canvasEnabled) Toggle("Animated covers on mobile data", "Saved covers play from the phone either way", s.canvasOnCellular) { prefs.setCanvasOnCellular(it) }
+            if (s.canvasEnabled) CanvasStorage()
         }
         Group("On the player") {
             Toggle("Show \"Playing from\"", "The album, playlist or Autoplay label over the artwork", s.showPlayingFrom) { prefs.setShowPlayingFrom(it) }
@@ -274,10 +276,47 @@ private fun PlayerSettings() {
             Toggle("Stats for nerds", "Codec, bitrate and sample rate along the bottom of the artwork", s.showNerdStats) { prefs.setShowNerdStats(it) }
             Toggle("Hide volume bar", null, s.hideVolumeBar) { prefs.setHideVolumeBar(it) }
         }
+        Group("Replay") {
+            Toggle("Show time in hours", if (s.replayHours) "Listening time reads like \"20h 4m\"" else "Listening time reads like \"1,204 min\"", s.replayHours) { prefs.setReplayHours(it) }
+        }
         Group("Feel") {
             Toggle("Haptics", "A light tap when you press player buttons or swipe the mini player and artwork to change songs", s.haptics) { prefs.setHaptics(it) }
         }
     }
+}
+
+/** Animated covers kept on the phone: the ones saved from the player, and the recently played ones. */
+@Composable
+private fun CanvasStorage() {
+    val c = LocalContainer.current
+    val scope = rememberCoroutineScope()
+    val saved by c.canvas.saved.collectAsState()
+    var version by remember { mutableStateOf(0) }
+    val sizes by androidx.compose.runtime.produceState(0L to 0L, version, saved) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { c.canvasStore.savedBytes to c.canvasStore.recentBytes }
+    }
+    fun mb(bytes: Long) = "%.0f MB".format(bytes / 1_048_576f)
+    Item(
+        "Saved animated covers",
+        if ((saved.count == 0)) "None yet · save one from the player's ⋯ menu so it never has to load again"
+        else "${saved.count} saved · ${mb(sizes.first)} · tap to remove them all",
+        onClick = {
+            if ((saved.count > 0)) scope.launch {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { c.canvasStore.clearSaved() }
+                version++
+            }
+        },
+    )
+    Item(
+        "Recently played covers",
+        "${mb(sizes.second)} kept so they start instantly next time (up to 400 MB) · tap to clear",
+        onClick = {
+            scope.launch {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { c.canvasStore.clearRecent() }
+                version++
+            }
+        },
+    )
 }
 
 // ---------------------------------------------------------------------------- Playback & sound
@@ -348,6 +387,7 @@ private fun LyricsSettings() {
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Group("Display") {
             Toggle("Prefer synced lyrics", "Skip plain-text results when a later source has time-synced lines", s.preferSynced) { prefs.setPreferSynced(it) }
+            Toggle("Skip censored lyrics", "Pass over a source that stars out swear words (f**k) when another has the full lyrics", s.skipCensored) { prefs.setSkipCensored(it) }
             Toggle("Focus blur", "Lines further from the one being sung fall out of focus", s.lyricsBlur) { prefs.setLyricsBlur(it) }
             Label("Text size")
             var scale by remember { mutableFloatStateOf(s.lyricsScale) }
@@ -363,7 +403,7 @@ private fun LyricsSettings() {
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 )
                 CarLyricsPreview(s.carLyricsStyle)
-                Toggle("On this phone too", "Show them the same way on the lock screen and in the media notification", s.carLyricsOnPhone) { prefs.setCarLyricsOnPhone(it) }
+                Toggle("On this phone too", "Also show them on the lock screen and in the media notification when you're not driving", s.carLyricsOnPhone) { prefs.setCarLyricsOnPhone(it) }
             }
         }
         Group("Sources") {

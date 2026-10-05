@@ -134,12 +134,15 @@ fun DownloadsScreen(bottomPadding: Dp) {
             DlSort.ALBUM -> list.sortedWith(compareBy<Song> { it.album?.title?.lowercase() ?: "￿" }.thenBy { it.title.lowercase() })
         }
     }
-    val shown = remember(songs, filter) {
+    var query by rememberSaveable { mutableStateOf("") }
+    val words = remember(query) { query.trim().lowercase().split(Regex("\\s+")).filter { it.isNotEmpty() } }
+    fun matches(text: String) = words.isEmpty() || text.lowercase().let { hay -> words.all { it in hay } }
+    val shown = remember(songs, filter, words) {
         when {
             filter == null -> songs
             filter!!.startsWith("artist:") -> songs.filter { it.primaryArtist == filter!!.removePrefix("artist:") }
             else -> songs.filter { (it.album?.id ?: it.album?.title) == filter!!.removePrefix("album:") }
-        }
+        }.filter { matches("${it.title} ${it.artistText} ${it.album?.title.orEmpty()}") }
     }
     val artists = remember(done) {
         done.mapNotNull { it.song }.groupBy { it.primaryArtist.ifBlank { "Unknown artist" } }.map { (name, list) ->
@@ -252,6 +255,13 @@ fun DownloadsScreen(bottomPadding: Dp) {
             }
         }
 
+        if (done.isNotEmpty() && !selecting) com.prism.music.ui.components.SearchField(
+            query,
+            when (pager.currentPage) { 1 -> "Search downloaded artists"; 2 -> "Search downloaded albums"; else -> "Search downloads" },
+            { query = it },
+            Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+        )
+
         HorizontalPager(pager, Modifier.weight(1f), beyondViewportPageCount = 1) { page ->
             when (page) {
                 0 -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 4.dp, bottom = bottomPadding + 24.dp)) {
@@ -262,7 +272,8 @@ fun DownloadsScreen(bottomPadding: Dp) {
                         }
                     }
                     if (shown.isEmpty()) item {
-                        EmptyState(Icons.Rounded.DownloadDone, "No downloads yet", "Download songs, albums or playlists, or turn on smart downloads in Settings.")
+                        if (words.isNotEmpty() && done.isNotEmpty()) EmptyState(Icons.Rounded.DownloadDone, "No matches", "No downloaded songs match \"${query.trim()}\".")
+                        else EmptyState(Icons.Rounded.DownloadDone, "No downloads yet", "Download songs, albums or playlists, or turn on smart downloads in Settings.")
                     }
                     itemsIndexed(shown, key = { _, s -> s.id }) { i, s ->
                         DownloadRow(
@@ -276,10 +287,14 @@ fun DownloadsScreen(bottomPadding: Dp) {
                 }
                 else -> {
                     val groupSort = if (page == 1) artistSort else albumSort
-                    val groups = remember(artists, albums, page, groupSort) { (if (page == 1) artists else albums).sortedBy(groupSort) }
+                    // An artist or album shows when its name (or the artist, for an album) matches.
+                    val groups = remember(artists, albums, page, groupSort, words) {
+                        (if (page == 1) artists else albums).filter { matches("${it.title} ${it.subtitle}") }.sortedBy(groupSort)
+                    }
                     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 4.dp, bottom = bottomPadding + 24.dp)) {
                         if (groups.isEmpty()) item {
-                            EmptyState(if (page == 1) Icons.Rounded.Person else Icons.Rounded.Album, "Nothing here yet", "Downloaded songs are grouped here by ${if (page == 1) "artist" else "album"}.")
+                            if (words.isNotEmpty() && done.isNotEmpty()) EmptyState(if (page == 1) Icons.Rounded.Person else Icons.Rounded.Album, "No matches", "No downloaded ${if (page == 1) "artists" else "albums"} match \"${query.trim()}\".")
+                            else EmptyState(if (page == 1) Icons.Rounded.Person else Icons.Rounded.Album, "Nothing here yet", "Downloaded songs are grouped here by ${if (page == 1) "artist" else "album"}.")
                         }
                         items(groups, key = { it.key }) { g ->
                             GroupRow(

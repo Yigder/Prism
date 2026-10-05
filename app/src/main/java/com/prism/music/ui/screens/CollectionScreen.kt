@@ -25,6 +25,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.rounded.Category
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material.icons.rounded.Edit
@@ -176,7 +178,9 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
     var sort by rememberSaveable(page.id) { mutableStateOf(SortMode.DEFAULT) }
     var groupByGenre by rememberSaveable(page.id) { mutableStateOf(false) }
     var sortMenu by remember { mutableStateOf(false) }
+    var query by rememberSaveable(page.id) { mutableStateOf("") }
     val showGenres = type != CollectionType.ALBUM && songs.size > 1
+    val showSearch = type != CollectionType.ALBUM || songs.size > 12
 
     // Genres are detected per artist, a few at a time; chips fill in as each batch lands.
     LaunchedEffect(page.id, songs.size) {
@@ -193,8 +197,13 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
     val genreCounts = remember(songs, genreVersion) {
         songs.mapNotNull { genres[it.id] }.groupingBy { it }.eachCount().toList().sortedByDescending { it.second }
     }
-    val visible = remember(songs, genreFilter, sort, if (genreFilter != null || sort == SortMode.GENRE || groupByGenre) genreVersion else 0) {
-        val filtered = if (genreFilter == null) page.songs else page.songs.filter { genres[it.id] == genreFilter }
+    val visible = remember(songs, genreFilter, sort, query, if (genreFilter != null || sort == SortMode.GENRE || groupByGenre) genreVersion else 0) {
+        val words = query.trim().lowercase().split(Regex("\\s+")).filter { it.isNotEmpty() }
+        val filtered = page.songs.filter { s ->
+            (genreFilter == null || genres[s.id] == genreFilter) &&
+                // Every word typed has to turn up in the title, the artists or the album.
+                (words.isEmpty() || "${s.title} ${s.artistText} ${s.album?.title.orEmpty()}".lowercase().let { hay -> words.all { it in hay } })
+        }
         when (sort) {
             SortMode.DEFAULT -> filtered
             SortMode.TITLE -> filtered.sortedBy { it.title.lowercase() }
@@ -237,6 +246,9 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                     }
                 }
             }
+            if (showSearch) item(key = "search") {
+                com.prism.music.ui.components.SearchField(query, if (type == CollectionType.ALBUM) "Search in album" else "Search in ${page.title}", { query = it }, Modifier.padding(horizontal = 20.dp).padding(bottom = 6.dp))
+            }
             if (showGenres) item {
                 Column {
                     Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -268,7 +280,8 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                 }
             }
             if (visible.isEmpty()) item {
-                EmptyState(Icons.Rounded.Favorite, if (genreFilter != null) "No $genreFilter songs" else "Nothing here yet",
+                if (query.isNotBlank()) EmptyState(Icons.Rounded.Search, "No matches", "Nothing in ${page.title} matches \"${query.trim()}\"" + if (loadingMore) " yet — more songs are still loading." else ".")
+                else EmptyState(Icons.Rounded.Favorite, if (genreFilter != null) "No $genreFilter songs" else "Nothing here yet",
                     if (type == CollectionType.LIKED) "Like songs from the player and they'll show up here." else "Songs you add will show up here.")
             }
             if (groupByGenre && showGenres) {

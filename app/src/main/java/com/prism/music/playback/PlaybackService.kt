@@ -144,6 +144,7 @@ class PlaybackService : MediaLibraryService(), Player.Listener {
 
         sessionPlayer = LyricsOverlayPlayer(player)
         carLyrics = CarLyrics(this, c, player, sessionPlayer, scope)
+        carLyrics.start()
         session = MediaLibrarySession.Builder(this, sessionPlayer, LibraryCallback())
             .setSessionActivity(
                 PendingIntent.getActivity(
@@ -198,6 +199,7 @@ class PlaybackService : MediaLibraryService(), Player.Listener {
         flushPlayTime()
         saveQueue()
         c.player.detach()
+        carLyrics.stop()
         effects.release()
         session.release()
         player.release()

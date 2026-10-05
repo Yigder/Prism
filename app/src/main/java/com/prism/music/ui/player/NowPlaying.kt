@@ -129,8 +129,6 @@ import com.prism.music.data.model.hiRes
 import com.prism.music.playback.QueueKind
 import com.prism.music.ui.LocalNavigator
 import com.prism.music.ui.Routes
-import com.prism.music.ui.components.SheetItem
-import com.prism.music.ui.components.SongActionsSheet
 import com.prism.music.ui.theme.LocalContainer
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -259,9 +257,15 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
 
     // ---------------------------------------------------------------- Canvas
     val metered = remember { context.getSystemService(ConnectivityManager::class.java)?.isActiveNetworkMetered == true }
+    val savedCanvases by c.canvas.saved.collectAsState()
+    val canvasSaved = savedCanvases.has(song.id, com.prism.music.data.canvas.CanvasRepository.albumKey(song))
     val songCanvas by produceState<CanvasArtwork?>(c.canvas.cached(song), song.id, song.album?.title, settings.canvasEnabled) {
-        value = if (!settings.canvasEnabled || (metered && !settings.canvasOnCellular)) null
-        else c.canvas.cached(song) ?: run { delay(500); c.canvas.canvasFor(song) }
+        // Saved clips play from the phone, so mobile data doesn't matter for them.
+        if (!settings.canvasEnabled || (metered && !settings.canvasOnCellular && !c.canvas.isSaved(song))) { value = null; return@produceState }
+        val known = c.canvas.cached(song)
+        value = known
+        if (known == null) delay(500)
+        value = c.canvas.canvasFor(song)
     }
     // Animated artwork can be switched off per song from the song options.
     val canvasHidden by c.canvas.hidden.collectAsState()
@@ -324,7 +328,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
             )
             canvas?.takeIf { !collapsePastHalf }?.let { clip ->
                 CanvasPlayer(
-                    clip, isPlaying,
+                    clip, canvasSaved, isPlaying,
                     Modifier.fillMaxWidth().height(heroHeight),
                     bottomFade = HERO_FADE,
                     presentationAlpha = { heroT.value * (1f - 2f * p()).coerceIn(0f, 1f) },
@@ -474,7 +478,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                                 modifier = Modifier.fillMaxSize(),
                             )
                             if (!heroMode && !videoMode) canvas?.takeIf { !collapsePastHalf }?.let { clip ->
-                                CanvasPlayer(clip, isPlaying, Modifier.fillMaxSize(), onCoverChanged = { canvasCover = it })
+                                CanvasPlayer(clip, canvasSaved, isPlaying, Modifier.fillMaxSize(), onCoverChanged = { canvasCover = it })
                             }
                         }
                         if (!collapsePastHalf && !videoMode) SleeveNerdStats(
@@ -587,24 +591,17 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
     }
 
     if (showProviders) LyricsProviderSheet(lyricsState) { showProviders = false }
-    if (showActions) SongActionsSheet(
+    if (showActions) PlayerOptionsSheet(
         song,
-        playerActions = listOf(
-            SheetItem(Icons.Rounded.FormatQuote, "Lyrics source") { showProviders = true },
-            SheetItem(Icons.Rounded.AvTimer, "Lyrics timing") { showTiming = true },
-            SheetItem(Icons.Rounded.DataUsage, if (showStats) "Hide stats for nerds" else "Stats for nerds") { showStats = !showStats },
-            SheetItem(Icons.Rounded.Bedtime, "Sleep timer") { showSleep = true },
-            *(if (songCanvas == null) emptyArray() else arrayOf(
-                if (song.id in canvasHidden) SheetItem(Icons.Rounded.Animation, "Show animated artwork") { c.canvas.setHidden(song.id, false) }
-                else SheetItem(Icons.Rounded.Photo, "Still artwork for this song") { c.canvas.setHidden(song.id, true) }
-            )),
-            if (c.library.isDisliked(song.id)) SheetItem(Icons.Rounded.ThumbDown, "Remove dislike") { c.library.setDisliked(song, false) }
-            else SheetItem(Icons.Rounded.ThumbDownOffAlt, "Dislike · don't play this again") {
-                c.library.setDisliked(song, true)
-                android.widget.Toast.makeText(context, "Got it — Prism will steer clear of this song", android.widget.Toast.LENGTH_SHORT).show()
-                if (hasNext) pc.next()
-            },
-        ),
+        hasCanvas = songCanvas != null,
+        statsShown = showStats,
+        hasNext = hasNext,
+        onLyricsSource = { showProviders = true },
+        onLyricsTiming = { showTiming = true },
+        onRedownloadLyrics = { lyricsState.redownload() },
+        onToggleStats = { showStats = !showStats },
+        onSleepTimer = { showSleep = true },
+        onCollapse = onCollapse,
     ) { showActions = false }
     if (showSleep) SleepTimerDialog { showSleep = false }
     if (showTiming) LyricsTimingSheet { showTiming = false }

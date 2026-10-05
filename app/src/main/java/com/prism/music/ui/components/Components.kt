@@ -36,7 +36,9 @@ import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Album
 import androidx.compose.material.icons.rounded.ArrowForward
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CloudOff
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material.icons.rounded.Explicit
@@ -325,28 +327,97 @@ fun MarqueeText(text: String, modifier: Modifier = Modifier, style: androidx.com
     Text(text, modifier.basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 2500), style = style, color = color, maxLines = 1)
 }
 
-// ---------------------------------------------------------------- Song actions
+/** A search pill for filtering a list in place ("Search in playlist"), as you type. */
+@Composable
+fun SearchField(query: String, hint: String, onChange: (String) -> Unit, modifier: Modifier = Modifier) {
+    val scheme = MaterialTheme.colorScheme
+    val focus = androidx.compose.ui.platform.LocalFocusManager.current
+    Row(
+        modifier.fillMaxWidth().height(46.dp).clip(RoundedCornerShape(50)).background(scheme.surfaceContainerHigh).padding(start = 14.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Rounded.Search, null, Modifier.size(20.dp), tint = scheme.onSurfaceVariant)
+        Spacer(Modifier.width(10.dp))
+        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+            if (query.isEmpty()) Text(hint, style = MaterialTheme.typography.bodyLarge, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            androidx.compose.foundation.text.BasicTextField(
+                query, onChange, singleLine = true,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = scheme.onSurface),
+                cursorBrush = androidx.compose.ui.graphics.SolidColor(scheme.primary),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Search),
+                keyboardActions = androidx.compose.foundation.text.KeyboardActions(onSearch = { focus.clearFocus() }),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        if (query.isNotEmpty()) IconButton(onClick = { onChange(""); focus.clearFocus() }) {
+            Icon(Icons.Rounded.Close, "Clear search", Modifier.size(20.dp), tint = scheme.onSurfaceVariant)
+        }
+    }
+}
 
+// ---------------------------------------------------------------- Sheets
+
+/**
+ * A bottom sheet that always lets go. Material's sheet could be left half-dismissed (blocking the
+ * screen) when flicked or tapped away while it was still opening; this watches where the sheet
+ * actually lands and finishes the dismissal itself, exactly once. [content] gets a `close { … }`
+ * that slides the sheet away first and then runs the action, so a follow-up sheet never overlaps it.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SongActionsSheet(song: Song, playerActions: List<SheetItem> = emptyList(), onDismiss: () -> Unit) {
+fun PrismSheet(
+    onDismiss: () -> Unit,
+    containerColor: Color = androidx.compose.material3.BottomSheetDefaults.ContainerColor,
+    contentColor: Color = androidx.compose.material3.contentColorFor(containerColor),
+    content: @Composable androidx.compose.foundation.layout.ColumnScope.(close: (then: () -> Unit) -> Unit) -> Unit,
+) {
+    val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
+    val dismiss by androidx.compose.runtime.rememberUpdatedState(onDismiss)
+    val done = remember { java.util.concurrent.atomic.AtomicBoolean(false) }
+    val then = remember { arrayOfNulls<() -> Unit>(1) }
+    val finish = remember {
+        {
+            if (done.compareAndSet(false, true)) {
+                dismiss()
+                then[0]?.invoke()
+            }
+        }
+    }
+    LaunchedEffect(state) {
+        var shown = false
+        androidx.compose.runtime.snapshotFlow { state.currentValue to state.targetValue }.collect { (now, target) ->
+            if (now != androidx.compose.material3.SheetValue.Hidden) shown = true
+            else if (shown && target == androidx.compose.material3.SheetValue.Hidden) finish()
+        }
+    }
+    val close: (() -> Unit) -> Unit = remember {
+        { action ->
+            if (then[0] == null) then[0] = action
+            scope.launch { try { state.hide() } finally { finish() } }
+        }
+    }
+    ModalBottomSheet(onDismissRequest = finish, sheetState = state, containerColor = containerColor, contentColor = contentColor) {
+        content(close)
+    }
+}
+
+// ---------------------------------------------------------------- Song actions
+
+@Composable
+fun SongActionsSheet(song: Song, onDismiss: () -> Unit) {
     val c = LocalContainer.current
     val nav = LocalNavigator.current
     val context = LocalContext.current
     val liked by c.library.likedIds.collectAsState()
     val downloads by c.downloads.downloads.collectAsState()
-    val state = rememberModalBottomSheetState()
-    val scope = rememberCoroutineScope()
     var pickPlaylist by remember { mutableStateOf(false) }
     val isLiked = song.id in liked
     val dl = downloads[song.id]
 
-    fun close(action: () -> Unit) {
-        action()
-        scope.launch { state.hide() }.invokeOnCompletion { onDismiss() }
-    }
-
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = state) {
+    // The playlist picker takes over from the sheet.
+    if (!pickPlaylist) PrismSheet(onDismiss = onDismiss) { hide ->
+      fun close(action: () -> Unit) = hide(action)
       Column(Modifier.verticalScroll(rememberScrollState())) {
         Row(Modifier.padding(horizontal = 20.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Artwork(song.thumbnail, Modifier.size(56.dp), RoundedCornerShape(12.dp), size = 226)
@@ -358,11 +429,6 @@ fun SongActionsSheet(song: Song, playerActions: List<SheetItem> = emptyList(), o
             if (song.durationSec > 0) Text(formatDuration(song.durationSec), style = MaterialTheme.typography.labelMedium)
         }
         HorizontalDivider(Modifier.padding(vertical = 10.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-        // Player-only extras (lyrics source, timing, stats, sleep timer) lead when opened from Now Playing.
-        if (playerActions.isNotEmpty()) {
-            playerActions.forEach { item -> SheetAction(item.icon, item.label) { close(item.onClick) } }
-            HorizontalDivider(Modifier.padding(vertical = 6.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-        }
         SheetAction(Icons.Rounded.PlaylistPlay, "Play next") { close { c.player.playNext(song) } }
         SheetAction(Icons.AutoMirrored.Rounded.QueueMusic, "Add to queue") { close { c.player.addToQueue(song) } }
         SheetAction(Icons.Rounded.Radio, "Start radio") { close { c.player.playRadio(song) } }

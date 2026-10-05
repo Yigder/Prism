@@ -4,7 +4,11 @@ import com.prism.music.data.innertube.InnerTube
 import com.prism.music.data.innertube.str
 import com.prism.music.data.model.Song
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonArray
@@ -18,6 +22,7 @@ import java.util.Base64
 import java.util.Locale
 
 /** A looping clip that stands in for a track's cover art. */
+@Serializable
 data class CanvasArtwork(
     val url: String,
     val fallbackUrl: String? = null,
@@ -61,10 +66,93 @@ class CanvasRepository(private val http: OkHttpClient) {
         hiddenPrefs?.edit()?.putStringSet("ids", next)?.apply()
     }
 
-    private val cache = object : LinkedHashMap<String, Pair<CanvasArtwork?, Boolean>>(64, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Pair<CanvasArtwork?, Boolean>>) = size > 96
+    /**
+     * Animated covers kept on the phone for good (the clips live in [CanvasStore]): songs saved from
+     * the player, whole albums (saving one song's cover keeps the album's), and downloaded songs.
+     */
+    data class Saved(val songs: Set<String> = emptySet(), val albums: Set<String> = emptySet(), val downloads: Set<String> = emptySet()) {
+        fun has(songId: String, album: String?) = songId in songs || songId in downloads || (album != null && album in albums)
+        val count: Int get() = (songs + downloads).size + albums.size
+    }
+
+    var savedPrefs: android.content.SharedPreferences? = null
+        set(v) {
+            field = v
+            fun read(key: String) = v?.getStringSet(key, emptySet())?.toSet() ?: emptySet()
+            saved.value = Saved(read("ids"), read("albums"), read("downloads"))
+        }
+    val saved = kotlinx.coroutines.flow.MutableStateFlow(Saved())
+
+    fun isSaved(song: Song) = saved.value.has(song.id, albumKey(song))
+    private fun isSaved(songId: String, entry: Entry?) = saved.value.has(songId, entry?.album)
+
+    /** Saves (or forgets) the cover for [song] and every song on its album. */
+    fun setSaved(song: Song, keep: Boolean) = updateSaved { s ->
+        val album = albumKey(song)
+        if (keep) s.copy(songs = s.songs + song.id, albums = if (album != null) s.albums + album else s.albums)
+        else s.copy(songs = s.songs - song.id, albums = if (album != null) s.albums - album else s.albums)
+    }
+
+    /** Covers kept because the song is downloaded. */
+    fun setSavedWithDownload(songId: String, keep: Boolean) = updateSaved { s ->
+        s.copy(downloads = if (keep) s.downloads + songId else s.downloads - songId)
+    }
+
+    fun clearSaved() = updateSaved { Saved() }
+
+    private fun updateSaved(change: (Saved) -> Saved) {
+        val next = synchronized(saved) { change(saved.value).also { saved.value = it } }
+        savedPrefs?.edit()?.putStringSet("ids", next.songs)?.putStringSet("albums", next.albums)?.putStringSet("downloads", next.downloads)?.apply()
+        scheduleWrite()
+    }
+
+    /** The clips (by their URLs) that saved songs use; anything else in the saved store can go. */
+    fun savedClipUrls(): Set<String> = synchronized(cache) {
+        cache.filter { (id, e) -> e.art != null && isSaved(id, e) }.values.flatMap { listOfNotNull(it.art!!.url, it.art.fallbackUrl) }.toSet()
+    }
+    /** What each song's lookup found (or didn't), remembered across launches so clips start without searching again. */
+    @Serializable
+    private data class Entry(val art: CanvasArtwork? = null, val hadAlbum: Boolean = false, val at: Long = 0, val album: String? = null)
+
+    private val cache = object : LinkedHashMap<String, Entry>(64, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Entry>) =
+            size > MAX_ENTRIES && !isSaved(eldest.key, eldest.value)
     }
     private val lock = Mutex()
+    private var indexFile: java.io.File? = null
+    private val ioScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO)
+    private var writeJob: kotlinx.coroutines.Job? = null
+
+    /** Reads the remembered lookups from [file] (in the background) and keeps it up to date. */
+    fun useIndex(file: java.io.File) {
+        indexFile = file
+        ioScope.launch {
+            val stored = runCatching {
+                InnerTube.json.decodeFromString(MapSerializer(String.serializer(), Entry.serializer()), file.readText())
+            }.getOrNull() ?: return@launch
+            val now = System.currentTimeMillis()
+            synchronized(cache) {
+                stored.forEach { (id, e) -> if (id !in cache && (isSaved(id, e) || !e.stale(now))) cache[id] = e }
+            }
+        }
+    }
+
+    /** Found clips are trusted for a month (links do move), misses for a few days. Saved ones never expire. */
+    private fun Entry.stale(now: Long) = now - at > if (art != null) 30 * DAY else 3 * DAY
+
+    private fun scheduleWrite() {
+        val file = indexFile ?: return
+        writeJob?.cancel()
+        writeJob = ioScope.launch {
+            kotlinx.coroutines.delay(1500)
+            val snapshot = synchronized(cache) { HashMap(cache) }
+            runCatching {
+                val tmp = java.io.File(file.path + ".tmp")
+                tmp.writeText(InnerTube.json.encodeToString(MapSerializer(String.serializer(), Entry.serializer()), snapshot))
+                tmp.renameTo(file)
+            }
+        }
+    }
 
     private fun get(url: String, headers: Map<String, String> = emptyMap()): String? = runCatching {
         val b = Request.Builder().url(url).header("User-Agent", UA)
@@ -80,12 +168,16 @@ class CanvasRepository(private val http: OkHttpClient) {
         " ",
     ).substringBefore(" | ").replace(Regex("\\s+"), " ").trim().ifBlank { this }
 
-    fun cached(song: Song): CanvasArtwork? = synchronized(cache) { cache[song.id]?.first }
+    fun cached(song: Song): CanvasArtwork? = synchronized(cache) { cache[song.id]?.art }
 
     suspend fun canvasFor(song: Song): CanvasArtwork? = lock.withLock {
         val album = song.album?.title
+        val now = System.currentTimeMillis()
         synchronized(cache) {
-            cache[song.id]?.let { (art, hadAlbum) -> if (art != null || hadAlbum || album == null) return@withLock art }
+            cache[song.id]?.let { e ->
+                val fresh = isSaved(song) || !e.stale(now)
+                if (fresh && (e.art != null || e.hadAlbum || album == null)) return@withLock e.art
+            }
         }
         val title = song.title.cleaned()
         val artist = song.primaryArtist.cleaned()
@@ -98,8 +190,21 @@ class CanvasRepository(private val http: OkHttpClient) {
                 { applePage(artist, album ?: title) },
             ).firstNotNullOfOrNull { source -> runCatching { source() }.getOrNull() }
         }
-        synchronized(cache) { cache[song.id] = found to (album != null) }
-        found
+        synchronized(cache) {
+            // Offline or a source hiccup: keep the clip we already knew rather than forgetting it.
+            val known = cache[song.id]?.art
+            if (found != null || known == null) cache[song.id] = Entry(found, album != null, now, albumKey(song))
+        }
+        scheduleWrite()
+        found ?: synchronized(cache) { cache[song.id]?.art }
+    }
+
+    companion object {
+        /** Which album a song belongs to, for album-wide saves. */
+        fun albumKey(song: Song): String? = song.album?.let { a -> a.id ?: "${a.title}|${song.primaryArtist}".lowercase(Locale.ROOT) }
+
+        private const val MAX_ENTRIES = 3000
+        private const val DAY = 86_400_000L
     }
 
     // ------------------------------------------------------------ Apple Music

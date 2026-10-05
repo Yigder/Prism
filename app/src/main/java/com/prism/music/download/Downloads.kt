@@ -87,11 +87,16 @@ class DownloadRepository(private val context: Context, private val c: AppContain
         manager.addListener(object : DownloadManager.Listener {
             override fun onDownloadChanged(manager: DownloadManager, download: Download, finalException: Exception?) {
                 _downloads.value = _downloads.value + (download.request.id to download.info())
-                if (download.state == Download.STATE_COMPLETED) download.info().song?.let { s -> c.scope.launch(Dispatchers.IO) { ensureLyrics(s) } }
+                if (download.state == Download.STATE_COMPLETED) download.info().song?.let { s ->
+                    c.scope.launch(Dispatchers.IO) { ensureLyrics(s) }
+                    // Its animated cover is kept with it.
+                    if (c.settings.current.canvasEnabled && !c.canvas.saved.value.has(s.id, null)) c.canvasStore.saveWithDownload(s)
+                }
             }
 
             override fun onDownloadRemoved(manager: DownloadManager, download: Download) {
                 _downloads.value = _downloads.value - download.request.id
+                c.canvasStore.forgetDownloads(listOf(download.request.id))
             }
         })
         scope.launch {

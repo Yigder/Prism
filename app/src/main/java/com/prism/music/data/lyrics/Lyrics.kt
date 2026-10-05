@@ -43,7 +43,18 @@ data class Lyrics(
 ) {
     val plain: String get() = lines.joinToString("\n") { it.text }
     val wordSynced: Boolean get() = lines.any { it.isWordSynced }
+    /** Swear words starred or blanked out ("f**k", "sh*t", "[censored]"). */
+    val censored: Boolean by lazy { lines.any { !it.isGap && censorMark.containsMatchIn(it.text) } }
 }
+
+/**
+ * A word with starred-out letters ("f*ck", "f***", "sh**", "**ck", "f##k") or an outright
+ * "[censored]" / "(bleep)". A lone "*laughs*" style aside doesn't count.
+ */
+private val censorMark = Regex(
+    "\\p{L}[*#]+\\p{L}|\\b\\p{L}{1,3}[*#]{2,}|[*#]{2,}\\p{L}{1,3}\\b|[\\[(](?:censored|bleep(?:ed)?)[\\])]",
+    RegexOption.IGNORE_CASE,
+)
 
 private val creditLine = Regex(
     "^(\\s*(lyrics?|words|composed|composer|written|writer|produced|producer|arranged|music|mixed|mastered|vocals?)\\s*(by)?\\s*[:：]|.*(作词|作曲|编曲|制作人|制作|混音|母带|和声|吉他|贝斯|鼓)\\s*[:：]).*",
@@ -620,9 +631,15 @@ class LyricsRepository(
         val s = settings()
         val rows = dao.allFor(song.id).associateBy { it.source }
         val all = s.lyricsOrder.mapNotNull { src -> rows[src.name]?.let { build(src, it.content) } }
+            .filterNot { skipCensored() && it.censored }
         if (!s.preferSynced) return@withContext all.firstOrNull()
         all.maxByOrNull { level(it) }
     }
+
+    private fun skipCensored() = settings().skipCensored
+
+    /** Starred-out lyrics are passed over while another source might have the real words. */
+    private fun unwanted(l: Lyrics) = skipCensored() && l.censored
 
     /** How good a set of lyrics is: word-by-word 3, line-synced 2, plain 1, none 0. */
     fun level(l: Lyrics?): Int = when {
@@ -645,14 +662,16 @@ class LyricsRepository(
         saved(song)?.takeIf { it.wordSynced }?.let { return it }
         val order = settings().lyricsOrder
         var best: Lyrics? = null
+        var censored: Lyrics? = null
         for (src in order.filter { it in WORD_SOURCES } + order.filter { it !in WORD_SOURCES }) {
             // Line-synced is already in hand: the rest of the sources only ever have that or less.
             if (src !in WORD_SOURCES && level(best) >= 2) break
             val l = fetch(song, src) ?: continue
+            if (unwanted(l)) { if (level(l) > level(censored)) censored = l; continue }
             if (l.wordSynced) return l
             if (level(l) > level(best)) best = l
         }
-        return best
+        return best ?: censored
     }
 
     /**
@@ -660,16 +679,21 @@ class LyricsRepository(
      * already saved (so downloaded songs have lyrics offline, instantly), else
      * sources in the user's order, preferring synced lyrics when enabled.
      */
-    suspend fun auto(song: Song): Lyrics? {
-        chosen(song)?.let { src -> fetch(song, src)?.let { return it } }
-        saved(song)?.let { return it }
+    suspend fun auto(song: Song, force: Boolean = false): Lyrics? {
+        if (!force) {
+            chosen(song)?.let { src -> fetch(song, src)?.let { return it } }
+            saved(song)?.let { return it }
+        }
         val s = settings()
         var plainFallback: Lyrics? = null
+        var censored: Lyrics? = null
         for (src in s.lyricsOrder) {
-            val l = fetch(song, src) ?: continue
+            val l = fetch(song, src, force) ?: continue
+            if (unwanted(l)) { if (censored == null || (l.synced && !censored.synced)) censored = l; continue }
             if (l.synced || !s.preferSynced) return l
             if (plainFallback == null) plainFallback = l
         }
-        return plainFallback
+        // Censored words beat no words at all.
+        return plainFallback ?: censored
     }
 }

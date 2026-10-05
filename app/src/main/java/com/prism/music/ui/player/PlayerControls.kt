@@ -494,7 +494,7 @@ fun OutputPickerSheet(phoneName: String, onDismiss: () -> Unit) {
             delay(1000)
         }
     }
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color(0xFF1C1C1E), contentColor = Color.White) {
+    com.prism.music.ui.components.PrismSheet(onDismiss, containerColor = Color(0xFF1C1C1E), contentColor = Color.White) {
         Text("Play on", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
         Column(Modifier.padding(bottom = 28.dp)) {
             options.forEach { d ->

@@ -51,13 +51,17 @@ class YouTubeMusic(private val api: InnerTube) {
         return HomeFeed(Parser.shelves(res), Parser.continuation(res.obj("contents") ?: res.obj("continuationContents")))
     }
 
-    /** Loads the home feed plus a few continuation pages so the catalogue has plenty to offer. */
-    suspend fun fullHome(pages: Int = 3): List<Shelf> {
+    /**
+     * Loads the home feed plus a few continuation pages so the catalogue has plenty to offer.
+     * Keeps paging (up to [maxPages]) while [satisfied] is false, so shelves the user pinned
+     * that YouTube happens to serve further down the feed still turn up.
+     */
+    suspend fun fullHome(pages: Int = 3, maxPages: Int = pages, satisfied: (List<Shelf>) -> Boolean = { true }): List<Shelf> {
         val all = mutableListOf<Shelf>()
         var feed = home()
         all += feed.shelves
         var n = 1
-        while (feed.continuation != null && n < pages) {
+        while (feed.continuation != null && (n < pages || (n < maxPages && !satisfied(all)))) {
             feed = runCatching { home(feed.continuation) }.getOrNull() ?: break
             all += feed.shelves
             n++

@@ -1,6 +1,14 @@
 package com.prism.music.playback
 
+import android.app.UiModeManager
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.content.res.Configuration
+import android.net.Uri
+import androidx.core.content.ContextCompat
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -87,11 +95,20 @@ class CarLyrics(
     private val overlay: LyricsOverlayPlayer,
     private val scope: CoroutineScope,
 ) {
-    /** Android Auto is connected to Prism right now. */
+    /** Android Auto is connected to Prism's session. */
     var carConnected = false
-        set(v) { if (field != v) { field = v; refresh() } }
+        set(v) { if (field != v) { field = v; if (v) car.update(); refresh() } }
 
-    val active: Boolean get() = c.settings.current.let { it.carLyrics && (carConnected || it.carLyricsOnPhone) }
+    /**
+     * The phone is actually in a car. Android Auto's phone app stays connected to the session in
+     * the background (for its resume card), so a connection alone doesn't mean anyone is driving.
+     */
+    private val car = CarState(context, scope) { refresh() }
+
+    val active: Boolean get() = c.settings.current.let { it.carLyrics && ((carConnected && car.driving) || it.carLyricsOnPhone) }
+
+    fun start() = car.start()
+    fun stop() = car.stop()
 
     private var songId: String? = null
     private var song: Song? = null
@@ -172,6 +189,56 @@ class CarLyrics(
         if (shown == null) return
         shown = null
         overlay.show(null)
+    }
+}
+
+/**
+ * Whether the phone is in a car right now: projecting to Android Auto, in car mode, or running
+ * on the car itself (Android Automotive). Follows Android Auto's own connection broadcasts.
+ */
+class CarState(private val context: Context, private val scope: CoroutineScope, private val onChange: () -> Unit) {
+    @Volatile var driving = false
+        private set
+    private val automotive = context.packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+    private var registered = false
+    private val receiver = object : BroadcastReceiver() {
+        override fun onReceive(ctx: Context, intent: Intent) = update()
+    }
+
+    fun start() {
+        if (registered) return
+        val filter = IntentFilter().apply {
+            addAction(UiModeManager.ACTION_ENTER_CAR_MODE)
+            addAction(UiModeManager.ACTION_EXIT_CAR_MODE)
+            addAction(CONNECTION_UPDATED)
+        }
+        runCatching { ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_EXPORTED); registered = true }
+        update()
+    }
+
+    fun stop() {
+        if (registered) runCatching { context.unregisterReceiver(receiver) }
+        registered = false
+    }
+
+    fun update() {
+        scope.launch {
+            val now = automotive || withContext(Dispatchers.IO) { carMode() || projecting() }
+            if (now != driving) { driving = now; onChange() }
+        }
+    }
+
+    private fun carMode() = context.getSystemService(UiModeManager::class.java)?.currentModeType == Configuration.UI_MODE_TYPE_CAR
+
+    /** Android Auto's connection provider (what androidx.car.app's CarConnection reads): 2 = projecting. */
+    private fun projecting(): Boolean = runCatching {
+        context.contentResolver.query(Uri.parse("content://androidx.car.app.connection"), arrayOf("CarConnectionState"), null, null, null)?.use { cur ->
+            cur.moveToNext() && cur.getInt(cur.getColumnIndexOrThrow("CarConnectionState")) != 0
+        } ?: false
+    }.getOrDefault(false)
+
+    private companion object {
+        const val CONNECTION_UPDATED = "androidx.car.app.connection.action.CAR_CONNECTION_UPDATED"
     }
 }
 

@@ -537,14 +537,14 @@ private fun Intro(s: ReplayStory, modifier: Modifier) {
 
 @Composable
 private fun Minutes(s: ReplayStory, modifier: Modifier) {
-    val minutes = minutesOf(s.totalMs)
+    val (minutes, unit) = listenTotal(s.totalMs)
     val count = remember { Animatable(0f) }
     LaunchedEffect(Unit) { delay(400); count.animateTo(minutes.toFloat(), tween(2_200, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
     Column(modifier, verticalArrangement = Arrangement.Center) {
         Text("YOU LISTENED FOR", style = kicker(), modifier = Modifier.reveal(100))
         val text = fmt(count.value.toLong())
         Text(text, style = display(if (fmt(minutes).length > 6) 96.sp else 130.sp), maxLines = 1, modifier = Modifier.reveal(200))
-        Text("MINUTES", style = display(46.sp, ArtistTypography.extended), modifier = Modifier.reveal(400))
+        Text(unit.uppercase(), style = display(46.sp, ArtistTypography.extended), modifier = Modifier.reveal(400))
         Spacer(Modifier.height(28.dp))
         val hours = s.totalMs / 3_600_000.0
         Text(
@@ -623,7 +623,7 @@ private fun TopArtist(s: ReplayStory, modifier: Modifier) {
             )
             Spacer(Modifier.height(18.dp))
             Row(Modifier.reveal(1_200), horizontalArrangement = Arrangement.spacedBy(26.dp)) {
-                Stat(fmt(minutesOf(a.ms)), "minutes")
+                listenTotal(a.ms).let { (n, unit) -> Stat(fmt(n), unit) }
                 Stat(fmt(a.plays.toLong()), "plays")
                 Stat("${s.songs.count { it.artistName == a.artistName }}", "songs")
             }
@@ -650,7 +650,7 @@ private fun TopArtists(s: ReplayStory, modifier: Modifier) {
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f)) {
                     Text(a.artistName, style = body.copy(fontSize = if (i == 0) 24.sp else 20.sp, fontWeight = FontWeight.Bold), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text("${fmt(minutesOf(a.ms))} minutes", style = body.copy(fontSize = 14.sp, color = Color.White.copy(alpha = 0.75f)))
+                    Text(listenTime(a.ms), style = body.copy(fontSize = 14.sp, color = Color.White.copy(alpha = 0.75f)))
                 }
             }
         }
@@ -678,7 +678,7 @@ private fun TopSong(s: ReplayStory, modifier: Modifier) {
             Text(song.artistName, style = body.copy(fontSize = 20.sp), textAlign = TextAlign.Center, modifier = Modifier.reveal(900).padding(top = 6.dp))
             Spacer(Modifier.height(20.dp))
             Text(
-                "You played it ${song.plays} ${if (song.plays == 1) "time" else "times"}, for ${fmt(minutesOf(song.ms))} minutes.",
+                "You played it ${song.plays} ${if (song.plays == 1) "time" else "times"}, for ${listenTime(song.ms)}.",
                 style = body, textAlign = TextAlign.Center, modifier = Modifier.reveal(1_500),
             )
         }
@@ -697,7 +697,7 @@ private fun TopSongs(s: ReplayStory, modifier: Modifier) {
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f)) {
                     Text(song.title, style = body.copy(fontSize = 19.sp, fontWeight = FontWeight.Bold), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text("${song.artistName} · ${fmt(minutesOf(song.ms))} min", style = body.copy(fontSize = 14.sp, color = Color.White.copy(alpha = 0.75f)), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text("${song.artistName} · ${listenTime(song.ms)}", style = body.copy(fontSize = 14.sp, color = Color.White.copy(alpha = 0.75f)), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
@@ -738,7 +738,7 @@ private fun HabitsSlide(h: Habits, modifier: Modifier) {
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Fact("Favourite day", ReplayStats.weekdays[h.topWeekday], 1_200)
             if (h.longestStreak > 1) Fact("Longest streak", "${h.longestStreak} days in a row", 1_450)
-            h.biggestDay?.let { Fact("Biggest day", "${it.format(fmtDay)} · ${fmt(minutesOf(h.biggestDayMs))} minutes", 1_700) }
+            h.biggestDay?.let { Fact("Biggest day", "${it.format(fmtDay)} · ${listenTime(h.biggestDayMs)}", 1_700) }
         }
     }
 }
@@ -775,7 +775,7 @@ private fun Discovery(s: ReplayStory, modifier: Modifier) {
         }
         found.firstOrNull()?.let { a ->
             Text(
-                "Your favourite find: ${a.artistName}, with ${fmt(minutesOf(a.ms))} minutes.",
+                "Your favourite find: ${a.artistName}, with ${listenTime(a.ms)}.",
                 style = body, modifier = Modifier.reveal(1_500).padding(top = 22.dp),
             )
         }
@@ -840,8 +840,8 @@ private fun Summary(s: ReplayStory, modifier: Modifier, onReplay: () -> Unit, on
             Spacer(Modifier.height(16.dp))
             Row {
                 Column(Modifier.weight(1f)) {
-                    Text("MINUTES LISTENED", style = kicker(10.sp).copy(color = Color.White.copy(alpha = 0.75f)))
-                    Text(fmt(minutesOf(s.totalMs)), style = display(36.sp))
+                    Text("${listenTotal(s.totalMs).second.uppercase()} LISTENED", style = kicker(10.sp).copy(color = Color.White.copy(alpha = 0.75f)))
+                    Text(fmt(listenTotal(s.totalMs).first), style = display(36.sp))
                 }
                 s.genres.firstOrNull()?.let { (g, _) ->
                     Column(Modifier.weight(1f).padding(start = 12.dp)) {

@@ -77,6 +77,8 @@ class AppContainer(val app: Application) {
     val meta = MetaRepository(http, db.meta())
     val canvas = com.prism.music.data.canvas.CanvasRepository(http).apply {
         hiddenPrefs = app.getSharedPreferences("canvas_hidden", android.content.Context.MODE_PRIVATE)
+        savedPrefs = app.getSharedPreferences("canvas_saved", android.content.Context.MODE_PRIVATE)
+        useIndex(File(app.filesDir, "canvas_index.json"))
     }
     val videoSync by lazy { com.prism.music.playback.VideoSync(app, streamHttp, streams, scope) }
     /** Per-song lyric timing nudges, in ms (positive = lyrics earlier). Keyed by song id, plus ":video" in video mode. */
@@ -172,6 +174,8 @@ class AppContainer(val app: Application) {
     fun downloadDataSourceFactory(): DataSource.Factory =
         ResolvingDataSource.Factory(OkHttpDataSource.Factory(streamHttp)) { spec -> resolveAudio(spec, false) }
 
+    /** Animated-cover clips on the phone: recently played, and saved (from the player, by album, or with downloads). */
+    val canvasStore by lazy { com.prism.music.data.canvas.CanvasStore(app, http, canvas, ytm, databaseProvider, scope) }
     fun songCacheBytes(): Long = runCatching { playerCache.cacheSpace }.getOrDefault(0)
 
     fun clearSongCache() {

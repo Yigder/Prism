@@ -130,6 +130,8 @@ data class AppSettings(
     val lyricsOnPlayer: Boolean = true,
     val lyricsOrder: List<LyricsSource> = LyricsSource.entries.toList(),
     val preferSynced: Boolean = true,
+    /** Pass over sources whose lyrics star out swear words when another has them in full. */
+    val skipCensored: Boolean = true,
     val lyricsScale: Float = 1f,
     /** Lyrics on Android Auto's player (the car's Lyrics button flips this too). */
     val carLyrics: Boolean = true,
@@ -163,6 +165,8 @@ data class AppSettings(
     // Home
     val homeLayout: List<HomeSectionConfig> = HomeSections.defaults,
     val autoAddSections: Boolean = true,
+    /** Replay shows listening time as hours and minutes (20h 4m) instead of minutes (1,204 min). */
+    val replayHours: Boolean = false,
 ) {
     val isLoggedIn: Boolean get() = cookie.contains("SAPISID")
 }
@@ -200,6 +204,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val lyricsOnPlayer = booleanPreferencesKey("lyrics_on_player")
         val lyricsOrder = stringPreferencesKey("lyrics_order")
         val preferSynced = booleanPreferencesKey("prefer_synced")
+        val skipCensored = booleanPreferencesKey("skip_censored")
         val lyricsScale = floatPreferencesKey("lyrics_scale")
         val carLyrics = booleanPreferencesKey("car_lyrics")
         val carLyricsStyle = stringPreferencesKey("car_lyrics_style")
@@ -221,6 +226,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val eq = stringPreferencesKey("eq")
         val homeLayout = stringPreferencesKey("home_layout")
         val autoAddSections = booleanPreferencesKey("auto_add_sections")
+        val replayHours = booleanPreferencesKey("replay_hours")
     }
 
     private inline fun <reified E : Enum<E>> Preferences.enum(key: Preferences.Key<String>, def: E): E =
@@ -265,6 +271,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 merged
             } ?: d.lyricsOrder,
             preferSynced = p[K.preferSynced] ?: d.preferSynced,
+            skipCensored = p[K.skipCensored] ?: d.skipCensored,
             lyricsScale = p[K.lyricsScale] ?: d.lyricsScale,
             carLyrics = p[K.carLyrics] ?: d.carLyrics,
             carLyricsStyle = p.enum(K.carLyricsStyle, d.carLyricsStyle),
@@ -288,6 +295,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 runCatching { json.decodeFromString<List<HomeSectionConfig>>(it) }.getOrNull()
             } ?: d.homeLayout,
             autoAddSections = p[K.autoAddSections] ?: d.autoAddSections,
+            replayHours = p[K.replayHours] ?: d.replayHours,
         )
     }
 
@@ -350,6 +358,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     fun setLyricsOnPlayer(v: Boolean) = edit { it[K.lyricsOnPlayer] = v }
     fun setLyricsOrder(v: List<LyricsSource>) = edit { it[K.lyricsOrder] = v.joinToString(",") { s -> s.name } }
     fun setPreferSynced(v: Boolean) = edit { it[K.preferSynced] = v }
+    fun setSkipCensored(v: Boolean) = edit { it[K.skipCensored] = v }
     fun setLyricsScale(v: Float) = edit { it[K.lyricsScale] = v }
     fun setCarLyrics(v: Boolean) = edit { it[K.carLyrics] = v }
     fun setCarLyricsStyle(v: CarLyricsStyle) = edit { it[K.carLyricsStyle] = v.name }
@@ -373,4 +382,5 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         it[K.homeLayout] = json.encodeToString(kotlinx.serialization.builtins.ListSerializer(HomeSectionConfig.serializer()), v)
     }
     fun setAutoAddSections(v: Boolean) = edit { it[K.autoAddSections] = v }
+    fun setReplayHours(v: Boolean) = edit { it[K.replayHours] = v }
 }

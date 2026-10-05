@@ -45,6 +45,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -95,7 +96,17 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
     val c = LocalContainer.current
     val nav = LocalNavigator.current
     val settings = LocalAppSettings.current
-    val home = rememberLoad("home") { c.ytm.fullHome().also { homeShelfCache.value = it } }
+    val layoutNow by rememberUpdatedState(settings.homeLayout)
+    val home = rememberLoad("home") {
+        // YouTube's personalised feed reshuffles per load, so pinned shelves (e.g. "Mixed for you")
+        // can land on a later page or drop out entirely. Page further for them, and keep the last
+        // copy we saw rather than silently hiding a section the user turned on.
+        val wanted = layoutNow.filter { it.visible && it.key.startsWith(HomeSections.YT_PREFIX) }.map { it.key }.toSet()
+        val fresh = c.ytm.fullHome(pages = 3, maxPages = 8) { got -> wanted.all { k -> got.any { shelfKey(it.title) == k } } }
+        val freshKeys = fresh.map { shelfKey(it.title) }.toSet()
+        val kept = homeShelfCache.value.filter { shelfKey(it.title).let { k -> k in wanted && k !in freshKeys } }
+        (fresh + kept).also { homeShelfCache.value = it }
+    }
     val moods = rememberLoad("moods") { c.taste.rank(runCatching { c.ytm.moodsAndGenres() }.getOrDefault(emptyList())) }
     val recent by c.library.recent.collectAsState()
     val liked by c.library.liked.collectAsState()
@@ -324,11 +335,12 @@ private fun HeroRow(items: List<BrowseItem>, open: (BrowseItem) -> Unit) {
 private fun ReplayTeaser() {
     val c = LocalContainer.current
     val nav = LocalNavigator.current
-    val minutes by produceState(-1L) {
+    val ms by produceState(-1L) {
         val start = Calendar.getInstance().apply { set(Calendar.DAY_OF_YEAR, 1); set(Calendar.HOUR_OF_DAY, 0) }.timeInMillis
-        value = c.db.plays().totalMs(start, System.currentTimeMillis()) / 60_000
+        value = c.db.plays().totalMs(start, System.currentTimeMillis())
     }
-    if (minutes < 1) return
+    if (ms < 60_000) return
+    val (total, unit) = listenTotal(ms)
     val year = remember { Calendar.getInstance().get(Calendar.YEAR) }
     Box(
         Modifier.padding(16.dp).fillMaxWidth().height(150.dp).clip(RoundedCornerShape(26.dp))
@@ -338,7 +350,7 @@ private fun ReplayTeaser() {
     ) {
         Column(Modifier.align(Alignment.BottomStart)) {
             Text("REPLAY $year", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black)
-            Text("$minutes minutes", color = Color.White, style = MaterialTheme.typography.displaySmall)
+            Text("%,d $unit".format(total), Modifier.toggleListenUnit(), color = Color.White, style = MaterialTheme.typography.displaySmall)
             Text("See your top songs, artists and genres", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.bodyMedium)
         }
         Icon(Icons.Rounded.AutoAwesome, null, tint = Color.White, modifier = Modifier.align(Alignment.TopEnd))

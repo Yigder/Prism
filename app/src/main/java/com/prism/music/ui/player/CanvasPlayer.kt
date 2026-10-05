@@ -42,7 +42,10 @@ import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import com.prism.music.data.canvas.CANVAS_MAX_SIDE
 import com.prism.music.data.canvas.CanvasArtwork
+import com.prism.music.ui.theme.LocalContainer
 
 /**
  * Plays a canvas clip — silent, looping, following the transport — on a
@@ -54,6 +57,8 @@ import com.prism.music.data.canvas.CanvasArtwork
 @Composable
 fun CanvasPlayer(
     canvas: CanvasArtwork,
+    /** The song's cover is saved: what plays is kept on the phone for good. */
+    saved: Boolean,
     isPlaying: Boolean,
     modifier: Modifier = Modifier,
     /** Share of the height, from the bottom, over which the clip dissolves. */
@@ -63,16 +68,29 @@ fun CanvasPlayer(
     onCoverChanged: (Float) -> Unit = {},
 ) {
     val context = LocalContext.current
+    val c = LocalContainer.current
     var url by remember(canvas) { mutableStateOf(canvas.url) }
     var rendered by remember(canvas) { mutableStateOf(false) }
     var aspect by remember(canvas) { mutableFloatStateOf(0f) }
     var texture by remember { mutableStateOf<TextureView?>(null) }
 
+    val keep by rememberUpdatedState(saved)
+    val clip by rememberUpdatedState(url)
     val player = remember {
-        ExoPlayer.Builder(context).build().apply {
+        // Clips come from the phone when they've played before (or were saved), else stream and are kept.
+        val sources = DefaultMediaSourceFactory(c.canvasStore.dataSourceFactory({ clip }) { keep })
+        ExoPlayer.Builder(context).setMediaSourceFactory(sources).build().apply {
             volume = 0f
             repeatMode = Player.REPEAT_MODE_ONE
-            trackSelectionParameters = trackSelectionParameters.buildUpon().setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, true).build()
+            // Always the same rendition (H.264, the best up to CANVAS_MAX_SIDE), so what was kept last
+            // time, or saved ahead by CanvasStore (which picks the same one), is what plays.
+            trackSelectionParameters = trackSelectionParameters.buildUpon()
+                .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, true)
+                .setMaxVideoSize(CANVAS_MAX_SIDE, CANVAS_MAX_SIDE)
+                .clearViewportSizeConstraints()
+                .setPreferredVideoMimeType(MimeTypes.VIDEO_H264)
+                .setForceHighestSupportedBitrate(true)
+                .build()
         }
     }
     DisposableEffect(player) {

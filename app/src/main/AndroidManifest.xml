@@ -17,6 +17,8 @@
         <intent>
             <action android:name="android.media.action.DISPLAY_AUDIO_EFFECT_CONTROL_PANEL" />
         </intent>
+        <!-- Android Auto's "is the phone projecting to a car right now" provider. -->
+        <provider android:authorities="androidx.car.app.connection" />
     </queries>
 
     <application

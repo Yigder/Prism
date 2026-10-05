@@ -121,7 +121,7 @@ fun LyricsTimingSheet(onDismiss: () -> Unit) {
     val videoMode by pc.videoMode.collectAsState()
     fun fmt(ms: Long) = (if (ms > 0) "+" else if (ms < 0) "−" else "") + "%.1f s".format(kotlin.math.abs(ms) / 1000f)
     fun nudge(d: Long) = pc.setLyricOffset((offset + d).coerceIn(-15_000, 15_000))
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color(0xFF1C1C1E), contentColor = Color.White) {
+    com.prism.music.ui.components.PrismSheet(onDismiss, containerColor = Color(0xFF1C1C1E), contentColor = Color.White) {
         Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 32.dp)) {
             Text("Lyrics timing", style = MaterialTheme.typography.titleLarge)
             Text(

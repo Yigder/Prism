@@ -36,6 +36,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
@@ -127,6 +129,8 @@ class LyricsState(
     var loading by mutableStateOf(true)
     var source by mutableStateOf<LyricsSource?>(null)
     val providers = mutableStateMapOf<LyricsSource, ProviderState>()
+    /** Sources whose lyrics star out swear words. */
+    val censoredSources = mutableStateMapOf<LyricsSource, Boolean>()
     /** Every answer already seen for this song, so switching back is instant. */
     private val found = HashMap<LyricsSource, Lyrics?>()
     private var selectJob: Job? = null
@@ -171,10 +175,21 @@ class LyricsState(
         }
     }
 
-    /** Fetches the current source's lyrics again, replacing the saved copy. */
+    /** Fetches the current source's lyrics again, replacing the saved copy (or, with none found yet, asks every source again). */
     fun redownload() {
-        val src = source ?: return
         selectJob?.cancel()
+        val src = source ?: run {
+            loading = true
+            selectJob = scope.launch {
+                val l = try { repo.auto(song, force = true) } catch (e: CancellationException) { throw e } catch (e: Exception) { null }
+                found.clear(); providers.clear()
+                lyrics = l
+                source = l?.source
+                l?.let { found[it.source] = it; providers[it.source] = it.state() }
+                loading = false
+            }
+            return
+        }
         loading = true
         providers[src] = ProviderState.LOADING
         selectJob = scope.launch {
@@ -203,10 +218,13 @@ class LyricsState(
         }
     }
 
-    private fun Lyrics?.state() = when {
-        this == null -> ProviderState.NONE
-        synced -> ProviderState.FOUND_SYNCED
-        else -> ProviderState.FOUND_PLAIN
+    private fun Lyrics?.state(): ProviderState {
+        if (this != null) censoredSources[source] = censored
+        return when {
+            this == null -> ProviderState.NONE
+            synced -> ProviderState.FOUND_SYNCED
+            else -> ProviderState.FOUND_PLAIN
+        }
     }
 }
 
@@ -616,15 +634,38 @@ fun LyricsProviderSheet(state: LyricsState, onDismiss: () -> Unit) {
     val settings by c.settings.flow.collectAsState()
     val scope = rememberCoroutineScope()
     LaunchedEffect(state.song.id) { state.probeAll(settings.lyricsOrder) }
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color(0xFF1C1C1E), contentColor = Color.White) {
-        Text("Lyrics source", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
-        Column(Modifier.padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    com.prism.music.ui.components.PrismSheet(onDismiss, containerColor = Color(0xFF1C1C1E), contentColor = Color.White) { close ->
+        Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Lyrics source", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+            // Up top, where it can't scroll out of reach.
+            state.source?.let { src ->
+                Row(
+                    Modifier.clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.12f))
+                        .clickable { state.redownload(); close {} }
+                        .padding(start = 12.dp, end = 14.dp, top = 8.dp, bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Rounded.Refresh, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Re-download", style = MaterialTheme.typography.labelLarge)
+                }
+            }
+        }
+        state.source?.let { src ->
+            Text(
+                "Re-download fetches ${src.label}'s lyrics again and replaces the saved copy",
+                style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.45f),
+                modifier = Modifier.padding(horizontal = 24.dp),
+            )
+        }
+        Column(Modifier.padding(top = 6.dp, bottom = 28.dp).verticalScroll(rememberScrollState())) {
             settings.lyricsOrder.forEach { src ->
                 val st = state.providers[src] ?: ProviderState.UNKNOWN
+                val starred = state.censoredSources[src] == true
                 Row(
                     Modifier.fillMaxWidth()
-                        .clickable(enabled = st != ProviderState.NONE) { state.select(src); onDismiss() }
-                        .padding(horizontal = 24.dp, vertical = 14.dp),
+                        .clickable(enabled = st != ProviderState.NONE) { state.select(src); close {} }
+                        .padding(horizontal = 24.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
@@ -635,28 +676,13 @@ fun LyricsProviderSheet(state: LyricsState, onDismiss: () -> Unit) {
                                 ProviderState.FOUND_SYNCED -> "Time-synced"
                                 ProviderState.FOUND_PLAIN -> "Plain text"
                                 ProviderState.NONE -> "Not available for this song"
-                            },
+                            } + if (starred && st != ProviderState.NONE) " · Censored" else "",
                             style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.55f),
                         )
                     }
                     when {
                         state.source == src && state.lyrics != null -> Icon(Icons.Rounded.Check, "Selected", tint = Color.White)
                         st == ProviderState.LOADING -> CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                    }
-                }
-            }
-            state.source?.let { src ->
-                Row(
-                    Modifier.fillMaxWidth().padding(top = 8.dp)
-                        .clickable { state.redownload(); onDismiss() }
-                        .padding(horizontal = 24.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Icons.Rounded.Refresh, null, tint = Color.White)
-                    Spacer(Modifier.width(16.dp))
-                    Column {
-                        Text("Download again from ${src.label}", style = MaterialTheme.typography.bodyLarge)
-                        Text("Replaces the saved lyrics for this song", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.55f))
                     }
                 }
             }
