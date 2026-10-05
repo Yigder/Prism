@@ -48,7 +48,8 @@ class YouTubeMusic(private val api: InnerTube) {
 
     suspend fun home(continuation: String? = null): HomeFeed {
         val res = if (continuation == null) browse("FEmusic_home") else continueBrowse(continuation)
-        return HomeFeed(Parser.shelves(res), Parser.continuation(res.obj("contents") ?: res.obj("continuationContents")))
+        // Continuation pages carry a (stale) "contents" block too; the next token lives in "continuationContents".
+        return HomeFeed(Parser.shelves(res), Parser.continuation(res.obj("continuationContents") ?: res.obj("contents")))
     }
 
     /**
