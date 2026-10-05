@@ -89,7 +89,6 @@ class AppContainer(val app: Application) {
     init {
         // Misses are cheap to re-check and may have been wrong (e.g. a provider was down).
         scope.launch(Dispatchers.IO) { runCatching { db.lyrics().clearMisses() } }
-        scope.launch { if (settings.current.losslessLocal) localLossless.scan() }
     }
     val queue = QueueState()
     val nerdStats = MutableStateFlow(NerdStats())
@@ -108,8 +107,10 @@ class AppContainer(val app: Application) {
     }
 
     val library = LibraryRepository(this)
-    // Lazy: the init block's background scan can run before this line is reached.
-    val localLossless by lazy { com.prism.music.data.local.LocalLossless(app) }
+    val localLossless = com.prism.music.data.local.LocalLossless(app)
+    // Started only after localLossless exists: a launch from an earlier init block can run on a
+    // background thread before this property is assigned.
+    init { scope.launch { if (settings.current.losslessLocal) localLossless.scan() } }
     val taste = com.prism.music.data.TasteRepository(this)
     val downloads by lazy { DownloadRepository(app, this, scope) }
     val covers by lazy { com.prism.music.data.PlaylistCovers(app) }
