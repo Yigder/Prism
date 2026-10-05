@@ -108,7 +108,8 @@ class AppContainer(val app: Application) {
     }
 
     val library = LibraryRepository(this)
-    val localLossless = com.prism.music.data.local.LocalLossless(app)
+    // Lazy: the init block's background scan can run before this line is reached.
+    val localLossless by lazy { com.prism.music.data.local.LocalLossless(app) }
     val taste = com.prism.music.data.TasteRepository(this)
     val downloads by lazy { DownloadRepository(app, this, scope) }
     val covers by lazy { com.prism.music.data.PlaylistCovers(app) }
