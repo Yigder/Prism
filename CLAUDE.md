@@ -39,6 +39,14 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
 - `*.apk`, `local.properties`, keystores are gitignored.
 
 ## Current status / Next steps
-- v1.0.0 (versionCode 1) committed 2026-10-04.
+- **v1.1.0 (versionCode 2) is the first official release** — published 2026-10-06 as GitHub "Latest",
+  tag `v1.1.0` → `70b6251` (UX rework), asset `Prism.apk`. v1.0.0 (2026-10-04) is now marked pre-release.
+- Release flow: build `assembleRelease`, upload the APK as `Prism.apk` (README links to
+  `releases/latest/download/Prism.apk`), notes include the Android Auto "parked/passengers only" warning.
+- README screenshots (`docs/screenshots/`) were retaken for 1.1 on a Pixel 10 Pro XL with personal info
+  and the mini player blurred (no way to hide the mini player in release builds). Keep blurring on retakes.
+- README has a "Credits and inspiration" section (Apple Music, BitChord, Spotify Wrapped, lyric/canvas
+  sources, libraries) — update it when borrowing new ideas or sources.
+- On the user's Wi-Fi, `gh` API calls fail (`invalid character '<'`); git push works. Ask them to switch to hotspot.
 - An untracked `Prism/` subfolder duplicates the project (with build output and logs) — decide whether to delete it.
 - Next steps: _(fill in)_
