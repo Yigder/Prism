@@ -501,6 +501,15 @@ class PlaybackService : MediaLibraryService(), Player.Listener {
         session.setMediaButtonPreferences(buttons)
     }
 
+    /** A fresh shuffle order each time shuffle goes on, current song first. */
+    private fun reshuffle() {
+        val n = player.mediaItemCount
+        if (n < 2) return
+        val cur = player.currentMediaItemIndex.coerceIn(0, n - 1)
+        val order = intArrayOf(cur) + (0 until n).filter { it != cur }.shuffled().toIntArray()
+        player.setShuffleOrder(androidx.media3.exoplayer.source.ShuffleOrder.DefaultShuffleOrder(order, System.nanoTime()))
+    }
+
     /** Swaps everything after the current song for a radio station seeded by it. */
     private fun startRadio() {
         val song = player.currentMediaItem?.toSong() ?: return
@@ -613,7 +622,10 @@ class PlaybackService : MediaLibraryService(), Player.Listener {
         ): ListenableFuture<SessionResult> {
             when (customCommand.customAction) {
                 likeCommand.customAction -> player.currentMediaItem?.toSong()?.let { c.library.toggleLike(it) }
-                shuffleCommand.customAction -> player.shuffleModeEnabled = !player.shuffleModeEnabled
+                shuffleCommand.customAction -> {
+                    if (!player.shuffleModeEnabled) reshuffle()
+                    player.shuffleModeEnabled = !player.shuffleModeEnabled
+                }
                 repeatCommand.customAction -> player.repeatMode = when (player.repeatMode) {
                     Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
                     Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
@@ -722,7 +734,8 @@ class PlaybackService : MediaLibraryService(), Player.Listener {
                     c.queue.source.value = QueueSource(QueueKind.PLAYLIST, title)
                     c.queue.autoplayStart.value = -1
                     player.shuffleModeEnabled = true
-                    return@future MediaSession.MediaItemsWithStartPosition(list.map { it.toMediaItem() }, list.indices.random(), C.TIME_UNSET)
+                    // Shuffled here too, so each "Shuffle play" is a new order rather than the player's last one.
+                    return@future MediaSession.MediaItemsWithStartPosition(list.shuffled().map { it.toMediaItem() }, 0, C.TIME_UNSET)
                 }
             }
             // One song tapped in a list: play the list from that song.

@@ -38,6 +38,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -57,6 +59,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.prism.music.data.prefs.HomeSectionConfig
 import com.prism.music.data.prefs.HomeSections
+import com.prism.music.data.prefs.HomeShortcut
 import com.prism.music.data.prefs.SectionStyle
 import com.prism.music.ui.LocalNavigator
 import com.prism.music.ui.theme.LocalAppSettings
@@ -107,6 +110,8 @@ fun CatalogueScreen(bottomPadding: Dp) {
                     Switch(settings.autoAddSections, { c.settings.setAutoAddSections(it) })
                 }
             }
+            item { CatalogueHeader("Greeting & shortcuts", "The headline at the top of Home and the tiles under it") }
+            item { GreetingEditor() }
             item { CatalogueHeader("On your Home", "${layout.count { it.visible }} sections · tap a style to change how it looks") }
             itemsIndexed(layout, key = { _, s -> s.key }) { i, cfg ->
                 LayoutRow(
@@ -146,6 +151,71 @@ fun CatalogueScreen(bottomPadding: Dp) {
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun GreetingEditor() {
+    val c = LocalContainer.current
+    val settings = LocalAppSettings.current
+    var text by remember { mutableStateOf(settings.greetingText) }
+    Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        OutlinedTextField(
+            text, { text = it; c.settings.setGreetingText(it) },
+            Modifier.fillMaxWidth(),
+            label = { Text("Greeting") },
+            placeholder = { Text("Good morning / afternoon / evening") },
+            supportingText = { Text("Leave empty for a greeting that follows the time of day") },
+            singleLine = true,
+        )
+        Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Show account name", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+            Switch(settings.greetingShowName, { c.settings.setGreetingShowName(it) })
+        }
+        Text("Shortcuts · tap to add or remove, in the order you pick them", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 4.dp))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            HomeShortcut.entries.forEach { sc ->
+                val on = sc in settings.homeShortcuts
+                FilterChip(
+                    on,
+                    { c.settings.setHomeShortcuts(if (on) settings.homeShortcuts - sc else settings.homeShortcuts + sc) },
+                    { Text(if (on) "${settings.homeShortcuts.indexOf(sc) + 1}. ${sc.label}" else sc.label) },
+                )
+            }
+        }
+        val library by c.library.playlists.collectAsState()
+        val playlists = remember(library) { library.filterIsInstance<com.prism.music.data.model.PlaylistItem>() }
+        Text("Playlists · tap to pin to Home", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 4.dp))
+        if (playlists.isEmpty() && settings.homePlaylists.isEmpty()) Text(
+            "Your playlists show up here once your library has loaded",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp),
+        )
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Pinned ones first (kept even if they've left the library), then the rest of the library.
+            val pinnedIds = settings.homePlaylists.map { it.id }
+            val options = settings.homePlaylists.map { it.id to it.title } +
+                playlists.filter { it.id !in pinnedIds }.map { it.id to it.title }
+            options.forEach { (id, title) ->
+                val on = id in pinnedIds
+                FilterChip(
+                    on,
+                    {
+                        c.settings.setHomePlaylists(
+                            if (on) settings.homePlaylists.filterNot { it.id == id }
+                            else settings.homePlaylists + playlists.first { it.id == id }.let { com.prism.music.data.prefs.PinnedPlaylist(it.id, it.title, it.thumbnail) }
+                        )
+                    },
+                    { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                )
+            }
+        }
+        Text("Recently played tiles", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 4.dp))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            (0..6).forEach { n ->
+                FilterChip(settings.homeRecentTiles == n, { c.settings.setHomeRecentTiles(n) }, { Text(if (n == 0) "None" else "$n") })
             }
         }
     }

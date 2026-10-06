@@ -29,7 +29,12 @@ import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Dashboard
 import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.LibraryMusic
+import androidx.compose.material.icons.rounded.Mood
+import androidx.compose.material.icons.rounded.Search
+import com.prism.music.data.prefs.HomeShortcut
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -192,14 +197,16 @@ private fun HomeTopBar() {
     val nav = LocalNavigator.current
     val settings = LocalAppSettings.current
     val hour = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
-    val greeting = when (hour) { in 5..11 -> "Good morning"; in 12..17 -> "Good afternoon"; else -> "Good evening" }
+    val greeting = settings.greetingText.trim().ifBlank {
+        when (hour) { in 5..11 -> "Good morning"; in 12..17 -> "Good afternoon"; else -> "Good evening" }
+    }
     Row(
         Modifier.fillMaxWidth().statusBarsPadding().padding(start = 20.dp, end = 12.dp, top = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
             Text(greeting, style = MaterialTheme.typography.headlineMedium)
-            if (settings.accountName.isNotBlank()) Text(
+            if (settings.greetingShowName && settings.accountName.isNotBlank()) Text(
                 settings.accountName, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -218,18 +225,32 @@ private fun HomeTopBar() {
 private fun GreetingSection(recent: List<Song>) {
     val nav = LocalNavigator.current
     val c = LocalContainer.current
+    val settings = LocalAppSettings.current
     data class Tile(val title: String, val icon: ImageVector?, val image: String?, val onClick: () -> Unit)
     val tiles = buildList {
-        add(Tile("Liked songs", Icons.Rounded.Favorite, null) { nav.go(Routes.liked()) })
-        add(Tile("Downloads", Icons.Rounded.DownloadDone, null) { nav.go(Routes.DOWNLOADS) })
-        add(Tile("Replay", Icons.Rounded.History, null) { nav.go(Routes.REPLAY) })
-        recent.distinctBy { it.album?.id ?: it.id }.take(3).forEach { s ->
+        settings.homeShortcuts.forEach { sc ->
+            val (icon, route) = when (sc) {
+                HomeShortcut.LIKED -> Icons.Rounded.Favorite to Routes.liked()
+                HomeShortcut.DOWNLOADS -> Icons.Rounded.DownloadDone to Routes.DOWNLOADS
+                HomeShortcut.REPLAY -> Icons.Rounded.History to Routes.REPLAY
+                HomeShortcut.LIBRARY -> Icons.Rounded.LibraryMusic to Routes.LIBRARY
+                HomeShortcut.MOODS -> Icons.Rounded.Mood to Routes.MOODS
+                HomeShortcut.SEARCH -> Icons.Rounded.Search to Routes.SEARCH
+                HomeShortcut.EQUALIZER -> Icons.Rounded.GraphicEq to Routes.EQ
+            }
+            add(Tile(sc.label, icon, null) { nav.go(route) })
+        }
+        settings.homePlaylists.forEach { pl ->
+            add(Tile(pl.title, null, c.covers.art(pl.id, pl.thumbnail)) { nav.go(Routes.playlist(pl.id)) })
+        }
+        recent.distinctBy { it.album?.id ?: it.id }.take(settings.homeRecentTiles).forEach { s ->
             add(Tile(s.album?.title ?: s.title, null, s.thumbnail) {
                 val albumId = s.album?.id
                 if (albumId != null) nav.go(Routes.album(albumId)) else c.player.playSingle(s)
             })
         }
     }
+    if (tiles.isEmpty()) return
     Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         tiles.chunked(2).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -340,7 +361,7 @@ private fun ReplayTeaser() {
         value = c.db.plays().totalMs(start, System.currentTimeMillis())
     }
     if (ms < 60_000) return
-    val (total, unit) = listenTotal(ms)
+    val total = listenTotal(ms)
     val year = remember { Calendar.getInstance().get(Calendar.YEAR) }
     Box(
         Modifier.padding(16.dp).fillMaxWidth().height(150.dp).clip(RoundedCornerShape(26.dp))
@@ -350,7 +371,7 @@ private fun ReplayTeaser() {
     ) {
         Column(Modifier.align(Alignment.BottomStart)) {
             Text("REPLAY $year", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black)
-            Text("%,d $unit".format(total), Modifier.toggleListenUnit(), color = Color.White, style = MaterialTheme.typography.displaySmall)
+            Text(total.full,Modifier.toggleListenUnit(), color = Color.White, style = MaterialTheme.typography.displaySmall)
             Text("See your top songs, artists and genres", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.bodyMedium)
         }
         Icon(Icons.Rounded.AutoAwesome, null, tint = Color.White, modifier = Modifier.align(Alignment.TopEnd))

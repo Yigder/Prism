@@ -31,6 +31,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -55,35 +57,30 @@ fun codecName(codec: String): String = when {
 
 fun sampleRateText(hz: Int): String = if (hz <= 0) "—" else if (hz % 1000 == 0) "${hz / 1000} kHz" else "%.1f kHz".format(hz / 1000f)
 
+/**
+ * Stats for nerds as one of the player's panels: the artwork tucks into the header, as it does for
+ * lyrics and the queue, and the stats sit on the player's own backdrop below it.
+ */
 @Composable
-fun NerdStatsOverlay(onClose: () -> Unit) {
+fun NerdStatsPanel(modifier: Modifier = Modifier) {
     val stats by LocalContainer.current.nerdStats.collectAsState()
-    var details by remember { mutableStateOf(false) }
-    Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Color.Black.copy(alpha = 0.72f)).padding(14.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Stats for nerds", color = Color.White, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-            IconButton(onClick = onClose, Modifier.size(28.dp)) { Icon(Icons.Rounded.Close, "Close", tint = Color.White) }
-        }
+    Column(modifier.verticalScroll(rememberScrollState()).padding(bottom = 12.dp)) {
+        Text("Stats for nerds", color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.labelLarge)
+        Spacer(Modifier.height(10.dp))
         // Nothing has been decoded yet (e.g. a restored queue that hasn't started).
         if (stats.codec.isBlank() && stats.streamBitrateKbps <= 0) {
-            Text("Play the song to see its audio details", color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = 8.dp))
+            Text("Play the song to see its audio details", color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.bodyMedium)
             return@Column
         }
         // The essentials, big: what the audio is.
-        Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-            StatTile("Codec", codecName(stats.codec))
-            StatTile("Bitrate", stats.streamBitrateKbps.takeIf { it > 0 }?.let { "$it kbps" } ?: "—")
-            StatTile("Sample rate", sampleRateText(stats.sampleRate))
-            StatTile("Source", stats.source.ifBlank { "—" })
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatTile("Codec", codecName(stats.codec), Modifier.weight(1f))
+            StatTile("Bitrate", stats.streamBitrateKbps.takeIf { it > 0 }?.let { "$it kbps" } ?: "—", Modifier.weight(1f))
+            StatTile("Sample rate", sampleRateText(stats.sampleRate), Modifier.weight(1f))
         }
-        Text(
-            if (details) "Hide details" else "More details",
-            color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.labelMedium,
-            modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable { details = !details }.padding(vertical = 4.dp, horizontal = 2.dp),
-        )
-        if (!details) return@Column
+        Spacer(Modifier.height(8.dp))
+        StatTile("Source", stats.source.ifBlank { "—" }, Modifier.fillMaxWidth())
+        Spacer(Modifier.height(16.dp))
         val rows = listOf(
             "Video ID" to stats.videoId,
             "Source" to stats.source,
@@ -100,9 +97,9 @@ fun NerdStatsOverlay(onClose: () -> Unit) {
             "Session" to "${stats.audioSessionId} · underruns ${stats.underruns}",
         ) + if (stats.videoResolution.isNotBlank()) listOf("Video" to "${stats.videoResolution} · ${stats.videoCodec} · dropped ${stats.droppedFrames}") else emptyList()
         rows.forEach { (k, v) ->
-            Row {
-                Text(k, style = MonoStyle, color = Color.White.copy(alpha = 0.55f), modifier = Modifier.width(92.dp))
-                Text(v.ifBlank { "—" }, style = MonoStyle, color = Color.White)
+            Row(Modifier.padding(vertical = 3.dp)) {
+                Text(k, style = MonoStyle, color = Color.White.copy(alpha = 0.5f), modifier = Modifier.width(92.dp))
+                Text(v.ifBlank { "—" }, style = MonoStyle, color = Color.White.copy(alpha = 0.9f))
             }
         }
     }
@@ -179,10 +176,10 @@ fun LyricsTimingSheet(onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun StatTile(label: String, value: String) {
-    Column {
+private fun StatTile(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(modifier.clip(RoundedCornerShape(14.dp)).background(Color.White.copy(alpha = 0.10f)).padding(horizontal = 12.dp, vertical = 10.dp)) {
         Text(label, color = Color.White.copy(alpha = 0.55f), style = MaterialTheme.typography.labelSmall)
-        Text(value, color = Color.White, style = MaterialTheme.typography.titleMedium)
+        Text(value, color = Color.White, style = MaterialTheme.typography.titleMedium, maxLines = 2)
     }
 }
 

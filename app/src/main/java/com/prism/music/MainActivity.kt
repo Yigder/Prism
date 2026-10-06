@@ -241,7 +241,7 @@ private fun PrismRoot(deepLink: MutableStateFlow<Uri?>) {
                         composable(Routes.EQ) { EqualizerScreen(bottomPadding) }
                         composable(Routes.CATALOGUE) { CatalogueScreen(bottomPadding) }
                         composable(Routes.MOODS) { com.prism.music.ui.screens.MoodsScreen(bottomPadding) }
-                        composable(Routes.DOWNLOADS) { com.prism.music.ui.screens.DownloadsScreen(bottomPadding) }
+                        composable(Routes.DOWNLOADS) { CollectionScreen(CollectionType.DOWNLOADS, "downloads", null, bottomPadding) }
                         composable(Routes.LOGIN) {
                             LoginScreen(
                                 onDone = goHome,

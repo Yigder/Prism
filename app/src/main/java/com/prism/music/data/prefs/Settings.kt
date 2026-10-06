@@ -47,6 +47,16 @@ enum class LyricsSource(val label: String) {
     LYRICSOVH("Lyrics.ovh"),
 }
 
+/** Tiles in Home's greeting section. */
+enum class HomeShortcut(val label: String) {
+    LIKED("Liked songs"), DOWNLOADS("Downloads"), REPLAY("Replay"), LIBRARY("Library"),
+    MOODS("Moods & genres"), SEARCH("Search"), EQUALIZER("Equalizer"),
+}
+
+/** A playlist pinned to Home's greeting tiles. */
+@Serializable
+data class PinnedPlaylist(val id: String, val title: String, val thumbnail: String? = null)
+
 enum class SectionStyle(val label: String) { CAROUSEL("Carousel"), GRID("Grid"), LIST("List"), HERO("Spotlight") }
 
 @Serializable
@@ -167,6 +177,14 @@ data class AppSettings(
     val autoAddSections: Boolean = true,
     /** Replay shows listening time as hours and minutes (20h 4m) instead of minutes (1,204 min). */
     val replayHours: Boolean = false,
+    /** Home's headline; blank means good morning / afternoon / evening. */
+    val greetingText: String = "",
+    val greetingShowName: Boolean = true,
+    val homeShortcuts: List<HomeShortcut> = listOf(HomeShortcut.LIKED, HomeShortcut.DOWNLOADS, HomeShortcut.REPLAY),
+    /** Recently played albums added after the shortcuts. */
+    val homeRecentTiles: Int = 3,
+    /** Playlists shown as tiles after the shortcuts. */
+    val homePlaylists: List<PinnedPlaylist> = emptyList(),
 ) {
     val isLoggedIn: Boolean get() = cookie.contains("SAPISID")
 }
@@ -227,6 +245,11 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val homeLayout = stringPreferencesKey("home_layout")
         val autoAddSections = booleanPreferencesKey("auto_add_sections")
         val replayHours = booleanPreferencesKey("replay_hours")
+        val greetingText = stringPreferencesKey("greeting_text")
+        val greetingShowName = booleanPreferencesKey("greeting_show_name")
+        val homeShortcuts = stringPreferencesKey("home_shortcuts")
+        val homeRecentTiles = intPreferencesKey("home_recent_tiles")
+        val homePlaylists = stringPreferencesKey("home_playlists")
     }
 
     private inline fun <reified E : Enum<E>> Preferences.enum(key: Preferences.Key<String>, def: E): E =
@@ -296,6 +319,13 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             } ?: d.homeLayout,
             autoAddSections = p[K.autoAddSections] ?: d.autoAddSections,
             replayHours = p[K.replayHours] ?: d.replayHours,
+            greetingText = p[K.greetingText] ?: d.greetingText,
+            greetingShowName = p[K.greetingShowName] ?: d.greetingShowName,
+            homeShortcuts = p[K.homeShortcuts]?.let { v ->
+                v.split(",").mapNotNull { n -> HomeShortcut.entries.firstOrNull { it.name == n } }
+            } ?: d.homeShortcuts,
+            homeRecentTiles = p[K.homeRecentTiles] ?: d.homeRecentTiles,
+            homePlaylists = p[K.homePlaylists]?.let { runCatching { json.decodeFromString<List<PinnedPlaylist>>(it) }.getOrNull() } ?: d.homePlaylists,
         )
     }
 
@@ -383,4 +413,9 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     }
     fun setAutoAddSections(v: Boolean) = edit { it[K.autoAddSections] = v }
     fun setReplayHours(v: Boolean) = edit { it[K.replayHours] = v }
+    fun setGreetingText(v: String) = edit { it[K.greetingText] = v }
+    fun setGreetingShowName(v: Boolean) = edit { it[K.greetingShowName] = v }
+    fun setHomeShortcuts(v: List<HomeShortcut>) = edit { it[K.homeShortcuts] = v.joinToString(",") { s -> s.name } }
+    fun setHomeRecentTiles(v: Int) = edit { it[K.homeRecentTiles] = v }
+    fun setHomePlaylists(v: List<PinnedPlaylist>) = edit { it[K.homePlaylists] = json.encodeToString<List<PinnedPlaylist>>(v) }
 }

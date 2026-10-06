@@ -537,14 +537,15 @@ private fun Intro(s: ReplayStory, modifier: Modifier) {
 
 @Composable
 private fun Minutes(s: ReplayStory, modifier: Modifier) {
-    val (minutes, unit) = listenTotal(s.totalMs)
+    val total = listenTotal(s.totalMs)
     val count = remember { Animatable(0f) }
-    LaunchedEffect(Unit) { delay(400); count.animateTo(minutes.toFloat(), tween(2_200, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
+    LaunchedEffect(Unit) { delay(400); count.animateTo(total.value.toFloat(), tween(2_200, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
     Column(modifier, verticalArrangement = Arrangement.Center) {
         Text("YOU LISTENED FOR", style = kicker(), modifier = Modifier.reveal(100))
-        val text = fmt(count.value.toLong())
-        Text(text, style = display(if (fmt(minutes).length > 6) 96.sp else 130.sp), maxLines = 1, modifier = Modifier.reveal(200))
-        Text(unit.uppercase(), style = display(46.sp, ArtistTypography.extended), modifier = Modifier.reveal(400))
+        val text = total.text(count.value.toLong())
+        val longest = total.text(total.value).length
+        Text(text, style = display(if (longest > 8) 72.sp else if (longest > 6) 96.sp else 130.sp), maxLines = 1, modifier = Modifier.reveal(200))
+        Text(total.unit.ifEmpty { "of music" }.uppercase(),style = display(46.sp, ArtistTypography.extended), modifier = Modifier.reveal(400))
         Spacer(Modifier.height(28.dp))
         val hours = s.totalMs / 3_600_000.0
         Text(
@@ -623,7 +624,7 @@ private fun TopArtist(s: ReplayStory, modifier: Modifier) {
             )
             Spacer(Modifier.height(18.dp))
             Row(Modifier.reveal(1_200), horizontalArrangement = Arrangement.spacedBy(26.dp)) {
-                listenTotal(a.ms).let { (n, unit) -> Stat(fmt(n), unit) }
+                listenTotal(a.ms).let { t -> Stat(t.text(t.value), t.unit.ifEmpty { "listened" }) }
                 Stat(fmt(a.plays.toLong()), "plays")
                 Stat("${s.songs.count { it.artistName == a.artistName }}", "songs")
             }
@@ -840,8 +841,9 @@ private fun Summary(s: ReplayStory, modifier: Modifier, onReplay: () -> Unit, on
             Spacer(Modifier.height(16.dp))
             Row {
                 Column(Modifier.weight(1f)) {
-                    Text("${listenTotal(s.totalMs).second.uppercase()} LISTENED", style = kicker(10.sp).copy(color = Color.White.copy(alpha = 0.75f)))
-                    Text(fmt(listenTotal(s.totalMs).first), style = display(36.sp))
+                    val total = listenTotal(s.totalMs)
+                    Text("${total.unit} listened".trim().uppercase(), style = kicker(10.sp).copy(color = Color.White.copy(alpha = 0.75f)))
+                    Text(total.text(total.value), style = display(36.sp), maxLines = 1)
                 }
                 s.genres.firstOrNull()?.let { (g, _) ->
                     Column(Modifier.weight(1f).padding(start = 12.dp)) {

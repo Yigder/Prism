@@ -17,8 +17,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -190,7 +188,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
     var lyricsControlsOpen by remember { mutableStateOf(true) }
     var queueControlsOpen by remember { mutableStateOf(true) }
     var showProviders by remember { mutableStateOf(false) }
-    var showStats by remember { mutableStateOf(false) }
+    var statsOpen by rememberSaveable { mutableStateOf(false) }
     var showActions by remember { mutableStateOf(false) }
     var showSleep by remember { mutableStateOf(false) }
     var showTiming by remember { mutableStateOf(false) }
@@ -215,12 +213,17 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
         onDispose { view.keepScreenOn = false }
     }
 
-    val openLyrics = { lyricsControlsOpen = true; lyricsOpen = true; queueOpen = false }
+    val openLyrics = { lyricsControlsOpen = true; lyricsOpen = true; queueOpen = false; statsOpen = false }
     val closeLyrics = { lyricsControlsOpen = false; lyricsOpen = false }
     val toggleQueue = {
         val opening = !queueOpen
         queueOpen = opening
-        if (opening) { closeLyrics(); queueControlsOpen = true }
+        if (opening) { closeLyrics(); statsOpen = false; queueControlsOpen = true }
+    }
+    val toggleStats = {
+        val opening = !statsOpen
+        statsOpen = opening
+        if (opening) { closeLyrics(); queueOpen = false }
     }
     LaunchedEffect(lyricsOpen, lyricsControlsOpen, volume.dragging) {
         if (lyricsOpen && lyricsControlsOpen && !volume.dragging) { delay(5000); lyricsControlsOpen = false }
@@ -232,6 +235,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
             fullscreenVideo -> fullscreenVideo = false
             lyricsOpen -> closeLyrics()
             queueOpen -> queueOpen = false
+            statsOpen -> statsOpen = false
             else -> onCollapse()
         }
     }
@@ -241,7 +245,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
     }
 
     // ---------------------------------------------------------------- Motion
-    val collapse = animateFloatAsState(if (lyricsOpen || queueOpen) 1f else 0f, tween(420, easing = FastOutSlowInEasing), label = "collapse")
+    val collapse = animateFloatAsState(if (lyricsOpen || queueOpen || statsOpen) 1f else 0f, tween(420, easing = FastOutSlowInEasing), label = "collapse")
     val p: () -> Float = { collapse.value }
     val collapsePastHalf = collapse.value >= 0.5f
     val panelsSettled = collapse.value >= 1f
@@ -281,7 +285,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
     val heroVisible: () -> Float = { heroT.value * (1f - p()) }
     val mesh = rememberArtworkMesh(song.thumbnail)
     val blurImage = rememberFullArtworkBlur(song.thumbnail)
-    val fullBlur by animateFloatAsState(if (lyricsOpen || queueOpen) 1f else 0f, tween(360, easing = FastOutSlowInEasing), label = "fullBlur")
+    val fullBlur by animateFloatAsState(if (lyricsOpen || queueOpen || statsOpen) 1f else 0f, tween(360, easing = FastOutSlowInEasing), label = "fullBlur")
     val statusTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
     val originText = when {
@@ -349,8 +353,8 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
             }
         }
         // Drag on the sleeve: down closes the player, up pulls the queue in.
-        val sleeveGesture = Modifier.pointerInput(lyricsOpen, queueOpen) {
-            if (lyricsOpen || queueOpen) return@pointerInput
+        val sleeveGesture = Modifier.pointerInput(lyricsOpen, queueOpen, statsOpen) {
+            if (lyricsOpen || queueOpen || statsOpen) return@pointerInput
             var total = 0f
             detectVerticalDragGestures(
                 onDragStart = { total = 0f },
@@ -369,8 +373,8 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                 if (total > 0) scope.launch { dismiss.snapTo(total.coerceAtLeast(0f)) }
             }
         }
-        val skipGesture = Modifier.pointerInput(lyricsOpen, queueOpen) {
-            if (lyricsOpen || queueOpen) return@pointerInput
+        val skipGesture = Modifier.pointerInput(lyricsOpen, queueOpen, statsOpen) {
+            if (lyricsOpen || queueOpen || statsOpen) return@pointerInput
             var total = 0f
             val threshold = 72.dp.toPx()
             detectHorizontalDragGestures(
@@ -412,7 +416,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                     val fullArt = minOf(maxWidth, maxHeight - ART_TITLE_GAP - HEADER_HEIGHT).coerceAtLeast(THUMB_SIZE)
                     val groupTop = ((maxHeight - fullArt - ART_TITLE_GAP - HEADER_HEIGHT) / 2).coerceAtLeast(0.dp)
                     val bannerBottom = statusTop + DISMISS_STRIP + ART_BOX_TOP_PAD + groupTop + fullArt + ART_TITLE_GAP / 2
-                    if (!lyricsOpen && !queueOpen && bannerBottom != heroHeight) SideEffect { heroHeight = bannerBottom }
+                    if (!lyricsOpen && !queueOpen && !statsOpen && bannerBottom != heroHeight) SideEffect { heroHeight = bannerBottom }
                     val sleeveMaxWidth = maxWidth
                     fun artSize(): Dp = lerp(fullArt, THUMB_SIZE, p())
                     fun artTop(): Dp = lerp(groupTop, 0.dp, p())
@@ -452,7 +456,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                                 translationX = swipe.value * (1f - p())
                             }
                             .then(
-                                if (lyricsOpen || queueOpen) Modifier.clickable { queueOpen = false; closeLyrics() } else Modifier
+                                if (lyricsOpen || queueOpen || statsOpen) Modifier.clickable { queueOpen = false; statsOpen = false; closeLyrics() } else Modifier
                             ),
                         contentAlignment = Alignment.Center,
                     ) {
@@ -538,6 +542,14 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                             modifier = Modifier.fillMaxSize().padding(top = HEADER_HEIGHT).graphicsLayer { alpha = panelFade },
                         )
                     }
+                    if (statsOpen && panelsSettled) {
+                        NerdStatsPanel(
+                            Modifier.fillMaxSize().padding(top = HEADER_HEIGHT + 8.dp).graphicsLayer {
+                                alpha = panelFade
+                                translationY = (1f - panelFade) * 26.dp.toPx()
+                            },
+                        )
+                    }
                     if (queueOpen && panelsSettled) {
                         InlineQueue(
                             onRevealPlayer = { queueControlsOpen = true },
@@ -561,7 +573,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                         else if (settings.lyricsOnPlayer) CurrentLyricStrip(lyricsState, isPlaying, openLyrics)
                         else Text(" ", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(vertical = 4.dp))
                         PlayerScrubber(position, pc.duration) {
-                            QualityLabel(Modifier.align(Alignment.Center)) { showStats = !showStats }
+                            QualityLabel(Modifier.align(Alignment.Center), selected = statsOpen) { toggleStats() }
                         }
                         Spacer(Modifier.height(8.dp))
                         TransportRow(isPlaying, buffering, previousEnabled = hasPrevious || position > 3000, nextEnabled = hasNext)
@@ -581,25 +593,18 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                 }
             }
         }
-
-        AnimatedVisibility(
-            showStats,
-            Modifier.statusBarsPadding().padding(top = 44.dp, start = 12.dp, end = 12.dp),
-            enter = fadeIn() + scaleIn(initialScale = 0.95f),
-            exit = fadeOut() + scaleOut(targetScale = 0.95f),
-        ) { NerdStatsOverlay { showStats = false } }
     }
 
     if (showProviders) LyricsProviderSheet(lyricsState) { showProviders = false }
     if (showActions) PlayerOptionsSheet(
         song,
         hasCanvas = songCanvas != null,
-        statsShown = showStats,
+        statsShown = statsOpen,
         hasNext = hasNext,
         onLyricsSource = { showProviders = true },
         onLyricsTiming = { showTiming = true },
         onRedownloadLyrics = { lyricsState.redownload() },
-        onToggleStats = { showStats = !showStats },
+        onToggleStats = { toggleStats() },
         onSleepTimer = { showSleep = true },
         onCollapse = onCollapse,
     ) { showActions = false }

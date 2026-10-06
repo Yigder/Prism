@@ -90,6 +90,8 @@ private data class ReplayData(
     val artists: List<ArtistPlays>,
     val months: List<MonthTotal>,
     val genres: List<Pair<String, Long>>,
+    /** Up to 250 top songs: what Play and Shuffle play. Not shown. */
+    val top250: List<SongPlays> = songs,
 )
 
 internal fun SongPlays.toSong() = Song(
@@ -126,7 +128,9 @@ fun ReplayScreen(bottomPadding: Dp) {
         value = null
         val (from, to) = range(period)
         val dao = c.db.plays()
-        val songs = dao.topSongs(from, to, 100)
+        // The top 250 are kept for Play / Shuffle; the screen itself shows the top 100 at most.
+        val top = dao.topSongs(from, to, 250)
+        val songs = top.take(100)
         val genreMap = c.meta.cachedGenres(songs.map { it.toSong() })
         val genres = songs.groupBy { genreMap[it.songId] ?: "Unknown" }
             .mapValues { (_, v) -> v.sumOf { it.ms } }
@@ -134,6 +138,7 @@ fun ReplayScreen(bottomPadding: Dp) {
         value = ReplayData(
             totalMs = dao.totalMs(from, to), plays = dao.count(from, to), activeDays = dao.activeDays(from, to),
             songs = songs, artists = dao.topArtists(from, to, 12), months = dao.monthly(from, to), genres = genres,
+            top250 = top,
         )
         // Fill in genres for the top tracks in the background so the next visit is richer.
         songs.take(40).filter { it.songId !in genreMap }.forEach { runCatching { c.meta.genreFor(it.toSong()) } }
@@ -172,7 +177,7 @@ fun ReplayScreen(bottomPadding: Dp) {
         item { HeroCard(d, period, year, storyLoading, openStory) }
         item {
             Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                val songs = d.songs.map { it.toSong() }
+                val songs = remember(d) { d.top250.map { it.toSong() } }
                 val replaySource = QueueSource(QueueKind.REPLAY, "Replay · ${period.label}")
                 Button(onClick = { c.player.playQueue(songs, 0, replaySource) }, Modifier.weight(1f).height(48.dp)) {
                     Icon(Icons.Rounded.PlayArrow, null); Spacer(Modifier.width(6.dp)); Text("Play")
@@ -268,9 +273,9 @@ fun ReplayScreen(bottomPadding: Dp) {
 
 @Composable
 private fun HeroCard(d: ReplayData, period: Period, year: Int, loading: Boolean, onOpen: () -> Unit) {
-    val (total, unit) = listenTotal(d.totalMs)
-    val anim = remember(period, unit) { Animatable(0f) }
-    LaunchedEffect(period, total, unit) { anim.animateTo(total.toFloat(), tween(1400)) }
+    val total = listenTotal(d.totalMs)
+    val anim = remember(period) { Animatable(0f) }
+    LaunchedEffect(period, total.value) { anim.animateTo(total.value.toFloat(), tween(1400)) }
     val top = d.songs.firstOrNull()
     Box(
         Modifier.padding(16.dp).fillMaxWidth().clip(RoundedCornerShape(30.dp))
@@ -285,8 +290,8 @@ private fun HeroCard(d: ReplayData, period: Period, year: Int, loading: Boolean,
             )
             Spacer(Modifier.height(4.dp))
             Column(Modifier.toggleListenUnit()) {
-                Text("%,d".format(anim.value.toLong()), color = Color.White, style = MaterialTheme.typography.displayLarge)
-                Text("$unit listened", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.titleMedium)
+                Text(total.text(anim.value.toLong()), color = Color.White, style = MaterialTheme.typography.displayLarge, maxLines = 1)
+                Text("${total.unit} listened".trim(),color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.titleMedium)
             }
             Spacer(Modifier.height(18.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
@@ -337,10 +342,13 @@ fun listenTime(ms: Long, hours: Boolean): String {
     return when {
         m == 0L && ms > 0 -> "<1 min"
         !hours || m < 60 -> "%,d min".format(m)
-        m % 60 == 0L -> "%,dh".format(m / 60)
-        else -> "%,dh %dm".format(m / 60, m % 60)
+        else -> hoursAndMinutes(m)
     }
 }
+
+/** "8h 20m", or "8h" on the hour. */
+fun hoursAndMinutes(totalMinutes: Long): String =
+    if (totalMinutes % 60 == 0L) "%,dh".format(totalMinutes / 60) else "%,dh %dm".format(totalMinutes / 60, totalMinutes % 60)
 
 @Composable
 @ReadOnlyComposable
@@ -356,13 +364,21 @@ fun Modifier.toggleListenUnit(): Modifier {
     }
 }
 
-/** The big headline number: whole minutes, or hours with hours on. Returns the number and its unit. */
+/**
+ * The big headline time: [value] whole minutes, printed by [text] as "1,204" (with [unit] "minutes")
+ * or, with hours on, as "20h 4m" (no unit). Animate [value] and print it with [text].
+ */
+class ListenTotal(val value: Long, val unit: String, val text: (Long) -> String) {
+    /** The whole thing on one line: "1,204 minutes" / "20h 4m". */
+    val full: String get() = (text(value) + " " + unit).trim()
+}
+
 @Composable
 @ReadOnlyComposable
-fun listenTotal(ms: Long): Pair<Long, String> =
-    // Under an hour stays in minutes, so the hours view never shows "0 hours".
-    if (LocalAppSettings.current.replayHours && ms >= 3_600_000) ms / 3_600_000 to (if (ms < 7_200_000) "hour" else "hours")
-    else ms / 60_000 to "minutes"
+fun listenTotal(ms: Long): ListenTotal =
+    // Under an hour stays in minutes, so the hours view never shows "0h".
+    if (LocalAppSettings.current.replayHours && ms >= 3_600_000) ListenTotal(ms / 60_000, "", ::hoursAndMinutes)
+    else ListenTotal(ms / 60_000, "minutes") { "%,d".format(it) }
 
 @Composable
 private fun Stat(value: String, label: String) {

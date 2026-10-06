@@ -575,26 +575,26 @@ fun PlayerMarquee(text: String, style: TextStyle, color: Color, enabled: Boolean
 
 /** Quality badge between the timestamps; tap for the full stats panel. */
 @Composable
-fun QualityLabel(modifier: Modifier = Modifier, onClick: () -> Unit) {
+fun QualityLabel(modifier: Modifier = Modifier, selected: Boolean = false, onClick: () -> Unit) {
     val stats by LocalContainer.current.nerdStats.collectAsState()
-    val codec = when {
-        stats.codec.contains("opus", true) -> "Opus"
-        stats.codec.contains("mp4a", true) || stats.codec.contains("aac", true) -> "AAC"
-        else -> ""
-    }
+    val codec = stats.codec.takeIf { it.isNotBlank() }?.let(::codecName).orEmpty()
+    val lossless = stats.source.startsWith("Lossless") ||
+        listOf("flac", "alac", "wav", "pcm", "aiff").any { stats.codec.contains(it, true) }
     val text = when {
         stats.source == "Downloaded" -> "Downloaded"
-        stats.streamBitrateKbps >= 150 -> "High Quality"
+        lossless -> "Lossless"
         stats.streamBitrateKbps > 0 -> "$codec ${stats.streamBitrateKbps} kbps".trim()
-        else -> ""
+        else -> codec
     }
     if (text.isBlank()) return
     Text(
         text,
         style = MaterialTheme.typography.labelSmall,
-        color = Color.White.copy(alpha = 0.55f),
+        color = Color.White.copy(alpha = if (selected) 0.95f else 0.55f),
         fontWeight = FontWeight.SemiBold,
-        modifier = modifier.clip(CircleShape).clickable(onClick = onClick).padding(horizontal = 8.dp, vertical = 2.dp),
+        modifier = modifier.clip(CircleShape)
+            .background(Color.White.copy(alpha = if (selected) 0.16f else 0f))
+            .clickable(onClick = onClick).padding(horizontal = 8.dp, vertical = 2.dp),
     )
 }
 

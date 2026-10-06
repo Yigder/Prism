@@ -226,6 +226,7 @@ class PlayerConnection(private val context: Context, private val c: AppContainer
             p.shuffleModeEnabled = shuffle
             val start = if (shuffle) songs.indices.random() else startIndex.coerceIn(0, songs.lastIndex)
             p.setMediaItems(songs.map { it.toMediaItem() }, start, 0)
+            if (shuffle) reshuffle(p)
             p.prepare()
             p.play()
             service?.maybeAutoplay()
@@ -263,7 +264,22 @@ class PlayerConnection(private val context: Context, private val c: AppContainer
     }
     fun removeAt(index: Int) = withPlayer { it.removeMediaItem(index) }
     fun move(from: Int, to: Int) = withPlayer { it.moveMediaItem(from, to) }
-    fun toggleShuffle() = withPlayer { it.shuffleModeEnabled = !it.shuffleModeEnabled }
+    fun toggleShuffle() = withPlayer {
+        if (!it.shuffleModeEnabled) reshuffle(it)
+        it.shuffleModeEnabled = !it.shuffleModeEnabled
+    }
+
+    /**
+     * A fresh random order every time shuffle is pressed (the player otherwise keeps reusing its old one),
+     * with the current song first so everything else is still ahead of it.
+     */
+    private fun reshuffle(p: ExoPlayer) {
+        val n = p.mediaItemCount
+        if (n < 2) return
+        val cur = p.currentMediaItemIndex.coerceIn(0, n - 1)
+        val order = intArrayOf(cur) + (0 until n).filter { it != cur }.shuffled().toIntArray()
+        p.setShuffleOrder(androidx.media3.exoplayer.source.ShuffleOrder.DefaultShuffleOrder(order, System.nanoTime()))
+    }
     fun cycleRepeat() = withPlayer {
         it.repeatMode = when (it.repeatMode) {
             Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL

@@ -330,6 +330,8 @@ private fun SoundPage() {
     val scope = rememberCoroutineScope()
     val found by c.localLossless.found.collectAsState()
     val askFiles = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        // Lossless still works without file access; it just can't use files on the phone.
+        prefs.setLossless(true)
         if (granted) { prefs.setLosslessLocal(true); scope.launch { c.localLossless.scan() } }
     }
     LaunchedEffect(s.losslessLocal) { if (s.losslessLocal && found < 0) c.localLossless.scan() }
@@ -342,25 +344,23 @@ private fun SoundPage() {
         Group("Quality") {
             Toggle(
                 "Lossless playback",
-                "Always plays the best audio there is, keeps hi-res files at full resolution, and uses lossless files when the add-on below finds them. YouTube Music itself streams compressed audio (Opus/AAC), so true lossless needs the add-on",
+                "Always plays the best audio there is, keeps hi-res files at full resolution, and plays matching FLAC, WAV and AIFF files on your phone instead of the stream" + when {
+                    !s.lossless -> ""
+                    !s.losslessLocal -> " · allow file access to use lossless files"
+                    found < 0 -> " · looking for lossless files…"
+                    found == 0 -> " · no lossless files found yet (add them to your Music folder)"
+                    else -> " · $found lossless files found"
+                },
                 s.lossless,
-            ) { prefs.setLossless(it) }
+            ) { on ->
+                if (!on) { prefs.setLossless(false); prefs.setLosslessLocal(false) }
+                else if (c.localLossless.hasPermission()) {
+                    prefs.setLossless(true); prefs.setLosslessLocal(true); scope.launch { c.localLossless.scan() }
+                } else askFiles.launch(LocalLossless.permission)
+            }
             if (s.lossless) {
-                Toggle(
-                    "Lossless add-on",
-                    when {
-                        !s.losslessLocal -> "Plays FLAC, WAV and AIFF files on your phone instead of the stream whenever they match the song"
-                        found < 0 -> "Looking for lossless files…"
-                        found == 0 -> "No lossless files found on this phone yet. Add FLAC, WAV or AIFF files to your Music folder"
-                        else -> "$found lossless files found · matching songs play from them"
-                    },
-                    s.losslessLocal,
-                ) { on ->
-                    if (!on) prefs.setLosslessLocal(false)
-                    else if (c.localLossless.hasPermission()) { prefs.setLosslessLocal(true); scope.launch { c.localLossless.scan() } }
-                    else askFiles.launch(LocalLossless.permission)
-                }
                 if (s.losslessLocal) Item("Scan for lossless files again", null, onClick = { scope.launch { c.localLossless.scan() } })
+                else Item("Allow access to lossless files", null, onClick = { askFiles.launch(LocalLossless.permission) })
             } else {
                 Label("Streaming quality on Wi-Fi")
                 Chips(AudioQuality.entries, s.audioQuality, { it.label }) { prefs.setAudioQuality(it) }

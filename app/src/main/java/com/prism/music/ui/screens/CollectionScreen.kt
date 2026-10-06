@@ -26,6 +26,10 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.DeleteSweep
+import androidx.compose.material.icons.rounded.Lyrics
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.DownloadDone
@@ -125,7 +129,7 @@ fun CollectionScreen(type: CollectionType, id: String, initialGenre: String?, bo
         CollectionType.DOWNLOADS -> {
             val songs = remember(downloads) { c.downloads.completedSongs() }
             Load.Ok(remember(songs) {
-                LiveCollection(CollectionPage("downloads", CollectionKind.PLAYLIST, "Downloads", "${songs.size} songs · available offline", thumbnail = null, songs = songs), c.scope, null)
+                LiveCollection(CollectionPage("downloads", CollectionKind.PLAYLIST, "Downloads", "Available offline", thumbnail = null, songs = songs), c.scope, null)
             })
         }
         else -> remote!!.state
@@ -219,13 +223,25 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
     val totalSec = visible.sumOf { it.durationSec }
     val popular = remember(live.page) { if (type == CollectionType.ALBUM) live.page.popularIds else emptySet() }
     // Playlists (and Liked songs) can have a picture of the listener's choosing.
-    val coverKey = when (type) { CollectionType.PLAYLIST -> page.id; CollectionType.LIKED -> "liked"; else -> null }
+    val coverKey = when (type) { CollectionType.PLAYLIST -> page.id; CollectionType.LIKED -> "liked"; CollectionType.DOWNLOADS -> "downloads"; else -> null }
+    var confirm by remember { mutableStateOf<Pair<String, () -> Unit>?>(null) }
+    var manageMenu by remember { mutableStateOf(false) }
+    confirm?.let { (text, action) ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirm = null },
+            title = { Text("Delete downloads") },
+            text = { Text(text) },
+            confirmButton = { androidx.compose.material3.TextButton(onClick = { action(); confirm = null }) { Text("Delete") } },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { confirm = null }) { Text("Cancel") } },
+        )
+    }
     var coverSheet by remember { mutableStateOf(false) }
     if (coverSheet && coverKey != null) CoverSheet(coverKey, page.songs) { coverSheet = false }
 
     Box(Modifier.fillMaxSize()) {
         LazyColumn(state = listState, contentPadding = PaddingValues(bottom = bottomPadding + 24.dp)) {
             item { Header(type, page, coverKey) { coverSheet = true } }
+            if (type == CollectionType.DOWNLOADS) item { DownloadsInfo(page.songs) { text, action -> confirm = text to action } }
             item {
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
@@ -243,6 +259,9 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                             if (downloadedCount == page.songs.size && page.songs.isNotEmpty()) Icons.Rounded.DownloadDone else Icons.Rounded.Download,
                             "Download all",
                         )
+                    } else Box {
+                        IconButton(onClick = { manageMenu = true }) { Icon(Icons.Rounded.MoreVert, "Manage downloads") }
+                        DownloadsMenu(manageMenu, { manageMenu = false }) { text, action -> confirm = text to action }
                     }
                 }
             }
@@ -257,10 +276,10 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                         Text("Genres", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                         Box {
                             androidx.compose.material3.TextButton(onClick = { sortMenu = true }) {
-                                Icon(Icons.AutoMirrored.Rounded.Sort, null, Modifier.size(18.dp)); Spacer(Modifier.width(4.dp)); Text(sort.label)
+                                Icon(Icons.AutoMirrored.Rounded.Sort, null, Modifier.size(18.dp)); Spacer(Modifier.width(4.dp)); Text(sortLabel(sort, type))
                             }
                             DropdownMenu(sortMenu, { sortMenu = false }) {
-                                SortMode.entries.forEach { m -> DropdownMenuItem({ Text(m.label) }, { sort = m; sortMenu = false }) }
+                                SortMode.entries.forEach { m -> DropdownMenuItem({ Text(sortLabel(m, type)) }, { sort = m; sortMenu = false }) }
                                 DropdownMenuItem({ Text(if (groupByGenre) "✓ Group by genre" else "Group by genre") }, { groupByGenre = !groupByGenre; sortMenu = false })
                             }
                         }
@@ -434,5 +453,65 @@ private fun CoverSheet(key: String, songs: List<Song>, onDismiss: () -> Unit) {
                 modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 12.dp),
             )
         }
+    }
+}
+
+private fun sortLabel(m: SortMode, type: CollectionType) =
+    if (m == SortMode.DEFAULT && type == CollectionType.DOWNLOADS) "Recently added" else m.label
+
+private fun sizeText(bytes: Long): String =
+    if (bytes >= 1_073_741_824L) "%.1f GB".format(bytes / 1_073_741_824.0) else "%.0f MB".format(bytes / 1_048_576.0)
+
+/** Under the Downloads header: space used, saved lyrics, and anything still downloading. */
+@Composable
+private fun DownloadsInfo(songs: List<Song>, ask: (String, () -> Unit) -> Unit) {
+    val c = LocalContainer.current
+    val scheme = MaterialTheme.colorScheme
+    val all by c.downloads.downloads.collectAsState()
+    val levels by c.downloads.lyricLevels.collectAsState()
+    val working by c.downloads.lyricsWorking.collectAsState()
+    val active = remember(all) { all.filter { it.value.state != Download.STATE_COMPLETED && it.value.state != Download.STATE_FAILED } }
+    val bytes = remember(all) { all.values.filter { it.state == Download.STATE_COMPLETED }.sumOf { it.bytes } }
+    Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            "${songs.size} song${if (songs.size == 1) "" else "s"} · ${sizeText(bytes)} on this phone",
+            style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, textAlign = TextAlign.Center,
+        )
+        val ids = songs.map { it.id }
+        if (ids.any { it in levels }) {
+            val withLyrics = ids.count { (levels[it] ?: 0) > 0 }
+            val karaoke = ids.count { (levels[it] ?: 0) >= 3 }
+            Text(
+                "Lyrics for $withLyrics · $karaoke word by word" + if (working > 0) " · getting more…" else "",
+                style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, textAlign = TextAlign.Center,
+            )
+        }
+        if (active.isNotEmpty()) Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Downloading ${active.size}…", style = MaterialTheme.typography.labelMedium, color = scheme.primary)
+            androidx.compose.material3.TextButton(onClick = { ask("Cancel ${active.size} downloads that haven't finished?") { c.downloads.removeMany(active.keys) } }) { Text("Cancel") }
+        }
+    }
+}
+
+/** Downloads' ⋯ menu: lyrics and bulk deletes. */
+@Composable
+private fun DownloadsMenu(open: Boolean, onDismiss: () -> Unit, ask: (String, () -> Unit) -> Unit) {
+    val c = LocalContainer.current
+    val all by c.downloads.downloads.collectAsState()
+    var smartIds by remember { mutableStateOf(emptySet<String>()) }
+    LaunchedEffect(all.size) {
+        smartIds = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { c.db.songs().smartDownloads().map { it.id }.toSet() }
+    }
+    val smart = all.filter { it.value.state == Download.STATE_COMPLETED && it.key in smartIds }.keys
+    DropdownMenu(open, onDismiss) {
+        DropdownMenuItem({ Text("Get missing lyrics") }, { onDismiss(); c.downloads.backfillLyrics(force = true) }, leadingIcon = { Icon(Icons.Rounded.Lyrics, null) })
+        if (smart.isNotEmpty()) DropdownMenuItem({ Text("Delete smart downloads (${smart.size})") }, {
+            onDismiss()
+            ask("Delete the ${smart.size} songs smart downloads added? They may come back later if smart downloads stays on.") { c.downloads.removeMany(smart) }
+        }, leadingIcon = { Icon(Icons.Rounded.DeleteSweep, null) })
+        DropdownMenuItem({ Text("Delete all downloads") }, {
+            onDismiss()
+            ask("Delete all ${all.size} downloads (${sizeText(c.downloads.totalBytes)})? This frees the space straight away.") { c.downloads.removeAll() }
+        }, leadingIcon = { Icon(Icons.Rounded.DeleteOutline, null) })
     }
 }
