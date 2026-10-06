@@ -50,6 +50,9 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
   Use `adb shell screencap` + `adb pull` (PowerShell `exec-out >` redirection corrupts PNGs).
 - README has a "Credits and inspiration" section (Apple Music, BitChord, Spotify Wrapped, lyric/canvas
   sources, libraries) — update it when borrowing new ideas or sources.
+- Donations: Ko-fi at https://ko-fi.com/yigder — linked from a README header badge, a "Support Prism"
+  section (before "Building from source"), and `.github/FUNDING.yml` (`ko_fi: yigder`, GitHub Sponsor button).
+  Keep it optional/no-pressure; no in-app donation prompts unless the user asks.
 - On the user's Wi-Fi, `gh` API calls fail (`invalid character '<'`); git push works. Ask them to switch to hotspot.
 - An untracked `Prism/` subfolder duplicates the project (with build output and logs) — decide whether to delete it.
 - Next steps: _(fill in)_
