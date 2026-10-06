@@ -67,7 +67,7 @@ fun ScreenBackdrop(screen: BackdropScreen, content: @Composable BoxScope.() -> U
     val s by c.settings.flow.collectAsState()
     val (style, photo) = Backdrop.parse(s.backdrops[screen.name])
     Box(Modifier.fillMaxSize()) {
-        if (style != Backdrop.DEFAULT) BackdropLayer(style, photo, s.backdropDim, s.backdropMotion, Modifier.fillMaxSize())
+        if (style != Backdrop.DEFAULT) BackdropLayer(style, photo, s.backdropDim, s.backdropMotion && !s.reduceMotion, Modifier.fillMaxSize())
         content()
     }
 }

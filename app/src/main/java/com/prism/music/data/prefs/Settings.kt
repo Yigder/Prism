@@ -59,6 +59,39 @@ data class PinnedPlaylist(val id: String, val title: String, val thumbnail: Stri
 
 enum class SectionStyle(val label: String) { CAROUSEL("Carousel"), GRID("Grid"), LIST("List"), HERO("Spotlight") }
 
+// ---------------------------------------------------------------- Look & layout
+
+/** The app's typeface. Device fonts are used where the phone has them, with a fallback otherwise. */
+enum class FontChoice(val label: String) { SYSTEM("Default"), GOOGLE_SANS("Google Sans"), ROUNDED("Rounded"), CONDENSED("Condensed"), SERIF("Serif"), MONO("Mono") }
+
+/** How round cards, tiles and artwork are. */
+enum class Corners(val label: String, val scale: Float) { SHARP("Sharp", 0.2f), SUBTLE("Subtle", 0.6f), ROUND("Round", 1f), EXTRA("Extra", 1.5f) }
+
+/** How much room rows and sections get. */
+enum class UiDensity(val label: String, val scale: Float) { COMPACT("Compact", 0.7f), COMFORTABLE("Comfortable", 1f), ROOMY("Roomy", 1.3f) }
+
+/** The big page titles (Library, Replay, Settings…). */
+enum class TitleSize(val label: String) { LARGE("Large"), MEDIUM("Medium"), SMALL("Small") }
+
+/** Width of album / playlist cards in carousels. */
+enum class CardSize(val label: String, val widthDp: Int) { SMALL("Small", 124), MEDIUM("Medium", 152), LARGE("Large", 184) }
+
+enum class NavBarStyle(val label: String) { FLOATING("Floating"), DOCKED("Docked"), MINIMAL("Minimal") }
+enum class NavLabels(val label: String) { ALWAYS("Always"), SELECTED("Selected"), NEVER("Never") }
+
+/** Tabs the bottom bar can hold. */
+enum class NavTab(val label: String) { HOME("Home"), SEARCH("Search"), LIBRARY("Library"), REPLAY("Replay"), SETTINGS("Settings") }
+
+enum class MiniPlayerStyle(val label: String) { CARD("Card"), SLIM("Slim"), PILL("Pill") }
+enum class MiniProgress(val label: String) { LINE("Line"), FILL("Fill"), NONE("None") }
+
+/** What's behind the full player. */
+enum class PlayerBackground(val label: String) { MESH("Colour mesh"), BLUR("Blurred cover"), THEME("Theme"), BLACK("Black") }
+enum class TransportStyle(val label: String) { GLYPHS("Classic"), BUTTON("Play button"), OUTLINE("Rings") }
+enum class ScrubberStyle(val label: String) { HAIRLINE("Hairline"), BOLD("Bold"), THUMB("Thumb") }
+enum class LyricsAlign(val label: String) { START("Left"), CENTER("Centre") }
+enum class LibraryView(val label: String) { GRID("Grid"), LIST("List") }
+
 @Serializable
 data class HomeSectionConfig(
     val key: String,
@@ -185,6 +218,36 @@ data class AppSettings(
     val homeRecentTiles: Int = 3,
     /** Playlists shown as tiles after the shortcuts. */
     val homePlaylists: List<PinnedPlaylist> = emptyList(),
+    val homeCustomizeButton: Boolean = true,
+    // Interface
+    val fontChoice: FontChoice = FontChoice.SYSTEM,
+    val textScale: Float = 1f,
+    val corners: Corners = Corners.ROUND,
+    val uiDensity: UiDensity = UiDensity.COMFORTABLE,
+    val titleSize: TitleSize = TitleSize.LARGE,
+    val cardSize: CardSize = CardSize.MEDIUM,
+    val reduceMotion: Boolean = false,
+    // Navigation
+    val navStyle: NavBarStyle = NavBarStyle.FLOATING,
+    val navLabels: NavLabels = NavLabels.ALWAYS,
+    val navHideOnScroll: Boolean = true,
+    val navTabs: List<NavTab> = listOf(NavTab.HOME, NavTab.SEARCH, NavTab.LIBRARY, NavTab.REPLAY),
+    val startTab: NavTab = NavTab.HOME,
+    val miniPlayerStyle: MiniPlayerStyle = MiniPlayerStyle.CARD,
+    val miniSkipButtons: Boolean = true,
+    val miniProgress: MiniProgress = MiniProgress.LINE,
+    // Player look
+    val playerBackground: PlayerBackground = PlayerBackground.MESH,
+    val playerArtCorners: Int = 8,
+    val transportStyle: TransportStyle = TransportStyle.GLYPHS,
+    val scrubberStyle: ScrubberStyle = ScrubberStyle.HAIRLINE,
+    val artShrinkOnPause: Boolean = true,
+    val showOutputDevice: Boolean = true,
+    val lyricsAlign: LyricsAlign = LyricsAlign.START,
+    // Library & Replay
+    val libraryView: LibraryView = LibraryView.GRID,
+    val libraryStartTab: String = "PLAYLISTS",
+    val replayThemeColors: Boolean = false,
 ) {
     val isLoggedIn: Boolean get() = cookie.contains("SAPISID")
 }
@@ -250,6 +313,41 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val homeShortcuts = stringPreferencesKey("home_shortcuts")
         val homeRecentTiles = intPreferencesKey("home_recent_tiles")
         val homePlaylists = stringPreferencesKey("home_playlists")
+        val homeCustomizeButton = booleanPreferencesKey("home_customize_button")
+        val fontChoice = stringPreferencesKey("font_choice")
+        val textScale = floatPreferencesKey("text_scale")
+        val corners = stringPreferencesKey("corners")
+        val uiDensity = stringPreferencesKey("ui_density")
+        val titleSize = stringPreferencesKey("title_size")
+        val cardSize = stringPreferencesKey("card_size")
+        val reduceMotion = booleanPreferencesKey("reduce_motion")
+        val navStyle = stringPreferencesKey("nav_style")
+        val navLabels = stringPreferencesKey("nav_labels")
+        val navHideOnScroll = booleanPreferencesKey("nav_hide_on_scroll")
+        val navTabs = stringPreferencesKey("nav_tabs")
+        val startTab = stringPreferencesKey("start_tab")
+        val miniPlayerStyle = stringPreferencesKey("mini_player_style")
+        val miniSkipButtons = booleanPreferencesKey("mini_skip_buttons")
+        val miniProgress = stringPreferencesKey("mini_progress")
+        val playerBackground = stringPreferencesKey("player_background")
+        val playerArtCorners = intPreferencesKey("player_art_corners")
+        val transportStyle = stringPreferencesKey("transport_style")
+        val scrubberStyle = stringPreferencesKey("scrubber_style")
+        val artShrinkOnPause = booleanPreferencesKey("art_shrink_on_pause")
+        val showOutputDevice = booleanPreferencesKey("show_output_device")
+        val lyricsAlign = stringPreferencesKey("lyrics_align")
+        val libraryView = stringPreferencesKey("library_view")
+        val libraryStartTab = stringPreferencesKey("library_start_tab")
+        val replayThemeColors = booleanPreferencesKey("replay_theme_colors")
+
+        /** Everything the "Reset look" button puts back. */
+        val look: List<Preferences.Key<*>> by lazy {
+            listOf(
+                fontChoice, textScale, corners, uiDensity, titleSize, cardSize, reduceMotion, navStyle, navLabels, navHideOnScroll,
+                navTabs, startTab, miniPlayerStyle, miniSkipButtons, miniProgress, playerBackground, playerArtCorners, transportStyle,
+                scrubberStyle, artShrinkOnPause, showOutputDevice, lyricsAlign, libraryView, replayThemeColors,
+            )
+        }
     }
 
     private inline fun <reified E : Enum<E>> Preferences.enum(key: Preferences.Key<String>, def: E): E =
@@ -326,6 +424,32 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             } ?: d.homeShortcuts,
             homeRecentTiles = p[K.homeRecentTiles] ?: d.homeRecentTiles,
             homePlaylists = p[K.homePlaylists]?.let { runCatching { json.decodeFromString<List<PinnedPlaylist>>(it) }.getOrNull() } ?: d.homePlaylists,
+            homeCustomizeButton = p[K.homeCustomizeButton] ?: d.homeCustomizeButton,
+            fontChoice = p.enum(K.fontChoice, d.fontChoice),
+            textScale = p[K.textScale] ?: d.textScale,
+            corners = p.enum(K.corners, d.corners),
+            uiDensity = p.enum(K.uiDensity, d.uiDensity),
+            titleSize = p.enum(K.titleSize, d.titleSize),
+            cardSize = p.enum(K.cardSize, d.cardSize),
+            reduceMotion = p[K.reduceMotion] ?: d.reduceMotion,
+            navStyle = p.enum(K.navStyle, d.navStyle),
+            navLabels = p.enum(K.navLabels, d.navLabels),
+            navHideOnScroll = p[K.navHideOnScroll] ?: d.navHideOnScroll,
+            navTabs = p[K.navTabs]?.split(",")?.mapNotNull { n -> NavTab.entries.firstOrNull { it.name == n } }?.takeIf { it.isNotEmpty() } ?: d.navTabs,
+            startTab = p.enum(K.startTab, d.startTab),
+            miniPlayerStyle = p.enum(K.miniPlayerStyle, d.miniPlayerStyle),
+            miniSkipButtons = p[K.miniSkipButtons] ?: d.miniSkipButtons,
+            miniProgress = p.enum(K.miniProgress, d.miniProgress),
+            playerBackground = p.enum(K.playerBackground, d.playerBackground),
+            playerArtCorners = p[K.playerArtCorners] ?: d.playerArtCorners,
+            transportStyle = p.enum(K.transportStyle, d.transportStyle),
+            scrubberStyle = p.enum(K.scrubberStyle, d.scrubberStyle),
+            artShrinkOnPause = p[K.artShrinkOnPause] ?: d.artShrinkOnPause,
+            showOutputDevice = p[K.showOutputDevice] ?: d.showOutputDevice,
+            lyricsAlign = p.enum(K.lyricsAlign, d.lyricsAlign),
+            libraryView = p.enum(K.libraryView, d.libraryView),
+            libraryStartTab = p[K.libraryStartTab] ?: d.libraryStartTab,
+            replayThemeColors = p[K.replayThemeColors] ?: d.replayThemeColors,
         )
     }
 
@@ -418,4 +542,34 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     fun setHomeShortcuts(v: List<HomeShortcut>) = edit { it[K.homeShortcuts] = v.joinToString(",") { s -> s.name } }
     fun setHomeRecentTiles(v: Int) = edit { it[K.homeRecentTiles] = v }
     fun setHomePlaylists(v: List<PinnedPlaylist>) = edit { it[K.homePlaylists] = json.encodeToString<List<PinnedPlaylist>>(v) }
+    fun setHomeCustomizeButton(v: Boolean) = edit { it[K.homeCustomizeButton] = v }
+    fun setFontChoice(v: FontChoice) = edit { it[K.fontChoice] = v.name }
+    fun setTextScale(v: Float) = edit { it[K.textScale] = v }
+    fun setCorners(v: Corners) = edit { it[K.corners] = v.name }
+    fun setUiDensity(v: UiDensity) = edit { it[K.uiDensity] = v.name }
+    fun setTitleSize(v: TitleSize) = edit { it[K.titleSize] = v.name }
+    fun setCardSize(v: CardSize) = edit { it[K.cardSize] = v.name }
+    fun setReduceMotion(v: Boolean) = edit { it[K.reduceMotion] = v }
+    fun setNavStyle(v: NavBarStyle) = edit { it[K.navStyle] = v.name }
+    fun setNavLabels(v: NavLabels) = edit { it[K.navLabels] = v.name }
+    fun setNavHideOnScroll(v: Boolean) = edit { it[K.navHideOnScroll] = v }
+    fun setNavTabs(v: List<NavTab>) = edit { it[K.navTabs] = v.joinToString(",") { t -> t.name } }
+    fun setStartTab(v: NavTab) = edit { it[K.startTab] = v.name }
+    fun setMiniPlayerStyle(v: MiniPlayerStyle) = edit { it[K.miniPlayerStyle] = v.name }
+    fun setMiniSkipButtons(v: Boolean) = edit { it[K.miniSkipButtons] = v }
+    fun setMiniProgress(v: MiniProgress) = edit { it[K.miniProgress] = v.name }
+    fun setPlayerBackground(v: PlayerBackground) = edit { it[K.playerBackground] = v.name }
+    fun setPlayerArtCorners(v: Int) = edit { it[K.playerArtCorners] = v }
+    fun setTransportStyle(v: TransportStyle) = edit { it[K.transportStyle] = v.name }
+    fun setScrubberStyle(v: ScrubberStyle) = edit { it[K.scrubberStyle] = v.name }
+    fun setArtShrinkOnPause(v: Boolean) = edit { it[K.artShrinkOnPause] = v }
+    fun setShowOutputDevice(v: Boolean) = edit { it[K.showOutputDevice] = v }
+    fun setLyricsAlign(v: LyricsAlign) = edit { it[K.lyricsAlign] = v.name }
+    fun setLibraryView(v: LibraryView) = edit { it[K.libraryView] = v.name }
+    fun setLibraryStartTab(v: String) = edit { it[K.libraryStartTab] = v }
+    fun setReplayThemeColors(v: Boolean) = edit { it[K.replayThemeColors] = v }
+
+    /** Puts every look & layout option back to how Prism ships (colours and backgrounds are left alone). */
+    @Suppress("UNCHECKED_CAST")
+    fun resetLook() = edit { p -> K.look.forEach { p.remove(it as Preferences.Key<Any>) } }
 }

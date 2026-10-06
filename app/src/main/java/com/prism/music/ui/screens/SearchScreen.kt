@@ -161,8 +161,14 @@ fun SearchScreen(bottomPadding: Dp) {
     val onSong: (SongItem) -> Unit = { c.player.playSingle(it.song) }
     val open: (BrowseItem) -> Unit = { item -> saveQuery(live); focus.clearFocus(); nav.open(item, onSong) }
 
-    Column(Modifier.fillMaxSize().statusBarsPadding()) {
-        GlassSurface(Modifier.padding(16.dp).fillMaxWidth().height(54.dp), shape = RoundedCornerShape(50)) {
+    val ui = com.prism.music.ui.theme.LocalUi.current
+    Column(Modifier.fillMaxSize()) {
+        // The title steps aside while you type, leaving the results more room.
+        androidx.compose.animation.AnimatedVisibility(!focused && query.isBlank()) {
+            com.prism.music.ui.components.ScreenHeader("Search", Modifier.padding(bottom = 2.dp))
+        }
+        if (focused || query.isNotBlank()) Spacer(Modifier.statusBarsPadding())
+        GlassSurface(Modifier.padding(horizontal = 16.dp, vertical = 10.dp).fillMaxWidth().height(54.dp), shape = ui.shape(27.dp), elevation = 6.dp) {
             Row(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.width(12.dp))
@@ -192,9 +198,10 @@ fun SearchScreen(bottomPadding: Dp) {
             return@Column
         }
 
-        LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(SearchFilter.entries) { f -> FilterChip(f == filter, { filter = f }, { Text(f.label) }) }
-        }
+        com.prism.music.ui.components.ChipRow(
+            SearchFilter.entries, { it == filter }, { it.label },
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 6.dp),
+        ) { filter = it }
         Box(Modifier.fillMaxWidth().height(3.dp).padding(horizontal = 16.dp)) {
             if (loading) LinearProgressIndicator(Modifier.fillMaxWidth().clip(CircleShape))
         }
@@ -275,7 +282,7 @@ private fun Browse(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         if (recents.isNotEmpty()) {
-            item(span = { GridItemSpan(2) }) { Text("Recent searches", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(vertical = 6.dp)) }
+            item(span = { GridItemSpan(2) }) { Text("Recent searches", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold), modifier = Modifier.padding(top = 6.dp, bottom = 2.dp)) }
             items(recents.take(6), span = { GridItemSpan(2) }) { r ->
                 SuggestionRow(Icons.Rounded.History, r, onFill = onFill, onRemove = { onRemove(r) }) { onPick(r) }
             }
@@ -292,7 +299,7 @@ private fun Browse(
                         Modifier.fillMaxWidth().clickable { nav.go(com.prism.music.ui.Routes.MOODS) }.padding(top = 14.dp, bottom = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                        Text(title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold), modifier = Modifier.weight(1f))
                         Icon(Icons.AutoMirrored.Rounded.ArrowForward, "See all", Modifier.padding(end = 4.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
@@ -343,13 +350,15 @@ private fun TopCard(item: BrowseItem, onClick: () -> Unit, onPlay: () -> Unit) {
         is ArtistItem -> item.subtitle.removePrefix("Artist • ")
         else -> item.subtitle.split(" • ").drop(1).joinToString(" · ").ifBlank { item.subtitle }
     }
+    val ui = com.prism.music.ui.theme.LocalUi.current
     Row(
-        Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth().clip(RoundedCornerShape(22.dp))
-            .background(scheme.surfaceContainerHigh).clickable(onClick = onClick).padding(16.dp),
+        Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth().clip(ui.card)
+            .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(scheme.surfaceContainerHigh, scheme.primaryContainer.copy(alpha = 0.55f))))
+            .clickable(onClick = onClick).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Artwork(
-            LocalContainer.current.covers.art(item), Modifier.size(96.dp), if (item is ArtistItem) CircleShape else RoundedCornerShape(14.dp), size = 544,
+            LocalContainer.current.covers.art(item), Modifier.size(96.dp), if (item is ArtistItem) CircleShape else ui.art, size = 544,
             placeholderIcon = if (item is ArtistItem) Icons.Rounded.Person else Icons.Rounded.Album,
         )
         Spacer(Modifier.width(16.dp))
@@ -385,13 +394,14 @@ fun ResultRow(item: BrowseItem, onClick: () -> Unit) {
         SongRow(item.song, trailingInfo = if (item.song.isVideo) "Video" else null, onClick = onClick)
         return
     }
+    val ui = com.prism.music.ui.theme.LocalUi.current
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 7.dp),
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = ui.gap(7.dp)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Artwork(
             LocalContainer.current.covers.art(item), Modifier.size(56.dp),
-            if (item is ArtistItem) CircleShape else RoundedCornerShape(10.dp), size = 226,
+            if (item is ArtistItem) CircleShape else ui.smallArt, size = 226,
             placeholderIcon = when (item) {
                 is ArtistItem -> Icons.Rounded.Person
                 is AlbumItem -> Icons.Rounded.Album

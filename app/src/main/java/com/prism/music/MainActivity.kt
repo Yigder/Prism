@@ -16,29 +16,43 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.LibraryBooks
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.LibraryMusic
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -57,14 +71,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.unit.lerp
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -79,6 +94,11 @@ import coil3.request.allowHardware
 import coil3.toBitmap
 import com.prism.music.data.model.Song
 import com.prism.music.data.model.hiRes
+import com.prism.music.data.prefs.AppSettings
+import com.prism.music.data.prefs.MiniPlayerStyle
+import com.prism.music.data.prefs.NavBarStyle
+import com.prism.music.data.prefs.NavLabels
+import com.prism.music.data.prefs.NavTab
 import com.prism.music.download.SmartDownloadWorker
 import com.prism.music.ui.LocalNavigator
 import com.prism.music.ui.Navigator
@@ -98,13 +118,13 @@ import com.prism.music.ui.screens.ReplayScreen
 import com.prism.music.ui.screens.SearchScreen
 import com.prism.music.ui.screens.SettingsScreen
 import com.prism.music.ui.screens.WelcomeScreen
+import com.prism.music.ui.theme.BackdropScreen
 import com.prism.music.ui.theme.GlassSurface
 import com.prism.music.ui.theme.LocalContainer
 import com.prism.music.ui.theme.LocalHazeState
 import com.prism.music.ui.theme.PrismTheme
-import dev.chrisbanes.haze.hazeSource
-import com.prism.music.ui.theme.BackdropScreen
 import com.prism.music.ui.theme.ScreenBackdrop
+import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -141,14 +161,28 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private data class Tab(val route: String, val label: String, val icon: ImageVector)
+private data class Tab(val route: String, val label: String, val icon: ImageVector, val selectedIcon: ImageVector)
 
-private val tabs = listOf(
-    Tab(Routes.HOME, "Home", Icons.Rounded.Home),
-    Tab(Routes.SEARCH, "Search", Icons.Rounded.Search),
-    Tab(Routes.LIBRARY, "Library", Icons.AutoMirrored.Rounded.LibraryBooks),
-    Tab(Routes.REPLAY, "Replay", Icons.Rounded.AutoAwesome),
-)
+private fun NavTab.tab(): Tab = when (this) {
+    NavTab.HOME -> Tab(Routes.HOME, label, Icons.Outlined.Home, Icons.Rounded.Home)
+    NavTab.SEARCH -> Tab(Routes.SEARCH, label, Icons.Rounded.Search, Icons.Rounded.Search)
+    NavTab.LIBRARY -> Tab(Routes.LIBRARY, label, Icons.Outlined.LibraryMusic, Icons.Rounded.LibraryMusic)
+    NavTab.REPLAY -> Tab(Routes.REPLAY, label, Icons.Outlined.AutoAwesome, Icons.Rounded.AutoAwesome)
+    NavTab.SETTINGS -> Tab(Routes.SETTINGS, label, Icons.Outlined.Settings, Icons.Rounded.Settings)
+}
+
+/** Heights of the floating chrome, so pages can leave room for it. */
+private fun navHeight(style: NavBarStyle): Dp = when (style) {
+    NavBarStyle.FLOATING -> 64.dp
+    NavBarStyle.DOCKED -> 62.dp
+    NavBarStyle.MINIMAL -> 54.dp
+}
+
+private fun miniHeight(style: MiniPlayerStyle): Dp = when (style) {
+    MiniPlayerStyle.CARD -> 64.dp
+    MiniPlayerStyle.SLIM -> 54.dp
+    MiniPlayerStyle.PILL -> 56.dp
+}
 
 @Composable
 private fun rememberArtworkColor(song: Song?): Color? {
@@ -184,12 +218,20 @@ private fun PrismRoot(deepLink: MutableStateFlow<Uri?>) {
         val backStack by navController.currentBackStackEntryAsState()
         val route = backStack?.destination?.route
         val showChrome = route != Routes.LOGIN && route != Routes.WELCOME
-        val bottomPadding = if (song != null) 156.dp else 92.dp
-        // Decided once: the welcome screen is a real destination, so signing in
-        // from it navigates inside a graph that already exists.
-        val start = remember { if (!settings.onboarded && !settings.isLoggedIn) Routes.WELCOME else Routes.HOME }
-        val goHome: () -> Unit = {
-            navController.navigate(Routes.HOME) {
+        val tabs = settings.navTabs.map { it.tab() }
+
+        // Room the pages leave at the bottom for the bar, the mini player and the system's own bar.
+        val navInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        val bottomPadding = navInset + navHeight(settings.navStyle) +
+            (if (settings.navStyle == NavBarStyle.DOCKED) 0.dp else 16.dp) +
+            (if (song != null) miniHeight(settings.miniPlayerStyle) + 8.dp else 0.dp)
+
+        // Decided once: the tab Prism opens on is the root every other tab sits on, and the welcome
+        // screen is a real destination, so signing in from it navigates inside a graph that already exists.
+        val root = remember { (settings.startTab.takeIf { it in settings.navTabs } ?: settings.navTabs.first()).tab().route }
+        val start = remember { if (!settings.onboarded && !settings.isLoggedIn) Routes.WELCOME else root }
+        val goRoot: () -> Unit = {
+            navController.navigate(root) {
                 popUpTo(navController.graph.id) { inclusive = true }
                 launchSingleTop = true
             }
@@ -210,13 +252,28 @@ private fun PrismRoot(deepLink: MutableStateFlow<Uri?>) {
             }
         }
         LaunchedEffect(route) { barCompact = false }
-        val barT by animateFloatAsState(if (barCompact) 1f else 0f, spring(dampingRatio = 0.85f, stiffness = Spring.StiffnessMediumLow), label = "bar")
+        val barT by animateFloatAsState(
+            if (barCompact && settings.navHideOnScroll) 1f else 0f,
+            spring(dampingRatio = 0.85f, stiffness = Spring.StiffnessMediumLow), label = "bar",
+        )
 
         LaunchedEffect(Unit) {
             c.player.errors.collect { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
         }
         LaunchedEffect(Unit) {
             deepLink.collect { uri -> if (uri != null) { handleDeepLink(uri, navigator, c); deepLink.value = null } }
+        }
+
+        val selectTab: (String) -> Unit = { r ->
+            if (r == root) {
+                // The root tab always means its top, from anywhere (Settings included).
+                if (!navController.popBackStack(root, inclusive = false)) goRoot()
+            } else {
+                navController.navigate(r) {
+                    popUpTo(root)
+                    launchSingleTop = true
+                }
+            }
         }
 
         CompositionLocalProvider(LocalNavigator provides navigator, LocalHazeState provides haze) {
@@ -226,7 +283,7 @@ private fun PrismRoot(deepLink: MutableStateFlow<Uri?>) {
                         composable(Routes.WELCOME) {
                             WelcomeScreen(
                                 onSignIn = { navController.navigate(Routes.LOGIN) },
-                                onSkip = { c.settings.setOnboarded(true); goHome() },
+                                onSkip = { c.settings.setOnboarded(true); goRoot() },
                             )
                         }
                         composable(Routes.HOME) { ScreenBackdrop(BackdropScreen.HOME) { HomeScreen(bottomPadding) } }
@@ -238,13 +295,13 @@ private fun PrismRoot(deepLink: MutableStateFlow<Uri?>) {
                         composable("settings/{section}", listOf(navArgument("section") { type = NavType.StringType })) {
                             ScreenBackdrop(BackdropScreen.SETTINGS) { SettingsScreen(bottomPadding, com.prism.music.ui.screens.SettingsSection.of(it.arguments?.getString("section"))) }
                         }
-                        composable(Routes.EQ) { EqualizerScreen(bottomPadding) }
-                        composable(Routes.CATALOGUE) { CatalogueScreen(bottomPadding) }
-                        composable(Routes.MOODS) { com.prism.music.ui.screens.MoodsScreen(bottomPadding) }
+                        composable(Routes.EQ) { ScreenBackdrop(BackdropScreen.SETTINGS) { EqualizerScreen(bottomPadding) } }
+                        composable(Routes.CATALOGUE) { ScreenBackdrop(BackdropScreen.HOME) { CatalogueScreen(bottomPadding) } }
+                        composable(Routes.MOODS) { ScreenBackdrop(BackdropScreen.SEARCH) { com.prism.music.ui.screens.MoodsScreen(bottomPadding) } }
                         composable(Routes.DOWNLOADS) { CollectionScreen(CollectionType.DOWNLOADS, "downloads", null, bottomPadding) }
                         composable(Routes.LOGIN) {
                             LoginScreen(
-                                onDone = goHome,
+                                onDone = goRoot,
                                 onBack = { navController.popBackStack() },
                             )
                         }
@@ -278,30 +335,26 @@ private fun PrismRoot(deepLink: MutableStateFlow<Uri?>) {
                     }
                 }
 
-                // Floating chrome: mini player + glass tab bar
-                if (showChrome) Column(
-                    Modifier.align(Alignment.BottomCenter).fillMaxWidth().navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp),
-                ) {
-                    AnimatedVisibility(song != null && !playerOpen, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut()) {
-                        MiniPlayer(Modifier.padding(bottom = 8.dp)) { playerOpen = true }
-                    }
-                    TabBar(route, barT) { r ->
-                        if (r == Routes.HOME) {
-                            // Home always means the Home root, from anywhere (Settings included).
-                            if (!navController.popBackStack(Routes.HOME, inclusive = false)) goHome()
-                        } else {
-                            navController.navigate(r) {
-                                popUpTo(Routes.HOME)
-                                launchSingleTop = true
-                            }
+                // Floating chrome: mini player + tab bar
+                if (showChrome) {
+                    val docked = settings.navStyle == NavBarStyle.DOCKED
+                    Column(
+                        Modifier.align(Alignment.BottomCenter).fillMaxWidth()
+                            .then(if (docked) Modifier else Modifier.navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp)),
+                    ) {
+                        AnimatedVisibility(song != null && !playerOpen, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut()) {
+                            MiniPlayer(
+                                Modifier.padding(bottom = 8.dp).then(if (docked) Modifier.padding(horizontal = 10.dp) else Modifier),
+                            ) { playerOpen = true }
                         }
+                        TabBar(tabs, route, barT, settings, selectTab)
                     }
                 }
 
                 AnimatedVisibility(
                     playerOpen && song != null,
-                    enter = slideInVertically(tween(420)) { it } + fadeIn(tween(200)),
-                    exit = slideOutVertically(tween(360)) { it } + fadeOut(tween(300)),
+                    enter = slideInVertically(tween(if (settings.reduceMotion) 260 else 420)) { it } + fadeIn(tween(200)),
+                    exit = slideOutVertically(tween(if (settings.reduceMotion) 240 else 360)) { it } + fadeOut(tween(300)),
                 ) {
                     NowPlayingScreen { playerOpen = false }
                 }
@@ -310,41 +363,98 @@ private fun PrismRoot(deepLink: MutableStateFlow<Uri?>) {
     }
 }
 
-/** @param compact 0 = full bar with labels, 1 = slim icon-only bar (while scrolling down). */
+private fun isSelected(tab: Tab, route: String?): Boolean =
+    route == tab.route || (tab.route == Routes.SETTINGS && route?.startsWith("settings/") == true)
+
+/** @param compact 0 = full bar, 1 = slim bar (while scrolling down). */
 @Composable
-private fun TabBar(route: String?, compact: Float, onSelect: (String) -> Unit) {
-    val height = lerp(68.dp, 50.dp, compact)
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-    GlassSurface(Modifier.fillMaxWidth(1f - 0.30f * compact).height(height), shape = RoundedCornerShape(height / 2)) {
-        Row(Modifier.fillMaxSize().padding(lerp(6.dp, 4.dp, compact)), verticalAlignment = Alignment.CenterVertically) {
-            tabs.forEach { tab ->
-                val selected = route == tab.route
-                val bg by animateColorAsState(
-                    if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f) else Color.Transparent, label = "tab",
-                )
-                val fg = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                Column(
-                    Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(28.dp))
-                        .background(bg)
-                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onSelect(tab.route) },
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+private fun TabBar(tabs: List<Tab>, route: String?, compact: Float, settings: AppSettings, onSelect: (String) -> Unit) {
+    when (settings.navStyle) {
+        NavBarStyle.FLOATING -> {
+            val height = lerp(64.dp, 50.dp, compact)
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                GlassSurface(Modifier.fillMaxWidth(1f - 0.30f * compact).height(height), shape = RoundedCornerShape(height / 2)) {
+                    Row(Modifier.fillMaxSize().padding(lerp(6.dp, 4.dp, compact)), verticalAlignment = Alignment.CenterVertically) {
+                        tabs.forEach { tab -> TabItem(tab, isSelected(tab, route), settings.navLabels, compact, Modifier.weight(1f).fillMaxHeight()) { onSelect(tab.route) } }
+                    }
+                }
+            }
+        }
+        NavBarStyle.DOCKED -> {
+            GlassSurface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp), elevation = 4.dp) {
+                Row(
+                    Modifier.fillMaxWidth().navigationBarsPadding().height(lerp(62.dp, 50.dp, compact)).padding(horizontal = 8.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(tab.icon, tab.label, tint = fg, modifier = Modifier.size(24.dp))
-                    if (compact < 0.98f) Text(
-                        tab.label, color = fg, style = MaterialTheme.typography.labelSmall, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                        maxLines = 1,
-                        modifier = Modifier
-                            .height(lerp(16.dp, 0.dp, compact))
-                            .graphicsLayer { alpha = (1f - compact * 1.6f).coerceIn(0f, 1f) },
-                    )
+                    tabs.forEach { tab -> TabItem(tab, isSelected(tab, route), settings.navLabels, compact, Modifier.weight(1f).fillMaxHeight()) { onSelect(tab.route) } }
+                }
+            }
+        }
+        NavBarStyle.MINIMAL -> {
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                GlassSurface(Modifier.height(54.dp), shape = RoundedCornerShape(27.dp)) {
+                    Row(Modifier.fillMaxHeight().padding(5.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                        tabs.forEach { tab -> MinimalTab(tab, isSelected(tab, route)) { onSelect(tab.route) } }
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun TabItem(tab: Tab, selected: Boolean, labels: NavLabels, compact: Float, modifier: Modifier, onClick: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val fg = if (selected) scheme.primary else scheme.onSurfaceVariant
+    val indicator by animateColorAsState(if (selected) scheme.primary.copy(alpha = 0.16f) else Color.Transparent, label = "tab")
+    val click = Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClickLabel = tab.label, onClick = onClick)
+    val icon = if (selected) tab.selectedIcon else tab.icon
+    when (labels) {
+        NavLabels.ALWAYS -> Column(
+            modifier.clip(RoundedCornerShape(28.dp)).background(indicator).then(click),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Icon(icon, tab.label, tint = fg, modifier = Modifier.size(24.dp))
+            if (compact < 0.98f) Text(
+                tab.label, color = fg, style = MaterialTheme.typography.labelSmall, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                maxLines = 1,
+                modifier = Modifier.height(lerp(16.dp, 0.dp, compact)).graphicsLayer { alpha = (1f - compact * 1.6f).coerceIn(0f, 1f) },
+            )
+        }
+        // The picked tab grows into a capsule with its name beside the icon.
+        NavLabels.SELECTED -> Box(modifier.then(click), contentAlignment = Alignment.Center) {
+            Row(
+                Modifier.height(40.dp).clip(CircleShape).background(indicator).padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(icon, tab.label, tint = fg, modifier = Modifier.size(22.dp))
+                AnimatedVisibility(selected && compact < 0.5f, enter = expandHorizontally() + fadeIn(), exit = shrinkHorizontally() + fadeOut()) {
+                    Row {
+                        Spacer(Modifier.width(6.dp))
+                        Text(tab.label, color = fg, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, maxLines = 1)
+                    }
+                }
+            }
+        }
+        NavLabels.NEVER -> Box(modifier.then(click), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(52.dp, 40.dp).clip(CircleShape).background(indicator), contentAlignment = Alignment.Center) {
+                Icon(icon, tab.label, tint = fg, modifier = Modifier.size(24.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun MinimalTab(tab: Tab, selected: Boolean, onClick: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val bg by animateColorAsState(if (selected) scheme.onSurface else Color.Transparent, label = "minTab")
+    Box(
+        Modifier.size(54.dp, 44.dp).clip(CircleShape).background(bg)
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClickLabel = tab.label, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(if (selected) tab.selectedIcon else tab.icon, tab.label, tint = if (selected) scheme.surface else scheme.onSurfaceVariant, modifier = Modifier.size(23.dp))
     }
 }
 

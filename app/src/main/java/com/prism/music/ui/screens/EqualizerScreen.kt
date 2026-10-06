@@ -68,13 +68,12 @@ fun EqualizerScreen(bottomPadding: Dp) {
     var eq by remember { mutableStateOf(saved) }
     fun update(new: EqSettings) { eq = new; c.settings.setEq(new) }
 
-    Column(Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { Text("Equalizer") },
-            navigationIcon = { IconButton(onClick = { nav.back() }) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
-            actions = { Switch(eq.enabled, { update(eq.copy(enabled = it)) }, Modifier.padding(end = 12.dp)) },
-        )
-        LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = bottomPadding + 24.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    com.prism.music.ui.components.SubPage(
+        "Equalizer", bottomPadding,
+        subtitle = if (eq.enabled) "On · ${eq.preset}" else "Off",
+        horizontalPadding = 16.dp, spacing = 22.dp,
+        actions = { Switch(eq.enabled, { update(eq.copy(enabled = it)) }) },
+    ) {
             item {
                 Group("10-band equalizer · ${eq.preset}") {
                     EqGraph(eq, Modifier.fillMaxWidth().height(240.dp).padding(horizontal = 8.dp)) { band, db ->
@@ -83,11 +82,9 @@ fun EqualizerScreen(bottomPadding: Dp) {
                     Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
                         EqPresets.labels.forEach { Text(it, Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center) }
                     }
-                    FlowRow(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        EqPresets.presets.forEach { (name, bands) ->
-                            FilterChip(eq.preset == name, { update(eq.copy(enabled = true, preset = name, bands = bands)) }, { Text(name) })
-                        }
-                    }
+                    com.prism.music.ui.components.ChoiceFlow(
+                        EqPresets.presets.toList(), { it.first == eq.preset }, { it.first }, Modifier.padding(12.dp),
+                    ) { (name, bands) -> update(eq.copy(enabled = true, preset = name, bands = bands)) }
                 }
             }
             item {
@@ -107,7 +104,6 @@ fun EqualizerScreen(bottomPadding: Dp) {
                     if (s.spatial) SliderRow("Intensity", "${(s.spatialAmount * 100).toInt()}%", s.spatialAmount, 0.1f..1f) { c.settings.setSpatialAmount(it) }
                 }
             }
-        }
     }
 }
 

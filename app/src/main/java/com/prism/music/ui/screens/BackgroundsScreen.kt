@@ -104,21 +104,14 @@ fun BackgroundsScreen(bottomPadding: Dp) {
         }
     }
 
-    Column(Modifier.fillMaxSize().nestedScroll(scroll.nestedScrollConnection)) {
-        LargeTopAppBar(
-            title = { Text("Backgrounds") },
-            navigationIcon = { IconButton(onClick = { nav.back() }) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
-            scrollBehavior = scroll,
-            colors = TopAppBarDefaults.largeTopAppBarColors(containerColor = Color.Transparent, scrolledContainerColor = MaterialTheme.colorScheme.surface),
-        )
-        LazyVerticalGrid(
-            GridCells.Fixed(3),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = bottomPadding + 32.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            item(span = { GridItemSpan(3) }) {
-                Column(Modifier.clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.surfaceContainer).padding(vertical = 8.dp)) {
+    val ui = com.prism.music.ui.theme.LocalUi.current
+    com.prism.music.ui.components.SubPage(
+        "Backgrounds", bottomPadding,
+        subtitle = "Ready-made designs or your own photo",
+        horizontalPadding = 16.dp, spacing = 12.dp,
+    ) {
+            item {
+                Column(Modifier.clip(ui.card).background(MaterialTheme.colorScheme.surfaceContainer).padding(vertical = 8.dp)) {
                     Row(Modifier.fillMaxWidth().clickable { everywhere = !everywhere }.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text("Same on every screen", style = MaterialTheme.typography.bodyLarge)
@@ -129,24 +122,25 @@ fun BackgroundsScreen(bottomPadding: Dp) {
                     if (!everywhere) LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         rowItems(BackdropScreen.entries) { sc ->
                             val (st, _) = Backdrop.parse(s.backdrops[sc.name])
-                            FilterChip(sc == screen, { screen = sc }, { Text(if (st == Backdrop.DEFAULT) sc.label else "${sc.label} · ${st.label}") })
+                            com.prism.music.ui.components.PrismChip(sc == screen, { screen = sc }, if (st == Backdrop.DEFAULT) sc.label else "${sc.label} · ${st.label}")
                         }
                     }
                 }
             }
-            item(span = { GridItemSpan(3) }) {
-                Text(
+            item {
+                com.prism.music.ui.components.Eyebrow(
                     if (everywhere) "Choose a background" else "Background for ${screen.label}",
-                    style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(start = 4.dp, top = 6.dp),
+                    Modifier.padding(start = 8.dp, top = 10.dp),
                 )
             }
-            items(Backdrop.entries, key = { it.name }) { style ->
+            Backdrop.entries.chunked(3).forEachIndexed { r, row -> item(key = "bg:$r") {
+              Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+              row.forEach { style ->
                 val selected = style == currentStyle
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                     Box(
-                        Modifier.fillMaxWidth().aspectRatio(0.62f).clip(RoundedCornerShape(18.dp))
-                            .border(if (selected) 3.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(18.dp))
+                        Modifier.fillMaxWidth().aspectRatio(0.62f).clip(ui.shape(18.dp))
+                            .border(if (selected) 3.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, ui.shape(18.dp))
                             .clickable {
                                 when (style) {
                                     Backdrop.DEFAULT -> apply(null)
@@ -172,9 +166,12 @@ fun BackgroundsScreen(bottomPadding: Dp) {
                     Spacer(Modifier.height(6.dp))
                     Text(style.label, style = MaterialTheme.typography.labelLarge)
                 }
-            }
-            item(span = { GridItemSpan(3) }) {
-                Column(Modifier.padding(top = 8.dp).clip(RoundedCornerShape(20.dp)).background(MaterialTheme.colorScheme.surfaceContainer).padding(16.dp)) {
+              }
+              repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+              }
+            } }
+            item {
+                Column(Modifier.padding(top = 8.dp).clip(ui.card).background(MaterialTheme.colorScheme.surfaceContainer).padding(16.dp)) {
                     Text("Softness", style = MaterialTheme.typography.bodyLarge)
                     Text("How much the theme colour washes over the background, for easier reading", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Slider(dim, { dim = it }, valueRange = 0f..0.8f, onValueChangeFinished = { c.settings.setBackdropDim(dim) })
@@ -188,7 +185,6 @@ fun BackgroundsScreen(bottomPadding: Dp) {
                     if (s.backdrops.isNotEmpty()) TextButton(onClick = { c.settings.setBackdrops(emptyMap()) }, Modifier.align(Alignment.End)) { Text("Reset all to default") }
                 }
             }
-        }
     }
 }
 

@@ -201,7 +201,7 @@ private fun OptionTile(o: Option, modifier: Modifier, onClick: () -> Unit) {
     Column(
         modifier
             .height(66.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(com.prism.music.ui.theme.LocalUi.current.shape(14.dp))
             .background(if (o.active) Color.White.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.08f))
             .clickable(onClick = onClick)
             .padding(horizontal = 4.dp, vertical = 8.dp),

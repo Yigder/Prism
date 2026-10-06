@@ -371,10 +371,12 @@ fun SweptLine(
         line.words.map { w -> val start = acc; acc += w.text.length; start to acc }
     }
     Box(modifier) {
-        Text(line.text, style = style, color = Color.White.copy(alpha = dimAlpha), maxLines = maxLines, overflow = TextOverflow.Ellipsis, onTextLayout = { layout = it })
+        // Full width, so centred and right-aligned lines sit where their plain copies do.
+        val wide = if (style.textAlign == TextAlign.Center || style.textAlign == TextAlign.End) Modifier.fillMaxWidth() else Modifier
+        Text(line.text, wide, style = style, color = Color.White.copy(alpha = dimAlpha), maxLines = maxLines, overflow = TextOverflow.Ellipsis, onTextLayout = { layout = it })
         Text(
             line.text, style = style, color = Color.White, maxLines = maxLines, overflow = TextOverflow.Ellipsis,
-            modifier = Modifier
+            modifier = wide
                 .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
                 .drawWithContent {
                     val l = layout ?: return@drawWithContent
@@ -519,15 +521,20 @@ fun LyricsPanel(
                 GapDots(line, lines.getOrNull(index + 1)?.timeMs ?: line.endMs, clock, isActive, alpha) { c.player.seekToLyric(line.timeMs) }
                 return@itemsIndexed
             }
+            val centred = settings.lyricsAlign == com.prism.music.data.prefs.LyricsAlign.CENTER
             val style = (if (synced) TextStyle(fontSize = (34 * scale).sp, lineHeight = (41 * scale).sp) else TextStyle(fontSize = (30 * scale).sp, lineHeight = (38 * scale).sp))
-                .copy(fontWeight = FontWeight.ExtraBold, textAlign = if (line.alignEnd) TextAlign.End else TextAlign.Start)
+                .copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    fontFamily = MaterialTheme.typography.bodyLarge.fontFamily,
+                    textAlign = when { line.alignEnd -> TextAlign.End; centred -> TextAlign.Center; else -> TextAlign.Start },
+                )
             val lineScale by animateFloatAsState(if (isActive || !synced) 1f else 0.98f, tween(LYRIC_SETTLE_MS, easing = LYRIC_EASING), label = "scale")
             Box(
                 Modifier
                     .fillMaxWidth()
                     .graphicsLayer {
                         scaleX = lineScale; scaleY = lineScale
-                        transformOrigin = TransformOrigin(if (line.alignEnd) 1f else 0f, 0.5f)
+                        transformOrigin = TransformOrigin(if (line.alignEnd) 1f else if (centred) 0.5f else 0f, 0.5f)
                     }
                     .blur(blur, BlurredEdgeTreatment.Unbounded)
                     .clip(RoundedCornerShape(10.dp))

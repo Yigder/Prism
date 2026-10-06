@@ -216,12 +216,10 @@ private fun ArtistContent(page: ArtistPage, bottomPadding: Dp) {
                 page.name, Modifier.align(Alignment.Center).padding(horizontal = 72.dp).graphicsLayer { alpha = solid },
                 style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
-            GlassSurface(Modifier.align(Alignment.CenterStart).padding(start = 12.dp).size(44.dp), shape = RoundedCornerShape(50)) {
-                IconButton(onClick = { nav.back() }, Modifier.fillMaxSize()) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") }
-            }
-            if (page.radioPlaylistId != null) GlassSurface(Modifier.align(Alignment.CenterEnd).padding(end = 12.dp).size(44.dp), shape = RoundedCornerShape(50)) {
-                IconButton(onClick = mix, Modifier.fillMaxSize()) { Icon(Icons.Rounded.Radio, "Start ${page.name} Mix") }
-            }
+            com.prism.music.ui.components.RoundAction(Icons.AutoMirrored.Rounded.ArrowBack, "Back", Modifier.align(Alignment.CenterStart).padding(start = 12.dp), glass = true) { nav.back() }
+            if (page.radioPlaylistId != null) com.prism.music.ui.components.RoundAction(
+                Icons.Rounded.Radio, "Start ${page.name} Mix", Modifier.align(Alignment.CenterEnd).padding(end = 12.dp), glass = true, onClick = mix,
+            )
         }
     }
 }
@@ -304,13 +302,14 @@ private fun ArtistName(name: String, type: ArtistType, modifier: Modifier = Modi
 
 @Composable
 private fun AppleHeader(title: String, onMore: (() -> Unit)?) {
+    val ui = com.prism.music.ui.theme.LocalUi.current
     Row(
-        Modifier.padding(start = 20.dp, end = 20.dp, top = 26.dp, bottom = 10.dp)
+        Modifier.padding(start = 20.dp, end = 20.dp, top = ui.gap(26.dp), bottom = ui.gap(10.dp))
             .clip(RoundedCornerShape(8.dp))
             .then(if (onMore != null) Modifier.clickable(onClick = onMore) else Modifier),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
         if (onMore != null) Icon(Icons.Rounded.ChevronRight, "See all", Modifier.size(26.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
@@ -336,7 +335,7 @@ private fun LatestRelease(item: AlbumItem, onClick: () -> Unit) {
             Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Artwork(item.thumbnail, Modifier.size(116.dp), RoundedCornerShape(10.dp), size = 544)
+            Artwork(item.thumbnail, Modifier.size(116.dp), com.prism.music.ui.theme.LocalUi.current.art, size = 544)
             Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(1f)) {
                 Text(
@@ -376,7 +375,7 @@ private fun TopSongsGrid(songs: List<Song>, title: String) {
                             .padding(vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Artwork(s.thumbnail, Modifier.size(48.dp), RoundedCornerShape(6.dp), size = 226)
+                        Artwork(s.thumbnail, Modifier.size(48.dp), com.prism.music.ui.theme.LocalUi.current.smallArt, size = 226)
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text(
@@ -404,15 +403,16 @@ private fun TopSongsGrid(songs: List<Song>, title: String) {
 /** A row of Apple-style cards: artwork, then a title and a quiet second line (the year for releases). */
 @Composable
 private fun CardRow(items: List<BrowseItem>, width: Dp, aspect: Float = 1f, round: Boolean = false, open: (BrowseItem) -> Unit) {
+    val ui = com.prism.music.ui.theme.LocalUi.current
     LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         items(items, key = { it.id + it.title }) { item ->
             Column(
-                Modifier.width(width).clip(RoundedCornerShape(10.dp)).clickable { open(item) },
+                Modifier.width(width).clip(ui.shape(10.dp)).clickable { open(item) },
                 horizontalAlignment = if (round) Alignment.CenterHorizontally else Alignment.Start,
             ) {
                 Artwork(
                     LocalContainer.current.covers.art(item), Modifier.fillMaxWidth().aspectRatio(aspect),
-                    if (round) CircleShape else RoundedCornerShape(8.dp),
+                    if (round) CircleShape else ui.art,
                     size = if (aspect > 1f) 720 else 544,
                     placeholderIcon = if (item is ArtistItem) Icons.Rounded.Person else Icons.Rounded.PlayArrow,
                 )
@@ -451,7 +451,7 @@ private fun About(page: ArtistPage, genre: String?) {
         modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 26.dp, bottom = 10.dp),
     )
     Column(
-        Modifier.padding(horizontal = 20.dp).fillMaxWidth().clip(RoundedCornerShape(14.dp))
+        Modifier.padding(horizontal = 20.dp).fillMaxWidth().clip(com.prism.music.ui.theme.LocalUi.current.card)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .clickable { expanded = !expanded }
             .padding(16.dp).animateContentSize(),
@@ -523,19 +523,11 @@ fun BrowseScreen(id: String, params: String?, title: String, bottomPadding: Dp) 
         }.filter { it.items.isNotEmpty() }
     }
     val onSong: (SongItem) -> Unit = { c.player.playSingle(it.song) }
-    Box(Modifier.fillMaxSize()) {
-        LazyColumn(contentPadding = PaddingValues(bottom = bottomPadding + 24.dp)) {
-            item {
-                Text(title, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.statusBarsPadding().padding(start = 72.dp, top = 16.dp, end = 20.dp))
-            }
-            when (val s = load.state) {
-                Load.Loading -> item { LoadingState() }
-                is Load.Err -> item { ErrorState(s.message) { load.reload(false) } }
-                is Load.Ok -> s.value.forEach { shelf -> shelfItems(shelf) { nav.open(it, onSong) } }
-            }
-        }
-        GlassSurface(Modifier.statusBarsPadding().padding(12.dp).size(44.dp), shape = RoundedCornerShape(50)) {
-            IconButton(onClick = { nav.back() }, Modifier.fillMaxSize()) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") }
+    com.prism.music.ui.components.SubPage(title.ifBlank { "Browse" }, bottomPadding) {
+        when (val s = load.state) {
+            Load.Loading -> item { LoadingState() }
+            is Load.Err -> item { ErrorState(s.message) { load.reload(false) } }
+            is Load.Ok -> s.value.forEach { shelf -> shelfItems(shelf) { nav.open(it, onSong) } }
         }
     }
 }

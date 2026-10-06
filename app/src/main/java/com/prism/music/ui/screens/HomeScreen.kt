@@ -176,15 +176,19 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
                     }
                 }
             }
-            item {
+            if (settings.homeCustomizeButton) item {
                 Row(
-                    Modifier.fillMaxWidth().padding(top = 28.dp),
+                    Modifier.fillMaxWidth().padding(top = 32.dp),
                     horizontalArrangement = Arrangement.Center,
                 ) {
-                    androidx.compose.material3.OutlinedButton(onClick = { nav.go(Routes.CATALOGUE) }) {
-                        Icon(Icons.Rounded.Dashboard, null, Modifier.size(18.dp))
+                    Row(
+                        Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                            .clickable { nav.go(Routes.CATALOGUE) }.padding(horizontal = 18.dp, vertical = 11.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Rounded.Dashboard, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.width(8.dp))
-                        Text("Customize Home")
+                        Text("Customize Home", style = MaterialTheme.typography.labelLarge)
                     }
                 }
             }
@@ -200,19 +204,23 @@ private fun HomeTopBar() {
     val greeting = settings.greetingText.trim().ifBlank {
         when (hour) { in 5..11 -> "Good morning"; in 12..17 -> "Good afternoon"; else -> "Good evening" }
     }
+    val today = remember { java.text.SimpleDateFormat("EEEE d MMMM", java.util.Locale.getDefault()).format(java.util.Date()) }
+    val ui = com.prism.music.ui.theme.LocalUi.current
     Row(
-        Modifier.fillMaxWidth().statusBarsPadding().padding(start = 20.dp, end = 12.dp, top = 12.dp),
+        Modifier.fillMaxWidth().statusBarsPadding().padding(start = 20.dp, end = 14.dp, top = ui.gap(14.dp)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text(greeting, style = MaterialTheme.typography.headlineMedium)
+            com.prism.music.ui.components.Eyebrow(today)
+            Text(greeting, style = com.prism.music.ui.components.pageTitleStyle(), maxLines = 2)
             if (settings.greetingShowName && settings.accountName.isNotBlank()) Text(
                 settings.accountName, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        IconButton(onClick = { nav.go(Routes.CATALOGUE) }) { Icon(Icons.Rounded.Dashboard, "Customize home") }
+        com.prism.music.ui.components.RoundAction(Icons.Rounded.Dashboard, "Customize home") { nav.go(Routes.CATALOGUE) }
+        Spacer(Modifier.width(8.dp))
         Box(
-            Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer).clickable { nav.go(Routes.SETTINGS) },
+            Modifier.size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer).clickable { nav.go(Routes.SETTINGS) },
             contentAlignment = Alignment.Center,
         ) {
             if (settings.accountAvatar.isNotBlank()) AsyncImage(settings.accountAvatar, "Account", Modifier.fillMaxSize())
@@ -251,23 +259,27 @@ private fun GreetingSection(recent: List<Song>) {
         }
     }
     if (tiles.isEmpty()) return
-    Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    val ui = com.prism.music.ui.theme.LocalUi.current
+    val scheme = MaterialTheme.colorScheme
+    Column(Modifier.padding(horizontal = 16.dp, vertical = ui.gap(16.dp)), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         tiles.chunked(2).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 row.forEach { t ->
                     Row(
-                        Modifier.weight(1f).height(56.dp).clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                            .clickable(onClick = t.onClick),
+                        Modifier.weight(1f).height(58.dp).clip(ui.shape(14.dp))
+                            .background(scheme.surfaceContainerHigh.copy(alpha = 0.9f))
+                            .clickable(onClick = t.onClick)
+                            .padding(6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         if (t.icon != null) Box(
-                            Modifier.size(56.dp).background(Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary))),
+                            Modifier.size(46.dp).clip(ui.shape(10.dp))
+                                .background(Brush.linearGradient(listOf(scheme.primary, scheme.tertiary))),
                             contentAlignment = Alignment.Center,
-                        ) { Icon(t.icon, null, tint = MaterialTheme.colorScheme.onPrimary) }
-                        else Artwork(t.image, Modifier.size(56.dp), RoundedCornerShape(0.dp), size = 226)
+                        ) { Icon(t.icon, null, Modifier.size(22.dp), tint = scheme.onPrimary) }
+                        else Artwork(t.image, Modifier.size(46.dp), ui.shape(10.dp), size = 226)
                         Text(
-                            t.title, Modifier.padding(horizontal = 10.dp), style = MaterialTheme.typography.labelLarge,
+                            t.title, Modifier.padding(horizontal = 10.dp), style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                             maxLines = 2, overflow = TextOverflow.Ellipsis,
                         )
                     }
@@ -331,10 +343,11 @@ private fun ShelfSection(cfg: HomeSectionConfig, shelf: Shelf, open: (BrowseItem
 
 @Composable
 private fun HeroRow(items: List<BrowseItem>, open: (BrowseItem) -> Unit) {
+    val ui = com.prism.music.ui.theme.LocalUi.current
     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         items(items.take(10)) { item ->
             Box(
-                Modifier.width(300.dp).aspectRatio(1.25f).clip(RoundedCornerShape(24.dp)).clickable { open(item) },
+                Modifier.width(300.dp).aspectRatio(1.25f).clip(ui.shape(24.dp)).clickable { open(item) },
             ) {
                 Artwork(LocalContainer.current.covers.art(item), Modifier.fillMaxSize(), RoundedCornerShape(0.dp), size = 900)
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)))))
@@ -363,9 +376,10 @@ private fun ReplayTeaser() {
     if (ms < 60_000) return
     val total = listenTotal(ms)
     val year = remember { Calendar.getInstance().get(Calendar.YEAR) }
+    val ui = com.prism.music.ui.theme.LocalUi.current
     Box(
-        Modifier.padding(16.dp).fillMaxWidth().height(150.dp).clip(RoundedCornerShape(26.dp))
-            .background(Brush.linearGradient(listOf(Color(0xFFFF3B5C), Color(0xFF7C5CFF), Color(0xFF00B4D8))))
+        Modifier.padding(horizontal = 16.dp, vertical = ui.gap(16.dp)).fillMaxWidth().height(150.dp).clip(ui.shape(26.dp))
+            .background(Brush.linearGradient(replayGradient()))
             .clickable { nav.go(Routes.REPLAY) }
             .padding(22.dp),
     ) {
@@ -392,6 +406,7 @@ private fun TopGenresSection() {
     if (genres.isEmpty()) return
     SectionHeader("Your top genres", strapline = "From your liked songs")
     val palette = listOf(0xFF7C5CFF, 0xFFFF3B5C, 0xFF00B4D8, 0xFF2EC27E, 0xFFFF6B35, 0xFFE056FD, 0xFFFFB627, 0xFF3A86FF)
+    val ui = com.prism.music.ui.theme.LocalUi.current
     LazyHorizontalGrid(
         GridCells.Fixed(2), Modifier.height(140.dp), contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -400,7 +415,7 @@ private fun TopGenresSection() {
             val (g, n) = genres[i]
             val col = Color(palette[i % palette.size])
             Box(
-                Modifier.width(160.dp).height(64.dp).clip(RoundedCornerShape(14.dp))
+                Modifier.width(160.dp).height(64.dp).clip(ui.tile)
                     .background(Brush.linearGradient(listOf(col, col.copy(alpha = 0.6f))))
                     .clickable { nav.go(Routes.liked(g)) }.padding(12.dp),
             ) {

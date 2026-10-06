@@ -94,7 +94,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.Player
+import androidx.compose.foundation.border
+import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.SkipPrevious
+import com.prism.music.data.prefs.ScrubberStyle
+import com.prism.music.data.prefs.TransportStyle
 import com.prism.music.playback.AudioEffects
+import com.prism.music.ui.theme.LocalAppSettings
 import com.prism.music.ui.theme.LocalContainer
 import com.prism.music.ui.theme.rememberHaptics
 import kotlinx.coroutines.delay
@@ -122,6 +128,8 @@ fun ThinSlider(
     idleHeight: Dp = 7.dp,
     activeHeight: Dp = 12.dp,
     secondary: Float = 0f,
+    /** Draw a round knob at the current value. */
+    thumb: Boolean = false,
 ) {
     var dragging by remember { mutableStateOf(false) }
     val height by animateDpAsState(
@@ -163,6 +171,11 @@ fun ThinSlider(
                 size = Size(filled.coerceAtLeast(size.height).coerceAtMost(size.width), size.height),
                 cornerRadius = r,
             )
+            if (thumb) {
+                val knob = (if (dragging) 9.dp else 7.dp).toPx()
+                drawCircle(Color.Black.copy(alpha = 0.18f), knob + 1.5f, Offset(filled.coerceIn(knob, size.width - knob), size.height / 2 + 1f))
+                drawCircle(Color.White, knob, Offset(filled.coerceIn(knob, size.width - knob), size.height / 2))
+            }
         }
     }
 }
@@ -174,11 +187,15 @@ fun PlayerScrubber(positionMs: Long, durationMs: Long, centerLabel: @Composable 
     var scrub by remember { mutableStateOf<Float?>(null) }
     val duration = durationMs.coerceAtLeast(1)
     val shown = scrub ?: (positionMs.toFloat() / duration).coerceIn(0f, 1f)
+    val style = LocalAppSettings.current.scrubberStyle
     Column(Modifier.fillMaxWidth()) {
         ThinSlider(
             value = shown,
             onValueChange = { scrub = it },
             onValueChangeFinished = { scrub?.let { pc.seekTo((it * duration).toLong()) }; scrub = null },
+            idleHeight = when (style) { ScrubberStyle.HAIRLINE -> 7.dp; ScrubberStyle.BOLD -> 11.dp; ScrubberStyle.THUMB -> 4.dp },
+            activeHeight = when (style) { ScrubberStyle.HAIRLINE -> 12.dp; ScrubberStyle.BOLD -> 16.dp; ScrubberStyle.THUMB -> 6.dp },
+            thumb = style == ScrubberStyle.THUMB,
         )
         Box(Modifier.fillMaxWidth().offset(y = (-9).dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -194,19 +211,53 @@ fun PlayerScrubber(positionMs: Long, durationMs: Long, centerLabel: @Composable 
 @Composable
 fun TransportRow(isPlaying: Boolean, isLoading: Boolean, previousEnabled: Boolean, nextEnabled: Boolean, compact: Boolean = false) {
     val pc = LocalContainer.current.player
+    val style = LocalAppSettings.current.transportStyle
     val playSize = if (compact) 58.dp else 74.dp
     val playTouch = if (compact) 76.dp else 92.dp
     val skipSize = if (compact) 44.dp else 53.dp
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround, verticalAlignment = Alignment.CenterVertically) {
-        TransportGlyph(Icons.Rounded.FastRewind, "Previous", skipSize, 53.dp, 0.85f, previousEnabled) { pc.previous() }
-        if (isLoading) {
-            Box(Modifier.size(playTouch), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp, modifier = Modifier.size(if (compact) 30.dp else 38.dp))
+        val prevIcon = if (style == TransportStyle.GLYPHS) Icons.Rounded.FastRewind else Icons.Rounded.SkipPrevious
+        val nextIcon = if (style == TransportStyle.GLYPHS) Icons.Rounded.FastForward else Icons.Rounded.SkipNext
+        val skip = if (style == TransportStyle.GLYPHS) skipSize else skipSize * 0.82f
+        TransportGlyph(prevIcon, "Previous", skip, 53.dp, if (style == TransportStyle.GLYPHS) 0.85f else 1f, previousEnabled) { pc.previous() }
+        if (style == TransportStyle.GLYPHS) {
+            if (isLoading) {
+                Box(Modifier.size(playTouch), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp, modifier = Modifier.size(if (compact) 30.dp else 38.dp))
+                }
+            } else {
+                TransportGlyph(if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (isPlaying) "Pause" else "Play", playSize, playTouch) { pc.togglePlay() }
             }
         } else {
-            TransportGlyph(if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (isPlaying) "Pause" else "Play", playSize, playTouch) { pc.togglePlay() }
+            PlayDisc(isPlaying, isLoading, filled = style == TransportStyle.BUTTON, size = if (compact) 64.dp else 78.dp) { pc.togglePlay() }
         }
-        TransportGlyph(Icons.Rounded.FastForward, "Next", skipSize, 53.dp, 0.85f, nextEnabled) { pc.next() }
+        TransportGlyph(nextIcon, "Next", skip, 53.dp, if (style == TransportStyle.GLYPHS) 0.85f else 1f, nextEnabled) { pc.next() }
+    }
+}
+
+/** Play / pause in a white disc ([filled]) or a ring. */
+@Composable
+private fun PlayDisc(isPlaying: Boolean, isLoading: Boolean, filled: Boolean, size: Dp, onClick: () -> Unit) {
+    val haptics = rememberHaptics()
+    val pressed = remember { MutableInteractionSource() }
+    Box(
+        Modifier.size(size + 14.dp).clickable(pressed, indication = null) { haptics.click(); onClick() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            Modifier.size(size).clip(CircleShape)
+                .then(
+                    if (filled) Modifier.background(Color.White)
+                    else Modifier.background(Color.White.copy(alpha = 0.10f)).border(2.dp, Color.White.copy(alpha = 0.85f), CircleShape)
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            val tint = if (filled) Color.Black else Color.White
+            if (isLoading) CircularProgressIndicator(color = tint, strokeWidth = 3.dp, modifier = Modifier.size(size * 0.42f))
+            else Crossfade(isPlaying, animationSpec = tween(160), label = "playDisc") { p ->
+                Icon(if (p) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (p) "Pause" else "Play", tint = tint, modifier = Modifier.size(size * 0.56f))
+            }
+        }
     }
 }
 

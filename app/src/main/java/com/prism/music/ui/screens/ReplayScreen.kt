@@ -158,15 +158,13 @@ fun ReplayScreen(bottomPadding: Dp) {
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = bottomPadding + 24.dp)) {
         item {
-            Column(Modifier.statusBarsPadding().padding(start = 20.dp, top = 16.dp, end = 20.dp)) {
-                Text("Replay", style = MaterialTheme.typography.headlineMedium)
-                Text("Your listening, recapped on-device", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            com.prism.music.ui.components.ScreenHeader("Replay", subtitle = "Your listening, recapped on-device")
         }
         item {
-            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(Period.entries) { p -> FilterChip(p == period, { period = p }, { Text(if (p == Period.YEAR) "$year" else if (p == Period.LAST_YEAR) "${year - 1}" else p.label) }) }
-            }
+            com.prism.music.ui.components.ChipRow(
+                Period.entries, { it == period }, { p -> if (p == Period.YEAR) "$year" else if (p == Period.LAST_YEAR) "${year - 1}" else p.label },
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+            ) { period = it }
         }
         val d = data
         if (d == null) { item { LoadingState() }; return@LazyColumn }
@@ -237,7 +235,7 @@ fun ReplayScreen(bottomPadding: Dp) {
                 d.genres.forEachIndexed { i, (g, ms) ->
                     val anim = remember(g, period) { Animatable(0f) }
                     LaunchedEffect(g, period) { anim.animateTo(ms / max.toFloat(), tween(900, delayMillis = i * 90)) }
-                    Box(Modifier.fillMaxWidth().height(40.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
+                    Box(Modifier.fillMaxWidth().height(40.dp).clip(com.prism.music.ui.theme.LocalUi.current.shape(12.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
                         Box(Modifier.fillMaxWidth(anim.value).height(40.dp).background(Brush.horizontalGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary))))
                         Text(g, style = MaterialTheme.typography.labelLarge, color = Color.White, modifier = Modifier.align(Alignment.CenterStart).padding(start = 12.dp))
                         Text(listenTime(ms), style = MaterialTheme.typography.labelMedium, modifier = Modifier.align(Alignment.CenterEnd).padding(end = 12.dp))
@@ -248,15 +246,16 @@ fun ReplayScreen(bottomPadding: Dp) {
         item { SectionHeader("Top songs") }
         itemsIndexed(d.songs.take(50), key = { _, s -> s.songId }) { i, s ->
             val songs = remember(d) { d.songs.map { it.toSong() } }
+            val ui = com.prism.music.ui.theme.LocalUi.current
             Row(
-                Modifier.fillMaxWidth().clickable { c.player.playQueue(songs, i, QueueSource(QueueKind.REPLAY, "Replay")) }.padding(horizontal = 16.dp, vertical = 6.dp),
+                Modifier.fillMaxWidth().clickable { c.player.playQueue(songs, i, QueueSource(QueueKind.REPLAY, "Replay")) }.padding(horizontal = 16.dp, vertical = ui.gap(6.dp)),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     "${i + 1}", Modifier.width(36.dp), style = MaterialTheme.typography.titleLarge,
                     color = if (i < 3) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Black,
                 )
-                Artwork(s.thumbnail, Modifier.size(52.dp), RoundedCornerShape(10.dp), size = 226)
+                Artwork(s.thumbnail, Modifier.size(52.dp), ui.smallArt, size = 226)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(s.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyLarge)
@@ -277,9 +276,16 @@ private fun HeroCard(d: ReplayData, period: Period, year: Int, loading: Boolean,
     val anim = remember(period) { Animatable(0f) }
     LaunchedEffect(period, total.value) { anim.animateTo(total.value.toFloat(), tween(1400)) }
     val top = d.songs.firstOrNull()
+    val themed = LocalAppSettings.current.replayThemeColors
+    val scheme = MaterialTheme.colorScheme
     Box(
-        Modifier.padding(16.dp).fillMaxWidth().clip(RoundedCornerShape(30.dp))
-            .background(Brush.linearGradient(listOf(Color(0xFF1B0F3B), Color(0xFF7C5CFF), Color(0xFFFF3B5C))))
+        Modifier.padding(16.dp).fillMaxWidth().clip(com.prism.music.ui.theme.LocalUi.current.shape(30.dp))
+            .background(
+                Brush.linearGradient(
+                    if (themed) listOf(scheme.primaryContainer.copy(alpha = 1f).compositeDark(), scheme.primary.compositeDark(0.55f), scheme.tertiary.compositeDark(0.55f))
+                    else listOf(Color(0xFF1B0F3B), Color(0xFF7C5CFF), Color(0xFFFF3B5C))
+                )
+            )
             .clickable(onClick = onOpen)
             .padding(24.dp),
     ) {
@@ -379,6 +385,17 @@ fun listenTotal(ms: Long): ListenTotal =
     // Under an hour stays in minutes, so the hours view never shows "0h".
     if (LocalAppSettings.current.replayHours && ms >= 3_600_000) ListenTotal(ms / 60_000, "", ::hoursAndMinutes)
     else ListenTotal(ms / 60_000, "minutes") { "%,d".format(it) }
+
+/** Replay's own colours, or the theme's when "Use theme colours" is on — always dark enough for white text. */
+@Composable
+fun replayGradient(): List<Color> {
+    val scheme = MaterialTheme.colorScheme
+    return if (LocalAppSettings.current.replayThemeColors) listOf(scheme.primary.compositeDark(0.6f), scheme.tertiary.compositeDark(0.5f), scheme.secondary.compositeDark(0.6f))
+    else listOf(Color(0xFFFF3B5C), Color(0xFF7C5CFF), Color(0xFF00B4D8))
+}
+
+/** Darkens a colour towards black by [amount] (0 = as is), so white sits on it comfortably. */
+private fun Color.compositeDark(amount: Float = 0.7f): Color = Color(red * (1 - amount), green * (1 - amount), blue * (1 - amount), 1f)
 
 @Composable
 private fun Stat(value: String, label: String) {

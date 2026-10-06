@@ -20,8 +20,11 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.ColorUtils
@@ -125,22 +128,30 @@ fun schemeFromSeed(seed: Color, dark: Boolean, pureBlack: Boolean): ColorScheme 
 }
 
 private val base = Typography()
-val PrismTypography = Typography(
-    displayLarge = base.displayLarge.copy(fontWeight = FontWeight.Black, letterSpacing = (-0.03).em),
-    displayMedium = base.displayMedium.copy(fontWeight = FontWeight.Black, letterSpacing = (-0.03).em),
-    displaySmall = base.displaySmall.copy(fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.02).em),
-    headlineLarge = base.headlineLarge.copy(fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.02).em),
-    headlineMedium = base.headlineMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.015).em),
-    headlineSmall = base.headlineSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.01).em),
-    titleLarge = base.titleLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.01).em),
-    titleMedium = base.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-    titleSmall = base.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-    labelLarge = base.labelLarge.copy(fontWeight = FontWeight.SemiBold),
-    labelMedium = base.labelMedium.copy(fontWeight = FontWeight.Medium),
-    bodyLarge = base.bodyLarge,
-    bodyMedium = base.bodyMedium,
-    bodySmall = base.bodySmall,
-)
+
+/** Tight, confident headings over a calm body; [family] is the typeface picked in Appearance. */
+fun prismTypography(family: FontFamily = FontFamily.Default): Typography {
+    fun TextStyle.f() = copy(fontFamily = family)
+    return Typography(
+        displayLarge = base.displayLarge.copy(fontWeight = FontWeight.Black, letterSpacing = (-0.035).em).f(),
+        displayMedium = base.displayMedium.copy(fontWeight = FontWeight.Black, letterSpacing = (-0.03).em).f(),
+        displaySmall = base.displaySmall.copy(fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.025).em).f(),
+        headlineLarge = base.headlineLarge.copy(fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.025).em).f(),
+        headlineMedium = base.headlineMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.02).em).f(),
+        headlineSmall = base.headlineSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.015).em).f(),
+        titleLarge = base.titleLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-0.012).em).f(),
+        titleMedium = base.titleMedium.copy(fontWeight = FontWeight.SemiBold, letterSpacing = (-0.005).em).f(),
+        titleSmall = base.titleSmall.copy(fontWeight = FontWeight.SemiBold).f(),
+        labelLarge = base.labelLarge.copy(fontWeight = FontWeight.SemiBold).f(),
+        labelMedium = base.labelMedium.copy(fontWeight = FontWeight.Medium).f(),
+        labelSmall = base.labelSmall.copy(fontWeight = FontWeight.Medium).f(),
+        bodyLarge = base.bodyLarge.copy(letterSpacing = 0.1.sp).f(),
+        bodyMedium = base.bodyMedium.f(),
+        bodySmall = base.bodySmall.f(),
+    )
+}
+
+val PrismTypography = prismTypography()
 
 val MonoStyle = TextStyle(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 11.sp, lineHeight = 15.sp)
 
@@ -166,8 +177,14 @@ fun PrismTheme(settings: AppSettings, artworkColor: Color?, content: @Composable
         if (dark && settings.pureBlack) d.copy(background = Color.Black, surface = Color.Black, surfaceContainerLowest = Color.Black) else d
     } else remember(seed, dark, settings.pureBlack) { schemeFromSeed(seed, dark, settings.pureBlack) }
 
-    CompositionLocalProvider(LocalAppSettings provides settings, LocalIsDark provides dark) {
-        MaterialTheme(colorScheme = scheme, typography = PrismTypography) {
+    val ui = remember(settings.corners, settings.uiDensity, settings.cardSize, settings.titleSize, settings.reduceMotion) { PrismUi.from(settings) }
+    val typography = remember(settings.fontChoice) { prismTypography(AppFonts.family(settings.fontChoice)) }
+    val density = LocalDensity.current
+    // The app's own text size sits on top of the phone's.
+    val scaled = remember(density, settings.textScale) { Density(density.density, density.fontScale * settings.textScale) }
+
+    CompositionLocalProvider(LocalAppSettings provides settings, LocalIsDark provides dark, LocalUi provides ui, LocalDensity provides scaled) {
+        MaterialTheme(colorScheme = scheme, typography = typography, shapes = ui.materialShapes) {
             // Text and icons outside a Surface read LocalContentColor, which
             // otherwise defaults to black — unreadable in dark mode.
             CompositionLocalProvider(LocalContentColor provides scheme.onBackground, content = content)

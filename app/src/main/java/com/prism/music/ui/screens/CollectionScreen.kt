@@ -291,9 +291,9 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                         }
                     }
                     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        item { FilterChip(genreFilter == null, { genreFilter = null }, { Text("All · ${page.songs.size}") }) }
+                        item { com.prism.music.ui.components.PrismChip(genreFilter == null, { genreFilter = null }, "All · ${page.songs.size}") }
                         items(genreCounts) { (g, n) ->
-                            FilterChip(genreFilter == g, { genreFilter = if (genreFilter == g) null else g }, { Text("$g · $n") })
+                            com.prism.music.ui.components.PrismChip(genreFilter == g, { genreFilter = if (genreFilter == g) null else g }, "$g · $n")
                         }
                     }
                 }
@@ -335,9 +335,7 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                 )
             }
         }
-        GlassSurface(Modifier.statusBarsPadding().padding(12.dp).size(44.dp), shape = RoundedCornerShape(50)) {
-            IconButton(onClick = { nav.back() }, Modifier.fillMaxSize()) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") }
-        }
+        com.prism.music.ui.components.RoundAction(Icons.AutoMirrored.Rounded.ArrowBack, "Back", Modifier.statusBarsPadding().padding(12.dp), glass = true) { nav.back() }
     }
 }
 
@@ -345,6 +343,7 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
 private fun Header(type: CollectionType, page: CollectionPage, coverKey: String?, onEditCover: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val art = coverKey?.let { LocalContainer.current.covers.art(it, page.thumbnail) } ?: page.thumbnail
+    val cover = com.prism.music.ui.theme.LocalUi.current.shape(20.dp)
     Box(Modifier.fillMaxWidth()) {
         if (art != null) {
             AsyncImage(
@@ -359,13 +358,13 @@ private fun Header(type: CollectionType, page: CollectionPage, coverKey: String?
             Modifier.fillMaxWidth().statusBarsPadding().padding(top = 56.dp, start = 24.dp, end = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Box(Modifier.clip(RoundedCornerShape(20.dp)).clickable(enabled = coverKey != null, onClickLabel = "Change picture", onClick = onEditCover)) {
+            Box(Modifier.clip(cover).clickable(enabled = coverKey != null, onClickLabel = "Change picture", onClick = onEditCover)) {
                 if (art != null) {
-                    Artwork(art, Modifier.size(232.dp).shadow(28.dp, RoundedCornerShape(20.dp)), RoundedCornerShape(20.dp), size = 900)
+                    Artwork(art, Modifier.size(232.dp).shadow(28.dp, cover), cover, size = 900)
                 } else {
                     Box(
-                        Modifier.size(232.dp).shadow(28.dp, RoundedCornerShape(20.dp))
-                            .background(Brush.linearGradient(listOf(scheme.primary, scheme.tertiary)), RoundedCornerShape(20.dp)),
+                        Modifier.size(232.dp).shadow(28.dp, cover)
+                            .background(Brush.linearGradient(listOf(scheme.primary, scheme.tertiary)), cover),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(if (type == CollectionType.DOWNLOADS) Icons.Rounded.DownloadDone else Icons.Rounded.Favorite, null, Modifier.size(96.dp), tint = scheme.onPrimary)
@@ -375,8 +374,8 @@ private fun Header(type: CollectionType, page: CollectionPage, coverKey: String?
                     Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Edit, "Change picture", Modifier.size(20.dp)) }
                 }
             }
-            Spacer(Modifier.height(18.dp))
-            Text(page.title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Spacer(Modifier.height(20.dp))
+            Text(page.title, style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold), textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis)
             val linked = page.artists.filter { it.id != null }
             if (linked.isNotEmpty()) {
                 // Each artist name opens their page.

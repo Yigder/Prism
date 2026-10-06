@@ -31,6 +31,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Lyrics
+import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.SurroundSound
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -217,6 +218,7 @@ fun WelcomeScreen(onSignIn: () -> Unit, onSkip: () -> Unit) {
             Feature(Icons.Rounded.Lyrics, "Live lyrics on the player from ten sources")
             Feature(Icons.Rounded.Category, "Sort any playlist by genre")
             Feature(Icons.Rounded.Download, "Smart downloads & offline liked songs")
+            Feature(Icons.Rounded.Palette, "Make it yours: fonts, layout, player & more")
             Spacer(Modifier.height(32.dp))
             Button(onClick = onSignIn, Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(18.dp)) {
                 Text("Sign in with Google", style = MaterialTheme.typography.titleMedium)

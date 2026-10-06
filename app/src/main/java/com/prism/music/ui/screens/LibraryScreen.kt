@@ -31,6 +31,8 @@ import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.Login
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.GridView
+import androidx.compose.material.icons.automirrored.rounded.ViewList
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -88,7 +90,9 @@ fun LibraryScreen(bottomPadding: Dp) {
     val dls by c.downloads.downloads.collectAsState()
     val thumbs by c.library.artistThumbs.collectAsState()
     val scope = rememberCoroutineScope()
-    val pager = rememberPagerState { LibTab.entries.size }
+    val startPage = remember { LibTab.entries.indexOfFirst { it.name == settings.libraryStartTab }.coerceAtLeast(0) }
+    val pager = rememberPagerState(initialPage = startPage) { LibTab.entries.size }
+    val asList = settings.libraryView == com.prism.music.data.prefs.LibraryView.LIST
     val onSong: (SongItem) -> Unit = { c.player.playSingle(it.song) }
 
     // The account's saved albums / artists first, then the ones your liked and downloaded songs come from.
@@ -144,22 +148,25 @@ fun LibraryScreen(bottomPadding: Dp) {
     }
 
     Column(Modifier.fillMaxSize()) {
-        Row(Modifier.statusBarsPadding().padding(start = 20.dp, end = 4.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Library", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
-            if (settings.isLoggedIn) IconButton(onClick = { scope.launch { c.library.sync() } }, enabled = sync != SyncState.SYNCING) {
-                if (sync == SyncState.SYNCING) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
-                else Icon(Icons.Rounded.CloudSync, "Sync with YouTube Music")
+        com.prism.music.ui.components.ScreenHeader("Library") {
+            if (settings.isLoggedIn) {
+                if (sync == SyncState.SYNCING) Box(Modifier.size(42.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp) }
+                else com.prism.music.ui.components.RoundAction(Icons.Rounded.CloudSync, "Sync with YouTube Music") { scope.launch { c.library.sync() } }
             }
-            IconButton(onClick = { nav.go(Routes.SETTINGS) }) { Icon(Icons.Rounded.Settings, "Settings") }
+            com.prism.music.ui.components.RoundAction(
+                if (asList) Icons.Rounded.GridView else Icons.AutoMirrored.Rounded.ViewList,
+                if (asList) "Show as grid" else "Show as list",
+            ) { c.settings.setLibraryView(if (asList) com.prism.music.data.prefs.LibraryView.GRID else com.prism.music.data.prefs.LibraryView.LIST) }
+            if (com.prism.music.data.prefs.NavTab.SETTINGS !in settings.navTabs) com.prism.music.ui.components.RoundAction(Icons.Rounded.Settings, "Settings") { nav.go(Routes.SETTINGS) }
         }
         PagerChips(LibTab.entries.map { it.label }, pager)
 
         HorizontalPager(pager, Modifier.weight(1f), beyondViewportPageCount = 1) { page ->
             val tab = LibTab.entries[page]
             LazyVerticalGrid(
-                GridCells.Adaptive(160.dp),
+                if (asList) GridCells.Fixed(1) else GridCells.Adaptive(160.dp),
                 Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = bottomPadding + 16.dp),
+                contentPadding = PaddingValues(start = if (asList) 0.dp else 12.dp, end = if (asList) 0.dp else 12.dp, top = 4.dp, bottom = bottomPadding + 16.dp),
             ) {
                 val empty = when (tab) {
                     LibTab.ALBUMS -> albums.isEmpty()
@@ -179,16 +186,16 @@ fun LibraryScreen(bottomPadding: Dp) {
                 }
                 when (tab) {
                     LibTab.PLAYLISTS -> {
-                        item { ShortcutTile("Liked songs", "${liked.size} songs", Icons.Rounded.Favorite, art = c.covers.custom("liked")) { nav.go(Routes.liked()) } }
-                        item { ShortcutTile("Downloads", "${dls.values.count { it.state == androidx.media3.exoplayer.offline.Download.STATE_COMPLETED }} songs", Icons.Rounded.DownloadDone) { nav.go(Routes.DOWNLOADS) } }
-                        item { ShortcutTile("Replay", "Your listening recap", Icons.Rounded.History) { nav.go(Routes.REPLAY) } }
+                        item { ShortcutTile("Liked songs", "${liked.size} songs", Icons.Rounded.Favorite, asList, art = c.covers.custom("liked")) { nav.go(Routes.liked()) } }
+                        item { ShortcutTile("Downloads", "${dls.values.count { it.state == androidx.media3.exoplayer.offline.Download.STATE_COMPLETED }} songs", Icons.Rounded.DownloadDone, asList) { nav.go(Routes.DOWNLOADS) } }
+                        item { ShortcutTile("Replay", "Your listening recap", Icons.Rounded.History, asList) { nav.go(Routes.REPLAY) } }
                         if (!settings.isLoggedIn) item(span = { GridItemSpan(maxLineSpan) }) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 EmptyState(Icons.Rounded.LibraryMusic, "Sign in to sync your playlists", "Your YouTube Music playlists will appear here.")
                                 Button(onClick = { nav.go(Routes.LOGIN) }) { Icon(Icons.Rounded.Login, null); Spacer(Modifier.width(8.dp)); Text("Sign in") }
                             }
                         }
-                        items(playlists.filter { it.id != "LM" }, key = { "p" + it.id }) { p -> ItemCard(p, width = 400.dp) { nav.open(p, onSong) } }
+                        items(playlists.filter { it.id != "LM" }, key = { "p" + it.id }) { p -> LibraryItem(p, asList) { nav.open(p, onSong) } }
                     }
                     LibTab.SONGS -> {
                         if (liked.isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
@@ -202,13 +209,13 @@ fun LibraryScreen(bottomPadding: Dp) {
                         if (albums.isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
                             SortBar("${albums.size} albums", AlbumSort.entries, albumSort, { it.label }) { albumSort = it }
                         }
-                        items(sortedAlbums, key = { "a" + it.id }) { a -> ItemCard(a, width = 400.dp) { nav.open(a, onSong) } }
+                        items(sortedAlbums, key = { "a" + it.id }) { a -> LibraryItem(a, asList) { nav.open(a, onSong) } }
                     }
                     LibTab.ARTISTS -> {
                         if (artists.isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
                             SortBar("${artists.size} artists", ArtistSort.entries, artistSort, { it.label }) { artistSort = it }
                         }
-                        items(sortedArtists, key = { "r" + it.id }) { a -> ItemCard(a, width = 400.dp) { nav.open(a, onSong) } }
+                        items(sortedArtists, key = { "r" + it.id }) { a -> LibraryItem(a, asList) { nav.open(a, onSong) } }
                     }
                     LibTab.DOWNLOADS -> item(span = { GridItemSpan(maxLineSpan) }) { DownloadsSummary() }
                 }
@@ -216,17 +223,41 @@ fun LibraryScreen(bottomPadding: Dp) {
         }
     }
 }
+/** An album, artist or playlist as a card (grid view) or a row (list view). */
 @Composable
-private fun ShortcutTile(title: String, subtitle: String, icon: ImageVector, art: String? = null, onClick: () -> Unit) {
+private fun LibraryItem(item: com.prism.music.data.model.BrowseItem, asList: Boolean, onClick: () -> Unit) {
+    if (asList) ResultRow(item, onClick) else ItemCard(item, width = 400.dp, onClick = onClick)
+}
+
+@Composable
+private fun ShortcutTile(title: String, subtitle: String, icon: ImageVector, asList: Boolean, art: String? = null, onClick: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
-    Column(Modifier.padding(4.dp).clip(RoundedCornerShape(16.dp)).clickable(onClick = onClick).padding(4.dp)) {
+    val ui = com.prism.music.ui.theme.LocalUi.current
+    @Composable
+    fun Cover(modifier: Modifier, shape: androidx.compose.ui.graphics.Shape, iconSize: Dp) {
         // A picture the listener chose (Liked songs can have one too).
-        if (art != null) com.prism.music.ui.components.Artwork(art, Modifier.fillMaxWidth().aspectRatio(1f), RoundedCornerShape(14.dp), size = 544)
+        if (art != null) com.prism.music.ui.components.Artwork(art, modifier, shape, size = 544)
         else Box(
-            Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(14.dp))
-                .background(Brush.linearGradient(listOf(scheme.primary, scheme.tertiary))),
+            modifier.clip(shape).background(Brush.linearGradient(listOf(scheme.primary, scheme.tertiary))),
             contentAlignment = Alignment.Center,
-        ) { Icon(icon, null, Modifier.size(56.dp), tint = scheme.onPrimary) }
+        ) { Icon(icon, null, Modifier.size(iconSize), tint = scheme.onPrimary) }
+    }
+    if (asList) {
+        Row(
+            Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = ui.gap(7.dp)),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Cover(Modifier.size(56.dp), ui.smallArt, 26.dp)
+            Spacer(Modifier.width(14.dp))
+            Column {
+                Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
+            }
+        }
+        return
+    }
+    Column(Modifier.padding(4.dp).clip(ui.tile).clickable(onClick = onClick).padding(4.dp)) {
+        Cover(Modifier.fillMaxWidth().aspectRatio(1f), ui.art, 56.dp)
         Spacer(Modifier.height(8.dp))
         Text(title, style = MaterialTheme.typography.titleSmall)
         Text(subtitle, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
@@ -242,7 +273,7 @@ private fun DownloadsSummary() {
     val active = dls.values.filter { it.state != androidx.media3.exoplayer.offline.Download.STATE_COMPLETED }
     Column(Modifier.padding(8.dp)) {
         Box(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp))
+            Modifier.fillMaxWidth().clip(com.prism.music.ui.theme.LocalUi.current.card)
                 .background(Brush.linearGradient(listOf(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.tertiaryContainer)))
                 .clickable { nav.go(Routes.DOWNLOADS) }.padding(20.dp),
         ) {

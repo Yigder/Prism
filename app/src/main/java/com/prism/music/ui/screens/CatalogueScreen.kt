@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -84,7 +85,6 @@ fun CatalogueScreen(bottomPadding: Dp) {
     val settings = LocalAppSettings.current
     val ytShelves by homeShelfCache.collectAsState()
     val layout = settings.homeLayout
-    val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     val builtIns = HomeSections.defaults
     val available = (builtIns + ytShelves.filterNot { it.title.equals("Quick picks", true) }.map { HomeSectionConfig(shelfKey(it.title), it.title) })
@@ -93,21 +93,17 @@ fun CatalogueScreen(bottomPadding: Dp) {
 
     fun save(list: List<HomeSectionConfig>) = c.settings.setHomeLayout(list)
 
-    Column(Modifier.fillMaxSize().nestedScroll(scroll.nestedScrollConnection)) {
-        LargeTopAppBar(
-            title = { Text("Customize Home") },
-            navigationIcon = { IconButton(onClick = { nav.back() }) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
-            actions = { IconButton(onClick = { save(HomeSections.defaults) }) { Icon(Icons.Rounded.Restore, "Reset") } },
-            scrollBehavior = scroll,
-        )
-        LazyColumn(contentPadding = PaddingValues(bottom = bottomPadding + 24.dp)) {
+    com.prism.music.ui.components.SubPage(
+        "Customize Home", bottomPadding,
+        subtitle = "Pick, order and style what Home shows",
+        actions = { com.prism.music.ui.components.RoundAction(Icons.Rounded.Restore, "Reset", glass = true) { save(HomeSections.defaults) } },
+    ) {
             item {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text("Auto-add new YouTube sections", style = MaterialTheme.typography.titleSmall)
-                        Text("New shelves from your YouTube Music home appear at the bottom", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Box(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
+                    Group("") {
+                        Toggle("Auto-add new YouTube sections", "New shelves from your YouTube Music home appear at the bottom", settings.autoAddSections) { c.settings.setAutoAddSections(it) }
+                        Toggle("\"Customize Home\" button", "At the very bottom of Home", settings.homeCustomizeButton) { c.settings.setHomeCustomizeButton(it) }
                     }
-                    Switch(settings.autoAddSections, { c.settings.setAutoAddSections(it) })
                 }
             }
             item { CatalogueHeader("Greeting & shortcuts", "The headline at the top of Home and the tiles under it") }
@@ -135,7 +131,7 @@ fun CatalogueScreen(bottomPadding: Dp) {
                     available.forEach { cfg ->
                         Row(
                             Modifier
-                                .clip(RoundedCornerShape(16.dp))
+                                .clip(com.prism.music.ui.theme.LocalUi.current.tile)
                                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                                 .clickable { save(layout + cfg.copy(visible = true)) }
                                 .padding(start = 14.dp, end = 10.dp, top = 12.dp, bottom = 12.dp),
@@ -152,7 +148,6 @@ fun CatalogueScreen(bottomPadding: Dp) {
                     }
                 }
             }
-        }
     }
 }
 
@@ -176,13 +171,13 @@ private fun GreetingEditor() {
             Switch(settings.greetingShowName, { c.settings.setGreetingShowName(it) })
         }
         Text("Shortcuts · tap to add or remove, in the order you pick them", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 4.dp))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             HomeShortcut.entries.forEach { sc ->
                 val on = sc in settings.homeShortcuts
-                FilterChip(
+                com.prism.music.ui.components.PrismChip(
                     on,
                     { c.settings.setHomeShortcuts(if (on) settings.homeShortcuts - sc else settings.homeShortcuts + sc) },
-                    { Text(if (on) "${settings.homeShortcuts.indexOf(sc) + 1}. ${sc.label}" else sc.label) },
+                    if (on) "${settings.homeShortcuts.indexOf(sc) + 1}. ${sc.label}" else sc.label,
                 )
             }
         }
@@ -193,14 +188,14 @@ private fun GreetingEditor() {
             "Your playlists show up here once your library has loaded",
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp),
         )
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             // Pinned ones first (kept even if they've left the library), then the rest of the library.
             val pinnedIds = settings.homePlaylists.map { it.id }
             val options = settings.homePlaylists.map { it.id to it.title } +
                 playlists.filter { it.id !in pinnedIds }.map { it.id to it.title }
             options.forEach { (id, title) ->
                 val on = id in pinnedIds
-                FilterChip(
+                com.prism.music.ui.components.PrismChip(
                     on,
                     {
                         c.settings.setHomePlaylists(
@@ -208,14 +203,15 @@ private fun GreetingEditor() {
                             else settings.homePlaylists + playlists.first { it.id == id }.let { com.prism.music.data.prefs.PinnedPlaylist(it.id, it.title, it.thumbnail) }
                         )
                     },
-                    { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    title,
+                    Modifier.widthIn(max = 260.dp),
                 )
             }
         }
         Text("Recently played tiles", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 4.dp))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             (0..6).forEach { n ->
-                FilterChip(settings.homeRecentTiles == n, { c.settings.setHomeRecentTiles(n) }, { Text(if (n == 0) "None" else "$n") })
+                com.prism.music.ui.components.PrismChip(settings.homeRecentTiles == n, { c.settings.setHomeRecentTiles(n) }, if (n == 0) "None" else "$n")
             }
         }
     }
@@ -245,8 +241,8 @@ private fun LayoutRow(
         Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 4.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .clip(com.prism.music.ui.theme.LocalUi.current.shape(18.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.94f))
             .padding(start = 4.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

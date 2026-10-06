@@ -45,6 +45,8 @@ import androidx.compose.material.icons.rounded.Explicit
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.MoreHoriz
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PlaylistPlay
@@ -127,19 +129,29 @@ fun Artwork(
 
 @Composable
 fun SectionHeader(title: String, modifier: Modifier = Modifier, strapline: String? = null, onMore: (() -> Unit)? = null) {
+    val ui = com.prism.music.ui.theme.LocalUi.current
+    val scheme = MaterialTheme.colorScheme
     Row(
-        modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 22.dp, bottom = 10.dp),
+        modifier.fillMaxWidth()
+            .padding(start = 20.dp, end = 12.dp, top = ui.gap(26.dp), bottom = ui.gap(10.dp)),
         verticalAlignment = Alignment.Bottom,
     ) {
         Column(Modifier.weight(1f)) {
             if (!strapline.isNullOrBlank()) Text(
-                strapline.uppercase(), style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold,
+                strapline, style = MaterialTheme.typography.labelMedium,
+                color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
-            Text(title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
         }
-        if (onMore != null) IconButton(onClick = onMore) {
-            Icon(Icons.Rounded.ArrowForward, "More", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (onMore != null) Row(
+            Modifier.clip(CircleShape).clickable(onClick = onMore).padding(start = 10.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("See all", style = MaterialTheme.typography.labelLarge, color = scheme.onSurfaceVariant)
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, "More", Modifier.size(20.dp), tint = scheme.onSurfaceVariant)
         }
     }
 }
@@ -162,11 +174,13 @@ fun SongRow(
     val downloads by c.downloads.downloads.collectAsState()
     var menu by remember { mutableStateOf(false) }
     val scheme = MaterialTheme.colorScheme
+    val ui = com.prism.music.ui.theme.LocalUi.current
+    val art = ui.smallArt
     Row(
         modifier
             .fillMaxWidth()
             .combinedClickable(onClick = onClick, onLongClick = onLongClick ?: { menu = true })
-            .padding(horizontal = 16.dp, vertical = 7.dp),
+            .padding(start = 16.dp, end = 4.dp, top = ui.gap(6.dp), bottom = ui.gap(6.dp)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (index != null) {
@@ -181,9 +195,9 @@ fun SongRow(
             }
         }
         Box {
-            Artwork(song.thumbnail, Modifier.size(50.dp), RoundedCornerShape(10.dp), size = 226)
+            Artwork(song.thumbnail, Modifier.size(50.dp), art, size = 226)
             if (playing) Box(
-                Modifier.size(50.dp).clip(RoundedCornerShape(10.dp)).background(Color.Black.copy(alpha = 0.45f)),
+                Modifier.size(50.dp).clip(art).background(Color.Black.copy(alpha = 0.45f)),
                 contentAlignment = Alignment.Center,
             ) { PlayingBars(Modifier.size(20.dp)) }
         }
@@ -191,7 +205,7 @@ fun SongRow(
         Column(Modifier.weight(1f)) {
             Text(
                 song.title, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold,
                 color = if (playing) scheme.primary else scheme.onSurface,
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -206,8 +220,8 @@ fun SongRow(
                 )
             }
         }
-        if (song.id in liked) Icon(Icons.Rounded.Favorite, null, Modifier.size(16.dp), tint = scheme.primary)
-        IconButton(onClick = { menu = true }) { Icon(Icons.Rounded.MoreVert, "More", tint = scheme.onSurfaceVariant) }
+        if (song.id in liked) Icon(Icons.Rounded.Favorite, null, Modifier.size(15.dp), tint = scheme.primary)
+        IconButton(onClick = { menu = true }) { Icon(Icons.Rounded.MoreHoriz, "More", tint = scheme.onSurfaceVariant.copy(alpha = 0.8f)) }
     }
     if (menu) SongActionsSheet(song) { menu = false }
 }
@@ -228,9 +242,11 @@ fun PlayingBars(modifier: Modifier = Modifier, color: Color = Color.White) {
 }
 
 @Composable
-fun ItemCard(item: BrowseItem, modifier: Modifier = Modifier, width: Dp = 152.dp, onClick: () -> Unit) {
+fun ItemCard(item: BrowseItem, modifier: Modifier = Modifier, width: Dp = Dp.Unspecified, onClick: () -> Unit) {
     val round = item is ArtistItem
-    Column(modifier.width(width).clip(RoundedCornerShape(16.dp)).clickable(onClick = onClick).padding(4.dp)) {
+    val ui = com.prism.music.ui.theme.LocalUi.current
+    val w = if (width == Dp.Unspecified) ui.cardWidth else width
+    Column(modifier.width(w).clip(ui.tile).clickable(onClick = onClick).padding(4.dp)) {
         when (item) {
             is MoodItem -> MoodTile(item, Modifier.fillMaxWidth().aspectRatio(1.6f), onClick)
             else -> {
@@ -238,7 +254,7 @@ fun ItemCard(item: BrowseItem, modifier: Modifier = Modifier, width: Dp = 152.dp
                 Artwork(
                     LocalContainer.current.covers.art(item),
                     Modifier.fillMaxWidth().aspectRatio(if (video) 16f / 9f else 1f),
-                    if (round) CircleShape else RoundedCornerShape(14.dp),
+                    if (round) CircleShape else ui.art,
                     placeholderIcon = when (item) {
                         is ArtistItem -> Icons.Rounded.Person
                         is AlbumItem -> Icons.Rounded.Album
@@ -249,7 +265,7 @@ fun ItemCard(item: BrowseItem, modifier: Modifier = Modifier, width: Dp = 152.dp
                 Spacer(Modifier.height(8.dp))
                 Text(
                     item.title, maxLines = if (video) 1 else 2, overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.titleSmall.copy(lineHeight = MaterialTheme.typography.titleSmall.fontSize * 1.25f),
                     modifier = if (round) Modifier.align(Alignment.CenterHorizontally) else Modifier,
                 )
                 if (item.subtitle.isNotBlank()) Text(
@@ -265,42 +281,53 @@ fun ItemCard(item: BrowseItem, modifier: Modifier = Modifier, width: Dp = 152.dp
 @Composable
 fun MoodTile(item: MoodItem, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val color = Color(item.color or 0xFF000000)
+    val ui = com.prism.music.ui.theme.LocalUi.current
     Box(
         modifier
-            .clip(RoundedCornerShape(14.dp))
+            .clip(ui.tile)
             .background(Brush.linearGradient(listOf(color, color.copy(alpha = 0.55f).compositeOverBlack())))
-            .clickable(onClick = onClick)
-            .padding(12.dp),
-        contentAlignment = Alignment.BottomStart,
+            .clickable(onClick = onClick),
     ) {
-        Text(item.title, color = Color.White, style = MaterialTheme.typography.titleMedium, maxLines = 2)
+        // A soft sheen in the corner keeps flat colours from looking like plain blocks.
+        Box(Modifier.matchParentSize().background(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.16f), Color.Transparent), radius = 260f, center = androidx.compose.ui.geometry.Offset(0f, 0f))))
+        Text(
+            item.title, color = Color.White, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), maxLines = 2,
+            modifier = Modifier.align(Alignment.BottomStart).padding(12.dp),
+        )
     }
 }
 
 private fun Color.compositeOverBlack(): Color = Color(red * alpha, green * alpha, blue * alpha, 1f)
 
 @Composable
-fun ItemCarousel(items: List<BrowseItem>, onClick: (BrowseItem) -> Unit, cardWidth: Dp = 152.dp) {
-    LazyRow(contentPadding = PaddingValues(horizontal = 14.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+fun ItemCarousel(items: List<BrowseItem>, onClick: (BrowseItem) -> Unit, cardWidth: Dp = Dp.Unspecified) {
+    val w = if (cardWidth == Dp.Unspecified) com.prism.music.ui.theme.LocalUi.current.cardWidth else cardWidth
+    LazyRow(contentPadding = PaddingValues(horizontal = 14.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         items(items, key = { it.id + it.title }) { item ->
-            ItemCard(item, width = if (item is SongItem && item.song.isVideo) cardWidth * 1.5f else cardWidth) { onClick(item) }
+            ItemCard(item, width = if (item is SongItem && item.song.isVideo) w * 1.5f else w) { onClick(item) }
         }
     }
 }
 
 @Composable
 fun LoadingState(modifier: Modifier = Modifier) {
-    Box(modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator(strokeWidth = 3.dp)
+    Box(modifier.fillMaxWidth().padding(56.dp), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator(Modifier.size(32.dp), strokeWidth = 3.dp, strokeCap = androidx.compose.ui.graphics.StrokeCap.Round)
     }
 }
 
 @Composable
 fun ErrorState(message: String, modifier: Modifier = Modifier, onRetry: (() -> Unit)? = null) {
     Column(modifier.fillMaxWidth().padding(40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(Icons.Rounded.CloudOff, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.height(12.dp))
-        Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Box(
+            Modifier.size(64.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh),
+            contentAlignment = Alignment.Center,
+        ) { Icon(Icons.Rounded.CloudOff, null, Modifier.size(30.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+        Spacer(Modifier.height(14.dp))
+        Text(
+            message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
         if (onRetry != null) {
             Spacer(Modifier.height(16.dp))
             FilledTonalButton(onClick = onRetry) { Text("Try again") }
@@ -310,15 +337,19 @@ fun ErrorState(message: String, modifier: Modifier = Modifier, onRetry: (() -> U
 
 @Composable
 fun EmptyState(icon: ImageVector, title: String, body: String, modifier: Modifier = Modifier) {
-    Column(modifier.fillMaxWidth().padding(40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(modifier.fillMaxWidth().padding(horizontal = 40.dp, vertical = 36.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
-            Modifier.size(72.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
+            Modifier.size(76.dp).clip(com.prism.music.ui.theme.LocalUi.current.shape(26.dp))
+                .background(Brush.linearGradient(listOf(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.tertiaryContainer))),
             contentAlignment = Alignment.Center,
         ) { Icon(icon, null, Modifier.size(34.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer) }
-        Spacer(Modifier.height(16.dp))
-        Text(title, style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.height(4.dp))
-        Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(18.dp))
+        Text(title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        Spacer(Modifier.height(6.dp))
+        Text(
+            body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
     }
 }
 
@@ -333,7 +364,7 @@ fun SearchField(query: String, hint: String, onChange: (String) -> Unit, modifie
     val scheme = MaterialTheme.colorScheme
     val focus = androidx.compose.ui.platform.LocalFocusManager.current
     Row(
-        modifier.fillMaxWidth().height(46.dp).clip(RoundedCornerShape(50)).background(scheme.surfaceContainerHigh).padding(start = 14.dp, end = 4.dp),
+        modifier.fillMaxWidth().height(46.dp).clip(com.prism.music.ui.theme.LocalUi.current.shape(23.dp)).background(scheme.surfaceContainerHigh).padding(start = 14.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(Icons.Rounded.Search, null, Modifier.size(20.dp), tint = scheme.onSurfaceVariant)
@@ -420,15 +451,15 @@ fun SongActionsSheet(song: Song, onDismiss: () -> Unit) {
       fun close(action: () -> Unit) = hide(action)
       Column(Modifier.verticalScroll(rememberScrollState())) {
         Row(Modifier.padding(horizontal = 20.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Artwork(song.thumbnail, Modifier.size(56.dp), RoundedCornerShape(12.dp), size = 226)
+            Artwork(song.thumbnail, Modifier.size(60.dp), com.prism.music.ui.theme.LocalUi.current.art, size = 226)
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text(song.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(song.title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(song.artistText, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
             }
-            if (song.durationSec > 0) Text(formatDuration(song.durationSec), style = MaterialTheme.typography.labelMedium)
+            if (song.durationSec > 0) Text(formatDuration(song.durationSec), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        HorizontalDivider(Modifier.padding(vertical = 10.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        HorizontalDivider(Modifier.padding(horizontal = 20.dp, vertical = 12.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
         SheetAction(Icons.Rounded.PlaylistPlay, "Play next") { close { c.player.playNext(song) } }
         SheetAction(Icons.AutoMirrored.Rounded.QueueMusic, "Add to queue") { close { c.player.addToQueue(song) } }
         SheetAction(Icons.Rounded.Radio, "Start radio") { close { c.player.playRadio(song) } }
@@ -463,12 +494,15 @@ data class SheetItem(val icon: ImageVector, val label: String, val onClick: () -
 @Composable
 fun SheetAction(icon: ImageVector, label: String, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 24.dp, vertical = 14.dp),
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.width(20.dp))
-        Text(label, style = MaterialTheme.typography.bodyLarge)
+        Box(
+            Modifier.size(38.dp).clip(com.prism.music.ui.theme.LocalUi.current.shape(12.dp)).background(MaterialTheme.colorScheme.surfaceContainerHighest),
+            contentAlignment = Alignment.Center,
+        ) { Icon(icon, null, Modifier.size(21.dp), tint = MaterialTheme.colorScheme.onSurface) }
+        Spacer(Modifier.width(16.dp))
+        Text(label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
     }
 }
 
@@ -518,11 +552,7 @@ fun PagerChips(labels: List<String>, pager: androidx.compose.foundation.pager.Pa
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         items(labels.size) { i ->
-            androidx.compose.material3.FilterChip(
-                pager.currentPage == i,
-                { scope.launch { pager.animateScrollToPage(i) } },
-                { Text(labels[i]) },
-            )
+            PrismChip(pager.currentPage == i, { scope.launch { pager.animateScrollToPage(i) } }, labels[i])
         }
     }
 }
@@ -531,10 +561,13 @@ fun PagerChips(labels: List<String>, pager: androidx.compose.foundation.pager.Pa
 fun <T> SortButton(options: List<T>, selected: T, label: (T) -> String, modifier: Modifier = Modifier, onSelect: (T) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Box(modifier) {
-        TextButton(onClick = { open = true }) {
-            Icon(Icons.AutoMirrored.Rounded.Sort, null, Modifier.size(18.dp))
+        Row(
+            Modifier.clip(CircleShape).clickable { open = true }.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.AutoMirrored.Rounded.Sort, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(6.dp))
-            Text(label(selected))
+            Text(label(selected), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
         }
         androidx.compose.material3.DropdownMenu(open, { open = false }) {
             options.forEach { o ->
@@ -551,7 +584,7 @@ fun <T> SortButton(options: List<T>, selected: T, label: (T) -> String, modifier
 /** A list's count on the left and its [SortButton] on the right. */
 @Composable
 fun <T> SortBar(count: String, options: List<T>, selected: T, label: (T) -> String, modifier: Modifier = Modifier, onSelect: (T) -> Unit) {
-    Row(modifier.fillMaxWidth().padding(start = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier.fillMaxWidth().padding(start = 8.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(count, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
         SortButton(options, selected, label, onSelect = onSelect)
     }

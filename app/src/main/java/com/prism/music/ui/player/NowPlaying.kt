@@ -93,6 +93,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -251,7 +252,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
     val panelsSettled = collapse.value >= 1f
     val panelFade by animateFloatAsState(if (panelsSettled) 1f else 0f, tween(200, easing = FastOutSlowInEasing), label = "panelFade")
     val artScale by animateFloatAsState(
-        if (isPlaying) 1f else 0.86f,
+        if (isPlaying || !settings.artShrinkOnPause || settings.reduceMotion) 1f else 0.86f,
         spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
         label = "artScale",
     )
@@ -287,6 +288,8 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
     val blurImage = rememberFullArtworkBlur(song.thumbnail)
     val fullBlur by animateFloatAsState(if (lyricsOpen || queueOpen || statsOpen) 1f else 0f, tween(360, easing = FastOutSlowInEasing), label = "fullBlur")
     val statusTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    // Collapsed into the header thumbnail, the sleeve keeps gentle corners whatever the setting.
+    val artShape = RoundedCornerShape(lerp(settings.playerArtCorners.dp, 8.dp, collapse.value))
 
     val originText = when {
         source.kind == QueueKind.SINGLE -> "Playing from Autoplay"
@@ -307,8 +310,15 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
             .background(PlayerFallbackBackdrop),
     ) {
         // ------------------------------------------------ Backdrop
-        if (fullBlur < 1f) ArtworkMeshBackdrop(mesh, Modifier.graphicsLayer { alpha = 1f - fullBlur }, seam = if (heroMode) heroHeight else 0.dp)
-        if (fullBlur > 0f) FullArtworkBlurBackdrop(blurImage, Modifier.graphicsLayer { alpha = fullBlur })
+        when (settings.playerBackground) {
+            com.prism.music.data.prefs.PlayerBackground.MESH -> {
+                if (fullBlur < 1f) ArtworkMeshBackdrop(mesh, Modifier.graphicsLayer { alpha = 1f - fullBlur }, seam = if (heroMode) heroHeight else 0.dp)
+                if (fullBlur > 0f) FullArtworkBlurBackdrop(blurImage, Modifier.graphicsLayer { alpha = fullBlur })
+            }
+            com.prism.music.data.prefs.PlayerBackground.BLUR -> FullArtworkBlurBackdrop(blurImage)
+            com.prism.music.data.prefs.PlayerBackground.THEME -> ThemeBackdrop()
+            com.prism.music.data.prefs.PlayerBackground.BLACK -> Box(Modifier.fillMaxSize().background(Color.Black))
+        }
 
         // ------------------------------------------------ Full-bleed banner (+ canvas)
         if (heroMode && heroHeight > 0.dp && !(collapsePastHalf && heroVisible() < 0.001f)) {
@@ -470,8 +480,8 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                                         else -> 1f
                                     }
                                 }
-                                .shadow(if (artLoaded) 10.dp else 0.dp, RoundedCornerShape(8.dp))
-                                .clip(RoundedCornerShape(8.dp))
+                                .shadow(if (artLoaded) 10.dp else 0.dp, artShape)
+                                .clip(artShape)
                                 .background(Color.Black.copy(alpha = 0.18f)),
                             contentAlignment = Alignment.Center,
                         ) {
@@ -587,7 +597,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                             onVideoMode = { pc.setVideoMode(it) },
                         )
                         Spacer(Modifier.height(18.dp))
-                        OutputCaption()
+                        if (settings.showOutputDevice) OutputCaption() else Spacer(Modifier.height(14.dp))
                         Spacer(Modifier.height(18.dp))
                     }
                 }
@@ -610,6 +620,18 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
     ) { showActions = false }
     if (showSleep) SleepTimerDialog { showSleep = false }
     if (showTiming) LyricsTimingSheet { showTiming = false }
+}
+
+/** The "Theme" player background: a deep wash of the accent colour, lighter at the top. */
+@Composable
+private fun ThemeBackdrop() {
+    val scheme = MaterialTheme.colorScheme
+    fun Color.deep(f: Float) = Color(red * f, green * f, blue * f, 1f)
+    Box(
+        Modifier.fillMaxSize().background(
+            Brush.verticalGradient(listOf(scheme.primary.deep(0.55f), scheme.tertiary.deep(0.28f), Color.Black.copy(alpha = 0.92f).compositeOver(scheme.primary.deep(0.1f))))
+        ),
+    )
 }
 
 @Composable
