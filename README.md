@@ -36,6 +36,7 @@ Updating works the same way: install the new APK over the old one, and your down
 | 🎤 **Word-by-word lyrics** | Ten lyric sources, karaoke timing first, then line-synced, then plain. Switch source per song and nudge the timing. |
 | 🎨 **Make it yours** | Font, text size, corners, spacing, nav bar, mini player, player background and controls, lyrics alignment, Replay colours and eleven screen backgrounds. |
 | 📊 **Replay** | A private, on-device recap of your listening, with a full-screen story. |
+| 🎬 **Music videos** | Switch any song to its music video in one tap, with lyrics in sync and full-screen landscape. |
 | 📥 **Offline** | Downloads and smart downloads, with lyrics saved alongside every song. |
 | 🎚️ **Sound** | 10-band EQ, loudness normalization, Prism Spatial, skip silence and lossless playback. |
 | 🚗 **Android Auto** | Shuffle play, extra player buttons and lyrics on the car screen. |
@@ -44,7 +45,8 @@ Updating works the same way: install the new APK over the old one, and your down
 
 ### Listening
 - **Lyrics, word by word.** Better Lyrics (Apple Music's timed lyrics), QQ Music, NetEase, KuGou, LyricsPlus, Bini, LRCLIB, Unison, Genius, YouTube Music and Lyrics.ovh.
-- **Player.** Full-bleed artwork, animated covers, and a one-tap switch between the song and its music video with lyrics kept in sync. Shows the codec and bitrate (or Lossless / Downloaded), with stats in an in-player panel.
+- **Player.** Full-bleed artwork and animated covers. Shows the codec and bitrate (or Lossless / Downloaded), with stats in an in-player panel.
+- **Music videos.** Tap the video toggle under the player to switch any song to its official music video. Playback carries on from the same spot, and the lyrics stay in sync. Fit or fill the frame, go full screen, or turn the phone sideways for edge-to-edge landscape. Video quality goes from 480p up to 1440p in Playback & sound.
 - **Sound.** 10-band equalizer with presets, bass boost, loudness normalization (uses YouTube's own loudness data, works offline), Prism Spatial for any headphones, skip silence, and a lossless mode that plays matching FLAC files on the phone.
 - **Autoplay and radio.** The queue keeps going with similar music after an album or playlist ends. Shuffle makes a fresh order every time.
 
@@ -75,6 +77,7 @@ Updating works the same way: install the new APK over the old one, and your down
 |:-:|:-:|:-:|
 | <img src="docs/screenshots/home.jpg" width="240" alt="Home"><br>Home with Replay and shortcuts | <img src="docs/screenshots/library.jpg" width="240" alt="Library"><br>Library | <img src="docs/screenshots/replay.jpg" width="240" alt="Replay"><br>Replay, your on-device recap |
 | <img src="docs/screenshots/album.jpg" width="240" alt="Album"><br>Albums with starred hits | <img src="docs/screenshots/playlist.jpg" width="240" alt="Playlist"><br>Playlists with your own picture and genre filters | <img src="docs/screenshots/downloads.jpg" width="240" alt="Downloads"><br>Downloads, with lyrics saved |
+| <img src="docs/screenshots/video.jpg" width="240" alt="Music video playing in the player"><br>Music videos, one tap from the song | <img src="docs/screenshots/player.jpg" width="240" alt="Now playing"><br>Now playing | <img src="docs/screenshots/lyrics.jpg" width="240" alt="Lyrics"><br>Word-by-word lyrics |
 | <img src="docs/screenshots/settings.jpg" width="240" alt="Settings"><br>Settings | <img src="docs/screenshots/appearance.jpg" width="240" alt="Appearance"><br>Theme, accent colour and fonts | <img src="docs/screenshots/backgrounds.jpg" width="240" alt="Backgrounds"><br>Screen backgrounds |
 | <img src="docs/screenshots/sound.jpg" width="240" alt="Playback and sound"><br>Lossless, normalization, video quality | <img src="docs/screenshots/equalizer.jpg" width="240" alt="Equalizer"><br>10-band equalizer | <img src="docs/screenshots/car-lyrics.jpg" width="240" alt="Android Auto lyrics settings"><br>Android Auto lyrics, with preview |
 
