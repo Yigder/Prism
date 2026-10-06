@@ -66,14 +66,31 @@ Updating works the same way: install the new APK over the old one, and your down
 - Extra buttons: like, shuffle, repeat, lyrics on/off, start radio and "not for me".
 - **Lyrics on the car screen.** The sung line replaces the title, and the cover becomes a lyric card that lights up word by word.
 
+> [!WARNING]
+> **Android Auto lyrics are for passengers and for use while parked only.** Do not read lyrics while driving. Keep your eyes on the road and follow local laws. You can turn car lyrics off at any time in Settings → Lyrics → Android Auto, or with the lyrics button on the car's player.
+
 ## Screenshots
 
 | | | |
 |:-:|:-:|:-:|
-| <img src="docs/screenshots/home.jpg" width="240" alt="Home"><br>Home | <img src="docs/screenshots/browse.jpg" width="240" alt="Browse"><br>Moods and genres | <img src="docs/screenshots/album.jpg" width="240" alt="Album"><br>Albums with starred hits |
-| <img src="docs/screenshots/playlist.jpg" width="240" alt="Playlist"><br>Playlists with genre filters | <img src="docs/screenshots/playlist-picture.jpg" width="240" alt="Playlist picture"><br>Custom playlist pictures | <img src="docs/screenshots/downloads.jpg" width="240" alt="Downloads"><br>Downloads, with lyrics saved |
-| <img src="docs/screenshots/backgrounds.jpg" width="240" alt="Backgrounds"><br>Screen backgrounds | <img src="docs/screenshots/equalizer.jpg" width="240" alt="Equalizer"><br>Equalizer | <img src="docs/screenshots/sound.jpg" width="240" alt="Playback and sound"><br>Quality, normalization, spatial audio |
-| <img src="docs/screenshots/car-lyrics.jpg" width="240" alt="Android Auto lyrics settings"><br>Android Auto lyrics | <img src="docs/screenshots/settings.jpg" width="240" alt="Settings"><br>Settings | |
+| <img src="docs/screenshots/home.jpg" width="240" alt="Home"><br>Home with Replay and shortcuts | <img src="docs/screenshots/library.jpg" width="240" alt="Library"><br>Library | <img src="docs/screenshots/replay.jpg" width="240" alt="Replay"><br>Replay, your on-device recap |
+| <img src="docs/screenshots/album.jpg" width="240" alt="Album"><br>Albums with starred hits | <img src="docs/screenshots/playlist.jpg" width="240" alt="Playlist"><br>Playlists with your own picture and genre filters | <img src="docs/screenshots/downloads.jpg" width="240" alt="Downloads"><br>Downloads, with lyrics saved |
+| <img src="docs/screenshots/settings.jpg" width="240" alt="Settings"><br>Settings | <img src="docs/screenshots/appearance.jpg" width="240" alt="Appearance"><br>Theme, accent colour and fonts | <img src="docs/screenshots/backgrounds.jpg" width="240" alt="Backgrounds"><br>Screen backgrounds |
+| <img src="docs/screenshots/sound.jpg" width="240" alt="Playback and sound"><br>Lossless, normalization, video quality | <img src="docs/screenshots/equalizer.jpg" width="240" alt="Equalizer"><br>10-band equalizer | <img src="docs/screenshots/car-lyrics.jpg" width="240" alt="Android Auto lyrics settings"><br>Android Auto lyrics, with preview |
+
+<sub>Personal details and the mini player are blurred in these screenshots.</sub>
+
+## Credits and inspiration
+
+Prism doesn't ship artwork, fonts or code copied from other apps, but several ideas and data sources come from elsewhere:
+
+- **Apple Music** inspired the artist page layout, starred most-played album tracks, headline artist typefaces and the animated cover style.
+- **BitChord** (itself modelled on Apple Music) inspired the Now Playing screen.
+- **Spotify Wrapped** inspired the Replay story, including its "what's playing" card.
+- **Lyrics:** [Better Lyrics](https://betterlyrics.org) (Apple Music TTML and QQ Music "Portato"), NetEase, KuGou, LyricsPlus, Bini, [LRCLIB](https://lrclib.net), Unison, Genius, YouTube Music and [Lyrics.ovh](https://lyrics.ovh). Lyrics belong to their rights holders.
+- **Animated covers** come from Apple Music, Tidal and the ViVi Music canvas list.
+- **Libraries:** [NewPipe Extractor](https://github.com/TeamNewPipe/NewPipeExtractor), [Haze](https://github.com/chrisbanes/haze), [Coil](https://coil-kt.github.io/coil/), Media3 ExoPlayer and the rest of the stack below.
+- Music and metadata are streamed from YouTube Music. All trademarks belong to their owners.
 
 ## Privacy
 
