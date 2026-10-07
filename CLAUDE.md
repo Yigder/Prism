@@ -49,7 +49,8 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
 - `*.apk`, `local.properties`, keystores are gitignored.
 
 ## Current status / Next steps
-- **v1.2.2 (versionCode 5) is GitHub "Latest"** (2026-10-07): drag to reorder Customize Home sections, "Greeting & shortcuts"
+- **v1.3.1 (versionCode 7) is GitHub "Latest"** (2026-10-07): first release signed with the release key (cert SHA-256 `cbc462bc…`).
+  v1.3.0 (versionCode 6): backup & restore, last debug-signed build. v1.2.2 (versionCode 5): drag to reorder Customize Home sections, "Greeting & shortcuts"
   renamed "Shortcut tiles" (greyed-out tile settings when that section is off), long-press a Library playlist to delete it.
   v1.2.1 (versionCode 4, 2026-10-07): in-app update install. v1.2.0 (`f3656fa`) added music videos as songs,
   cleaner playlists/Customize Home and the update banner. v1.1.0 (2026-10-06, `70b6251`) was the first official release;
