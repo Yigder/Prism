@@ -232,31 +232,63 @@ private fun HomeTopBar() {
     }
 }
 
-/** "A new Prism is out" under the greeting, when there is one; tap to get it, × to put it off until the next. */
+/**
+ * "A new Prism is out" under the greeting, when there is one. Tapping it downloads the update and
+ * opens Android's installer (asking once for permission to install); × puts it off until the next.
+ */
 @Composable
 private fun UpdateBanner() {
     val c = LocalContainer.current
     val settings = LocalAppSettings.current
     val update by c.updates.available.collectAsState()
+    val progress by c.updates.progress.collectAsState()
     LaunchedEffect(settings.checkUpdates) { if (settings.checkUpdates) c.updates.check() }
     val u = update?.takeIf { settings.checkUpdates } ?: return
     val uri = androidx.compose.ui.platform.LocalUriHandler.current
+    // Back from "Install unknown apps": carry on straight away if it was allowed.
+    val allow = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) {
+        if (c.updates.canInstall()) c.updates.install(u)
+    }
+    LaunchedEffect(progress) {
+        if (progress is com.prism.music.data.UpdateProgress.NeedsPermission) runCatching { allow.launch(c.updates.permissionIntent()) }
+    }
+    val busy = progress is com.prism.music.data.UpdateProgress.Downloading || progress is com.prism.music.data.UpdateProgress.Installing
     val ui = com.prism.music.ui.theme.LocalUi.current
     val scheme = MaterialTheme.colorScheme
-    Row(
+    val (title, detail) = when (val p = progress) {
+        is com.prism.music.data.UpdateProgress.Downloading ->
+            "Downloading Prism ${u.version}…" to (p.fraction?.let { "${(it * 100).toInt()}%" } ?: "Starting")
+        com.prism.music.data.UpdateProgress.Installing -> "Installing Prism ${u.version}" to "Confirm in Android's installer"
+        is com.prism.music.data.UpdateProgress.Failed -> "Update didn't finish" to "${p.message}. Tap to try again"
+        com.prism.music.data.UpdateProgress.NeedsPermission -> "Allow Prism to install updates" to "Turn on \"Allow from this source\", then come back"
+        com.prism.music.data.UpdateProgress.Idle -> "Prism ${u.version} is available" to "Tap to update"
+    }
+    Column(
         Modifier.padding(start = 16.dp, end = 16.dp, top = ui.gap(14.dp)).fillMaxWidth().clip(ui.shape(16.dp))
             .background(scheme.primaryContainer)
-            .clickable { runCatching { uri.openUri(u.url) } }
-            .padding(start = 16.dp, top = 6.dp, bottom = 6.dp, end = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .clickable(enabled = !busy) {
+                when {
+                    !u.isApk -> runCatching { uri.openUri(u.url) }
+                    progress is com.prism.music.data.UpdateProgress.NeedsPermission -> runCatching { allow.launch(c.updates.permissionIntent()) }
+                    else -> c.updates.install(u)
+                }
+            },
     ) {
-        Icon(Icons.Rounded.SystemUpdate, null, tint = scheme.onPrimaryContainer)
-        Spacer(Modifier.width(14.dp))
-        Column(Modifier.weight(1f)) {
-            Text("Prism ${u.version} is available", style = MaterialTheme.typography.titleSmall, color = scheme.onPrimaryContainer)
-            Text("Tap to download the update", style = MaterialTheme.typography.bodySmall, color = scheme.onPrimaryContainer.copy(alpha = 0.8f))
+        Row(Modifier.padding(start = 16.dp, top = 6.dp, bottom = 6.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Rounded.SystemUpdate, null, tint = scheme.onPrimaryContainer)
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f).padding(vertical = if (busy) 10.dp else 0.dp)) {
+                Text(title, style = MaterialTheme.typography.titleSmall, color = scheme.onPrimaryContainer)
+                Text(detail, style = MaterialTheme.typography.bodySmall, color = scheme.onPrimaryContainer.copy(alpha = 0.8f))
+            }
+            if (!busy) IconButton(onClick = { c.updates.dismiss() }) { Icon(Icons.Rounded.Close, "Dismiss", tint = scheme.onPrimaryContainer) }
         }
-        IconButton(onClick = { c.updates.dismiss() }) { Icon(Icons.Rounded.Close, "Dismiss", tint = scheme.onPrimaryContainer) }
+        (progress as? com.prism.music.data.UpdateProgress.Downloading)?.let { p ->
+            val color = scheme.onPrimaryContainer
+            val track = scheme.onPrimaryContainer.copy(alpha = 0.2f)
+            if (p.fraction != null) androidx.compose.material3.LinearProgressIndicator(progress = { p.fraction }, Modifier.fillMaxWidth(), color = color, trackColor = track)
+            else androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth(), color = color, trackColor = track)
+        }
     }
 }
 

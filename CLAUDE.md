@@ -37,7 +37,9 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
 - Privacy: all history/Replay/settings stay on device; no Prism server. Don't add telemetry.
 - Update banner (`data/Updates.kt`): Home asks GitHub's `releases/latest` (≤ every 6 h, toggle in Settings → About)
   and compares its tag to `versionName`. So every release must bump `versionName`/`versionCode`, use a `vX.Y.Z` tag,
-  and attach the `.apk` asset; pre-releases are never offered.
+  and attach the `.apk` asset; pre-releases are never offered. Tapping the banner downloads the APK in-app and
+  hands it to `PackageInstaller` (one-time "Install unknown apps" permission, then Android's confirm); the APK
+  must be Prism with a higher versionCode, signed with the same (debug) key, or it's refused. Shipped after 1.2.0.
 - Fresh-install defaults in `AppSettings` / `HomeSections.initial` are the owner's own settings (smart downloads 1 GB).
 - Not affiliated with Google/YouTube — keep the disclaimer in README.
 - `*.apk`, `local.properties`, keystores are gitignored.
