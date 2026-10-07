@@ -43,8 +43,9 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
 - `*.apk`, `local.properties`, keystores are gitignored.
 
 ## Current status / Next steps
-- **v1.1.0 (versionCode 2) is the first official release** — published 2026-10-06 as GitHub "Latest",
-  tag `v1.1.0` → `70b6251` (UX rework), asset `Prism.apk`. v1.0.0 (2026-10-04) is now marked pre-release.
+- **v1.2.0 (versionCode 3) is GitHub "Latest"** — published 2026-10-07, tag `v1.2.0` → `f3656fa`, asset `Prism.apk`
+  (music videos open as songs, cleaner playlists/Customize Home, update banner). v1.1.0 (2026-10-06, `70b6251`) was the
+  first official release; v1.0.0 (2026-10-04) is marked pre-release.
 - Release flow: build `assembleRelease`, upload the APK as `Prism.apk` (README links to
   `releases/latest/download/Prism.apk`), notes include the Android Auto "parked/passengers only" warning.
 - README screenshots (`docs/screenshots/`) were retaken for 1.1 on a Pixel 10 Pro XL with personal info
