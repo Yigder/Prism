@@ -28,8 +28,8 @@ import kotlin.math.abs
 
 /**
  * YouTube Music's genre categories (its "Moods & genres" page), kept to the
- * mostly English-language ones; every song is sorted into one — there's no
- * "Other". Raw genre names from catalogues (Deezer, iTunes) are mapped onto
+ * mostly English-language ones; every song gets one main category — there's no
+ * "Other" — plus, now and then, a clear second one. Raw genre names from catalogues (Deezer, iTunes) are mapped onto
  * these, most specific first. Regional scenes (K-Pop, Latin, Bollywood…) fold
  * into the nearest of these rather than getting categories of their own.
  */
@@ -196,20 +196,122 @@ class MetaRepository(private val http: OkHttpClient, private val dao: MetaDao) {
      * Raw genres of an artist on Deezer, most common first: a vote across their
      * releases (albums count double, compilations not at all), in two requests.
      */
-    private suspend fun deezerArtistGenre(name: String): String? = deezer.withPermit {
-        val search = getJson("https://api.deezer.com/search/artist".toHttpUrl().newBuilder().addQueryParameter("q", name).addQueryParameter("limit", "5").build())
-        val found = search.field("data") as? JsonArray ?: return@withPermit null
-        val artist = found.firstOrNull { key(it.str("name") ?: "") == key(name) } ?: found.firstOrNull() ?: return@withPermit null
-        val id = artist.str("id") ?: return@withPermit null
-        val albums = getJson("https://api.deezer.com/artist/$id/albums".toHttpUrl().newBuilder().addQueryParameter("limit", "40").build())
-            .field("data") as? JsonArray ?: return@withPermit null
-        val votes = HashMap<String, Int>()
-        albums.forEach { a ->
-            val genre = a.str("genre_id")?.toIntOrNull()?.let { deezerGenres[it] } ?: return@forEach
-            val weight = when (a.str("record_type")) { "album" -> 2; "compile" -> 0; else -> 1 }
-            if (weight > 0) votes.merge(genre, weight, Int::plus)
+    private suspend fun deezerArtistGenre(name: String): String? =
+        deezerArtistVotes(name)?.entries?.sortedByDescending { it.value }?.joinToString(" / ") { it.key }?.ifBlank { null }
+
+    /** Deezer release votes per artist this session, so the main genre and the extras share one lookup. */
+    private val deezerVoteCache = java.util.concurrent.ConcurrentHashMap<String, Map<String, Int>>()
+
+    /** Raw Deezer genre -> weighted release count for an artist; null if Deezer couldn't be asked. */
+    private suspend fun deezerArtistVotes(name: String): Map<String, Int>? {
+        deezerVoteCache[key(name)]?.let { return it }
+        return deezer.withPermit {
+            val search = getJson("https://api.deezer.com/search/artist".toHttpUrl().newBuilder().addQueryParameter("q", name).addQueryParameter("limit", "5").build())
+            val found = search.field("data") as? JsonArray ?: return@withPermit null
+            // Several artists can share a name; the one with the most fans is nearly always who's meant.
+            val artist = found.filter { key(it.str("name") ?: "") == key(name) }.maxByOrNull { it.str("nb_fan")?.toLongOrNull() ?: 0L }
+                ?: found.firstOrNull() ?: return@withPermit emptyMap()
+            val id = artist.str("id") ?: return@withPermit emptyMap()
+            val albums = getJson("https://api.deezer.com/artist/$id/albums".toHttpUrl().newBuilder().addQueryParameter("limit", "40").build())
+                .field("data") as? JsonArray ?: return@withPermit null
+            val votes = HashMap<String, Int>()
+            albums.forEach { a ->
+                val genre = a.str("genre_id")?.toIntOrNull()?.let { deezerGenres[it] } ?: return@forEach
+                val weight = when (a.str("record_type")) { "album" -> 2; "compile" -> 0; else -> 1 }
+                if (weight > 0) votes.merge(genre, weight, Int::plus)
+            }
+            votes
+        }?.also { deezerVoteCache[key(name)] = it }
+    }
+
+    // ---------------------------------------------------------------- Extra genres
+
+    private val lastFmKey = com.prism.music.BuildConfig.LASTFM_API_KEY
+    private val lastFmLock = Mutex()
+    private var lastLastFm = 0L
+
+    private fun extrasKey(name: String) = "artistx1:${key(name)}"
+
+    /**
+     * Last.fm's tags for an artist as categories, scored 0–100 (its top tag is 100). Null without
+     * an API key or if Last.fm couldn't be reached. Requests are spaced to stay well inside its limits.
+     */
+    private suspend fun lastFmArtistTags(name: String): Map<String, Int>? {
+        if (lastFmKey.isBlank()) return null
+        val res = lastFmLock.withLock {
+            val wait = 260 - (System.currentTimeMillis() - lastLastFm)
+            if (wait > 0) delay(wait)
+            lastLastFm = System.currentTimeMillis()
+            getJson(
+                "https://ws.audioscrobbler.com/2.0/".toHttpUrl().newBuilder()
+                    .addQueryParameter("method", "artist.gettoptags").addQueryParameter("artist", name)
+                    .addQueryParameter("autocorrect", "1").addQueryParameter("api_key", lastFmKey).addQueryParameter("format", "json").build()
+            )
+        } ?: return null
+        val tags = res.field("toptags").field("tag") as? JsonArray ?: return if (res.field("error") != null) emptyMap() else null
+        val score = HashMap<String, Int>()
+        tags.forEach { t ->
+            val tag = t.str("name")?.lowercase() ?: return@forEach
+            // Descriptions of the singer, not the music ("female vocalists" would otherwise read as Pop).
+            if ("vocal" in tag || "seen live" in tag || "favorite" in tag || "favourite" in tag) return@forEach
+            val category = Genres.normalize(tag) ?: return@forEach
+            score.merge(category, t.str("count")?.toIntOrNull() ?: 0, ::maxOf)
         }
-        votes.entries.sortedByDescending { it.value }.joinToString(" / ") { it.key }.ifBlank { null }
+        return score
+    }
+
+    /**
+     * Genres an artist clearly belongs to besides [primary], so their songs can sit in more than one.
+     * Deliberately strict: with Last.fm, a category needs a tag at least half as strong as the
+     * artist's top tag, and the main genre has to show up there too (so the two sources agree on who
+     * this is); otherwise Deezer's releases decide, where it needs half the main genre's weight and a
+     * few releases of its own. At most two extras.
+     */
+    suspend fun artistExtraGenres(name: String, primary: String): List<String> = withContext(Dispatchers.IO) {
+        if (name.isBlank()) return@withContext emptyList()
+        val k = extrasKey(name)
+        dao.genre(k)?.let { cached -> return@withContext cached.genre.orEmpty().split("|").filter { it.isNotBlank() && it != primary } }
+        val fromLastFm = runCatching { lastFmArtistTags(name) }.getOrNull()?.let { tags ->
+            if ((tags[primary] ?: 0) < 25) emptyList()
+            else tags.filter { (g, n) -> g != primary && n >= 50 }.entries.sortedByDescending { it.value }.take(2).map { it.key }
+        }
+        val extras = fromLastFm ?: runCatching { deezerArtistVotes(name) }.getOrNull()?.let { votes ->
+            val byCategory = HashMap<String, Int>()
+            votes.forEach { (raw, n) -> Genres.normalize(raw)?.let { byCategory.merge(it, n, Int::plus) } }
+            val main = byCategory[primary] ?: 0
+            // Deezer doesn't see the main genre at all: it's describing someone else, so it gets no say.
+            if (main == 0) emptyList()
+            else byCategory.filter { (g, n) -> g != primary && n >= 3 && n * 2 >= main }.entries.sortedByDescending { it.value }.take(1).map { it.key }
+        } ?: return@withContext emptyList() // Nothing could be asked; try again next time.
+        trace?.invoke("extras $name ($primary): lastfm=$fromLastFm -> $extras")
+        dao.putGenre(GenreEntity(k, extras.joinToString("|"), System.currentTimeMillis()))
+        extras
+    }
+
+    /**
+     * Further genres for songs whose main genre is in [primary] (song id -> genre), by artist,
+     * reported in batches as they're found. Songs with no extras aren't reported.
+     */
+    suspend fun resolveExtraGenres(
+        songs: List<Song>,
+        primary: Map<String, String>,
+        onBatch: (Map<String, List<String>>) -> Unit,
+    ) = coroutineScope {
+        val byArtist = songs.filter { it.id in primary }.groupBy { it.primaryArtist to primary.getValue(it.id) }
+        val results = Channel<Pair<List<String>, List<Song>>>(Channel.UNLIMITED)
+        byArtist.forEach { (artist, list) -> launch { results.send(artistExtraGenres(artist.first, artist.second) to list) } }
+        val buffer = HashMap<String, List<String>>()
+        var lastEmit = System.currentTimeMillis()
+        repeat(byArtist.size) { n ->
+            val (extras, list) = results.receive()
+            if (extras.isNotEmpty()) list.forEach { buffer[it.id] = extras }
+            if (buffer.isNotEmpty() && (n == byArtist.size - 1 || buffer.size >= 25 || System.currentTimeMillis() - lastEmit > 600)) {
+                onBatch(buffer.toMap())
+                buffer.clear()
+                lastEmit = System.currentTimeMillis()
+            }
+        }
+        results.close()
     }
 
     private suspend fun itunes(url: okhttp3.HttpUrl): JsonElement? = itunesLock.withLock {
@@ -229,10 +331,10 @@ class MetaRepository(private val http: OkHttpClient, private val dao: MetaDao) {
     private fun categoryOf(raw: String?): String? = raw?.split(" / ")?.firstNotNullOfOrNull { Genres.normalize(it) } ?: Genres.normalize(raw)
 
     /** An artist's category, looked up once and cached. */
-    suspend fun artistGenre(name: String, relatedNames: (suspend () -> List<String>)? = null): String? = withContext(Dispatchers.IO) {
+    suspend fun artistGenre(name: String, relatedNames: (suspend () -> List<String>)? = null, force: Boolean = false): String? = withContext(Dispatchers.IO) {
         if (name.isBlank()) return@withContext null
         val k = artistKey(name)
-        dao.genre(k)?.let { cached -> categoryOf(cached.genre)?.let { return@withContext it } }
+        if (!force) dao.genre(k)?.let { cached -> categoryOf(cached.genre)?.let { return@withContext it } }
         val t0 = System.currentTimeMillis()
         val dz = runCatching { deezerArtistGenre(name) }.onFailure { trace?.invoke("deezer error $name: $it") }.getOrNull()
         var g = categoryOf(dz)
@@ -256,6 +358,25 @@ class MetaRepository(private val http: OkHttpClient, private val dao: MetaDao) {
         val g = artistGenre(song.primaryArtist) ?: runCatching { categoryOf(deezerTrackGenre(song)) }.getOrNull()
         if (g != null) dao.putGenre(GenreEntity(k, g, System.currentTimeMillis()))
         g
+    }
+
+    /**
+     * Looks every genre up again (after detection improves). The artists of [songs] — the listener's
+     * own music — are redone in place first, so Home and Replay never go blank; everything older is
+     * then forgotten and found again when it's next needed. False if it couldn't get through
+     * (e.g. offline), in which case nothing is forgotten.
+     */
+    suspend fun refreshAll(songs: List<Song>): Boolean = withContext(Dispatchers.IO) {
+        val started = System.currentTimeMillis()
+        val artists = songs.map { it.primaryArtist }.filter { it.isNotBlank() }.distinct()
+        val found = java.util.concurrent.atomic.AtomicInteger()
+        coroutineScope {
+            artists.forEach { a -> launch { if (runCatching { artistGenre(a, force = true) }.getOrNull() != null) found.incrementAndGet() } }
+        }
+        trace?.invoke("refreshed ${found.get()} / ${artists.size} artists")
+        if (artists.isNotEmpty() && found.get() < artists.size / 2) return@withContext false
+        dao.clearGenresBefore(started)
+        true
     }
 
     /** Categories already known (song, then artist), without any network. */

@@ -243,6 +243,10 @@ interface MetaDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun putGenre(e: GenreEntity)
 
+    /** Forgets genre results saved before [before]; Deezer's per-album genres are facts and stay. */
+    @Query("DELETE FROM genres WHERE fetchedAt < :before AND `key` NOT LIKE 'dzalbum:%'")
+    suspend fun clearGenresBefore(before: Long)
+
     @Query("SELECT * FROM motion_art WHERE `key` = :key")
     suspend fun motion(key: String): MotionArtEntity?
 

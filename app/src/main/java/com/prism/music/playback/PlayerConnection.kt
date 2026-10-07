@@ -216,8 +216,33 @@ class PlayerConnection(private val context: Context, private val c: AppContainer
 
     // ------------------------------------------------------------ Commands
 
+    private val _showPlayer = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    /** Asks the UI to bring the full player up. */
+    val showPlayer = _showPlayer.asSharedFlow()
+
+    /** Songs found for music videos / live performances this session (video id -> song). */
+    private val videoSongs = java.util.concurrent.ConcurrentHashMap<String, Song>()
+    private var playToken = 0
+
     fun playQueue(songs: List<Song>, startIndex: Int = 0, source: QueueSource, shuffle: Boolean = false) {
         if (songs.isEmpty()) return
+        val token = ++playToken
+        val tapped = songs[startIndex.coerceIn(0, songs.lastIndex)]
+        if (shuffle || !tapped.isVideo) { startQueue(songs, startIndex, source, shuffle, null); return }
+        // A music video or live performance opens as the song it's of, already showing the video
+        // (the Song button then plays the track itself). With no song to match, the video plays as it is.
+        _showPlayer.tryEmit(Unit)
+        scope.launch {
+            val song = videoSongs[tapped.id] ?: kotlinx.coroutines.withTimeoutOrNull(4_000) {
+                runCatching { kotlinx.coroutines.withContext(Dispatchers.IO) { c.ytm.songForVideo(tapped) } }.getOrNull()
+            }?.also { videoSongs[tapped.id] = it }
+            if (token != playToken) return@launch
+            val list = if (song == null) songs else songs.toMutableList().also { it[startIndex.coerceIn(0, songs.lastIndex)] = song }
+            startQueue(list, startIndex, source, false, tapped.id)
+        }
+    }
+
+    private fun startQueue(songs: List<Song>, startIndex: Int, source: QueueSource, shuffle: Boolean, startVideo: String?) {
         c.queue.source.value = source
         c.queue.autoplayContinuation = null
         c.queue.autoplayStart.value = -1
@@ -225,7 +250,7 @@ class PlayerConnection(private val context: Context, private val c: AppContainer
         withPlayer { p ->
             p.shuffleModeEnabled = shuffle
             val start = if (shuffle) songs.indices.random() else startIndex.coerceIn(0, songs.lastIndex)
-            p.setMediaItems(songs.map { it.toMediaItem() }, start, 0)
+            p.setMediaItems(songs.mapIndexed { i, s -> s.toMediaItem(if (i == start) startVideo else null) }, start, 0)
             if (shuffle) reshuffle(p)
             p.prepare()
             p.play()

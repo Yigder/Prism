@@ -34,6 +34,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import java.io.File
@@ -112,8 +113,23 @@ class AppContainer(val app: Application) {
     // background thread before this property is assigned.
     init { scope.launch { if (settings.current.losslessLocal) localLossless.scan() } }
     val taste = com.prism.music.data.TasteRepository(this)
+
+    /** One-off upkeep that runs once per install, in the background, after Prism has settled. */
+    private val migrations: android.content.SharedPreferences = app.getSharedPreferences("migrations", android.content.Context.MODE_PRIVATE)
+    init {
+        // Genre detection picked the wrong artist when several share a name (and now finds second
+        // genres), so saved genres are looked up again once. Retried on a later launch if offline.
+        if (!migrations.getBoolean("genres_refreshed_1", false)) scope.launch(Dispatchers.IO) {
+            kotlinx.coroutines.delay(15_000)
+            val songs = runCatching {
+                (db.songs().liked() + db.songs().recentFlow(300).first()).map { it.toSong() }.distinctBy { it.id }
+            }.getOrNull() ?: return@launch
+            if (meta.refreshAll(songs)) migrations.edit().putBoolean("genres_refreshed_1", true).apply()
+        }
+    }
     val downloads by lazy { DownloadRepository(app, this, scope) }
     val covers by lazy { com.prism.music.data.PlaylistCovers(app) }
+    val updates by lazy { com.prism.music.data.UpdateChecker(app, http, scope) }
     val player = PlayerConnection(app, this)
 
     private fun Cache.fullyCached(key: String, position: Long, length: Long): Boolean {

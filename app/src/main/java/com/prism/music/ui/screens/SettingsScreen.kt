@@ -193,6 +193,10 @@ fun SettingsScreen(bottomPadding: Dp, section: SettingsSection? = null) {
                 Group("About") {
                     Item("Prism ${com.prism.music.BuildConfig.VERSION_NAME}", "An unofficial YouTube Music client. Not affiliated with Google or YouTube.", onClick = {})
                     Item("Your data stays here", "History, Replay and settings live only on this phone. Prism has no server.", onClick = {})
+                    Toggle("Check for updates", "Asks GitHub now and then whether a newer Prism is out, and says so on Home", s.checkUpdates) {
+                        c.settings.setCheckUpdates(it)
+                        if (it) c.updates.check(force = true)
+                    }
                 }
             }
         }
@@ -473,7 +477,7 @@ private fun PlayerSettings() {
             if (s.canvasEnabled) CanvasStorage()
         }
         Group("On the player") {
-            Toggle("Show \"Playing from\"", "The album, playlist or Autoplay label over the artwork", s.showPlayingFrom) { prefs.setShowPlayingFrom(it) }
+            Toggle("Show \"Playing from\"", "The song's album over the artwork; tap it to open the album", s.showPlayingFrom) { prefs.setShowPlayingFrom(it) }
             Toggle("Current lyric", "The line being sung, just above the scrubber", s.lyricsOnPlayer) { prefs.setLyricsOnPlayer(it) }
             Toggle("Stats for nerds", "Codec, bitrate and sample rate along the bottom of the artwork", s.showNerdStats) { prefs.setShowNerdStats(it) }
             Toggle("Output device", "Where the sound is going, under the controls (tap it to switch)", s.showOutputDevice) { prefs.setShowOutputDevice(it) }
@@ -695,6 +699,7 @@ private fun LibraryReplaySettings() {
             Label("Open Library on")
             Chips(libraryTabs.map { it.first }, s.libraryStartTab, { k -> libraryTabs.first { it.first == k }.second }) { prefs.setLibraryStartTab(it) }
             Spacer(Modifier.height(6.dp))
+            Toggle("Full-width playlist pictures", "Playlists open with their picture edge to edge, like an artist page", s.playlistHeroCover) { prefs.setPlaylistHeroCover(it) }
         }
         Group("Replay") {
             Toggle("Show time in hours", if (s.replayHours) "Listening time reads like \"20h 4m\"" else "Listening time reads like \"1,204 min\"", s.replayHours) { prefs.setReplayHours(it) }

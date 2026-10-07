@@ -133,7 +133,21 @@ object HomeSections {
         HomeSectionConfig(LIKED, "Liked songs"),
         HomeSectionConfig(DOWNLOADS, "Downloads", visible = false),
     )
+
+    /** What a fresh install's Home shows (and what Reset goes back to). */
+    val initial = listOf(
+        HomeSectionConfig(REPLAY, "Replay teaser", style = SectionStyle.HERO),
+        HomeSectionConfig(GREETING, "Greeting & shortcuts", style = SectionStyle.HERO),
+        HomeSectionConfig(QUICK_PICKS, "Quick picks", style = SectionStyle.LIST),
+        HomeSectionConfig("${YT_PREFIX}mixed for you", "Mixed for you"),
+    )
 }
+
+/** The order lyric sources are tried in on a fresh install. */
+val defaultLyricsOrder = listOf(
+    LyricsSource.KUGOU, LyricsSource.QQ, LyricsSource.APPLE, LyricsSource.LYRICSPLUS, LyricsSource.BINI, LyricsSource.YTMUSIC,
+    LyricsSource.NETEASE, LyricsSource.LRCLIB, LyricsSource.UNISON, LyricsSource.GENIUS, LyricsSource.LYRICSOVH,
+)
 
 data class AppSettings(
     val onboarded: Boolean = false,
@@ -147,9 +161,9 @@ data class AppSettings(
     // Appearance
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val pureBlack: Boolean = false,
-    val colorSource: ColorSource = ColorSource.ARTWORK,
-    val accent: Int = 0xFF7C5CFF.toInt(),
-    val liquidGlass: Boolean = true,
+    val colorSource: ColorSource = ColorSource.CUSTOM,
+    val accent: Int = 0xFF3A86FF.toInt(),
+    val liquidGlass: Boolean = false,
     val glassKind: GlassKind = GlassKind.REGULAR,
     /** Blurred, non-refractive glass. Mutually exclusive with Liquid Glass. */
     val frostedGlass: Boolean = false,
@@ -160,7 +174,7 @@ data class AppSettings(
     /** Animated cover art (motion artwork / video covers) over the sleeve. */
     val canvasEnabled: Boolean = true,
     val canvasOnCellular: Boolean = true,
-    val hideVolumeBar: Boolean = false,
+    val hideVolumeBar: Boolean = true,
     /** "Playing from …" above the artwork in the player. */
     val showPlayingFrom: Boolean = true,
     val lyricsBlur: Boolean = true,
@@ -171,45 +185,45 @@ data class AppSettings(
     val backdropMotion: Boolean = true,
     // Lyrics
     val lyricsOnPlayer: Boolean = true,
-    val lyricsOrder: List<LyricsSource> = LyricsSource.entries.toList(),
+    val lyricsOrder: List<LyricsSource> = defaultLyricsOrder,
     val preferSynced: Boolean = true,
     /** Pass over sources whose lyrics star out swear words when another has them in full. */
     val skipCensored: Boolean = true,
     val lyricsScale: Float = 1f,
     /** Lyrics on Android Auto's player (the car's Lyrics button flips this too). */
     val carLyrics: Boolean = true,
-    val carLyricsStyle: CarLyricsStyle = CarLyricsStyle.KARAOKE,
+    val carLyricsStyle: CarLyricsStyle = CarLyricsStyle.TEXT,
     /** Also on the phone's own media controls (notification, lock screen) when not in the car. */
     val carLyricsOnPhone: Boolean = false,
     // Playback
     val showNerdStats: Boolean = false,
     val audioQuality: AudioQuality = AudioQuality.HIGH,
-    val cellularQuality: AudioQuality = AudioQuality.NORMAL,
+    val cellularQuality: AudioQuality = AudioQuality.HIGH,
     val autoplay: Boolean = true,
     /** Lossless playback: always the best stream, hi-res output, and the lossless add-on when it's on. */
-    val lossless: Boolean = false,
+    val lossless: Boolean = true,
     /** The lossless add-on: play matching FLAC/WAV/AIFF files on the phone instead of the stream. */
     val losslessLocal: Boolean = false,
     val normalize: Boolean = true,
     val skipSilence: Boolean = false,
     val videoMaxHeight: Int = 1080,
     // Storage & downloads
-    val cacheSizeMb: Int = 2048,
+    val cacheSizeMb: Int = 4096,
     val downloadWifiOnly: Boolean = true,
-    val downloadLikes: Boolean = false,
-    val smartDownloads: Boolean = false,
+    val downloadLikes: Boolean = true,
+    val smartDownloads: Boolean = true,
     /** Space smart downloads may fill, in GB. */
-    val smartDownloadGb: Float = 2f,
+    val smartDownloadGb: Float = 1f,
     // Audio effects
-    val eq: EqSettings = EqSettings(),
+    val eq: EqSettings = EqSettings(bassBoost = 32, virtualizer = 6, loudnessGainMb = 39),
     /** Prism Spatial, the software spatializer. */
     val spatial: Boolean = false,
-    val spatialAmount: Float = 0.6f,
+    val spatialAmount: Float = 0.75f,
     // Home
-    val homeLayout: List<HomeSectionConfig> = HomeSections.defaults,
+    val homeLayout: List<HomeSectionConfig> = HomeSections.initial,
     val autoAddSections: Boolean = true,
     /** Replay shows listening time as hours and minutes (20h 4m) instead of minutes (1,204 min). */
-    val replayHours: Boolean = false,
+    val replayHours: Boolean = true,
     /** Home's headline; blank means good morning / afternoon / evening. */
     val greetingText: String = "",
     val greetingShowName: Boolean = true,
@@ -220,7 +234,7 @@ data class AppSettings(
     val homePlaylists: List<PinnedPlaylist> = emptyList(),
     val homeCustomizeButton: Boolean = true,
     // Interface
-    val fontChoice: FontChoice = FontChoice.SYSTEM,
+    val fontChoice: FontChoice = FontChoice.CONDENSED,
     val textScale: Float = 1f,
     val corners: Corners = Corners.ROUND,
     val uiDensity: UiDensity = UiDensity.COMFORTABLE,
@@ -228,10 +242,10 @@ data class AppSettings(
     val cardSize: CardSize = CardSize.MEDIUM,
     val reduceMotion: Boolean = false,
     // Navigation
-    val navStyle: NavBarStyle = NavBarStyle.FLOATING,
+    val navStyle: NavBarStyle = NavBarStyle.DOCKED,
     val navLabels: NavLabels = NavLabels.ALWAYS,
     val navHideOnScroll: Boolean = true,
-    val navTabs: List<NavTab> = listOf(NavTab.HOME, NavTab.SEARCH, NavTab.LIBRARY, NavTab.REPLAY),
+    val navTabs: List<NavTab> = listOf(NavTab.HOME, NavTab.LIBRARY, NavTab.SEARCH, NavTab.REPLAY),
     val startTab: NavTab = NavTab.HOME,
     val miniPlayerStyle: MiniPlayerStyle = MiniPlayerStyle.CARD,
     val miniSkipButtons: Boolean = true,
@@ -239,15 +253,19 @@ data class AppSettings(
     // Player look
     val playerBackground: PlayerBackground = PlayerBackground.MESH,
     val playerArtCorners: Int = 8,
-    val transportStyle: TransportStyle = TransportStyle.GLYPHS,
+    val transportStyle: TransportStyle = TransportStyle.BUTTON,
     val scrubberStyle: ScrubberStyle = ScrubberStyle.HAIRLINE,
     val artShrinkOnPause: Boolean = true,
     val showOutputDevice: Boolean = true,
     val lyricsAlign: LyricsAlign = LyricsAlign.START,
     // Library & Replay
-    val libraryView: LibraryView = LibraryView.GRID,
+    val libraryView: LibraryView = LibraryView.LIST,
     val libraryStartTab: String = "PLAYLISTS",
+    /** Playlist pages open with their picture edge to edge, like an artist page. */
+    val playlistHeroCover: Boolean = true,
     val replayThemeColors: Boolean = false,
+    /** Look for a newer Prism on GitHub and say so on Home. */
+    val checkUpdates: Boolean = true,
 ) {
     val isLoggedIn: Boolean get() = cookie.contains("SAPISID")
 }
@@ -338,14 +356,16 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val lyricsAlign = stringPreferencesKey("lyrics_align")
         val libraryView = stringPreferencesKey("library_view")
         val libraryStartTab = stringPreferencesKey("library_start_tab")
+        val playlistHeroCover = booleanPreferencesKey("playlist_hero_cover")
         val replayThemeColors = booleanPreferencesKey("replay_theme_colors")
+        val checkUpdates = booleanPreferencesKey("check_updates")
 
         /** Everything the "Reset look" button puts back. */
         val look: List<Preferences.Key<*>> by lazy {
             listOf(
                 fontChoice, textScale, corners, uiDensity, titleSize, cardSize, reduceMotion, navStyle, navLabels, navHideOnScroll,
                 navTabs, startTab, miniPlayerStyle, miniSkipButtons, miniProgress, playerBackground, playerArtCorners, transportStyle,
-                scrubberStyle, artShrinkOnPause, showOutputDevice, lyricsAlign, libraryView, replayThemeColors,
+                scrubberStyle, artShrinkOnPause, showOutputDevice, lyricsAlign, libraryView, playlistHeroCover, replayThemeColors,
             )
         }
     }
@@ -449,7 +469,9 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             lyricsAlign = p.enum(K.lyricsAlign, d.lyricsAlign),
             libraryView = p.enum(K.libraryView, d.libraryView),
             libraryStartTab = p[K.libraryStartTab] ?: d.libraryStartTab,
+            playlistHeroCover = p[K.playlistHeroCover] ?: d.playlistHeroCover,
             replayThemeColors = p[K.replayThemeColors] ?: d.replayThemeColors,
+            checkUpdates = p[K.checkUpdates] ?: d.checkUpdates,
         )
     }
 
@@ -567,7 +589,9 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     fun setLyricsAlign(v: LyricsAlign) = edit { it[K.lyricsAlign] = v.name }
     fun setLibraryView(v: LibraryView) = edit { it[K.libraryView] = v.name }
     fun setLibraryStartTab(v: String) = edit { it[K.libraryStartTab] = v }
+    fun setPlaylistHeroCover(v: Boolean) = edit { it[K.playlistHeroCover] = v }
     fun setReplayThemeColors(v: Boolean) = edit { it[K.replayThemeColors] = v }
+    fun setCheckUpdates(v: Boolean) = edit { it[K.checkUpdates] = v }
 
     /** Puts every look & layout option back to how Prism ships (colours and backgrounds are left alone). */
     @Suppress("UNCHECKED_CAST")

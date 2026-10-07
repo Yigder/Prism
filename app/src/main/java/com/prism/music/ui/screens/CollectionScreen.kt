@@ -1,6 +1,12 @@
 package com.prism.music.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material.icons.rounded.Check
+import com.prism.music.ui.theme.LocalAppSettings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,7 +30,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Sort
-import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.DeleteSweep
@@ -39,14 +44,10 @@ import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Shuffle
-import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -177,7 +178,11 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
     // Plain map + a version counter: results land in batches, so the list re-sorts a handful
     // of times rather than once per song.
     val genres = remember(page.id) { HashMap<String, String>() }
+    // Further genres a song clearly also belongs to (beyond its main one in [genres]).
+    val extraGenres = remember(page.id) { HashMap<String, List<String>>() }
+    val extrasChecked = remember(page.id) { HashSet<String>() }
     var genreVersion by remember(page.id) { mutableStateOf(0) }
+    fun genresOf(id: String): List<String> = listOfNotNull(genres[id]) + extraGenres[id].orEmpty()
     var genreFilter by rememberSaveable(page.id) { mutableStateOf(initialGenre) }
     var sort by rememberSaveable(page.id) { mutableStateOf(SortMode.DEFAULT) }
     var groupByGenre by rememberSaveable(page.id) { mutableStateOf(false) }
@@ -186,25 +191,31 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
     val showGenres = type != CollectionType.ALBUM && songs.size > 1
     val showSearch = type != CollectionType.ALBUM || songs.size > 12
 
-    // Genres are detected per artist, a few at a time; chips fill in as each batch lands.
+    // Genres are detected quietly per artist, a few at a time; chips fill in as each batch lands.
+    // Main genres come first, then any clear second genre an artist also has.
     LaunchedEffect(page.id, songs.size) {
         if (!showGenres) return@LaunchedEffect
         val todo = songs.filter { it.id !in genres }
-        if (todo.isEmpty()) return@LaunchedEffect
-        c.meta.resolveGenres(todo, related = { s -> relatedArtists(c, s) }) { batch ->
+        if (todo.isNotEmpty()) c.meta.resolveGenres(todo, related = { s -> relatedArtists(c, s) }) { batch ->
             genres.putAll(batch)
             genreVersion++
         }
+        val extraTodo = songs.filter { it.id in genres && it.id !in extrasChecked }
+        if (extraTodo.isEmpty()) return@LaunchedEffect
+        c.meta.resolveExtraGenres(extraTodo, extraTodo.associate { it.id to genres.getValue(it.id) }) { batch ->
+            extraGenres.putAll(batch)
+            genreVersion++
+        }
+        extrasChecked += extraTodo.map { it.id }
     }
 
-    val resolved = remember(songs, genreVersion) { songs.count { it.id in genres } }
     val genreCounts = remember(songs, genreVersion) {
-        songs.mapNotNull { genres[it.id] }.groupingBy { it }.eachCount().toList().sortedByDescending { it.second }
+        songs.flatMap { genresOf(it.id) }.groupingBy { it }.eachCount().toList().sortedByDescending { it.second }
     }
     val visible = remember(songs, genreFilter, sort, query, if (genreFilter != null || sort == SortMode.GENRE || groupByGenre) genreVersion else 0) {
         val words = query.trim().lowercase().split(Regex("\\s+")).filter { it.isNotEmpty() }
         val filtered = page.songs.filter { s ->
-            (genreFilter == null || genres[s.id] == genreFilter) &&
+            (genreFilter == null || genreFilter in genresOf(s.id)) &&
                 // Every word typed has to turn up in the title, the artists or the album.
                 (words.isEmpty() || "${s.title} ${s.artistText} ${s.album?.title.orEmpty()}".lowercase().let { hay -> words.all { it in hay } })
         }
@@ -238,63 +249,58 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
     var coverSheet by remember { mutableStateOf(false) }
     if (coverSheet && coverKey != null) CoverSheet(coverKey, page.songs) { coverSheet = false }
 
+    val hero = type != CollectionType.ALBUM && LocalAppSettings.current.playlistHeroCover
     Box(Modifier.fillMaxSize()) {
         LazyColumn(state = listState, contentPadding = PaddingValues(bottom = bottomPadding + 24.dp)) {
-            item { Header(type, page, coverKey) { coverSheet = true } }
+            item {
+                if (hero) HeroHeader(type, page, coverKey, { if (listState.firstVisibleItemIndex == 0) listState.firstVisibleItemScrollOffset else 0 }) { coverSheet = true }
+                else Header(type, page, coverKey) { coverSheet = true }
+            }
             if (type == CollectionType.DOWNLOADS) item { DownloadsInfo(page.songs) { text, action -> confirm = text to action } }
             item {
+                // Quiet tools on the left, shuffle and play on the right.
                 Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    Modifier.fillMaxWidth().padding(start = 8.dp, end = 20.dp, top = 6.dp, bottom = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Button(onClick = { c.player.playQueue(visible, 0, source) }, Modifier.weight(1f).height(50.dp), enabled = visible.isNotEmpty()) {
-                        Icon(Icons.Rounded.PlayArrow, null); Spacer(Modifier.width(6.dp)); Text("Play")
-                    }
-                    FilledTonalButton(onClick = { c.player.playQueue(visible, 0, source, shuffle = true) }, Modifier.weight(1f).height(50.dp), enabled = visible.isNotEmpty()) {
-                        Icon(Icons.Rounded.Shuffle, null); Spacer(Modifier.width(6.dp)); Text("Shuffle")
-                    }
+                    val tint = MaterialTheme.colorScheme.onSurfaceVariant
                     if (type != CollectionType.DOWNLOADS) IconButton(onClick = { c.downloads.downloadAll(page.songs) }) {
-                        Icon(
-                            if (downloadedCount == page.songs.size && page.songs.isNotEmpty()) Icons.Rounded.DownloadDone else Icons.Rounded.Download,
-                            "Download all",
-                        )
+                        val done = downloadedCount == page.songs.size && page.songs.isNotEmpty()
+                        Icon(if (done) Icons.Rounded.DownloadDone else Icons.Rounded.Download, if (done) "Downloaded" else "Download all", tint = if (done) MaterialTheme.colorScheme.primary else tint)
                     } else Box {
-                        IconButton(onClick = { manageMenu = true }) { Icon(Icons.Rounded.MoreVert, "Manage downloads") }
+                        IconButton(onClick = { manageMenu = true }) { Icon(Icons.Rounded.MoreVert, "Manage downloads", tint = tint) }
                         DownloadsMenu(manageMenu, { manageMenu = false }) { text, action -> confirm = text to action }
+                    }
+                    if (showGenres) Box {
+                        IconButton(onClick = { sortMenu = true }) {
+                            Icon(Icons.AutoMirrored.Rounded.Sort, "Sort", tint = if (sort != SortMode.DEFAULT || groupByGenre) MaterialTheme.colorScheme.primary else tint)
+                        }
+                        DropdownMenu(sortMenu, { sortMenu = false }) {
+                            SortMode.entries.forEach { m ->
+                                DropdownMenuItem({ Text(sortLabel(m, type)) }, { sort = m; sortMenu = false }, trailingIcon = { if (m == sort) Icon(Icons.Rounded.Check, null) })
+                            }
+                            androidx.compose.material3.HorizontalDivider()
+                            DropdownMenuItem({ Text("Group by genre") }, { groupByGenre = !groupByGenre; sortMenu = false }, trailingIcon = { if (groupByGenre) Icon(Icons.Rounded.Check, null) })
+                        }
+                    }
+                    Spacer(Modifier.weight(1f))
+                    FilledTonalIconButton(onClick = { c.player.playQueue(visible, 0, source, shuffle = true) }, Modifier.size(48.dp), enabled = visible.isNotEmpty()) {
+                        Icon(Icons.Rounded.Shuffle, "Shuffle")
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    FilledIconButton(onClick = { c.player.playQueue(visible, 0, source) }, Modifier.size(58.dp), enabled = visible.isNotEmpty()) {
+                        Icon(Icons.Rounded.PlayArrow, "Play", Modifier.size(32.dp))
                     }
                 }
             }
             if (showSearch) item(key = "search") {
                 com.prism.music.ui.components.SearchField(query, if (type == CollectionType.ALBUM) "Search in album" else "Search in ${page.title}", { query = it }, Modifier.padding(horizontal = 20.dp).padding(bottom = 6.dp))
             }
-            if (showGenres) item {
-                Column {
-                    Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.Category, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(6.dp))
-                        Text("Genres", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                        Box {
-                            androidx.compose.material3.TextButton(onClick = { sortMenu = true }) {
-                                Icon(Icons.AutoMirrored.Rounded.Sort, null, Modifier.size(18.dp)); Spacer(Modifier.width(4.dp)); Text(sortLabel(sort, type))
-                            }
-                            DropdownMenu(sortMenu, { sortMenu = false }) {
-                                SortMode.entries.forEach { m -> DropdownMenuItem({ Text(sortLabel(m, type)) }, { sort = m; sortMenu = false }) }
-                                DropdownMenuItem({ Text(if (groupByGenre) "✓ Group by genre" else "Group by genre") }, { groupByGenre = !groupByGenre; sortMenu = false })
-                            }
-                        }
-                    }
-                    AnimatedVisibility(resolved < page.songs.size) {
-                        Column(Modifier.padding(horizontal = 20.dp, vertical = 4.dp)) {
-                            LinearProgressIndicator(progress = { resolved / page.songs.size.toFloat() }, Modifier.fillMaxWidth())
-                            Text("Detecting genres… $resolved / ${page.songs.size}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        item { com.prism.music.ui.components.PrismChip(genreFilter == null, { genreFilter = null }, "All · ${page.songs.size}") }
-                        items(genreCounts) { (g, n) ->
-                            com.prism.music.ui.components.PrismChip(genreFilter == g, { genreFilter = if (genreFilter == g) null else g }, "$g · $n")
-                        }
+            if (showGenres && genreCounts.isNotEmpty()) item(key = "genres") {
+                LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    item { com.prism.music.ui.components.PrismChip(genreFilter == null, { genreFilter = null }, "All") }
+                    items(genreCounts) { (g, n) ->
+                        com.prism.music.ui.components.PrismChip(genreFilter == g, { genreFilter = if (genreFilter == g) null else g }, "$g · $n")
                     }
                 }
             }
@@ -304,7 +310,9 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                     if (type == CollectionType.LIKED) "Like songs from the player and they'll show up here." else "Songs you add will show up here.")
             }
             if (groupByGenre && showGenres) {
-                visible.groupBy { genres[it.id] ?: "Sorting…" }.toList().sortedByDescending { it.second.size }.forEach { (g, songs) ->
+                // A song with a second genre shows under both.
+                visible.flatMap { s -> genresOf(s.id).ifEmpty { listOf("Sorting…") }.map { it to s } }
+                    .groupBy({ it.first }, { it.second }).toList().sortedByDescending { it.second.size }.forEach { (g, songs) ->
                     item(key = "h:$g") {
                         Text(g, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(start = 20.dp, top = 18.dp, bottom = 4.dp))
@@ -376,26 +384,70 @@ private fun Header(type: CollectionType, page: CollectionPage, coverKey: String?
             }
             Spacer(Modifier.height(20.dp))
             Text(page.title, style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold), textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            val linked = page.artists.filter { it.id != null }
-            if (linked.isNotEmpty()) {
-                // Each artist name opens their page.
-                val nav = LocalNavigator.current
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    linked.forEachIndexed { i, a ->
-                        if (i > 0) Text(if (i == linked.lastIndex) " & " else ", ", style = MaterialTheme.typography.titleSmall, color = scheme.primary)
-                        Text(
-                            a.name, style = MaterialTheme.typography.titleSmall, color = scheme.primary, fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable { nav.go(Routes.artist(a.id!!)) }.padding(horizontal = 2.dp, vertical = 2.dp),
-                        )
-                    }
-                }
-            } else if (page.subtitle.isNotBlank()) Text(page.subtitle, style = MaterialTheme.typography.titleSmall, color = scheme.primary, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
-            if (page.secondSubtitle.isNotBlank()) Text(page.secondSubtitle, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, textAlign = TextAlign.Center)
-            page.description?.takeIf { it.isNotBlank() }?.let {
-                Spacer(Modifier.height(8.dp))
-                Text(it, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+            HeaderDetails(page, centred = true)
+        }
+    }
+}
+
+/** The artists (each opens their page) or subtitle, the second line and the description, under a title. */
+@Composable
+private fun HeaderDetails(page: CollectionPage, centred: Boolean) {
+    val scheme = MaterialTheme.colorScheme
+    val align = if (centred) TextAlign.Center else TextAlign.Start
+    val linked = page.artists.filter { it.id != null }
+    if (linked.isNotEmpty()) {
+        val nav = LocalNavigator.current
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            linked.forEachIndexed { i, a ->
+                if (i > 0) Text(if (i == linked.lastIndex) " & " else ", ", style = MaterialTheme.typography.titleSmall, color = scheme.primary)
+                Text(
+                    a.name, style = MaterialTheme.typography.titleSmall, color = scheme.primary, fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.clip(RoundedCornerShape(6.dp)).clickable { nav.go(Routes.artist(a.id!!)) }.padding(horizontal = 2.dp, vertical = 2.dp),
+                )
             }
         }
+    } else if (page.subtitle.isNotBlank()) Text(page.subtitle, style = MaterialTheme.typography.titleSmall, color = scheme.primary, fontWeight = FontWeight.SemiBold, textAlign = align)
+    if (page.secondSubtitle.isNotBlank()) Text(page.secondSubtitle, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, textAlign = align)
+    page.description?.takeIf { it.isNotBlank() }?.let {
+        Spacer(Modifier.height(8.dp))
+        Text(it, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis, textAlign = align)
+    }
+}
+
+/**
+ * A playlist's picture edge to edge, like an artist page: it drifts behind the scroll and fades
+ * into the page, with the title over its foot.
+ */
+@Composable
+private fun HeroHeader(type: CollectionType, page: CollectionPage, coverKey: String?, scroll: () -> Int, onEditCover: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val art = coverKey?.let { LocalContainer.current.covers.art(it, page.thumbnail) } ?: page.thumbnail
+    Column {
+        Box(Modifier.fillMaxWidth().aspectRatio(1f / 1.08f).clipToBounds()) {
+            if (art != null) AsyncImage(
+                hiRes(art, 1440), null, contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize().graphicsLayer { translationY = scroll() * 0.5f },
+            ) else Box(
+                Modifier.fillMaxSize().background(Brush.linearGradient(listOf(scheme.primary, scheme.tertiary))),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(if (type == CollectionType.DOWNLOADS) Icons.Rounded.DownloadDone else Icons.Rounded.Favorite, null, Modifier.size(120.dp), tint = scheme.onPrimary.copy(alpha = 0.85f))
+            }
+            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Black.copy(alpha = 0.25f), 0.18f to Color.Transparent, 0.55f to Color.Transparent, 1f to scheme.background)))
+            Text(
+                page.title,
+                Modifier.align(Alignment.BottomStart).padding(start = 20.dp, end = 20.dp, bottom = 4.dp),
+                style = MaterialTheme.typography.displaySmall.copy(
+                    fontWeight = FontWeight.ExtraBold,
+                    shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = if (scheme.background.luminance() < 0.5f) 0.35f else 0f), blurRadius = 18f),
+                ),
+                maxLines = 2, overflow = TextOverflow.Ellipsis,
+            )
+            if (coverKey != null) com.prism.music.ui.components.RoundAction(
+                Icons.Rounded.Edit, "Change picture", Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(12.dp), glass = true, onClick = onEditCover,
+            )
+        }
+        Column(Modifier.padding(horizontal = 20.dp)) { HeaderDetails(page, centred = false) }
     }
 }
 

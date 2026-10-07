@@ -139,6 +139,8 @@ data class NextResult(
     val continuation: String?,
     val lyricsBrowseId: String?,
     val counterparts: Map<String, String>,
+    /** The other half of each pairing (the song for a music video, and the reverse), by the panel item's id. */
+    val counterpartSongs: Map<String, Song> = emptyMap(),
 )
 
 data class AccountInfo(val name: String, val email: String?, val avatar: String?)

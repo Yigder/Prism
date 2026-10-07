@@ -125,7 +125,6 @@ import com.prism.music.R
 import com.prism.music.data.canvas.CanvasArtwork
 import com.prism.music.data.model.Song
 import com.prism.music.data.model.hiRes
-import com.prism.music.playback.QueueKind
 import com.prism.music.ui.LocalNavigator
 import com.prism.music.ui.Routes
 import com.prism.music.ui.theme.LocalContainer
@@ -182,7 +181,6 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
     val hasNext by pc.hasNext.collectAsState()
     val hasPrevious by pc.hasPrevious.collectAsState()
     val liked by c.library.likedIds.collectAsState()
-    val source by c.queue.source.collectAsState()
 
     var lyricsOpen by rememberSaveable { mutableStateOf(false) }
     var queueOpen by rememberSaveable { mutableStateOf(false) }
@@ -291,12 +289,8 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
     // Collapsed into the header thumbnail, the sleeve keeps gentle corners whatever the setting.
     val artShape = RoundedCornerShape(lerp(settings.playerArtCorners.dp, 8.dp, collapse.value))
 
-    val originText = when {
-        source.kind == QueueKind.SINGLE -> "Playing from Autoplay"
-        source.title.isNotBlank() -> "Playing from ${source.title}"
-        song.album?.title != null -> "Playing from ${song.album.title}"
-        else -> "Playing from Queue"
-    }
+    // Only ever the song's album (tapping it opens the album); nothing for songs without one.
+    val originAlbum = song.album?.takeIf { it.id != null && it.title.isNotBlank() }
 
     Box(
         Modifier
@@ -413,11 +407,11 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                         .clip(RoundedCornerShape(3.dp))
                         .background(Color.White.copy(alpha = 0.70f)),
                 )
-                if (collapse.value < 0.999f && settings.showPlayingFrom) PlaybackOriginCaption(
-                    originText,
+                if (collapse.value < 0.999f && settings.showPlayingFrom && originAlbum != null) PlaybackOriginCaption(
+                    "Playing from ${originAlbum.title}",
                     Modifier.align(Alignment.BottomCenter).graphicsLayer { alpha = 1f - p() },
                 ) {
-                    song.album?.id?.let { onCollapse(); nav.go(Routes.album(it)) }
+                    onCollapse(); nav.go(Routes.album(originAlbum.id!!))
                 }
             }
 

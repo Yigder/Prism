@@ -214,6 +214,8 @@ private fun PrismRoot(deepLink: MutableStateFlow<Uri?>) {
         val navController = rememberNavController()
         var playerOpen by rememberSaveable { mutableStateOf(false) }
         val navigator = remember(navController) { Navigator(navController) { playerOpen = true } }
+        // Playback that should be watched (a music video picked from a list) brings the player up.
+        LaunchedEffect(Unit) { c.player.showPlayer.collect { playerOpen = true } }
         val haze = rememberHazeState()
         val backStack by navController.currentBackStackEntryAsState()
         val route = backStack?.destination?.route

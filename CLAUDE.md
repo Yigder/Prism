@@ -35,6 +35,10 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
 - Release is signed with the debug key so the APK installs directly.
 - Lyrics priority: word-synced → line-synced → plain; user can switch source per song and offset timing.
 - Privacy: all history/Replay/settings stay on device; no Prism server. Don't add telemetry.
+- Update banner (`data/Updates.kt`): Home asks GitHub's `releases/latest` (≤ every 6 h, toggle in Settings → About)
+  and compares its tag to `versionName`. So every release must bump `versionName`/`versionCode`, use a `vX.Y.Z` tag,
+  and attach the `.apk` asset; pre-releases are never offered.
+- Fresh-install defaults in `AppSettings` / `HomeSections.initial` are the owner's own settings (smart downloads 1 GB).
 - Not affiliated with Google/YouTube — keep the disclaimer in README.
 - `*.apk`, `local.properties`, keystores are gitignored.
 

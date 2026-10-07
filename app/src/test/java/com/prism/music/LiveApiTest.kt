@@ -125,6 +125,30 @@ class LiveApiTest {
     }
 
     @Test
+    fun musicVideosOpenAsTheirSong() = runBlocking {
+        var found = 0
+        for (q in listOf("Blinding Lights The Weeknd", "Pursuit of Happiness Kid Cudi", "Bad Guy Billie Eilish", "Kid Cudi live performance", "Tiny Desk Concert")) {
+            val videos = ytm.search(q, SearchFilter.VIDEOS).items.filterIsInstance<SongItem>().map { it.song }.take(2)
+            for (v in videos) {
+                val s = ytm.songForVideo(v)
+                log("video \"${v.title}\" / ${v.artistText} (${v.durationSec}s) -> ${s?.let { "\"${it.title}\" / ${it.artistText} (${it.durationSec}s, video=${it.isVideo})" }}")
+                if (s != null) { found++; assertTrue(!s.isVideo) }
+            }
+        }
+        assertTrue("some videos matched a song", found > 0)
+        // Artist pages' Videos and Live shelves.
+        for (name in listOf("Kid Cudi", "Billie Eilish", "Coldplay")) {
+            val id = ytm.search(name, SearchFilter.ARTISTS).items.filterIsInstance<com.prism.music.data.model.ArtistItem>().first().id
+            ytm.artist(id).shelves.filter { it.title.contains("video", true) || it.title.contains("live", true) }.forEach { shelf ->
+                shelf.items.filterIsInstance<SongItem>().map { it.song }.take(4).forEach { v ->
+                    val s = ytm.songForVideo(v)
+                    log("[$name · ${shelf.title}] \"${v.title}\" -> ${s?.let { "\"${it.title}\" / ${it.artistText}" }}")
+                }
+            }
+        }
+    }
+
+    @Test
     fun moods() = runBlocking {
         val shelves = ytm.moodsAndGenres()
         shelves.forEach { s -> log("mood shelf '${s.title}': " + s.items.joinToString { it.title }) }
@@ -282,6 +306,15 @@ class LiveApiTest {
             if (g != null) hits++
         }
         assertTrue(hits >= 4)
+    }
+
+    @Test
+    fun extraGenresAreConservative() = runBlocking {
+        val meta = MetaRepository(http, fakeMeta)
+        for (name in listOf("Kid Cudi", "The Weeknd", "Post Malone", "Daft Punk", "Taylor Swift", "Linkin Park", "Frank Ocean", "Coldplay", "Beyoncé", "Morgan Wallen", "Drake", "Lana Del Rey")) {
+            val main = meta.artistGenre(name) ?: continue
+            log("$name: $main + ${meta.artistExtraGenres(name, main)}")
+        }
     }
 
     @Test

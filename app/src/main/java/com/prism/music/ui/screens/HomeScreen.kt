@@ -26,6 +26,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.Dashboard
 import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material.icons.rounded.Favorite
@@ -135,6 +137,7 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
     ) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = bottomPadding + 16.dp)) {
             item { HomeTopBar() }
+            item(key = "update") { UpdateBanner() }
             if (home.state is Load.Loading && shelves.isEmpty()) item { LoadingState() }
             (home.state as? Load.Err)?.let { e -> item { ErrorState(e.message) { home.reload(false) } } }
 
@@ -226,6 +229,34 @@ private fun HomeTopBar() {
             if (settings.accountAvatar.isNotBlank()) AsyncImage(settings.accountAvatar, "Account", Modifier.fillMaxSize())
             else Icon(Icons.Rounded.Person, "Settings", tint = MaterialTheme.colorScheme.onPrimaryContainer)
         }
+    }
+}
+
+/** "A new Prism is out" under the greeting, when there is one; tap to get it, × to put it off until the next. */
+@Composable
+private fun UpdateBanner() {
+    val c = LocalContainer.current
+    val settings = LocalAppSettings.current
+    val update by c.updates.available.collectAsState()
+    LaunchedEffect(settings.checkUpdates) { if (settings.checkUpdates) c.updates.check() }
+    val u = update?.takeIf { settings.checkUpdates } ?: return
+    val uri = androidx.compose.ui.platform.LocalUriHandler.current
+    val ui = com.prism.music.ui.theme.LocalUi.current
+    val scheme = MaterialTheme.colorScheme
+    Row(
+        Modifier.padding(start = 16.dp, end = 16.dp, top = ui.gap(14.dp)).fillMaxWidth().clip(ui.shape(16.dp))
+            .background(scheme.primaryContainer)
+            .clickable { runCatching { uri.openUri(u.url) } }
+            .padding(start = 16.dp, top = 6.dp, bottom = 6.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Rounded.SystemUpdate, null, tint = scheme.onPrimaryContainer)
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text("Prism ${u.version} is available", style = MaterialTheme.typography.titleSmall, color = scheme.onPrimaryContainer)
+            Text("Tap to download the update", style = MaterialTheme.typography.bodySmall, color = scheme.onPrimaryContainer.copy(alpha = 0.8f))
+        }
+        IconButton(onClick = { c.updates.dismiss() }) { Icon(Icons.Rounded.Close, "Dismiss", tint = scheme.onPrimaryContainer) }
     }
 }
 

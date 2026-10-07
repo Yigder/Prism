@@ -1,49 +1,42 @@
 package com.prism.music.ui.screens
 
-import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ViewList
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.ViewCarousel
 import androidx.compose.material.icons.rounded.ViewDay
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -52,17 +45,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.prism.music.data.model.PlaylistItem
 import com.prism.music.data.prefs.HomeSectionConfig
 import com.prism.music.data.prefs.HomeSections
 import com.prism.music.data.prefs.HomeShortcut
+import com.prism.music.data.prefs.PinnedPlaylist
 import com.prism.music.data.prefs.SectionStyle
-import com.prism.music.ui.LocalNavigator
+import com.prism.music.ui.components.PrismChip
+import com.prism.music.ui.components.RoundAction
+import com.prism.music.ui.components.SubPage
 import com.prism.music.ui.theme.LocalAppSettings
 import com.prism.music.ui.theme.LocalContainer
 
@@ -74,208 +71,252 @@ private fun SectionStyle.icon(): ImageVector = when (this) {
 }
 
 /**
- * Home "catalogue": every section Prism can show — built-in and every shelf
- * YouTube Music has offered — which you add, hide, restyle and reorder.
+ * Customize Home: the sections Home shows (in order, each with a look), the greeting and its
+ * tiles, and a couple of options. Everything less common sits behind a row's ⋮ menu or a sheet.
  */
-@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun CatalogueScreen(bottomPadding: Dp) {
     val c = LocalContainer.current
-    val nav = LocalNavigator.current
     val settings = LocalAppSettings.current
     val ytShelves by homeShelfCache.collectAsState()
     val layout = settings.homeLayout
-
-    val builtIns = HomeSections.defaults
-    val available = (builtIns + ytShelves.filterNot { it.title.equals("Quick picks", true) }.map { HomeSectionConfig(shelfKey(it.title), it.title) })
+    // Every section Prism can show — built-in and every shelf YouTube Music has offered — that isn't on Home yet.
+    val available = (HomeSections.defaults + ytShelves.filterNot { it.title.equals("Quick picks", true) }.map { HomeSectionConfig(shelfKey(it.title), it.title) })
         .filter { cfg -> layout.none { it.key == cfg.key } }
         .distinctBy { it.key }
+    var adding by remember { mutableStateOf(false) }
+    var pinning by remember { mutableStateOf(false) }
 
     fun save(list: List<HomeSectionConfig>) = c.settings.setHomeLayout(list)
 
-    com.prism.music.ui.components.SubPage(
+    SubPage(
         "Customize Home", bottomPadding,
-        subtitle = "Pick, order and style what Home shows",
-        actions = { com.prism.music.ui.components.RoundAction(Icons.Rounded.Restore, "Reset", glass = true) { save(HomeSections.defaults) } },
+        horizontalPadding = 16.dp,
+        spacing = 22.dp,
+        actions = { RoundAction(Icons.Rounded.Restore, "Reset", glass = true) { save(HomeSections.initial) } },
     ) {
-            item {
-                Box(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
-                    Group("") {
-                        Toggle("Auto-add new YouTube sections", "New shelves from your YouTube Music home appear at the bottom", settings.autoAddSections) { c.settings.setAutoAddSections(it) }
-                        Toggle("\"Customize Home\" button", "At the very bottom of Home", settings.homeCustomizeButton) { c.settings.setHomeCustomizeButton(it) }
-                    }
+        item(key = "sections") {
+            Group("Sections") {
+                layout.forEachIndexed { i, cfg ->
+                    if (i > 0) HorizontalDivider(Modifier.padding(start = 52.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                    SectionRow(
+                        cfg,
+                        canUp = i > 0,
+                        canDown = i < layout.lastIndex,
+                        onMove = { by -> save(layout.toMutableList().apply { add(i + by, removeAt(i)) }) },
+                        onChange = { new -> save(layout.map { if (it.key == cfg.key) new else it }) },
+                        onRemove = { save(layout.filterNot { it.key == cfg.key }) },
+                    )
                 }
-            }
-            item { CatalogueHeader("Greeting & shortcuts", "The headline at the top of Home and the tiles under it") }
-            item { GreetingEditor() }
-            item { CatalogueHeader("On your Home", "${layout.count { it.visible }} sections · tap a style to change how it looks") }
-            itemsIndexed(layout, key = { _, s -> s.key }) { i, cfg ->
-                LayoutRow(
-                    cfg = cfg,
-                    canUp = i > 0,
-                    canDown = i < layout.lastIndex,
-                    onUp = { save(layout.toMutableList().apply { add(i - 1, removeAt(i)) }) },
-                    onDown = { save(layout.toMutableList().apply { add(i + 1, removeAt(i)) }) },
-                    onToggle = { v -> save(layout.map { if (it.key == cfg.key) it.copy(visible = v) else it }) },
-                    onStyle = { st -> save(layout.map { if (it.key == cfg.key) it.copy(style = st) else it }) },
-                    onRemove = { save(layout.filterNot { it.key == cfg.key }) },
-                )
-            }
-            item { CatalogueHeader("Catalogue", if (ytShelves.isEmpty()) "Open Home once to load sections from YouTube Music" else "Tap + to add a section to your Home") }
-            item {
-                FlowRow(
-                    Modifier.padding(horizontal = 16.dp).animateContentSize(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                if (layout.isNotEmpty()) HorizontalDivider(Modifier.padding(start = 52.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                Row(
+                    Modifier.fillMaxWidth().clickable { adding = true }.padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    available.forEach { cfg ->
-                        Row(
-                            Modifier
-                                .clip(com.prism.music.ui.theme.LocalUi.current.tile)
-                                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                                .clickable { save(layout + cfg.copy(visible = true)) }
-                                .padding(start = 14.dp, end = 10.dp, top = 12.dp, bottom = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            if (!cfg.key.startsWith(HomeSections.YT_PREFIX)) {
-                                Icon(Icons.Rounded.AutoAwesome, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
-                                Spacer(Modifier.width(6.dp))
-                            }
-                            Text(cfg.title, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Spacer(Modifier.width(6.dp))
-                            Icon(Icons.Rounded.Add, "Add", Modifier.size(18.dp))
-                        }
-                    }
+                    Icon(Icons.Rounded.Add, null, Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(14.dp))
+                    Text("Add a section", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
                 }
             }
-    }
-}
-
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-@Composable
-private fun GreetingEditor() {
-    val c = LocalContainer.current
-    val settings = LocalAppSettings.current
-    var text by remember { mutableStateOf(settings.greetingText) }
-    Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        OutlinedTextField(
-            text, { text = it; c.settings.setGreetingText(it) },
-            Modifier.fillMaxWidth(),
-            label = { Text("Greeting") },
-            placeholder = { Text("Good morning / afternoon / evening") },
-            supportingText = { Text("Leave empty for a greeting that follows the time of day") },
-            singleLine = true,
-        )
-        Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Show account name", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-            Switch(settings.greetingShowName, { c.settings.setGreetingShowName(it) })
         }
-        Text("Shortcuts · tap to add or remove, in the order you pick them", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 4.dp))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            HomeShortcut.entries.forEach { sc ->
-                val on = sc in settings.homeShortcuts
-                com.prism.music.ui.components.PrismChip(
-                    on,
-                    { c.settings.setHomeShortcuts(if (on) settings.homeShortcuts - sc else settings.homeShortcuts + sc) },
-                    if (on) "${settings.homeShortcuts.indexOf(sc) + 1}. ${sc.label}" else sc.label,
-                )
+        item(key = "greeting") {
+            Group("Greeting") {
+                GreetingField()
+                Toggle("Show your name", null, settings.greetingShowName) { c.settings.setGreetingShowName(it) }
             }
         }
-        val library by c.library.playlists.collectAsState()
-        val playlists = remember(library) { library.filterIsInstance<com.prism.music.data.model.PlaylistItem>() }
-        Text("Playlists · tap to pin to Home", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 4.dp))
-        if (playlists.isEmpty() && settings.homePlaylists.isEmpty()) Text(
-            "Your playlists show up here once your library has loaded",
-            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp),
-        )
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            // Pinned ones first (kept even if they've left the library), then the rest of the library.
-            val pinnedIds = settings.homePlaylists.map { it.id }
-            val options = settings.homePlaylists.map { it.id to it.title } +
-                playlists.filter { it.id !in pinnedIds }.map { it.id to it.title }
-            options.forEach { (id, title) ->
-                val on = id in pinnedIds
-                com.prism.music.ui.components.PrismChip(
-                    on,
-                    {
-                        c.settings.setHomePlaylists(
-                            if (on) settings.homePlaylists.filterNot { it.id == id }
-                            else settings.homePlaylists + playlists.first { it.id == id }.let { com.prism.music.data.prefs.PinnedPlaylist(it.id, it.title, it.thumbnail) }
+        item(key = "tiles") {
+            Group("Tiles") {
+                Note("Shortcuts appear in the order you pick them")
+                FlowRow(
+                    Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    HomeShortcut.entries.forEach { sc ->
+                        val on = sc in settings.homeShortcuts
+                        PrismChip(
+                            on, { c.settings.setHomeShortcuts(if (on) settings.homeShortcuts - sc else settings.homeShortcuts + sc) },
+                            if (on) "${settings.homeShortcuts.indexOf(sc) + 1}  ${sc.label}" else sc.label,
                         )
-                    },
-                    title,
-                    Modifier.widthIn(max = 260.dp),
+                    }
+                }
+                Item(
+                    "Pinned playlists",
+                    settings.homePlaylists.takeIf { it.isNotEmpty() }?.joinToString(", ") { it.title } ?: "None",
+                    onClick = { pinning = true },
                 )
+                Item("Recently played albums", null, onClick = { c.settings.setHomeRecentTiles((settings.homeRecentTiles + 1) % 7) }) {
+                    Stepper(settings.homeRecentTiles, 0..6) { c.settings.setHomeRecentTiles(it) }
+                }
             }
         }
-        Text("Recently played tiles", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 4.dp))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            (0..6).forEach { n ->
-                com.prism.music.ui.components.PrismChip(settings.homeRecentTiles == n, { c.settings.setHomeRecentTiles(n) }, if (n == 0) "None" else "$n")
+        item(key = "options") {
+            Group("Options") {
+                Toggle("Add new sections automatically", "New shelves from YouTube Music appear at the bottom", settings.autoAddSections) { c.settings.setAutoAddSections(it) }
+                Toggle("Customize button on Home", null, settings.homeCustomizeButton) { c.settings.setHomeCustomizeButton(it) }
             }
         }
     }
+
+    if (adding) AddSectionSheet(available, ytShelves.isEmpty(), { adding = false }) { cfg -> save(layout + cfg.copy(visible = true)) }
+    if (pinning) PinPlaylistsSheet { pinning = false }
 }
 
+/** One section on Home: tap to show or hide it; ⋮ moves, restyles or removes it. */
 @Composable
-private fun CatalogueHeader(title: String, subtitle: String) {
-    Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 8.dp)) {
-        Text(title, style = MaterialTheme.typography.titleLarge)
-        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-@Composable
-private fun LayoutRow(
+private fun SectionRow(
     cfg: HomeSectionConfig,
     canUp: Boolean,
     canDown: Boolean,
-    onUp: () -> Unit,
-    onDown: () -> Unit,
-    onToggle: (Boolean) -> Unit,
-    onStyle: (SectionStyle) -> Unit,
+    onMove: (Int) -> Unit,
+    onChange: (HomeSectionConfig) -> Unit,
     onRemove: () -> Unit,
 ) {
-    var styleMenu by remember { mutableStateOf(false) }
+    val scheme = MaterialTheme.colorScheme
+    var menu by remember { mutableStateOf(false) }
+    val fg = if (cfg.visible) scheme.onSurface else scheme.onSurfaceVariant.copy(alpha = 0.6f)
     Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
-            .clip(com.prism.music.ui.theme.LocalUi.current.shape(18.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.94f))
-            .padding(start = 4.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+        Modifier.fillMaxWidth().clickable(onClickLabel = if (cfg.visible) "Hide" else "Show") { onChange(cfg.copy(visible = !cfg.visible)) }
+            .padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column {
-            IconButton(onClick = onUp, enabled = canUp, modifier = Modifier.size(30.dp)) { Icon(Icons.Rounded.KeyboardArrowUp, "Move up") }
-            IconButton(onClick = onDown, enabled = canDown, modifier = Modifier.size(30.dp)) { Icon(Icons.Rounded.KeyboardArrowDown, "Move down") }
-        }
-        Spacer(Modifier.width(6.dp))
+        Icon(if (cfg.visible) cfg.style.icon() else Icons.Rounded.VisibilityOff, null, Modifier.size(22.dp), tint = if (cfg.visible) scheme.primary else fg)
+        Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
-            Text(cfg.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(cfg.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
-                if (cfg.key.startsWith(HomeSections.YT_PREFIX)) "From YouTube Music" else "Prism",
-                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                if (cfg.visible) cfg.style.label else "Hidden",
+                style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
             )
         }
-        Box {
-            Row(
-                Modifier.clip(RoundedCornerShape(50)).background(MaterialTheme.colorScheme.secondaryContainer)
-                    .clickable { styleMenu = true }.padding(horizontal = 10.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(cfg.style.icon(), null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSecondaryContainer)
-                Spacer(Modifier.width(4.dp))
-                Text(cfg.style.label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
-            }
-            DropdownMenu(styleMenu, { styleMenu = false }) {
+        IconButton(onClick = { menu = true }) {
+            Icon(Icons.Rounded.MoreVert, "Options for ${cfg.title}", tint = scheme.onSurfaceVariant)
+            DropdownMenu(menu, { menu = false }) {
                 SectionStyle.entries.forEach { st ->
-                    DropdownMenuItem({ Text(st.label) }, { onStyle(st); styleMenu = false }, leadingIcon = { Icon(st.icon(), null) })
+                    DropdownMenuItem(
+                        { Text(st.label) }, { onChange(cfg.copy(style = st, visible = true)); menu = false },
+                        leadingIcon = { Icon(st.icon(), null) },
+                        trailingIcon = { if (st == cfg.style) Icon(Icons.Rounded.Check, null) },
+                    )
+                }
+                HorizontalDivider()
+                if (canUp) DropdownMenuItem({ Text("Move up") }, { onMove(-1); menu = false }, leadingIcon = { Icon(Icons.Rounded.KeyboardArrowUp, null) })
+                if (canDown) DropdownMenuItem({ Text("Move down") }, { onMove(1); menu = false }, leadingIcon = { Icon(Icons.Rounded.KeyboardArrowDown, null) })
+                DropdownMenuItem(
+                    { Text(if (cfg.visible) "Hide" else "Show") }, { onChange(cfg.copy(visible = !cfg.visible)); menu = false },
+                    leadingIcon = { Icon(if (cfg.visible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, null) },
+                )
+                DropdownMenuItem({ Text("Remove") }, { onRemove(); menu = false }, leadingIcon = { Icon(Icons.Rounded.DeleteOutline, null) })
+            }
+        }
+    }
+}
+
+/** The headline, edited in place; empty follows the time of day. */
+@Composable
+private fun GreetingField() {
+    val c = LocalContainer.current
+    val settings = LocalAppSettings.current
+    var text by remember { mutableStateOf(settings.greetingText) }
+    val scheme = MaterialTheme.colorScheme
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Text("Headline", style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
+        BasicTextField(
+            text, { text = it; c.settings.setGreetingText(it) },
+            Modifier.fillMaxWidth().padding(top = 2.dp),
+            singleLine = true,
+            textStyle = MaterialTheme.typography.bodyLarge.copy(color = scheme.onSurface, fontWeight = FontWeight.Medium),
+            cursorBrush = SolidColor(scheme.primary),
+            decorationBox = { inner ->
+                if (text.isEmpty()) Text("Good morning / afternoon / evening", style = MaterialTheme.typography.bodyLarge, color = scheme.onSurfaceVariant.copy(alpha = 0.6f))
+                inner()
+            },
+        )
+    }
+}
+
+@Composable
+private fun Stepper(value: Int, range: IntRange, onChange: (Int) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        IconButton(onClick = { onChange(value - 1) }, enabled = value > range.first, modifier = Modifier.size(36.dp)) { Icon(Icons.Rounded.Remove, "Fewer") }
+        Text(if (value == 0) "Off" else "$value", style = MaterialTheme.typography.titleSmall, modifier = Modifier.width(32.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        IconButton(onClick = { onChange(value + 1) }, enabled = value < range.last, modifier = Modifier.size(36.dp)) { Icon(Icons.Rounded.Add, "More") }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddSectionSheet(available: List<HomeSectionConfig>, notLoaded: Boolean, onDismiss: () -> Unit, onAdd: (HomeSectionConfig) -> Unit) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Text("Add a section", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 8.dp))
+        val (prism, youtube) = available.partition { !it.key.startsWith(HomeSections.YT_PREFIX) }
+        LazyColumn(Modifier.padding(bottom = 24.dp)) {
+            if (prism.isNotEmpty()) item { SheetLabel("From Prism") }
+            items(prism, key = { it.key }) { cfg -> SheetRow(cfg.title) { onAdd(cfg); onDismiss() } }
+            item { SheetLabel("From YouTube Music") }
+            if (youtube.isEmpty()) item {
+                Text(
+                    if (notLoaded) "Open Home once to load YouTube Music's sections" else "Everything's already on Home",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                )
+            }
+            items(youtube, key = { it.key }) { cfg -> SheetRow(cfg.title) { onAdd(cfg); onDismiss() } }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PinPlaylistsSheet(onDismiss: () -> Unit) {
+    val c = LocalContainer.current
+    val settings = LocalAppSettings.current
+    val library by c.library.playlists.collectAsState()
+    val playlists = remember(library) { library.filterIsInstance<PlaylistItem>() }
+    // Pinned ones first (kept even if they've left the library), then the rest of the library.
+    val pinnedIds = settings.homePlaylists.map { it.id }
+    val options = settings.homePlaylists.map { it.id to it.title } + playlists.filter { it.id !in pinnedIds }.map { it.id to it.title }
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Text("Pinned playlists", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 24.dp))
+        Text(
+            "Shown as tiles after the shortcuts", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 8.dp),
+        )
+        LazyColumn(Modifier.padding(bottom = 24.dp)) {
+            if (options.isEmpty()) item {
+                Text(
+                    "Your playlists show up here once your library has loaded", style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                )
+            }
+            items(options, key = { it.first }) { (id, title) ->
+                val on = id in pinnedIds
+                SheetRow(title, checked = on) {
+                    c.settings.setHomePlaylists(
+                        if (on) settings.homePlaylists.filterNot { it.id == id }
+                        else settings.homePlaylists + playlists.first { it.id == id }.let { PinnedPlaylist(it.id, it.title, it.thumbnail) }
+                    )
                 }
             }
         }
-        Switch(cfg.visible, onToggle, Modifier.padding(horizontal = 6.dp))
-        IconButton(onClick = onRemove, modifier = Modifier.size(36.dp)) { Icon(Icons.Rounded.Delete, "Remove", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
-    Spacer(Modifier.height(2.dp))
+}
+
+@Composable
+private fun SheetLabel(text: String) = com.prism.music.ui.components.Eyebrow(text, Modifier.padding(start = 24.dp, top = 12.dp, bottom = 4.dp))
+
+@Composable
+private fun SheetRow(title: String, checked: Boolean? = null, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 24.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        when (checked) {
+            null -> Icon(Icons.Rounded.Add, "Add", tint = MaterialTheme.colorScheme.primary)
+            true -> Icon(Icons.Rounded.Check, "Pinned", tint = MaterialTheme.colorScheme.primary)
+            false -> {}
+        }
+    }
 }

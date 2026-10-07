@@ -243,6 +243,7 @@ class YouTubeMusic(private val api: InnerTube) {
             put("tunerSettingValue", "AUTOMIX_SETTING_NORMAL")
         })
         val counterparts = mutableMapOf<String, String>()
+        val counterpartSongs = mutableMapOf<String, Song>()
         val songs = mutableListOf<Song>()
         val panelItems = (res.findFirst("playlistPanelRenderer") ?: res.findFirst("playlistPanelContinuation"))
             .arr("contents") ?: emptyList()
@@ -252,9 +253,9 @@ class YouTubeMusic(private val api: InnerTube) {
                 val primary = w.obj("primaryRenderer", "playlistPanelVideoRenderer")?.let { Parser.panelVideo(it) }
                 if (primary != null) {
                     songs += primary
-                    w.arr("counterpart")?.firstOrNull()
-                        ?.str("counterpartRenderer", "playlistPanelVideoRenderer", "videoId")
-                        ?.let { counterparts[primary.id] = it }
+                    val other = w.arr("counterpart")?.firstOrNull()?.obj("counterpartRenderer", "playlistPanelVideoRenderer")
+                    other?.str("videoId")?.let { counterparts[primary.id] = it }
+                    other?.let { Parser.panelVideo(it) }?.let { counterpartSongs[primary.id] = it }
                 }
             }
         }
@@ -264,7 +265,37 @@ class YouTubeMusic(private val api: InnerTube) {
         }
         val cont = res.findFirst("playlistPanelRenderer")?.let { Parser.continuation(it.arr("continuations")) }
             ?: Parser.continuation(res.obj("continuationContents"))
-        return NextResult(songs, cont, lyricsId, counterparts)
+        return NextResult(songs, cont, lyricsId, counterparts, counterpartSongs)
+    }
+
+    /**
+     * The song a music video or live performance belongs to. Official videos are paired with
+     * their audio track in the watch queue; anything else (live sets, performances) is matched
+     * by a song search on the cleaned-up title and artist, with the duration as a tie-breaker.
+     */
+    suspend fun songForVideo(video: Song): Song? {
+        val r = next(video.id)
+        r.counterpartSongs[video.id]?.takeIf { !it.isVideo }?.let { return it }
+        r.songs.firstOrNull { !it.isVideo && r.counterparts[it.id] == video.id }?.let { return it }
+        fun norm(s: String) = s.lowercase()
+            .replace(Regex("\\(.*?\\)|\\[.*?]"), " ")
+            .replace(Regex("\\b(official|music|lyric|lyrics|video|audio|live|performance|session|hd|4k|visualizer)\\b"), " ")
+            .replace(Regex("[^\\p{L}\\p{N}]"), "")
+        // "Artist - Title (Live at …)" videos put the artist in the title.
+        val artist = norm(video.primaryArtist)
+        val head = video.title.substringBefore(" - ", "")
+        val rawTitle = if (head.isNotEmpty() && norm(head).let { a -> artist.isBlank() || a.contains(artist) || artist.contains(a) })
+            video.title.substringAfter(" - ") else video.title
+        val title = norm(rawTitle)
+        if (title.isBlank()) return null
+        val query = "${rawTitle.replace(Regex("\\(.*?\\)|\\[.*?]"), " ").trim()} ${video.primaryArtist}".trim()
+        // Only an exact title by the same artist counts; a near miss would put the wrong song's lyrics on the video.
+        return search(query, SearchFilter.SONGS).items.filterIsInstance<SongItem>().map { it.song }
+            .filter { s ->
+                !s.isVideo && norm(s.title) == title &&
+                    (artist.isBlank() || s.artists.any { a -> norm(a.name).let { it.isNotBlank() && (it.contains(artist) || artist.contains(it)) } })
+            }
+            .minByOrNull { s -> if (video.durationSec > 0 && s.durationSec > 0) kotlin.math.abs(s.durationSec - video.durationSec) else 0 }
     }
 
     /**
