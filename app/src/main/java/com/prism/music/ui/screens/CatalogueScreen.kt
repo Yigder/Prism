@@ -1,6 +1,21 @@
 package com.prism.music.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.material.icons.rounded.DragHandle
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.zIndex
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -71,8 +86,8 @@ private fun SectionStyle.icon(): ImageVector = when (this) {
 }
 
 /**
- * Customize Home: the sections Home shows (in order, each with a look), the greeting and its
- * tiles, and a couple of options. Everything less common sits behind a row's ⋮ menu or a sheet.
+ * Customize Home: the sections Home shows (in order — hold and drag to move — each with a look),
+ * the greeting, the shortcut tiles, and a couple of options. Everything less common sits behind a row's ⋮ menu or a sheet.
  */
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
@@ -87,6 +102,12 @@ fun CatalogueScreen(bottomPadding: Dp) {
         .distinctBy { it.key }
     var adding by remember { mutableStateOf(false) }
     var pinning by remember { mutableStateOf(false) }
+    var dragKey by remember { mutableStateOf<String?>(null) }
+    var dragOrder by remember { mutableStateOf<List<HomeSectionConfig>?>(null) }
+    var dragOffset by remember { mutableFloatStateOf(0f) }
+    // The tiles only show while their section is on Home.
+    val tilesOn = layout.any { it.key == HomeSections.GREETING && it.visible }
+    val currentLayout by rememberUpdatedState(layout)
 
     fun save(list: List<HomeSectionConfig>) = c.settings.setHomeLayout(list)
 
@@ -98,16 +119,60 @@ fun CatalogueScreen(bottomPadding: Dp) {
     ) {
         item(key = "sections") {
             Group("Sections") {
-                layout.forEachIndexed { i, cfg ->
-                    if (i > 0) HorizontalDivider(Modifier.padding(start = 52.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                    SectionRow(
-                        cfg,
-                        canUp = i > 0,
-                        canDown = i < layout.lastIndex,
-                        onMove = { by -> save(layout.toMutableList().apply { add(i + by, removeAt(i)) }) },
-                        onChange = { new -> save(layout.map { if (it.key == cfg.key) new else it }) },
-                        onRemove = { save(layout.filterNot { it.key == cfg.key }) },
-                    )
+                Note("Hold and drag a section to move it")
+                // While a row is held, the list is reordered here and saved when it's let go.
+                val rows = dragOrder ?: layout
+                val haptics = LocalHapticFeedback.current
+                val step = with(LocalDensity.current) { 1.dp.toPx() } // the divider between rows
+                rows.forEachIndexed { i, cfg ->
+                    key(cfg.key) {
+                        if (i > 0) HorizontalDivider(Modifier.padding(start = 52.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                        val held = dragKey == cfg.key
+                        var height by remember { mutableIntStateOf(0) }
+                        SectionRow(
+                            cfg,
+                            canUp = i > 0,
+                            canDown = i < rows.lastIndex,
+                            onMove = { by -> save(layout.toMutableList().apply { add(i + by, removeAt(i)) }) },
+                            onChange = { new -> save(layout.map { if (it.key == cfg.key) new else it }) },
+                            onRemove = { save(layout.filterNot { it.key == cfg.key }) },
+                            held = held,
+                            modifier = Modifier
+                                .onSizeChanged { height = it.height }
+                                .zIndex(if (held) 1f else 0f)
+                                .graphicsLayer {
+                                    if (held) { translationY = dragOffset; scaleX = 1.02f; scaleY = 1.02f; shadowElevation = 12.dp.toPx() }
+                                }
+                                .then(if (held) Modifier.background(MaterialTheme.colorScheme.surfaceContainerHighest) else Modifier)
+                                .pointerInput(cfg.key) {
+                                    detectDragGesturesAfterLongPress(
+                                        onDragStart = {
+                                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            dragOrder = currentLayout; dragKey = cfg.key; dragOffset = 0f
+                                        },
+                                        onDrag = { change, amount ->
+                                            change.consume()
+                                            val list = dragOrder ?: return@detectDragGesturesAfterLongPress
+                                            dragOffset += amount.y
+                                            val at = list.indexOfFirst { it.key == cfg.key }
+                                            val h = height + step
+                                            val to = when {
+                                                dragOffset > h / 2 && at < list.lastIndex -> at + 1
+                                                dragOffset < -h / 2 && at > 0 -> at - 1
+                                                else -> at
+                                            }
+                                            if (to != at) {
+                                                dragOrder = list.toMutableList().apply { add(to, removeAt(at)) }
+                                                dragOffset -= (to - at) * h
+                                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            }
+                                        },
+                                        onDragEnd = { dragOrder?.let { if (it != currentLayout) save(it) }; dragKey = null; dragOrder = null; dragOffset = 0f },
+                                        onDragCancel = { dragKey = null; dragOrder = null; dragOffset = 0f },
+                                    )
+                                },
+                        )
+                    }
                 }
                 if (layout.isNotEmpty()) HorizontalDivider(Modifier.padding(start = 52.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                 Row(
@@ -127,8 +192,9 @@ fun CatalogueScreen(bottomPadding: Dp) {
             }
         }
         item(key = "tiles") {
-            Group("Tiles") {
-                Note("Shortcuts appear in the order you pick them")
+            // Greyed out (still editable) while the Shortcut tiles section is hidden or removed.
+            Column(Modifier.alpha(if (tilesOn) 1f else 0.45f)) { Group(HomeSections.TILES_TITLE) {
+                Note(if (tilesOn) "Shortcuts appear in the order you pick them" else "Show the ${HomeSections.TILES_TITLE} section to see these on Home")
                 FlowRow(
                     Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -149,7 +215,7 @@ fun CatalogueScreen(bottomPadding: Dp) {
                 Item("Recently played albums", null, onClick = { c.settings.setHomeRecentTiles((settings.homeRecentTiles + 1) % 7) }) {
                     Stepper(settings.homeRecentTiles, 0..6) { c.settings.setHomeRecentTiles(it) }
                 }
-            }
+            } }
         }
         item(key = "options") {
             Group("Options") {
@@ -172,12 +238,15 @@ private fun SectionRow(
     onMove: (Int) -> Unit,
     onChange: (HomeSectionConfig) -> Unit,
     onRemove: () -> Unit,
+    held: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
     var menu by remember { mutableStateOf(false) }
     val fg = if (cfg.visible) scheme.onSurface else scheme.onSurfaceVariant.copy(alpha = 0.6f)
     Row(
-        Modifier.fillMaxWidth().clickable(onClickLabel = if (cfg.visible) "Hide" else "Show") { onChange(cfg.copy(visible = !cfg.visible)) }
+        // No tap while held, so letting go of a drag doesn't also hide the section.
+        modifier.fillMaxWidth().clickable(enabled = !held, onClickLabel = if (cfg.visible) "Hide" else "Show") { onChange(cfg.copy(visible = !cfg.visible)) }
             .padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -190,6 +259,7 @@ private fun SectionRow(
                 style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
             )
         }
+        Icon(Icons.Rounded.DragHandle, null, Modifier.size(20.dp), tint = scheme.onSurfaceVariant.copy(alpha = 0.6f))
         IconButton(onClick = { menu = true }) {
             Icon(Icons.Rounded.MoreVert, "Options for ${cfg.title}", tint = scheme.onSurfaceVariant)
             DropdownMenu(menu, { menu = false }) {

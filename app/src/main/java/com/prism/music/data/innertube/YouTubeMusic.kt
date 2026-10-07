@@ -426,4 +426,16 @@ class YouTubeMusic(private val api: InnerTube) {
         })
         return res.str("playlistId")
     }
+
+    /** Deletes a playlist the account owns. */
+    suspend fun deletePlaylist(playlistId: String) {
+        api.post("playlist/delete", buildJsonObject { put("playlistId", playlistId.removePrefix("VL")) })
+    }
+
+    /** Takes someone else's playlist out of the library (it isn't deleted). */
+    suspend fun unsavePlaylist(playlistId: String) {
+        api.post("like/removelike", buildJsonObject {
+            putJsonObject("target") { put("playlistId", playlistId.removePrefix("VL")) }
+        })
+    }
 }

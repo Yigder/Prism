@@ -187,6 +187,22 @@ class LibraryRepository(private val c: AppContainer) {
         return null
     }
 
+    /**
+     * Deletes one of your playlists from YouTube Music; one you saved from someone else is just
+     * taken out of the library. Gone from the list straight away, put back if it fails.
+     */
+    suspend fun deletePlaylist(item: BrowseItem): Result<Unit> = withContext(Dispatchers.IO) {
+        val before = playlists.value
+        playlists.value = before.filterNot { it.id == item.id }
+        runCatching { c.ytm.deletePlaylist(item.id) }
+            .recoverCatching { c.ytm.unsavePlaylist(item.id) }
+            .onSuccess {
+                val pins = c.settings.current.homePlaylists
+                if (pins.any { it.id == item.id }) c.settings.setHomePlaylists(pins.filterNot { it.id == item.id })
+            }
+            .onFailure { playlists.value = before }
+    }
+
     fun syncInBackground() {
         c.scope.launch { sync() }
     }

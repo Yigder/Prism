@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -389,14 +390,14 @@ private fun SuggestionRow(
 }
 
 @Composable
-fun ResultRow(item: BrowseItem, onClick: () -> Unit) {
+fun ResultRow(item: BrowseItem, onLongClick: (() -> Unit)? = null, onClick: () -> Unit) {
     if (item is SongItem) {
         SongRow(item.song, trailingInfo = if (item.song.isVideo) "Video" else null, onClick = onClick)
         return
     }
     val ui = com.prism.music.ui.theme.LocalUi.current
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = ui.gap(7.dp)),
+        Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = onLongClick).padding(horizontal = 16.dp, vertical = ui.gap(7.dp)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Artwork(

@@ -33,7 +33,9 @@ import androidx.compose.material.icons.rounded.Login
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.automirrored.rounded.ViewList
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -94,6 +96,8 @@ fun LibraryScreen(bottomPadding: Dp) {
     val pager = rememberPagerState(initialPage = startPage) { LibTab.entries.size }
     val asList = settings.libraryView == com.prism.music.data.prefs.LibraryView.LIST
     val onSong: (SongItem) -> Unit = { c.player.playSingle(it.song) }
+    // The playlist a long press asked to delete.
+    var deleting by remember { mutableStateOf<com.prism.music.data.model.BrowseItem?>(null) }
 
     // The account's saved albums / artists first, then the ones your liked and downloaded songs come from.
     val mine = remember(liked, dls) {
@@ -195,7 +199,9 @@ fun LibraryScreen(bottomPadding: Dp) {
                                 Button(onClick = { nav.go(Routes.LOGIN) }) { Icon(Icons.Rounded.Login, null); Spacer(Modifier.width(8.dp)); Text("Sign in") }
                             }
                         }
-                        items(playlists.filter { it.id != "LM" }, key = { "p" + it.id }) { p -> LibraryItem(p, asList) { nav.open(p, onSong) } }
+                        items(playlists.filter { it.id != "LM" }, key = { "p" + it.id }) { p ->
+                            LibraryItem(p, asList, onLongClick = { deleting = p }) { nav.open(p, onSong) }
+                        }
                     }
                     LibTab.SONGS -> {
                         if (liked.isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
@@ -222,11 +228,31 @@ fun LibraryScreen(bottomPadding: Dp) {
             }
         }
     }
+
+    deleting?.let { p ->
+        val context = androidx.compose.ui.platform.LocalContext.current
+        AlertDialog(
+            onDismissRequest = { deleting = null },
+            title = { Text("Delete playlist?") },
+            text = { Text("\"${p.title}\" will be deleted from your YouTube Music account. If it's someone else's playlist, it's only removed from your library.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    deleting = null
+                    scope.launch {
+                        c.library.deletePlaylist(p).onFailure {
+                            android.widget.Toast.makeText(context, "Couldn't delete \"${p.title}\": ${it.message}", android.widget.Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { deleting = null }) { Text("Cancel") } },
+        )
+    }
 }
 /** An album, artist or playlist as a card (grid view) or a row (list view). */
 @Composable
-private fun LibraryItem(item: com.prism.music.data.model.BrowseItem, asList: Boolean, onClick: () -> Unit) {
-    if (asList) ResultRow(item, onClick) else ItemCard(item, width = 400.dp, onClick = onClick)
+private fun LibraryItem(item: com.prism.music.data.model.BrowseItem, asList: Boolean, onLongClick: (() -> Unit)? = null, onClick: () -> Unit) {
+    if (asList) ResultRow(item, onLongClick, onClick) else ItemCard(item, width = 400.dp, onLongClick = onLongClick, onClick = onClick)
 }
 
 @Composable

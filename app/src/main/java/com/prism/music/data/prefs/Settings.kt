@@ -122,9 +122,11 @@ object HomeSections {
     const val GENRES = "local:genres"
     const val MOODS = "yt:moods"
     const val YT_PREFIX = "yt:shelf:"
+    /** GREETING's key predates the rename: the section is only the shortcut tiles. */
+    const val TILES_TITLE = "Shortcut tiles"
 
     val defaults = listOf(
-        HomeSectionConfig(GREETING, "Greeting & shortcuts", style = SectionStyle.HERO),
+        HomeSectionConfig(GREETING, TILES_TITLE, style = SectionStyle.HERO),
         HomeSectionConfig(QUICK_PICKS, "Quick picks", style = SectionStyle.LIST),
         HomeSectionConfig(RECENT, "Recently played"),
         HomeSectionConfig(REPLAY, "Replay teaser", style = SectionStyle.HERO),
@@ -137,7 +139,7 @@ object HomeSections {
     /** What a fresh install's Home shows (and what Reset goes back to). */
     val initial = listOf(
         HomeSectionConfig(REPLAY, "Replay teaser", style = SectionStyle.HERO),
-        HomeSectionConfig(GREETING, "Greeting & shortcuts", style = SectionStyle.HERO),
+        HomeSectionConfig(GREETING, TILES_TITLE, style = SectionStyle.HERO),
         HomeSectionConfig(QUICK_PICKS, "Quick picks", style = SectionStyle.LIST),
         HomeSectionConfig("${YT_PREFIX}mixed for you", "Mixed for you"),
     )
@@ -434,6 +436,8 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             eq = p[K.eq]?.let { runCatching { json.decodeFromString<EqSettings>(it) }.getOrNull() } ?: d.eq,
             homeLayout = p[K.homeLayout]?.let {
                 runCatching { json.decodeFromString<List<HomeSectionConfig>>(it) }.getOrNull()
+                    // The tiles section was once called "Greeting & shortcuts"; the greeting is the top bar's.
+                    ?.map { s -> if (s.key == HomeSections.GREETING) s.copy(title = HomeSections.TILES_TITLE) else s }
             } ?: d.homeLayout,
             autoAddSections = p[K.autoAddSections] ?: d.autoAddSections,
             replayHours = p[K.replayHours] ?: d.replayHours,

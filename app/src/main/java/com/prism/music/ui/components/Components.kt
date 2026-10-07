@@ -242,11 +242,11 @@ fun PlayingBars(modifier: Modifier = Modifier, color: Color = Color.White) {
 }
 
 @Composable
-fun ItemCard(item: BrowseItem, modifier: Modifier = Modifier, width: Dp = Dp.Unspecified, onClick: () -> Unit) {
+fun ItemCard(item: BrowseItem, modifier: Modifier = Modifier, width: Dp = Dp.Unspecified, onLongClick: (() -> Unit)? = null, onClick: () -> Unit) {
     val round = item is ArtistItem
     val ui = com.prism.music.ui.theme.LocalUi.current
     val w = if (width == Dp.Unspecified) ui.cardWidth else width
-    Column(modifier.width(w).clip(ui.tile).clickable(onClick = onClick).padding(4.dp)) {
+    Column(modifier.width(w).clip(ui.tile).combinedClickable(onClick = onClick, onLongClick = onLongClick).padding(4.dp)) {
         when (item) {
             is MoodItem -> MoodTile(item, Modifier.fillMaxWidth().aspectRatio(1.6f), onClick)
             else -> {

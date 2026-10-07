@@ -45,7 +45,9 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
 - `*.apk`, `local.properties`, keystores are gitignored.
 
 ## Current status / Next steps
-- **v1.2.1 (versionCode 4) is GitHub "Latest"** (2026-10-07): in-app update install. v1.2.0 (`f3656fa`) added music videos as songs,
+- **v1.2.2 (versionCode 5) is GitHub "Latest"** (2026-10-07): drag to reorder Customize Home sections, "Greeting & shortcuts"
+  renamed "Shortcut tiles" (greyed-out tile settings when that section is off), long-press a Library playlist to delete it.
+  v1.2.1 (versionCode 4, 2026-10-07): in-app update install. v1.2.0 (`f3656fa`) added music videos as songs,
   cleaner playlists/Customize Home and the update banner. v1.1.0 (2026-10-06, `70b6251`) was the first official release;
   v1.0.0 (2026-10-04) is marked pre-release.
 - Release flow: build `assembleRelease`, upload the APK as `Prism.apk` (README links to
