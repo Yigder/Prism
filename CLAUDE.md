@@ -39,15 +39,15 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
   and compares its tag to `versionName`. So every release must bump `versionName`/`versionCode`, use a `vX.Y.Z` tag,
   and attach the `.apk` asset; pre-releases are never offered. Tapping the banner downloads the APK in-app and
   hands it to `PackageInstaller` (one-time "Install unknown apps" permission, then Android's confirm); the APK
-  must be Prism with a higher versionCode, signed with the same (debug) key, or it's refused. Shipped after 1.2.0.
+  must be Prism with a higher versionCode, signed with the same (debug) key, or it's refused. Shipped in 1.2.1.
 - Fresh-install defaults in `AppSettings` / `HomeSections.initial` are the owner's own settings (smart downloads 1 GB).
 - Not affiliated with Google/YouTube — keep the disclaimer in README.
 - `*.apk`, `local.properties`, keystores are gitignored.
 
 ## Current status / Next steps
-- **v1.2.0 (versionCode 3) is GitHub "Latest"** — published 2026-10-07, tag `v1.2.0` → `f3656fa`, asset `Prism.apk`
-  (music videos open as songs, cleaner playlists/Customize Home, update banner). v1.1.0 (2026-10-06, `70b6251`) was the
-  first official release; v1.0.0 (2026-10-04) is marked pre-release.
+- **v1.2.1 (versionCode 4) is GitHub "Latest"** (2026-10-07): in-app update install. v1.2.0 (`f3656fa`) added music videos as songs,
+  cleaner playlists/Customize Home and the update banner. v1.1.0 (2026-10-06, `70b6251`) was the first official release;
+  v1.0.0 (2026-10-04) is marked pre-release.
 - Release flow: build `assembleRelease`, upload the APK as `Prism.apk` (README links to
   `releases/latest/download/Prism.apk`), notes include the Android Auto "parked/passengers only" warning.
 - README screenshots (`docs/screenshots/`) were retaken for 1.1 on a Pixel 10 Pro XL with personal info
