@@ -44,12 +44,18 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
   and attach the `.apk` asset; pre-releases are never offered. Tapping the banner downloads the APK in-app and
   hands it to `PackageInstaller` (one-time "Install unknown apps" permission, then Android's confirm); the APK
   must be Prism with a higher versionCode, signed with the same (debug) key, or it's refused. Shipped in 1.2.1.
+- Playlist import (`ui/screens/ImportScreen.kt`, Library → Playlists → "Import playlists") opens TuneMyMusic's
+  `tunemymusic.com/transfer/{spotify,apple-music}-to-youtube-music` pages in the browser; the user signs in there and it
+  writes to their YT Music account. Prism syncs the library when the user returns. Never pass Prism's YT cookies to it.
+  (A built-in link/CSV importer was written first and replaced by this, unreleased, at the owner's request.)
 - Fresh-install defaults in `AppSettings` / `HomeSections.initial` are the owner's own settings (smart downloads 1 GB).
 - Not affiliated with Google/YouTube — keep the disclaimer in README.
 - `*.apk`, `local.properties`, keystores are gitignored.
 
 ## Current status / Next steps
-- **v1.3.1 (versionCode 7) is GitHub "Latest"** (2026-10-07): first release signed with the release key (cert SHA-256 `cbc462bc…`).
+- **v1.3.2 (versionCode 8) is GitHub "Latest"** (2026-10-07): Library → Import playlists (TuneMyMusic hand-off), and long-press
+  any album/playlist/artist card or Home shortcut tile to play or shuffle it (`ui/components/PlayActions.kt`).
+  v1.3.1 (versionCode 7): first release signed with the release key (cert SHA-256 `cbc462bc…`).
   v1.3.0 (versionCode 6): backup & restore, last debug-signed build. v1.2.2 (versionCode 5): drag to reorder Customize Home sections, "Greeting & shortcuts"
   renamed "Shortcut tiles" (greyed-out tile settings when that section is off), long-press a Library playlist to delete it.
   v1.2.1 (versionCode 4, 2026-10-07): in-app update install. v1.2.0 (`f3656fa`) added music videos as songs,

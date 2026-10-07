@@ -32,6 +32,7 @@ object Routes {
     const val DOWNLOADS = "downloads"
     const val MOODS = "moods"
     const val BACKGROUNDS = "backgrounds"
+    const val IMPORT = "import"
     fun settings(section: String) = "settings/$section"
     fun album(id: String) = "album/${Uri.encode(id)}"
     fun playlist(id: String) = "playlist/${Uri.encode(id)}"

@@ -62,6 +62,7 @@ Updating works the same way: install the new APK over the old one, and your down
 - **Replay.** Minutes, top songs, artists and genres. Play or shuffle your top 250.
 - **Custom playlist pictures** and **backgrounds** for Home, Search, Library, Replay and Settings.
 - Signed in, likes, playlists, albums and artists sync both ways.
+- **Import playlists from Spotify, Apple Music and more** with [TuneMyMusic](https://www.tunemymusic.com) (Library → Import playlists). It copies them into your YouTube Music account, and Prism syncs them in when you come back.
 
 ### Android Auto
 - Browse Home, Liked songs, your library and recent plays, and search by voice.
@@ -93,6 +94,7 @@ Prism doesn't ship artwork, fonts or code copied from other apps, but several id
 - **Spotify Wrapped** inspired the Replay story, including its "what's playing" card.
 - **Lyrics:** [Better Lyrics](https://betterlyrics.org) (Apple Music TTML and QQ Music "Portato"), NetEase, KuGou, LyricsPlus, Bini, [LRCLIB](https://lrclib.net), Unison, Genius, YouTube Music and [Lyrics.ovh](https://lyrics.ovh). Lyrics belong to their rights holders.
 - **Animated covers** come from Apple Music, Tidal and the ViVi Music canvas list.
+- **Playlist import** hands off to [TuneMyMusic](https://www.tunemymusic.com), the transfer service YouTube Music's own app uses. It's a separate service; Prism shares nothing with it.
 - **Libraries:** [NewPipe Extractor](https://github.com/TeamNewPipe/NewPipeExtractor), [Haze](https://github.com/chrisbanes/haze), [Coil](https://coil-kt.github.io/coil/), Media3 ExoPlayer and the rest of the stack below.
 - Music and metadata are streamed from YouTube Music. All trademarks belong to their owners.
 

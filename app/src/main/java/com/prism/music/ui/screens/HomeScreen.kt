@@ -2,6 +2,7 @@ package com.prism.music.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,7 +66,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import coil3.compose.AsyncImage
+import com.prism.music.data.model.AlbumItem
 import com.prism.music.data.model.BrowseItem
+import com.prism.music.data.model.PlaylistItem
 import com.prism.music.data.model.MoodItem
 import com.prism.music.data.model.Shelf
 import com.prism.music.data.model.Song
@@ -86,6 +89,9 @@ import com.prism.music.ui.components.LoadingState
 import com.prism.music.ui.components.MoodTile
 import com.prism.music.ui.components.SectionHeader
 import com.prism.music.ui.components.SongRow
+import com.prism.music.ui.components.Playable
+import com.prism.music.ui.components.playable
+import com.prism.music.ui.components.rememberPlayMenu
 import com.prism.music.ui.rememberLoad
 import com.prism.music.ui.theme.LocalAppSettings
 import com.prism.music.ui.theme.LocalContainer
@@ -304,7 +310,8 @@ private fun GreetingSection(recent: List<Song>) {
     val nav = LocalNavigator.current
     val c = LocalContainer.current
     val settings = LocalAppSettings.current
-    data class Tile(val title: String, val icon: ImageVector?, val image: String?, val onClick: () -> Unit)
+    /** [playable]: what holding the tile offers to play (null for pages like Replay or Search). */
+    data class Tile(val title: String, val icon: ImageVector?, val image: String?, val playable: Playable?, val onClick: () -> Unit)
     val tiles = buildList {
         settings.homeShortcuts.forEach { sc ->
             val (icon, route) = when (sc) {
@@ -316,18 +323,25 @@ private fun GreetingSection(recent: List<Song>) {
                 HomeShortcut.SEARCH -> Icons.Rounded.Search to Routes.SEARCH
                 HomeShortcut.EQUALIZER -> Icons.Rounded.GraphicEq to Routes.EQ
             }
-            add(Tile(sc.label, icon, null) { nav.go(route) })
+            val playable = when (sc) {
+                HomeShortcut.LIKED -> Playable.Liked
+                HomeShortcut.DOWNLOADS -> Playable.Downloads
+                else -> null
+            }
+            add(Tile(sc.label, icon, null, playable) { nav.go(route) })
         }
         settings.homePlaylists.forEach { pl ->
-            add(Tile(pl.title, null, c.covers.art(pl.id, pl.thumbnail)) { nav.go(Routes.playlist(pl.id)) })
+            val art = c.covers.art(pl.id, pl.thumbnail)
+            add(Tile(pl.title, null, art, Playable.Of(PlaylistItem(pl.id, pl.title, "Playlist", art))) { nav.go(Routes.playlist(pl.id)) })
         }
         recent.distinctBy { it.album?.id ?: it.id }.take(settings.homeRecentTiles).forEach { s ->
-            add(Tile(s.album?.title ?: s.title, null, s.thumbnail) {
-                val albumId = s.album?.id
-                if (albumId != null) nav.go(Routes.album(albumId)) else c.player.playSingle(s)
+            val album = s.album?.id?.let { AlbumItem(it, s.album.title, s.primaryArtist, s.thumbnail) }
+            add(Tile(s.album?.title ?: s.title, null, s.thumbnail, Playable.Of(album ?: SongItem(s))) {
+                if (album != null) nav.go(Routes.album(album.id)) else c.player.playSingle(s)
             })
         }
     }
+    val menu = rememberPlayMenu()
     if (tiles.isEmpty()) return
     val ui = com.prism.music.ui.theme.LocalUi.current
     val scheme = MaterialTheme.colorScheme
@@ -338,7 +352,7 @@ private fun GreetingSection(recent: List<Song>) {
                     Row(
                         Modifier.weight(1f).height(58.dp).clip(ui.shape(14.dp))
                             .background(scheme.surfaceContainerHigh.copy(alpha = 0.9f))
-                            .clickable(onClick = t.onClick)
+                            .combinedClickable(onClick = t.onClick, onLongClick = t.playable?.let { p -> { menu(p) } })
                             .padding(6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -414,10 +428,12 @@ private fun ShelfSection(cfg: HomeSectionConfig, shelf: Shelf, open: (BrowseItem
 @Composable
 private fun HeroRow(items: List<BrowseItem>, open: (BrowseItem) -> Unit) {
     val ui = com.prism.music.ui.theme.LocalUi.current
+    val menu = rememberPlayMenu()
     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         items(items.take(10)) { item ->
             Box(
-                Modifier.width(300.dp).aspectRatio(1.25f).clip(ui.shape(24.dp)).clickable { open(item) },
+                Modifier.width(300.dp).aspectRatio(1.25f).clip(ui.shape(24.dp))
+                    .combinedClickable(onClick = { open(item) }, onLongClick = item.playable()?.let { p -> { menu(p) } }),
             ) {
                 Artwork(LocalContainer.current.covers.art(item), Modifier.fillMaxSize(), RoundedCornerShape(0.dp), size = 900)
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)))))

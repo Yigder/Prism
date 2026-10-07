@@ -85,6 +85,8 @@ import com.prism.music.ui.components.LoadingState
 import com.prism.music.ui.components.MoodTile
 import com.prism.music.ui.components.SectionHeader
 import com.prism.music.ui.components.SongRow
+import com.prism.music.ui.components.playable
+import com.prism.music.ui.components.rememberPlayMenu
 import com.prism.music.ui.rememberLoad
 import com.prism.music.ui.theme.GlassSurface
 import com.prism.music.ui.theme.LocalContainer
@@ -396,8 +398,10 @@ fun ResultRow(item: BrowseItem, onLongClick: (() -> Unit)? = null, onClick: () -
         return
     }
     val ui = com.prism.music.ui.theme.LocalUi.current
+    val menu = rememberPlayMenu()
+    val longPress = onLongClick ?: item.playable()?.let { p -> { menu(p) } }
     Row(
-        Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = onLongClick).padding(horizontal = 16.dp, vertical = ui.gap(7.dp)),
+        Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = longPress).padding(horizontal = 16.dp, vertical = ui.gap(7.dp)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Artwork(

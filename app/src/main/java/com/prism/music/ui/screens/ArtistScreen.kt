@@ -5,6 +5,9 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import com.prism.music.ui.components.playable
+import com.prism.music.ui.components.rememberPlayMenu
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -404,10 +407,12 @@ private fun TopSongsGrid(songs: List<Song>, title: String) {
 @Composable
 private fun CardRow(items: List<BrowseItem>, width: Dp, aspect: Float = 1f, round: Boolean = false, open: (BrowseItem) -> Unit) {
     val ui = com.prism.music.ui.theme.LocalUi.current
+    val menu = rememberPlayMenu()
     LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         items(items, key = { it.id + it.title }) { item ->
             Column(
-                Modifier.width(width).clip(ui.shape(10.dp)).clickable { open(item) },
+                Modifier.width(width).clip(ui.shape(10.dp))
+                    .combinedClickable(onClick = { open(item) }, onLongClick = item.playable()?.let { p -> { menu(p) } }),
                 horizontalAlignment = if (round) Alignment.CenterHorizontally else Alignment.Start,
             ) {
                 Artwork(

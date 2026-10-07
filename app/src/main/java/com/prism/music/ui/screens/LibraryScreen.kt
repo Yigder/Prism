@@ -2,6 +2,8 @@ package com.prism.music.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +35,7 @@ import androidx.compose.material.icons.rounded.Login
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.automirrored.rounded.ViewList
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
@@ -96,8 +99,10 @@ fun LibraryScreen(bottomPadding: Dp) {
     val pager = rememberPagerState(initialPage = startPage) { LibTab.entries.size }
     val asList = settings.libraryView == com.prism.music.data.prefs.LibraryView.LIST
     val onSong: (SongItem) -> Unit = { c.player.playSingle(it.song) }
-    // The playlist a long press asked to delete.
+    // A long press on a playlist offers play / shuffle / delete; the one it asked to delete.
+    var menuFor by remember { mutableStateOf<com.prism.music.data.model.BrowseItem?>(null) }
     var deleting by remember { mutableStateOf<com.prism.music.data.model.BrowseItem?>(null) }
+    val menu = com.prism.music.ui.components.rememberPlayMenu()
 
     // The account's saved albums / artists first, then the ones your liked and downloaded songs come from.
     val mine = remember(liked, dls) {
@@ -190,9 +195,10 @@ fun LibraryScreen(bottomPadding: Dp) {
                 }
                 when (tab) {
                     LibTab.PLAYLISTS -> {
-                        item { ShortcutTile("Liked songs", "${liked.size} songs", Icons.Rounded.Favorite, asList, art = c.covers.custom("liked")) { nav.go(Routes.liked()) } }
-                        item { ShortcutTile("Downloads", "${dls.values.count { it.state == androidx.media3.exoplayer.offline.Download.STATE_COMPLETED }} songs", Icons.Rounded.DownloadDone, asList) { nav.go(Routes.DOWNLOADS) } }
+                        item { ShortcutTile("Liked songs", "${liked.size} songs", Icons.Rounded.Favorite, asList, art = c.covers.custom("liked"), onLongClick = { menu(com.prism.music.ui.components.Playable.Liked) }) { nav.go(Routes.liked()) } }
+                        item { ShortcutTile("Downloads", "${dls.values.count { it.state == androidx.media3.exoplayer.offline.Download.STATE_COMPLETED }} songs", Icons.Rounded.DownloadDone, asList, onLongClick = { menu(com.prism.music.ui.components.Playable.Downloads) }) { nav.go(Routes.DOWNLOADS) } }
                         item { ShortcutTile("Replay", "Your listening recap", Icons.Rounded.History, asList) { nav.go(Routes.REPLAY) } }
+                        if (settings.isLoggedIn) item { ShortcutTile("Import playlists", "From Spotify, Apple Music…", Icons.AutoMirrored.Rounded.PlaylistAdd, asList) { nav.go(Routes.IMPORT) } }
                         if (!settings.isLoggedIn) item(span = { GridItemSpan(maxLineSpan) }) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 EmptyState(Icons.Rounded.LibraryMusic, "Sign in to sync your playlists", "Your YouTube Music playlists will appear here.")
@@ -200,7 +206,7 @@ fun LibraryScreen(bottomPadding: Dp) {
                             }
                         }
                         items(playlists.filter { it.id != "LM" }, key = { "p" + it.id }) { p ->
-                            LibraryItem(p, asList, onLongClick = { deleting = p }) { nav.open(p, onSong) }
+                            LibraryItem(p, asList, onLongClick = { menuFor = p }) { nav.open(p, onSong) }
                         }
                     }
                     LibTab.SONGS -> {
@@ -227,6 +233,13 @@ fun LibraryScreen(bottomPadding: Dp) {
                 }
             }
         }
+    }
+
+    menuFor?.let { p ->
+        com.prism.music.ui.components.PlayActionsSheet(
+            com.prism.music.ui.components.Playable.Of(p),
+            extra = listOf(com.prism.music.ui.components.SheetItem(Icons.Rounded.Delete, "Delete playlist") { deleting = p }),
+        ) { menuFor = null }
     }
 
     deleting?.let { p ->
@@ -256,7 +269,7 @@ private fun LibraryItem(item: com.prism.music.data.model.BrowseItem, asList: Boo
 }
 
 @Composable
-private fun ShortcutTile(title: String, subtitle: String, icon: ImageVector, asList: Boolean, art: String? = null, onClick: () -> Unit) {
+private fun ShortcutTile(title: String, subtitle: String, icon: ImageVector, asList: Boolean, art: String? = null, onLongClick: (() -> Unit)? = null, onClick: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val ui = com.prism.music.ui.theme.LocalUi.current
     @Composable
@@ -270,7 +283,7 @@ private fun ShortcutTile(title: String, subtitle: String, icon: ImageVector, asL
     }
     if (asList) {
         Row(
-            Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = ui.gap(7.dp)),
+            Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = onLongClick).padding(horizontal = 16.dp, vertical = ui.gap(7.dp)),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Cover(Modifier.size(56.dp), ui.smallArt, 26.dp)
@@ -282,7 +295,7 @@ private fun ShortcutTile(title: String, subtitle: String, icon: ImageVector, asL
         }
         return
     }
-    Column(Modifier.padding(4.dp).clip(ui.tile).clickable(onClick = onClick).padding(4.dp)) {
+    Column(Modifier.padding(4.dp).clip(ui.tile).combinedClickable(onClick = onClick, onLongClick = onLongClick).padding(4.dp)) {
         Cover(Modifier.fillMaxWidth().aspectRatio(1f), ui.art, 56.dp)
         Spacer(Modifier.height(8.dp))
         Text(title, style = MaterialTheme.typography.titleSmall)

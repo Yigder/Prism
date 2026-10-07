@@ -290,6 +290,7 @@ class LiveApiTest {
         override suspend fun genre(key: String) = g[key]
         override suspend fun genres(keys: List<String>) = keys.mapNotNull { g[it] }
         override suspend fun putGenre(e: GenreEntity) { g[e.key] = e }
+        override suspend fun clearGenresBefore(before: Long) { g.values.removeAll { it.fetchedAt < before && !it.key.startsWith("dzalbum:") } }
         override suspend fun motion(key: String) = m[key]
         override suspend fun putMotion(e: MotionArtEntity) { m[e.key] = e }
     }
