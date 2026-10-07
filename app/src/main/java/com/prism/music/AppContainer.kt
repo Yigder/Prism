@@ -48,7 +48,10 @@ class PrismApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // A restore from a backup goes in before anything opens the files it replaces.
+        com.prism.music.data.Backup.applyPending(this)
         container = AppContainer(this)
+        runCatching { container.backup.resumeDownloads() }
     }
 }
 
@@ -130,6 +133,7 @@ class AppContainer(val app: Application) {
     val downloads by lazy { DownloadRepository(app, this, scope) }
     val covers by lazy { com.prism.music.data.PlaylistCovers(app) }
     val updates by lazy { com.prism.music.data.UpdateChecker(app, http, scope) }
+    val backup by lazy { com.prism.music.data.Backup(this) }
     val player = PlayerConnection(app, this)
 
     private fun Cache.fullyCached(key: String, position: Long, length: Long): Boolean {

@@ -252,6 +252,11 @@ private fun UpdateBanner() {
     LaunchedEffect(progress) {
         if (progress is com.prism.music.data.UpdateProgress.NeedsPermission) runCatching { allow.launch(c.updates.permissionIntent()) }
     }
+    var moving by remember { mutableStateOf(false) }
+    (progress as? com.prism.music.data.UpdateProgress.NewSignature)?.let { p ->
+        LaunchedEffect(p) { moving = true }
+        if (moving) com.prism.music.ui.screens.NewSignatureSheet(p.version, p.apk) { moving = false }
+    }
     val busy = progress is com.prism.music.data.UpdateProgress.Downloading || progress is com.prism.music.data.UpdateProgress.Installing
     val ui = com.prism.music.ui.theme.LocalUi.current
     val scheme = MaterialTheme.colorScheme
@@ -262,6 +267,7 @@ private fun UpdateBanner() {
         is com.prism.music.data.UpdateProgress.Failed -> "Update didn't finish" to "${p.message}. Tap to try again"
         com.prism.music.data.UpdateProgress.NeedsPermission -> "Allow Prism to install updates" to "Turn on \"Allow from this source\", then come back"
         com.prism.music.data.UpdateProgress.Idle -> "Prism ${u.version} is available" to "Tap to update"
+        is com.prism.music.data.UpdateProgress.NewSignature -> "Prism ${u.version} needs a reinstall" to "Tap to move over; your things come with you"
     }
     Column(
         Modifier.padding(start = 16.dp, end = 16.dp, top = ui.gap(14.dp)).fillMaxWidth().clip(ui.shape(16.dp))
@@ -270,6 +276,7 @@ private fun UpdateBanner() {
                 when {
                     !u.isApk -> runCatching { uri.openUri(u.url) }
                     progress is com.prism.music.data.UpdateProgress.NeedsPermission -> runCatching { allow.launch(c.updates.permissionIntent()) }
+                    progress is com.prism.music.data.UpdateProgress.NewSignature -> moving = true
                     else -> c.updates.install(u)
                 }
             },

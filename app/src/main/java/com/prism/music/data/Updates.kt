@@ -39,7 +39,14 @@ sealed interface UpdateProgress {
     /** Prism needs "Install unknown apps" switched on first. */
     data object NeedsPermission : UpdateProgress
     data class Failed(val message: String) : UpdateProgress
+    /**
+     * The new Prism is signed with a different key (the move off the debug key), so Android won't
+     * install it over this one. The listener backs up, keeps [apk], uninstalls and installs it fresh.
+     */
+    data class NewSignature(val version: String, val apk: File) : UpdateProgress
 }
+
+private class SignatureChanged : Exception()
 
 /**
  * Asks GitHub for Prism's latest release now and then (at most every six hours), and can update
@@ -121,7 +128,9 @@ class UpdateChecker(private val context: Context, private val http: OkHttpClient
                 startSession(apk)
             }
             result.exceptionOrNull()?.let { e ->
-                if (isActive) _progress.value = UpdateProgress.Failed(e.message ?: "The update didn't download")
+                if (!isActive) return@let
+                _progress.value = if (e is SignatureChanged) UpdateProgress.NewSignature(update.version, File(dir, "Prism-${update.version}.apk"))
+                else UpdateProgress.Failed(e.message ?: "The update didn't download")
             }
         }
     }
@@ -129,6 +138,7 @@ class UpdateChecker(private val context: Context, private val http: OkHttpClient
     private fun download(update: AppUpdate): File {
         dir.mkdirs()
         val file = File(dir, "Prism-${update.version}.apk")
+        if (file.exists()) return file
         val part = File(dir, file.name + ".part")
         val req = Request.Builder().url(update.url).header("User-Agent", "Prism/${BuildConfig.VERSION_NAME}").build()
         http.newCall(req).execute().use { r ->
@@ -163,7 +173,32 @@ class UpdateChecker(private val context: Context, private val http: OkHttpClient
         if (info.packageName != context.packageName) error("The download isn't Prism")
         val code = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else info.versionCode.toLong()
         if (code <= BuildConfig.VERSION_CODE) error("That's not newer than this Prism")
+        val theirs = signers(context.packageManager.getPackageArchiveInfo(apk.path, signingFlag()))
+        val ours = signers(context.packageManager.getPackageInfo(context.packageName, signingFlag()))
+        if (theirs.isNotEmpty() && ours.isNotEmpty() && theirs != ours) throw SignatureChanged()
     }
+
+    @Suppress("DEPRECATION")
+    private fun signingFlag() = if (Build.VERSION.SDK_INT >= 28) android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES else android.content.pm.PackageManager.GET_SIGNATURES
+
+    /** SHA-256 of each certificate an app is signed with. */
+    @Suppress("DEPRECATION")
+    private fun signers(info: android.content.pm.PackageInfo?): Set<String> {
+        info ?: return emptySet()
+        val sigs = if (Build.VERSION.SDK_INT >= 28) info.signingInfo?.let { if (it.hasMultipleSigners()) it.apkContentsSigners else it.signingCertificateHistory }
+            else info.signatures
+        val sha = java.security.MessageDigest.getInstance("SHA-256")
+        return sigs.orEmpty().map { s -> sha.digest(s.toByteArray()).joinToString("") { "%02x".format(it) } }.toSet()
+    }
+
+    /** Copies the downloaded new Prism to [uri] (somewhere that outlives uninstalling this one). */
+    suspend fun saveApk(apk: File, uri: Uri) = kotlinx.coroutines.withContext(Dispatchers.IO) {
+        val out = context.contentResolver.openOutputStream(uri, "wt") ?: error("Couldn't open that file")
+        out.use { o -> apk.inputStream().use { it.copyTo(o) } }
+    }
+
+    /** Android's "uninstall Prism?" prompt. */
+    fun uninstallIntent(): Intent = Intent(Intent.ACTION_DELETE, Uri.parse("package:${context.packageName}"))
 
     private fun startSession(apk: File) {
         val installer = context.packageManager.packageInstaller

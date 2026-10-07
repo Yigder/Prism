@@ -226,6 +226,7 @@ fun WelcomeScreen(onSignIn: () -> Unit, onSkip: () -> Unit) {
             TextButton(onClick = onSkip, Modifier.fillMaxWidth().padding(top = 6.dp)) {
                 Text("Continue without an account", color = Color.White.copy(alpha = 0.8f))
             }
+            WelcomeRestoreButton()
         }
     }
 }

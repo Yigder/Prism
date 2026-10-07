@@ -190,6 +190,8 @@ fun SettingsScreen(bottomPadding: Dp, section: SettingsSection? = null) {
             }
             SettingsSection.LIBRARY -> item { LibraryReplaySettings() }
             SettingsSection.ABOUT -> item {
+                Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
+                BackupGroup()
                 Group("About") {
                     Item("Prism ${com.prism.music.BuildConfig.VERSION_NAME}", "An unofficial YouTube Music client. Not affiliated with Google or YouTube.", onClick = {})
                     Item("Your data stays here", "History, Replay and settings live only on this phone. Prism has no server.", onClick = {})
@@ -197,6 +199,7 @@ fun SettingsScreen(bottomPadding: Dp, section: SettingsSection? = null) {
                         c.settings.setCheckUpdates(it)
                         if (it) c.updates.check(force = true)
                     }
+                }
                 }
             }
         }

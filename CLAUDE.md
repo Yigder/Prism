@@ -32,7 +32,11 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
 
 ## Conventions / decisions
 - Release builds are **unminified** on purpose: NewPipeExtractor + Rhino use reflection. Don't enable R8.
-- Release is signed with the debug key so the APK installs directly.
+- Release signing: `keystore.properties` + `prism-release.jks` in the repo root (both gitignored; back them up —
+  losing the key means users must reinstall again). Without them, or with `-PdebugSign`, release falls back to the debug key.
+  The move off the debug key: 1.3.0 is the last debug-signed release (adds Settings → About → Backup and a
+  "needs a reinstall" flow in the update banner when the next APK's signer differs); 1.3.1+ are release-key signed.
+  Backup format is `data/Backup.kt` (zip + `prism-backup.json`; restore is staged and applied in `PrismApp.onCreate`).
 - Lyrics priority: word-synced → line-synced → plain; user can switch source per song and offset timing.
 - Privacy: all history/Replay/settings stay on device; no Prism server. Don't add telemetry.
 - Update banner (`data/Updates.kt`): Home asks GitHub's `releases/latest` (≤ every 6 h, toggle in Settings → About)

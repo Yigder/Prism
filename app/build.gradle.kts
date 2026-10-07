@@ -15,8 +15,8 @@ android {
         applicationId = "com.prism.music"
         minSdk = 26
         targetSdk = 36
-        versionCode = 5
-        versionName = "1.2.2"
+        versionCode = 6
+        versionName = "1.3.0"
         vectorDrawables { useSupportLibrary = true }
         // Optional: `lastfm.apiKey=…` in local.properties lets genre detection ask Last.fm too.
         val localProps = Properties().apply {
@@ -25,11 +25,26 @@ android {
         buildConfigField("String", "LASTFM_API_KEY", "\"${localProps.getProperty("lastfm.apiKey", "")}\"")
     }
 
+    // Releases are signed with the key in keystore.properties (gitignored, with the .jks beside it).
+    // Without it — or with -PdebugSign — they fall back to the debug key so anyone can build.
+    val keyProps = Properties().apply {
+        rootProject.file("keystore.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+    }
+    val useReleaseKey = keyProps.isNotEmpty() && !project.hasProperty("debugSign")
+    signingConfigs {
+        if (useReleaseKey) create("release") {
+            storeFile = rootProject.file(keyProps.getProperty("storeFile"))
+            storePassword = keyProps.getProperty("storePassword")
+            keyAlias = keyProps.getProperty("keyAlias")
+            keyPassword = keyProps.getProperty("keyPassword")
+        }
+    }
+
     buildTypes {
         release {
             // Kept unminified: NewPipeExtractor + Rhino rely on reflection.
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(if (useReleaseKey) "release" else "debug")
         }
     }
 
