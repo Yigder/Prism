@@ -49,7 +49,7 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
   writes to their YT Music account. Prism syncs the library when the user returns. Never pass Prism's YT cookies to it.
   (A built-in link/CSV importer was written first and replaced by this, unreleased, at the owner's request.)
 - Fresh-install defaults in `AppSettings` / `HomeSections.initial` are the owner's own settings (smart downloads 1 GB).
-- Lossless sync (`download/LosslessSync.kt`, unreleased): with lossless playback + the lossless add-on on, FLAC/WAV/AIFF
+- Lossless sync (`download/LosslessSync.kt`, 1.4.0): with lossless playback + the lossless add-on on, FLAC/WAV/AIFF
   files on the phone are looked up on YT Music and shown in Downloads (`DownloadInfo.lossless`), playing from the file.
   Runs on launch, ~15 s after MediaStore changes, and every 3 h (`LosslessSyncWorker`). Removing one only hides it
   (`lossless_hidden` prefs); Prism never deletes or moves the user's files.
@@ -57,7 +57,9 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
 - `*.apk`, `local.properties`, keystores are gitignored.
 
 ## Current status / Next steps
-- **v1.3.3 (versionCode 9) is GitHub "Latest"** (2026-10-08): plain outline icons on the Settings hub (no coloured badges),
+- **v1.4.0 (versionCode 10) is bumped but not yet released**: lossless sync (lossless files on the phone show up in Downloads,
+  rescanned on media changes and every 3 h). Needs a local `assembleRelease` with the release key, then the `v1.4.0` release.
+- **v1.3.3 (versionCode 9) is GitHub "Latest" (2026-10-08): plain outline icons on the Settings hub (no coloured badges),
   sign-in leaves the WebView the moment YouTube's session cookies appear (account info + library sync run after Prism opens),
   and update checks are always on: the `checkUpdates` setting is gone; Settings → About → "Check for updates" asks GitHub now
   (`UpdateChecker.checkNow()`, also un-dismisses the banner).
