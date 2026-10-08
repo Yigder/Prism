@@ -266,8 +266,6 @@ data class AppSettings(
     /** Playlist pages open with their picture edge to edge, like an artist page. */
     val playlistHeroCover: Boolean = true,
     val replayThemeColors: Boolean = false,
-    /** Look for a newer Prism on GitHub and say so on Home. */
-    val checkUpdates: Boolean = true,
 ) {
     val isLoggedIn: Boolean get() = cookie.contains("SAPISID")
 }
@@ -360,7 +358,6 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val libraryStartTab = stringPreferencesKey("library_start_tab")
         val playlistHeroCover = booleanPreferencesKey("playlist_hero_cover")
         val replayThemeColors = booleanPreferencesKey("replay_theme_colors")
-        val checkUpdates = booleanPreferencesKey("check_updates")
 
         /** Everything the "Reset look" button puts back. */
         val look: List<Preferences.Key<*>> by lazy {
@@ -475,7 +472,6 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             libraryStartTab = p[K.libraryStartTab] ?: d.libraryStartTab,
             playlistHeroCover = p[K.playlistHeroCover] ?: d.playlistHeroCover,
             replayThemeColors = p[K.replayThemeColors] ?: d.replayThemeColors,
-            checkUpdates = p[K.checkUpdates] ?: d.checkUpdates,
         )
     }
 
@@ -595,7 +591,6 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     fun setLibraryStartTab(v: String) = edit { it[K.libraryStartTab] = v }
     fun setPlaylistHeroCover(v: Boolean) = edit { it[K.playlistHeroCover] = v }
     fun setReplayThemeColors(v: Boolean) = edit { it[K.replayThemeColors] = v }
-    fun setCheckUpdates(v: Boolean) = edit { it[K.checkUpdates] = v }
 
     /** Puts every look & layout option back to how Prism ships (colours and backgrounds are left alone). */
     @Suppress("UNCHECKED_CAST")

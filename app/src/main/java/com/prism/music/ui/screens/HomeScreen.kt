@@ -245,11 +245,10 @@ private fun HomeTopBar() {
 @Composable
 private fun UpdateBanner() {
     val c = LocalContainer.current
-    val settings = LocalAppSettings.current
     val update by c.updates.available.collectAsState()
     val progress by c.updates.progress.collectAsState()
-    LaunchedEffect(settings.checkUpdates) { if (settings.checkUpdates) c.updates.check() }
-    val u = update?.takeIf { settings.checkUpdates } ?: return
+    LaunchedEffect(Unit) { c.updates.check() }
+    val u = update ?: return
     val uri = androidx.compose.ui.platform.LocalUriHandler.current
     // Back from "Install unknown apps": carry on straight away if it was allowed.
     val allow = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) {

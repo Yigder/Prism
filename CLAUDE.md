@@ -39,7 +39,7 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
   Backup format is `data/Backup.kt` (zip + `prism-backup.json`; restore is staged and applied in `PrismApp.onCreate`).
 - Lyrics priority: word-synced → line-synced → plain; user can switch source per song and offset timing.
 - Privacy: all history/Replay/settings stay on device; no Prism server. Don't add telemetry.
-- Update banner (`data/Updates.kt`): Home asks GitHub's `releases/latest` (≤ every 6 h, toggle in Settings → About)
+- Update banner (`data/Updates.kt`): Home asks GitHub's `releases/latest` (≤ every 6 h, always on; Settings → About checks on tap)
   and compares its tag to `versionName`. So every release must bump `versionName`/`versionCode`, use a `vX.Y.Z` tag,
   and attach the `.apk` asset; pre-releases are never offered. Tapping the banner downloads the APK in-app and
   hands it to `PackageInstaller` (one-time "Install unknown apps" permission, then Android's confirm); the APK
@@ -53,7 +53,11 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
 - `*.apk`, `local.properties`, keystores are gitignored.
 
 ## Current status / Next steps
-- **v1.3.2 (versionCode 8) is GitHub "Latest"** (2026-10-07): Library → Import playlists (TuneMyMusic hand-off), and long-press
+- **v1.3.3 (versionCode 9) is GitHub "Latest"** (2026-10-08): plain outline icons on the Settings hub (no coloured badges),
+  sign-in leaves the WebView the moment YouTube's session cookies appear (account info + library sync run after Prism opens),
+  and update checks are always on: the `checkUpdates` setting is gone; Settings → About → "Check for updates" asks GitHub now
+  (`UpdateChecker.checkNow()`, also un-dismisses the banner).
+  v1.3.2 (versionCode 8, 2026-10-07): Library → Import playlists (TuneMyMusic hand-off), and long-press
   any album/playlist/artist card or Home shortcut tile to play or shuffle it (`ui/components/PlayActions.kt`).
   v1.3.1 (versionCode 7): first release signed with the release key (cert SHA-256 `cbc462bc…`).
   v1.3.0 (versionCode 6): backup & restore, last debug-signed build. v1.2.2 (versionCode 5): drag to reorder Customize Home sections, "Greeting & shortcuts"

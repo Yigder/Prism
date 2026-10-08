@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
@@ -32,7 +33,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.prism.music.ui.components.ChoiceFlow
 import com.prism.music.ui.components.Eyebrow
-import com.prism.music.ui.components.IconBadge
 import com.prism.music.ui.components.Segmented
 import com.prism.music.ui.theme.LocalUi
 
@@ -104,16 +104,16 @@ fun Item(title: String, subtitle: String?, onClick: () -> Unit, icon: ImageVecto
     }
 }
 
-/** A row that opens another page: coloured badge, title, summary, chevron. */
+/** A row that opens another page: a plain line icon, title, summary, chevron. */
 @Composable
-fun NavRow(icon: ImageVector, color: Color, title: String, subtitle: String?, onClick: () -> Unit) {
+fun NavRow(icon: ImageVector, title: String, subtitle: String?, onClick: () -> Unit) {
     val ui = LocalUi.current
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = ui.gap(11.dp)),
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = ui.gap(12.dp)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconBadge(icon, color)
-        Spacer(Modifier.width(14.dp))
+        Icon(icon, null, Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.width(18.dp))
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
             if (!subtitle.isNullOrBlank()) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)

@@ -49,7 +49,8 @@ sealed interface UpdateProgress {
 private class SignatureChanged : Exception()
 
 /**
- * Asks GitHub for Prism's latest release now and then (at most every six hours), and can update
+ * Asks GitHub for Prism's latest release now and then (at most every six hours, or right away from
+ * Settings → About), and can update
  * Prism in place: the APK is downloaded inside the app and passed to Android's installer, which
  * asks the listener to confirm (Android never lets an app install silently the first time). Only
  * the public release info and file are fetched; nothing about the listener is sent. Pre-releases
@@ -77,24 +78,37 @@ class UpdateChecker(private val context: Context, private val http: OkHttpClient
         return AppUpdate(v, url).takeIf { isNewer(v, BuildConfig.VERSION_NAME) && v != prefs.getString("dismissed", null) }
     }
 
-    fun check(force: Boolean = false) {
-        if (checking || (!force && System.currentTimeMillis() - prefs.getLong("checked_at", 0) < 6 * 3_600_000L)) return
+    /** The background check Home runs; does nothing if GitHub was asked in the last six hours. */
+    fun check() {
+        if (checking || System.currentTimeMillis() - prefs.getLong("checked_at", 0) < 6 * 3_600_000L) return
         checking = true
         scope.launch(Dispatchers.IO) {
-            runCatching {
-                val req = Request.Builder().url("https://api.github.com/repos/$REPO/releases/latest")
-                    .header("Accept", "application/vnd.github+json").header("User-Agent", "Prism/${BuildConfig.VERSION_NAME}").build()
-                http.newCall(req).execute().use { r ->
-                    if (!r.isSuccessful) return@use
-                    val json = InnerTube.json.parseToJsonElement(r.body.string())
-                    val version = json.str("tag_name")?.removePrefix("v")?.trim() ?: return@use
-                    val apk = json.arr("assets")?.firstOrNull { it.str("name")?.endsWith(".apk", true) == true }?.str("browser_download_url")
-                    val url = apk ?: json.str("html_url") ?: "https://github.com/$REPO/releases/latest"
-                    prefs.edit().putString("latest_version", version).putString("latest_url", url).putLong("checked_at", System.currentTimeMillis()).apply()
-                    _available.value = saved()
-                }
-            }
+            runCatching { fetch() }
             checking = false
+        }
+    }
+
+    /**
+     * Asks GitHub right away (the listener tapped "Check for updates"). A version they dismissed on
+     * Home is offered again. Returns the newer version, null when Prism is current, or throws.
+     */
+    suspend fun checkNow(): String? = kotlinx.coroutines.withContext(Dispatchers.IO) {
+        prefs.edit().remove("dismissed").apply()
+        fetch()
+        _available.value?.version
+    }
+
+    private fun fetch() {
+        val req = Request.Builder().url("https://api.github.com/repos/$REPO/releases/latest")
+            .header("Accept", "application/vnd.github+json").header("User-Agent", "Prism/${BuildConfig.VERSION_NAME}").build()
+        http.newCall(req).execute().use { r ->
+            if (!r.isSuccessful) error("GitHub answered ${r.code}")
+            val json = InnerTube.json.parseToJsonElement(r.body.string())
+            val version = json.str("tag_name")?.removePrefix("v")?.trim() ?: error("GitHub's answer had no version")
+            val apk = json.arr("assets")?.firstOrNull { it.str("name")?.endsWith(".apk", true) == true }?.str("browser_download_url")
+            val url = apk ?: json.str("html_url") ?: "https://github.com/$REPO/releases/latest"
+            prefs.edit().putString("latest_version", version).putString("latest_url", url).putLong("checked_at", System.currentTimeMillis()).apply()
+            _available.value = saved()
         }
     }
 

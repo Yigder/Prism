@@ -231,15 +231,6 @@ fun <T> ChoiceFlow(options: List<T>, selected: (T) -> Boolean, label: (T) -> Str
     }
 }
 
-/** A coloured rounded square holding an icon, for settings rows. */
-@Composable
-fun IconBadge(icon: ImageVector, color: Color, modifier: Modifier = Modifier, size: Dp = 36.dp) {
-    val ui = LocalUi.current
-    Box(modifier.size(size).clip(ui.shape(11.dp)).background(color), contentAlignment = Alignment.Center) {
-        Icon(icon, null, Modifier.size(size * 0.58f), tint = Color.White)
-    }
-}
-
 /** A small uppercase label over a group. */
 @Composable
 fun Eyebrow(text: String, modifier: Modifier = Modifier, color: Color = MaterialTheme.colorScheme.onSurfaceVariant) {

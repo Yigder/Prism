@@ -35,6 +35,7 @@ import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.SurroundSound
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -64,6 +65,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.runtime.LaunchedEffect
 import kotlin.math.cos
 import kotlin.math.sin
@@ -82,23 +84,24 @@ fun LoginScreen(onDone: () -> Unit, onBack: () -> Unit) {
     var finishing by remember { mutableStateOf(false) }
     var pasteDialog by remember { mutableStateOf(false) }
 
-    var status by remember { mutableStateOf<String?>(null) }
-
     fun complete(cookie: String) {
         if (finishing) return
+        // The web page goes away as soon as the session exists, so nobody is left on YouTube's site.
         finishing = true
-        status = "Connecting your YouTube Music account…"
         scope.launch {
             CookieManager.getInstance().flush()
-            val (visitor, dataSync) = c.innerTube.sessionInfo(cookie)
+            val (visitor, dataSync) = withTimeoutOrNull(10_000) { c.innerTube.sessionInfo(cookie) } ?: (null to null)
             c.settings.saveAccount(cookie, visitor.orEmpty(), dataSync.orEmpty())
             c.settings.setOnboarded(true)
             // Wait until the saved cookie is what requests will actually use,
             // otherwise the first account/library calls go out signed-out.
             c.settings.flow.first { it.cookie == cookie }
-            val info = runCatching { c.ytm.accountInfo() }.getOrNull()
-            if (info != null) c.settings.saveAccountInfo(info.name, info.email, info.avatar)
-            c.library.syncInBackground()
+            // Name, picture and library fill in once Prism is open; no need to hold sign-in up for them.
+            c.scope.launch {
+                val info = withTimeoutOrNull(15_000) { runCatching { c.ytm.accountInfo() }.getOrNull() }
+                if (info != null) c.settings.saveAccountInfo(info.name, info.email, info.avatar)
+                c.library.syncInBackground()
+            }
             onDone()
         }
     }
@@ -114,7 +117,7 @@ fun LoginScreen(onDone: () -> Unit, onBack: () -> Unit) {
     LaunchedEffect(Unit) {
         while (isActive && !finishing) {
             checkCookies()
-            delay(1200)
+            delay(500)
         }
     }
 
@@ -124,13 +127,18 @@ fun LoginScreen(onDone: () -> Unit, onBack: () -> Unit) {
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
             actions = { TextButton(onClick = { pasteDialog = true }) { Text("Use cookie") } },
         )
-        if (finishing) LinearProgressIndicator(Modifier.fillMaxWidth())
-        else if (progress < 1f) LinearProgressIndicator(progress = { progress }, Modifier.fillMaxWidth())
-        status?.let {
-            Text(it, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(16.dp))
+        if (finishing) {
+            Column(Modifier.fillMaxSize().padding(32.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+                CircularProgressIndicator()
+                Spacer(Modifier.height(20.dp))
+                Text("Signing you in to Prism…", style = MaterialTheme.typography.titleMedium)
+            }
+            return@Column
         }
+        if (progress < 1f) LinearProgressIndicator(progress = { progress }, Modifier.fillMaxWidth())
         AndroidView(
             modifier = Modifier.fillMaxSize(),
+            onRelease = { it.stopLoading(); it.destroy() },
             factory = { ctx ->
                 WebView(ctx).apply {
                     settings.javaScriptEnabled = true
@@ -144,24 +152,34 @@ fun LoginScreen(onDone: () -> Unit, onBack: () -> Unit) {
                     }
                     webViewClient = object : WebViewClient() {
                         override fun shouldOverrideUrlLoading(view: WebView, request: android.webkit.WebResourceRequest): Boolean {
+                            checkCookies()
+                            if (finishing) return true
                             // Keep everything inside this WebView; app-link schemes
                             // (intent://, vnd.youtube://) would otherwise dead-end.
                             val scheme = request.url.scheme ?: return false
                             if (scheme != "http" && scheme != "https") {
-                                view.loadUrl("https://music.youtube.com/")
+                                if (view.url?.contains("music.youtube.com") != true) view.loadUrl("https://music.youtube.com/")
                                 return true
                             }
                             return false
                         }
 
+                        // Catch the session the moment a redirect sets it, before YouTube's page draws.
+                        override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) { checkCookies() }
+                        override fun doUpdateVisitedHistory(view: WebView, url: String, isReload: Boolean) { checkCookies() }
+
                         override fun onPageFinished(view: WebView, url: String) {
                             checkCookies()
-                            // Signed in on a Google/YouTube page that isn't Music:
-                            // hop to Music so its session cookies get set.
-                            if (!finishing && url.contains("youtube.com") && !url.contains("music.youtube.com")) {
-                                val cookie = CookieManager.getInstance().getCookie("https://www.youtube.com")
-                                if (cookie?.contains("SID=") == true) view.loadUrl("https://music.youtube.com/")
-                            }
+                            if (finishing) return
+                            val host = android.net.Uri.parse(url).host.orEmpty()
+                            val cm = CookieManager.getInstance()
+                            // Signed in, but left on a YouTube or Google page that isn't Music
+                            // (youtube.com's home, Google's account page): hop to Music so its session cookies get set.
+                            val strayYouTube = host.endsWith("youtube.com") && host != "music.youtube.com" &&
+                                cm.getCookie("https://www.youtube.com")?.contains("SID=") == true
+                            val strayGoogle = (host == "myaccount.google.com" || host == "www.google.com") &&
+                                cm.getCookie("https://accounts.google.com")?.contains("SID=") == true
+                            if (strayYouTube || strayGoogle) view.loadUrl("https://music.youtube.com/")
                         }
                     }
                     loadUrl("https://accounts.google.com/ServiceLogin?continue=https%3A%2F%2Fmusic.youtube.com%2F&service=youtube&passive=true")

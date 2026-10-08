@@ -26,22 +26,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.Logout
+import androidx.compose.material.icons.outlined.DownloadForOffline
+import androidx.compose.material.icons.outlined.FormatQuote
+import androidx.compose.material.icons.outlined.GraphicEq
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.LibraryMusic
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.PlayCircle
+import androidx.compose.material.icons.outlined.SpaceDashboard
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Dashboard
-import androidx.compose.material.icons.rounded.DownloadForOffline
-import androidx.compose.material.icons.rounded.FormatQuote
-import androidx.compose.material.icons.rounded.GraphicEq
-import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
-import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.Login
-import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.PlayCircle
 import androidx.compose.material.icons.rounded.RestartAlt
-import androidx.compose.material.icons.rounded.SpaceDashboard
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -115,16 +114,16 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /** The settings categories, in the order they're listed; each opens its own page. */
-enum class SettingsSection(val key: String, val title: String, val icon: ImageVector, val color: Long) {
-    APPEARANCE("appearance", "Appearance", Icons.Rounded.Palette, 0xFF7C5CFF),
-    INTERFACE("interface", "Layout & navigation", Icons.Rounded.SpaceDashboard, 0xFF3A86FF),
-    PLAYER("player", "Player", Icons.Rounded.PlayCircle, 0xFFFF3B5C),
-    SOUND("sound", "Playback & sound", Icons.Rounded.GraphicEq, 0xFFFF6B35),
-    LYRICS("lyrics", "Lyrics", Icons.Rounded.FormatQuote, 0xFF2EC27E),
-    DOWNLOADS("downloads", "Downloads & storage", Icons.Rounded.DownloadForOffline, 0xFF00A6C8),
-    HOME("home", "Home screen", Icons.Rounded.Home, 0xFF5B6CFF),
-    LIBRARY("library", "Library & Replay", Icons.Rounded.LibraryMusic, 0xFFE0A100),
-    ABOUT("about", "About", Icons.Rounded.Info, 0xFF8E8E93);
+enum class SettingsSection(val key: String, val title: String, val icon: ImageVector) {
+    APPEARANCE("appearance", "Appearance", Icons.Outlined.Palette),
+    INTERFACE("interface", "Layout & navigation", Icons.Outlined.SpaceDashboard),
+    PLAYER("player", "Player", Icons.Outlined.PlayCircle),
+    SOUND("sound", "Playback & sound", Icons.Outlined.GraphicEq),
+    LYRICS("lyrics", "Lyrics", Icons.Outlined.FormatQuote),
+    DOWNLOADS("downloads", "Downloads & storage", Icons.Outlined.DownloadForOffline),
+    HOME("home", "Home screen", Icons.Outlined.Home),
+    LIBRARY("library", "Library & Replay", Icons.Outlined.LibraryMusic),
+    ABOUT("about", "About", Icons.Outlined.Info);
 
     fun summary(s: AppSettings): String = when (this) {
         APPEARANCE -> listOf(s.themeMode.label + " theme", s.fontChoice.label + " font", when { s.liquidGlass -> "Liquid Glass"; s.frostedGlass -> "Frosted Glass"; else -> "Solid bars" }).joinToString(" · ")
@@ -170,7 +169,7 @@ fun SettingsScreen(bottomPadding: Dp, section: SettingsSection? = null) {
                 hubGroups.forEach { (title, sections) ->
                     item {
                         Group(title) {
-                            sections.forEach { sec -> NavRow(sec.icon, Color(sec.color), sec.title, sec.summary(s)) { nav.go(Routes.settings(sec.key)) } }
+                            sections.forEach { sec -> NavRow(sec.icon, sec.title, sec.summary(s)) { nav.go(Routes.settings(sec.key)) } }
                         }
                     }
                 }
@@ -195,14 +194,40 @@ fun SettingsScreen(bottomPadding: Dp, section: SettingsSection? = null) {
                 Group("About") {
                     Item("Prism ${com.prism.music.BuildConfig.VERSION_NAME}", "An unofficial YouTube Music client. Not affiliated with Google or YouTube.", onClick = {})
                     Item("Your data stays here", "History, Replay and settings live only on this phone. Prism has no server.", onClick = {})
-                    Toggle("Check for updates", "Asks GitHub now and then whether a newer Prism is out, and says so on Home", s.checkUpdates) {
-                        c.settings.setCheckUpdates(it)
-                        if (it) c.updates.check(force = true)
-                    }
+                    CheckForUpdates()
                 }
                 }
             }
         }
+    }
+}
+
+/** Prism also checks on its own from Home; tapping this asks GitHub right now. */
+@Composable
+private fun CheckForUpdates() {
+    val c = LocalContainer.current
+    val scope = rememberCoroutineScope()
+    var checking by remember { mutableStateOf(false) }
+    var result by remember { mutableStateOf<String?>(null) }
+    Item(
+        "Check for updates",
+        when {
+            checking -> "Asking GitHub…"
+            result != null -> result
+            else -> "Prism looks for new versions on its own and says so on Home"
+        },
+        onClick = {
+            if (!checking) scope.launch {
+                checking = true
+                result = runCatching { c.updates.checkNow() }.fold(
+                    { v -> if (v != null) "Prism $v is out · install it from the banner on Home" else "You're up to date" },
+                    { "Couldn't reach GitHub · try again in a moment" },
+                )
+                checking = false
+            }
+        },
+    ) {
+        if (checking) androidx.compose.material3.CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
     }
 }
 
