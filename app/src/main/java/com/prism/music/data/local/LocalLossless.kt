@@ -40,6 +40,11 @@ class LocalLossless(private val context: Context) {
     private val mimes = listOf("audio/flac", "audio/x-flac", "audio/wav", "audio/x-wav", "audio/wave", "audio/aiff", "audio/x-aiff")
 
     @Volatile private var byTitle: Map<String, List<Track>> = emptyMap()
+    /** Every lossless file found in the last scan. */
+    @Volatile var tracks: List<Track> = emptyList()
+        private set
+    /** Files lossless sync has tied to a song, by video id: these always match, whatever their tags say. */
+    @Volatile var linked: Map<String, Uri> = emptyMap()
     /** Songs Prism has matched to a file, by video id (for stats). */
     val matched = ConcurrentHashMap<String, Track>()
     /** How many lossless files were found in the last scan (-1 = not scanned). */
@@ -67,6 +72,7 @@ class LocalLossless(private val context: Context) {
             }
         }
         byTitle = tracks.groupBy { norm(it.title) }
+        this@LocalLossless.tracks = tracks
         matched.clear()
         found.value = tracks.size
     }
@@ -74,6 +80,7 @@ class LocalLossless(private val context: Context) {
     /** The lossless file for a song, if there is one: same title, same artist, about the same length. */
     fun match(song: Song): Track? {
         if (byTitle.isEmpty() || song.isVideo) return null
+        linked[song.id]?.let { uri -> tracks.firstOrNull { it.uri == uri } }?.let { matched[song.id] = it; return it }
         val candidates = byTitle[norm(song.title)] ?: return null
         val artist = norm(song.primaryArtist)
         val hit = candidates.firstOrNull { t ->

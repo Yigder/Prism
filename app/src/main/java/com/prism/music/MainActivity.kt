@@ -146,6 +146,8 @@ class MainActivity : ComponentActivity() {
         SmartDownloadWorker.schedule(this, c.settings.current.smartDownloads)
         // Tidies the smart-download queue (it only adds more if it's been a while).
         if (c.settings.current.smartDownloads) SmartDownloadWorker.runNow(this, force = false)
+        // Picks up lossless files added while Prism is closed.
+        com.prism.music.download.LosslessSyncWorker.schedule(this)
         if (c.settings.current.isLoggedIn) c.library.syncInBackground()
         deepLink.value = intent?.data
         setContent {

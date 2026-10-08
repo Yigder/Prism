@@ -112,9 +112,10 @@ class AppContainer(val app: Application) {
 
     val library = LibraryRepository(this)
     val localLossless = com.prism.music.data.local.LocalLossless(app)
+    val losslessSync by lazy { com.prism.music.download.LosslessSync(app, this) }
     // Started only after localLossless exists: a launch from an earlier init block can run on a
     // background thread before this property is assigned.
-    init { scope.launch { if (settings.current.losslessLocal) localLossless.scan() } }
+    init { losslessSync.start() }
     val taste = com.prism.music.data.TasteRepository(this)
 
     /** One-off upkeep that runs once per install, in the background, after Prism has settled. */

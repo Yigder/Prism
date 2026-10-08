@@ -40,7 +40,8 @@ import java.util.concurrent.TimeUnit
 
 const val DOWNLOAD_CHANNEL = "downloads"
 
-data class DownloadInfo(val song: Song?, val state: Int, val percent: Float, val bytes: Long, val addedAt: Long = 0)
+/** [lossless]: a lossless file on the phone that lossless sync matched to this song (see [LosslessSync]). */
+data class DownloadInfo(val song: Song?, val state: Int, val percent: Float, val bytes: Long, val addedAt: Long = 0, val lossless: Boolean = false)
 
 @OptIn(UnstableApi::class)
 class DownloadRepository(private val context: Context, private val c: AppContainer, scope: CoroutineScope) {
@@ -56,8 +57,12 @@ class DownloadRepository(private val context: Context, private val c: AppContain
         requirements = Requirements(if (c.settings.current.downloadWifiOnly) Requirements.NETWORK_UNMETERED else Requirements.NETWORK)
     }
 
+    /** Downloads Prism made itself, and lossless files on the phone ([LosslessSync]); both show as downloads. */
+    private val _media = MutableStateFlow<Map<String, DownloadInfo>>(emptyMap())
+    private val _lossless = MutableStateFlow<Map<String, DownloadInfo>>(emptyMap())
     private val _downloads = MutableStateFlow<Map<String, DownloadInfo>>(emptyMap())
     val downloads: StateFlow<Map<String, DownloadInfo>> = _downloads
+    private fun publish() { _downloads.value = _lossless.value + _media.value }
 
     private val lyricTries = context.getSharedPreferences("download_lyrics", Context.MODE_PRIVATE)
     private val lyricGate = kotlinx.coroutines.sync.Semaphore(2)
@@ -80,13 +85,15 @@ class DownloadRepository(private val context: Context, private val c: AppContain
                     map[d.request.id] = d.info()
                 }
             }
-            _downloads.value = map
+            _media.value = map
+            publish()
             // Songs downloaded before lyrics came with them (or while offline) get theirs now.
             backfillLyrics()
         }
         manager.addListener(object : DownloadManager.Listener {
             override fun onDownloadChanged(manager: DownloadManager, download: Download, finalException: Exception?) {
-                _downloads.value = _downloads.value + (download.request.id to download.info())
+                _media.update { it + (download.request.id to download.info()) }
+                publish()
                 if (download.state == Download.STATE_COMPLETED) download.info().song?.let { s ->
                     c.scope.launch(Dispatchers.IO) { ensureLyrics(s) }
                     // Its animated cover is kept with it.
@@ -95,10 +102,25 @@ class DownloadRepository(private val context: Context, private val c: AppContain
             }
 
             override fun onDownloadRemoved(manager: DownloadManager, download: Download) {
-                _downloads.value = _downloads.value - download.request.id
+                _media.update { it - download.request.id }
+                publish()
                 c.canvasStore.forgetDownloads(listOf(download.request.id))
             }
         })
+        scope.launch {
+            c.losslessSync.songs.collect { synced ->
+                val known = _lossless.value
+                _lossless.value = synced.mapValues { (id, v) ->
+                    DownloadInfo(v.first, Download.STATE_COMPLETED, 100f, v.second.size, known[id]?.addedAt ?: System.currentTimeMillis(), lossless = true)
+                }
+                publish()
+                // Lyrics come with synced songs too, like with any download (same Wi-Fi-only rule).
+                val metered = context.getSystemService(android.net.ConnectivityManager::class.java)?.isActiveNetworkMetered != false
+                if (!metered || !c.settings.current.downloadWifiOnly) {
+                    synced.keys.filter { it !in known }.forEach { id -> synced[id]?.first?.let { s -> c.scope.launch(Dispatchers.IO) { ensureLyrics(s) } } }
+                }
+            }
+        }
         scope.launch {
             c.settings.flow.collect { s ->
                 manager.requirements = Requirements(if (s.downloadWifiOnly) Requirements.NETWORK_UNMETERED else Requirements.NETWORK)
@@ -116,7 +138,12 @@ class DownloadRepository(private val context: Context, private val c: AppContain
 
     fun isDownloaded(id: String) = _downloads.value[id]?.state == Download.STATE_COMPLETED
 
+    /** True when this song is only here as a lossless file on the phone (not downloaded by Prism). */
+    fun isLosslessOnly(id: String) = id in _lossless.value && id !in _media.value
+
     fun download(song: Song) {
+        // A lossless file that was taken out of Downloads just comes back.
+        if (c.losslessSync.unhide(song.id)) return
         if (_downloads.value[song.id]?.state.let { it == Download.STATE_COMPLETED || it == Download.STATE_DOWNLOADING || it == Download.STATE_QUEUED }) return
         val request = DownloadRequest.Builder(song.id, android.net.Uri.parse("prism://audio/${song.id}"))
             .setCustomCacheKey(song.id)
@@ -135,18 +162,21 @@ class DownloadRepository(private val context: Context, private val c: AppContain
     fun downloadAll(songs: List<Song>) = songs.forEach(::download)
 
     fun remove(id: String) {
+        if (isLosslessOnly(id)) { c.losslessSync.hide(listOf(id)); return }
         DownloadService.sendRemoveDownload(context, PrismDownloadService::class.java, id, false)
         c.scope.launch(Dispatchers.IO) { c.db.songs().setSmart(id, false) }
     }
 
     /** Deletes many downloads at once, straight through the manager (no intent per song). */
     fun removeMany(ids: Collection<String>) {
+        c.losslessSync.hide(ids.filter(::isLosslessOnly))
         ids.forEach { manager.removeDownload(it) }
         c.scope.launch(Dispatchers.IO) { ids.forEach { c.db.songs().setSmart(it, false) } }
     }
 
     fun removeAll() {
-        val ids = _downloads.value.keys.toList()
+        val ids = _media.value.keys.toList()
+        c.losslessSync.hide(_lossless.value.keys)
         manager.removeAllDownloads()
         c.scope.launch(Dispatchers.IO) { ids.forEach { c.db.songs().setSmart(it, false) } }
     }

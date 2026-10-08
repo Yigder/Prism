@@ -528,6 +528,11 @@ private fun DownloadsInfo(songs: List<Song>, ask: (String, () -> Unit) -> Unit) 
             "${songs.size} song${if (songs.size == 1) "" else "s"} · ${sizeText(bytes)} on this phone",
             style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, textAlign = TextAlign.Center,
         )
+        val lossless = remember(all) { all.count { it.value.lossless } }
+        if (lossless > 0) Text(
+            "$lossless lossless from your phone's music files",
+            style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, textAlign = TextAlign.Center,
+        )
         val ids = songs.map { it.id }
         if (ids.any { it in levels }) {
             val withLyrics = ids.count { (levels[it] ?: 0) > 0 }
@@ -562,7 +567,11 @@ private fun DownloadsMenu(open: Boolean, onDismiss: () -> Unit, ask: (String, ()
         }, leadingIcon = { Icon(Icons.Rounded.DeleteSweep, null) })
         DropdownMenuItem({ Text("Delete all downloads") }, {
             onDismiss()
-            ask("Delete all ${all.size} downloads (${sizeText(c.downloads.totalBytes)})? This frees the space straight away.") { c.downloads.removeAll() }
+            val lossless = all.count { it.value.lossless }
+            ask(
+                "Delete all ${all.size} downloads (${sizeText(c.downloads.totalBytes)})? This frees the space straight away." +
+                    if (lossless > 0) " Your $lossless lossless files stay on the phone; they just leave Downloads." else ""
+            ) { c.downloads.removeAll() }
         }, leadingIcon = { Icon(Icons.Rounded.DeleteOutline, null) })
     }
 }

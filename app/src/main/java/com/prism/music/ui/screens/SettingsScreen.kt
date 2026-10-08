@@ -561,12 +561,14 @@ private fun SoundPage() {
     val nav = LocalNavigator.current
     val scope = rememberCoroutineScope()
     val found by c.localLossless.found.collectAsState()
+    val synced by c.losslessSync.songs.collectAsState()
+    val syncing by c.losslessSync.working.collectAsState()
     val askFiles = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         // Lossless still works without file access; it just can't use files on the phone.
         prefs.setLossless(true)
-        if (granted) { prefs.setLosslessLocal(true); scope.launch { c.localLossless.scan() } }
+        if (granted) prefs.setLosslessLocal(true) // lossless sync scans when this turns on
     }
-    LaunchedEffect(s.losslessLocal) { if (s.losslessLocal && found < 0) c.localLossless.scan() }
+    LaunchedEffect(s.losslessLocal) { if (s.losslessLocal && found < 0) c.losslessSync.sync() }
 
     Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
         Group("Playback") {
@@ -581,17 +583,22 @@ private fun SoundPage() {
                     !s.losslessLocal -> " · allow file access to use lossless files"
                     found < 0 -> " · looking for lossless files…"
                     found == 0 -> " · no lossless files found yet (add them to your Music folder)"
-                    else -> " · $found lossless files found"
+                    syncing -> " · $found lossless files found, adding them to Downloads…"
+                    else -> " · $found lossless files found, ${synced.size} in Downloads"
                 },
                 s.lossless,
             ) { on ->
                 if (!on) { prefs.setLossless(false); prefs.setLosslessLocal(false) }
                 else if (c.localLossless.hasPermission()) {
-                    prefs.setLossless(true); prefs.setLosslessLocal(true); scope.launch { c.localLossless.scan() }
+                    prefs.setLossless(true); prefs.setLosslessLocal(true)
                 } else askFiles.launch(LocalLossless.permission)
             }
             if (s.lossless) {
-                if (s.losslessLocal) Item("Scan for lossless files again", null, onClick = { scope.launch { c.localLossless.scan() } })
+                if (s.losslessLocal) Item(
+                    "Scan for lossless files again",
+                    "New files are added to Downloads as soon as they're on your phone, and Prism checks again every few hours",
+                    onClick = { scope.launch { c.losslessSync.sync() } },
+                )
                 else Item("Allow access to lossless files", null, onClick = { askFiles.launch(LocalLossless.permission) })
             } else {
                 Label("Streaming quality on Wi-Fi")
