@@ -54,7 +54,7 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
   (`TVHTML5`, cookies + SAPISIDHASH, no PO token), then WEB_REMIX; ciphered URLs go through NewPipe's
   `YoutubeJavaScriptPlayerManager`. Bump `InnerTube.TV_CLIENT_VERSION` if TV playback starts being refused.
   The next queue item's stream is resolved while the current one plays (`PlaybackService.prefetchNext`).
-- Lossless sync (`download/LosslessSync.kt`, 1.4.0): with lossless playback + the lossless add-on on, FLAC/WAV/AIFF
+- Lossless sync (`download/LosslessSync.kt`, 1.4.1): with lossless playback + the lossless add-on on, FLAC/WAV/AIFF
   files on the phone are looked up on YT Music and shown in Downloads (`DownloadInfo.lossless`), playing from the file.
   Runs on launch, ~15 s after MediaStore changes, and every 3 h (`LosslessSyncWorker`). Removing one only hides it
   (`lossless_hidden` prefs); Prism never deletes or moves the user's files.
@@ -62,8 +62,10 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
 - `*.apk`, `local.properties`, keystores are gitignored.
 
 ## Current status / Next steps
-- **v1.4.0 (versionCode 10) is bumped but not yet released**: lossless sync (lossless files on the phone show up in Downloads,
-  rescanned on media changes and every 3 h). Needs a local `assembleRelease` with the release key, then the `v1.4.0` release.
+- **v1.4.1 (versionCode 11) is bumped but not yet released**: lossless sync (lossless files on the phone show up in Downloads,
+  rescanned on media changes and every 3 h), age-restricted and Music Premium-only songs play when signed in, and the next
+  song's stream is resolved ahead. 1.4.0 (versionCode 10) was bumped but never released. Neither has been compiled yet:
+  needs a local `assembleRelease` with the release key, a check on the phone, then the `v1.4.1` release.
 - **v1.3.3 (versionCode 9) is GitHub "Latest" (2026-10-08): plain outline icons on the Settings hub (no coloured badges),
   sign-in leaves the WebView the moment YouTube's session cookies appear (account info + library sync run after Prism opens),
   and update checks are always on: the `checkUpdates` setting is gone; Settings → About → "Check for updates" asks GitHub now
