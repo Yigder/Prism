@@ -66,11 +66,11 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
 - `*.apk`, `local.properties`, keystores are gitignored.
 
 ## Current status / Next steps
-- **v1.4.1 (versionCode 11) is GitHub "Latest"** (2026-10-09): lossless sync (lossless files on the phone show up in Downloads,
-  rescanned on media changes and every 3 h) and the next song's stream is resolved ahead (both checked on the phone).
-  Signed-in playback of age-restricted / Premium-only songs shipped in the code but didn't work (NewPipe's signature
-  regexes are stale), so the release notes leave it out; fixed after 1.4.1 by `PlayerJsSolver` (unreleased).
-  1.4.0 (versionCode 10) was skipped: bumped but never released.
+- **v1.4.2 (versionCode 12) is GitHub "Latest"** (2026-10-09): age-restricted and Music Premium-only songs play when
+  signed in, deciphered by `PlayerJsSolver` (checked on the phone: "Neighbors" by J. Cole, BMTH "Fuck", seeking).
+- v1.4.1 (versionCode 11, 2026-10-09): lossless sync (lossless files on the phone show up in Downloads, rescanned on
+  media changes and every 3 h) and the next song's stream is resolved ahead. Its signed-in playback code didn't work yet
+  (NewPipe's signature regexes are stale), so its notes left that out. 1.4.0 (versionCode 10) was skipped: bumped but never released.
 - v1.3.3 (versionCode 9, 2026-10-08) was the previous release: plain outline icons on the Settings hub (no coloured badges),
   sign-in leaves the WebView the moment YouTube's session cookies appear (account info + library sync run after Prism opens),
   and update checks are always on: the `checkUpdates` setting is gone; Settings → About → "Check for updates" asks GitHub now
@@ -97,4 +97,4 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
   Keep it optional/no-pressure; no in-app donation prompts unless the user asks.
 - On the user's Wi-Fi, `gh` API calls fail (`invalid character '<'`); git push works. Ask them to switch to hotspot.
 - An untracked `Prism/` subfolder duplicates the project (with build output and logs) — decide whether to delete it.
-- Next steps: release the player JS solver (signed-in age-restricted / Premium-only songs; checked on the phone).
+- Next steps: _(fill in)_
