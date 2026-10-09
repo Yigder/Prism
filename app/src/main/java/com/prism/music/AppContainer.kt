@@ -74,7 +74,7 @@ class AppContainer(val app: Application) {
     val innerTube = InnerTube(http, { settings.current }, settings::setVisitorData)
     val ytm = YouTubeMusic(innerTube)
     val db = PrismDatabase.build(app)
-    val streams by lazy { StreamResolver(app, http, settings) }
+    val streams by lazy { StreamResolver(app, http, settings, innerTube) }
     val lyrics = LyricsRepository(http, db.lyrics(), ytm) { settings.current }.apply {
         choices = app.getSharedPreferences("lyrics_choice", android.content.Context.MODE_PRIVATE)
     }

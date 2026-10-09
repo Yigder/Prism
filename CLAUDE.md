@@ -49,6 +49,11 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
   writes to their YT Music account. Prism syncs the library when the user returns. Never pass Prism's YT cookies to it.
   (A built-in link/CSV importer was written first and replaced by this, unreleased, at the owner's request.)
 - Fresh-install defaults in `AppSettings` / `HomeSections.initial` are the owner's own settings (smart downloads 1 GB).
+- Streams (`data/stream/StreamResolver.kt`): NewPipe resolves anonymously first; when signed in, songs it can't play
+  (age-restricted, Music Premium-only, no usable audio) are re-asked via `InnerTube.signedInPlayer` as the TV client
+  (`TVHTML5`, cookies + SAPISIDHASH, no PO token), then WEB_REMIX; ciphered URLs go through NewPipe's
+  `YoutubeJavaScriptPlayerManager`. Bump `InnerTube.TV_CLIENT_VERSION` if TV playback starts being refused.
+  The next queue item's stream is resolved while the current one plays (`PlaybackService.prefetchNext`).
 - Lossless sync (`download/LosslessSync.kt`, 1.4.0): with lossless playback + the lossless add-on on, FLAC/WAV/AIFF
   files on the phone are looked up on YT Music and shown in Downloads (`DownloadInfo.lossless`), playing from the file.
   Runs on launch, ~15 s after MediaStore changes, and every 3 h (`LosslessSyncWorker`). Removing one only hides it

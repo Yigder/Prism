@@ -225,6 +225,7 @@ class PlaybackService : MediaLibraryService(), Player.Listener {
         scope.launch(Dispatchers.IO) { c.library.recordPlayed(song) }
         loadExtras(song)
         maybeAutoplay()
+        prefetchNext()
         updateButtons()
         carLyrics.refresh()
         scheduleSave()
@@ -390,6 +391,18 @@ class PlaybackService : MediaLibraryService(), Player.Listener {
             val metered = getSystemService(android.net.ConnectivityManager::class.java)?.isActiveNetworkMetered != false
             if (!metered && videoId != song.id) runCatching { c.videoSync.lagMs(song.id, videoId) }
         }
+    }
+
+    /**
+     * Resolves the next song's stream while this one plays (the slow part of starting a song), so
+     * skipping ahead or moving on starts straight away. Downloaded songs don't need it.
+     */
+    private fun prefetchNext() {
+        val i = player.nextMediaItemIndex
+        if (i == C.INDEX_UNSET) return
+        val next = player.getMediaItemAt(i).mediaId.takeIf { it.isNotBlank() } ?: return
+        if (c.downloads.isDownloaded(next)) return
+        scope.launch(Dispatchers.IO) { c.streams.prefetch(next) }
     }
 
     private val prefetched = java.util.Collections.newSetFromMap(java.util.concurrent.ConcurrentHashMap<String, Boolean>())
