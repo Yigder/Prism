@@ -53,6 +53,9 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
   (age-restricted, Music Premium-only, no usable audio) are re-asked via `InnerTube.signedInPlayer` as the TV client
   (`TVHTML5`, cookies + SAPISIDHASH, no PO token), then WEB_REMIX; ciphered URLs go through NewPipe's
   `YoutubeJavaScriptPlayerManager`. Bump `InnerTube.TV_CLIENT_VERSION` if TV playback starts being refused.
+  **Broken as of 1.4.1**: YouTube accepts the TV request, but NewPipe (v0.26.5, latest; `dev` too) can't find the
+  signature function in the current player JS ("Could not find deobfuscation function with any of the known patterns"),
+  so these songs fail with "Couldn't unlock this track's stream". Every cookie-capable client returns ciphered URLs.
   The next queue item's stream is resolved while the current one plays (`PlaybackService.prefetchNext`).
 - Lossless sync (`download/LosslessSync.kt`, 1.4.1): with lossless playback + the lossless add-on on, FLAC/WAV/AIFF
   files on the phone are looked up on YT Music and shown in Downloads (`DownloadInfo.lossless`), playing from the file.
@@ -62,11 +65,11 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
 - `*.apk`, `local.properties`, keystores are gitignored.
 
 ## Current status / Next steps
-- **v1.4.1 (versionCode 11) is bumped but not yet released**: lossless sync (lossless files on the phone show up in Downloads,
-  rescanned on media changes and every 3 h), age-restricted and Music Premium-only songs play when signed in, and the next
-  song's stream is resolved ahead. 1.4.0 (versionCode 10) was bumped but never released. Neither has been compiled yet:
-  needs a local `assembleRelease` with the release key, a check on the phone, then the `v1.4.1` release.
-- **v1.3.3 (versionCode 9) is GitHub "Latest" (2026-10-08): plain outline icons on the Settings hub (no coloured badges),
+- **v1.4.1 (versionCode 11) is GitHub "Latest"** (2026-10-09): lossless sync (lossless files on the phone show up in Downloads,
+  rescanned on media changes and every 3 h) and the next song's stream is resolved ahead (both checked on the phone).
+  Signed-in playback of age-restricted / Premium-only songs shipped in the code but doesn't work (see Streams above), so
+  the release notes leave it out. 1.4.0 (versionCode 10) was skipped: bumped but never released.
+- v1.3.3 (versionCode 9, 2026-10-08) was the previous release: plain outline icons on the Settings hub (no coloured badges),
   sign-in leaves the WebView the moment YouTube's session cookies appear (account info + library sync run after Prism opens),
   and update checks are always on: the `checkUpdates` setting is gone; Settings → About → "Check for updates" asks GitHub now
   (`UpdateChecker.checkNow()`, also un-dismisses the banner).
@@ -92,4 +95,5 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
   Keep it optional/no-pressure; no in-app donation prompts unless the user asks.
 - On the user's Wi-Fi, `gh` API calls fail (`invalid character '<'`); git push works. Ask them to switch to hotspot.
 - An untracked `Prism/` subfolder duplicates the project (with build output and logs) — decide whether to delete it.
-- Next steps: _(fill in)_
+- Next steps: a signature solver of Prism's own so signed-in restricted songs play (NewPipe's regexes no longer match;
+  yt-dlp now runs the player JS in a real JS engine; a headless WebView is one option).
