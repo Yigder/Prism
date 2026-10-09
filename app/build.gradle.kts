@@ -122,6 +122,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.11.0")
 
     implementation("com.github.TeamNewPipe:NewPipeExtractor:v0.26.5")
+    // Runs yt-dlp's EJS solver (assets/ejs) on WebView's V8 to decipher signed-in stream URLs.
+    implementation("androidx.javascriptengine:javascriptengine:1.1.1")
     implementation("org.jsoup:jsoup:1.23.2")
 
     implementation("dev.chrisbanes.haze:haze:2.0.1")

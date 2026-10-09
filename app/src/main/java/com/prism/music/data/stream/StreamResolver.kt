@@ -13,6 +13,7 @@ import com.prism.music.data.prefs.SettingsRepository
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -37,7 +38,6 @@ import org.schabi.newpipe.extractor.exceptions.ContentNotAvailableException
 import org.schabi.newpipe.extractor.exceptions.ReCaptchaException
 import org.schabi.newpipe.extractor.exceptions.YoutubeMusicPremiumContentException
 import org.schabi.newpipe.extractor.localization.Localization
-import org.schabi.newpipe.extractor.services.youtube.YoutubeJavaScriptPlayerManager
 import org.schabi.newpipe.extractor.services.youtube.YoutubeParsingHelper
 import org.schabi.newpipe.extractor.stream.DeliveryMethod
 import org.schabi.newpipe.extractor.stream.StreamInfo
@@ -268,8 +268,8 @@ class StreamException(message: String, cause: Throwable? = null) : Exception(mes
 /**
  * Resolves playable googlevideo URLs for a video id. NewPipeExtractor does this anonymously; songs
  * YouTube won't play anonymously (age-restricted, Music Premium-only) are asked for again as the
- * signed-in user ([InnerTube.signedInPlayer]), with the stream URLs deciphered by NewPipe's player
- * JS support.
+ * signed-in user ([InnerTube.signedInPlayer]), with the stream URLs deciphered by YouTube's player
+ * JS ([PlayerJsSolver]).
  */
 class StreamResolver(
     private val context: Context,
@@ -302,6 +302,7 @@ class StreamResolver(
         val expiresAtMs: Long,
     )
 
+    private val solver = PlayerJsSolver(context, http)
     private val cache = ConcurrentHashMap<String, Formats>()
     /** Resolutions under way, so the player and a prefetch never resolve the same song twice at once. */
     private val inflight = ConcurrentHashMap<String, CompletableFuture<Formats>>()
@@ -402,11 +403,16 @@ class StreamResolver(
 
     /** The player response as the signed-in user: the TV client first (no PO token needed), then the web app. */
     private fun signedInFormats(videoId: String): Formats {
-        val sts = runCatching { YoutubeJavaScriptPlayerManager.getSignatureTimestamp(videoId) }.getOrNull()
+        val player = try {
+            solver.currentPlayer()
+        } catch (e: Exception) {
+            Log.w("StreamResolver", "Couldn't get YouTube's player JS: $e")
+            null
+        }
         var reason: String? = null
         for (client in InnerTube.PlayerClient.entries) {
             val res = try {
-                innerTube.signedInPlayer(client, videoId, sts)
+                innerTube.signedInPlayer(client, videoId, player?.second)
             } catch (e: Exception) {
                 reason = reason ?: e.message
                 continue
@@ -415,13 +421,14 @@ class StreamResolver(
                 reason = res.str("playabilityStatus", "reason") ?: reason
                 continue
             }
-            val f = parsePlayer(res, videoId)
+            val f = parsePlayer(res, player?.first)
             if (f.audio.isNotEmpty()) return f
         }
         throw StreamException(reason ?: "Couldn't load this track")
     }
 
-    private fun parsePlayer(res: JsonObject, videoId: String): Formats {
+    /** [playerId] is the player JS whose signature timestamp the request sent; its ciphers are solved with it. */
+    private fun parsePlayer(res: JsonObject, playerId: String?): Formats {
         val data = res.obj("streamingData")
         fun fmt(o: JsonObject): Fmt? {
             val mimeFull = o.str("mimeType") ?: return null
@@ -438,7 +445,7 @@ class StreamResolver(
                 contentLength = o.str("contentLength")?.toLongOrNull() ?: -1,
                 height = o.str("height")?.toIntOrNull() ?: 0, fps = o.str("fps")?.toIntOrNull() ?: 0,
                 original = o.obj("audioTrack")?.let { t -> t.str("audioIsDefault") != "false" } ?: true,
-            ) { decipher(videoId, direct, cipher) }
+            ) { decipher(playerId, direct, cipher) }
         }
         val adaptive = data.arr("adaptiveFormats")?.mapNotNull { (it as? JsonObject)?.let(::fmt) }.orEmpty()
         val muxed = data.arr("formats")?.mapNotNull { (it as? JsonObject)?.let(::fmt) }.orEmpty()
@@ -452,28 +459,41 @@ class StreamResolver(
         )
     }
 
-    /** A playable URL: the signature put back (ciphered formats) and the throttling parameter solved. */
-    private fun decipher(videoId: String, direct: String?, cipher: String?): String {
-        val url = direct ?: run {
+    /**
+     * A playable URL: the signature put back (ciphered formats) and the throttling parameter "n" solved,
+     * both by [playerId]'s JS. An unsolved "n" still plays (slowly), so only the signature is required.
+     */
+    private fun decipher(playerId: String?, direct: String?, cipher: String?): String {
+        var sig: String? = null
+        var param = "signature"
+        val base = direct ?: run {
             // A bare query string; android.net.Uri can't be trusted to parse it (a stray ':' makes it opaque).
             val q = cipher!!.split('&').associate { part ->
                 URLDecoder.decode(part.substringBefore('='), "UTF-8") to URLDecoder.decode(part.substringAfter('=', ""), "UTF-8")
             }
-            val base = q["url"]
-            val sig = q["s"]
-            if (base == null || sig == null) {
-                Log.w("StreamResolver", "signatureCipher for $videoId has keys ${q.keys}")
+            sig = q["s"]
+            param = q["sp"] ?: param
+            val url = q["url"]
+            if (url == null || sig == null) {
+                Log.w("StreamResolver", "signatureCipher has keys ${q.keys}")
                 throw StreamException("Couldn't read this track's stream")
             }
-            val param = q["sp"] ?: "signature"
-            val solved = try {
-                YoutubeJavaScriptPlayerManager.deobfuscateSignature(videoId, sig)
-            } catch (e: Exception) {
-                throw StreamException("Couldn't unlock this track's stream", e)
-            }
-            base + "&" + param + "=" + Uri.encode(solved)
+            url
         }
-        return runCatching { YoutubeJavaScriptPlayerManager.getUrlWithThrottlingParameterDeobfuscated(videoId, url) }.getOrDefault(url)
+        val url = base.toHttpUrlOrNull() ?: throw StreamException("Couldn't read this track's stream")
+        val n = url.queryParameter("n")
+        if (sig == null && n == null) return base
+        val solved = try {
+            solver.solve(playerId ?: throw IOException("No player JS to solve with"), sig, n)
+        } catch (e: Exception) {
+            Log.w("StreamResolver", "Couldn't solve the stream URL: $e")
+            if (sig == null) return base
+            throw e as? StreamException ?: StreamException("Couldn't unlock this track's stream", e)
+        }
+        return url.newBuilder().apply {
+            if (sig != null) setQueryParameter(param, solved.first ?: throw StreamException("Couldn't unlock this track's stream"))
+            if (n != null && solved.second != null) setQueryParameter("n", solved.second)
+        }.build().toString()
     }
 
     data class AnalysisStream(val url: String, val contentLength: Long, val durationSec: Long)

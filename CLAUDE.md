@@ -51,11 +51,12 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
 - Fresh-install defaults in `AppSettings` / `HomeSections.initial` are the owner's own settings (smart downloads 1 GB).
 - Streams (`data/stream/StreamResolver.kt`): NewPipe resolves anonymously first; when signed in, songs it can't play
   (age-restricted, Music Premium-only, no usable audio) are re-asked via `InnerTube.signedInPlayer` as the TV client
-  (`TVHTML5`, cookies + SAPISIDHASH, no PO token), then WEB_REMIX; ciphered URLs go through NewPipe's
-  `YoutubeJavaScriptPlayerManager`. Bump `InnerTube.TV_CLIENT_VERSION` if TV playback starts being refused.
-  **Broken as of 1.4.1**: YouTube accepts the TV request, but NewPipe (v0.26.5, latest; `dev` too) can't find the
-  signature function in the current player JS ("Could not find deobfuscation function with any of the known patterns"),
-  so these songs fail with "Couldn't unlock this track's stream". Every cookie-capable client returns ciphered URLs.
+  (`TVHTML5`, cookies + SAPISIDHASH, no PO token), then WEB_REMIX. Bump `InnerTube.TV_CLIENT_VERSION` if TV playback
+  starts being refused. Their URLs are ciphered (every cookie-capable client's are), and NewPipe's regexes no longer find
+  the signature function, so `PlayerJsSolver` fetches the player JS itself (`iframe_api` → `player_ias.vflset/en_US/base.js`,
+  whose signature timestamp the request sends) and solves `s` and `n` with yt-dlp's EJS solver (`assets/ejs/`, v0.8.0,
+  from github.com/yt-dlp/ejs releases) in an `androidx.javascriptengine` sandbox, not a WebView page (EJS sets
+  `globalThis.location`, which would navigate a page). If YouTube breaks it, first drop in a newer EJS release.
   The next queue item's stream is resolved while the current one plays (`PlaybackService.prefetchNext`).
 - Lossless sync (`download/LosslessSync.kt`, 1.4.1): with lossless playback + the lossless add-on on, FLAC/WAV/AIFF
   files on the phone are looked up on YT Music and shown in Downloads (`DownloadInfo.lossless`), playing from the file.
@@ -67,8 +68,9 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
 ## Current status / Next steps
 - **v1.4.1 (versionCode 11) is GitHub "Latest"** (2026-10-09): lossless sync (lossless files on the phone show up in Downloads,
   rescanned on media changes and every 3 h) and the next song's stream is resolved ahead (both checked on the phone).
-  Signed-in playback of age-restricted / Premium-only songs shipped in the code but doesn't work (see Streams above), so
-  the release notes leave it out. 1.4.0 (versionCode 10) was skipped: bumped but never released.
+  Signed-in playback of age-restricted / Premium-only songs shipped in the code but didn't work (NewPipe's signature
+  regexes are stale), so the release notes leave it out; fixed after 1.4.1 by `PlayerJsSolver` (unreleased).
+  1.4.0 (versionCode 10) was skipped: bumped but never released.
 - v1.3.3 (versionCode 9, 2026-10-08) was the previous release: plain outline icons on the Settings hub (no coloured badges),
   sign-in leaves the WebView the moment YouTube's session cookies appear (account info + library sync run after Prism opens),
   and update checks are always on: the `checkUpdates` setting is gone; Settings → About → "Check for updates" asks GitHub now
@@ -95,5 +97,4 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
   Keep it optional/no-pressure; no in-app donation prompts unless the user asks.
 - On the user's Wi-Fi, `gh` API calls fail (`invalid character '<'`); git push works. Ask them to switch to hotspot.
 - An untracked `Prism/` subfolder duplicates the project (with build output and logs) — decide whether to delete it.
-- Next steps: a signature solver of Prism's own so signed-in restricted songs play (NewPipe's regexes no longer match;
-  yt-dlp now runs the player JS in a real JS engine; a headless WebView is one option).
+- Next steps: release the player JS solver (signed-in age-restricted / Premium-only songs; checked on the phone).
