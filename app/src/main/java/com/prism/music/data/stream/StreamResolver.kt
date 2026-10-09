@@ -22,7 +22,9 @@ import okio.Buffer
 import okio.BufferedSource
 import okio.Timeout
 import okio.buffer
+import android.util.Log
 import java.io.IOException
+import java.net.URLDecoder
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Future
@@ -453,10 +455,17 @@ class StreamResolver(
     /** A playable URL: the signature put back (ciphered formats) and the throttling parameter solved. */
     private fun decipher(videoId: String, direct: String?, cipher: String?): String {
         val url = direct ?: run {
-            val q = Uri.parse("?" + cipher!!)
-            val base = q.getQueryParameter("url") ?: throw StreamException("Couldn't read this track's stream")
-            val sig = q.getQueryParameter("s") ?: throw StreamException("Couldn't read this track's stream")
-            val param = q.getQueryParameter("sp") ?: "signature"
+            // A bare query string; android.net.Uri can't be trusted to parse it (a stray ':' makes it opaque).
+            val q = cipher!!.split('&').associate { part ->
+                URLDecoder.decode(part.substringBefore('='), "UTF-8") to URLDecoder.decode(part.substringAfter('=', ""), "UTF-8")
+            }
+            val base = q["url"]
+            val sig = q["s"]
+            if (base == null || sig == null) {
+                Log.w("StreamResolver", "signatureCipher for $videoId has keys ${q.keys}")
+                throw StreamException("Couldn't read this track's stream")
+            }
+            val param = q["sp"] ?: "signature"
             val solved = try {
                 YoutubeJavaScriptPlayerManager.deobfuscateSignature(videoId, sig)
             } catch (e: Exception) {
