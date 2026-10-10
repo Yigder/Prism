@@ -31,6 +31,9 @@ class InnerTube(
 ) {
     private val current: AppSettings get() = settingsProvider()
 
+    /** Requests go out as the signed-in account. */
+    val signedIn: Boolean get() = current.isLoggedIn
+
 
     companion object {
         const val BASE = "https://music.youtube.com/youtubei/v1/"

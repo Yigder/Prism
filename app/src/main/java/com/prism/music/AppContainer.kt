@@ -110,6 +110,7 @@ class AppContainer(val app: Application) {
         SimpleCache(File(app.filesDir, "downloads"), NoOpCacheEvictor(), databaseProvider)
     }
 
+    val artistPrefs = com.prism.music.data.ArtistPrefs(app)
     val library = LibraryRepository(this)
     val localLossless = com.prism.music.data.local.LocalLossless(app)
     val losslessSync by lazy { com.prism.music.download.LosslessSync(app, this) }
@@ -136,6 +137,8 @@ class AppContainer(val app: Application) {
     val updates by lazy { com.prism.music.data.UpdateChecker(app, http, scope) }
     val backup by lazy { com.prism.music.data.Backup(this) }
     val player = PlayerConnection(app, this)
+    /** Listen Together sessions on the local network. */
+    val together by lazy { com.prism.music.playback.together.Together(app, this) }
 
     private fun Cache.fullyCached(key: String, position: Long, length: Long): Boolean {
         val total = ContentMetadata.getContentLength(getContentMetadata(key))

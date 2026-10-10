@@ -15,8 +15,8 @@ android {
         applicationId = "com.prism.music"
         minSdk = 26
         targetSdk = 36
-        versionCode = 14
-        versionName = "1.4.4"
+        versionCode = 15
+        versionName = "1.5.0"
         vectorDrawables { useSupportLibrary = true }
         // Optional: `lastfm.apiKey=…` in local.properties lets genre detection ask Last.fm too.
         val localProps = Properties().apply {
@@ -41,6 +41,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            // `-PsideBySide`: a debug Prism that installs next to the real one (for trying changes on your own phone).
+            if (project.hasProperty("sideBySide")) applicationIdSuffix = ".dev"
+        }
         release {
             // Kept unminified: NewPipeExtractor + Rhino rely on reflection.
             isMinifyEnabled = false

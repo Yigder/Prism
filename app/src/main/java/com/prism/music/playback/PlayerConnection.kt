@@ -272,6 +272,50 @@ class PlayerConnection(private val context: Context, private val c: AppContainer
         if (p.mediaItemCount == 0) playSingle(song) else p.addMediaItem(song.toMediaItem())
     }
 
+    /** Listen Together: plays the host's queue ([songs], the current one first) from [positionMs], as songs, in order. */
+    fun follow(songs: List<Song>, positionMs: Long, title: String, playing: Boolean) {
+        if (songs.isEmpty()) return
+        ++playToken
+        c.queue.source.value = QueueSource(QueueKind.OTHER, title)
+        c.queue.autoplayContinuation = null
+        c.queue.autoplayStart.value = -1
+        ensureStarted()
+        withPlayer { p ->
+            p.shuffleModeEnabled = false
+            p.repeatMode = Player.REPEAT_MODE_OFF
+            p.setMediaItems(songs.map { it.toMediaItem() }, 0, positionMs.coerceAtLeast(0))
+            p.prepare()
+            p.playWhenReady = playing
+        }
+    }
+
+    /** Listen Together: makes what plays after the current song match the host's. */
+    fun replaceUpcoming(songs: List<Song>) = withPlayer { p ->
+        val idx = p.currentMediaItemIndex
+        val have = (idx + 1 until p.mediaItemCount).map { p.getMediaItemAt(it).mediaId }
+        if (have == songs.map { it.id }) return@withPlayer
+        if (idx + 1 < p.mediaItemCount) p.removeMediaItems(idx + 1, p.mediaItemCount)
+        p.addMediaItems(songs.map { it.toMediaItem() })
+    }
+
+    /** The listener wants it playing (it may still be buffering). */
+    val playWhenReady: Boolean get() = player?.playWhenReady ?: false
+
+    fun setPlaying(playing: Boolean) = withPlayer { p ->
+        if (playing) {
+            ensureStarted()
+            if (p.playbackState == Player.STATE_IDLE) p.prepare()
+            p.play()
+        } else p.pause()
+    }
+
+    /** Takes everything after the current song out of the queue. */
+    fun clearUpcoming() = withPlayer { p ->
+        val i = p.currentMediaItemIndex
+        if (i + 1 < p.mediaItemCount) p.removeMediaItems(i + 1, p.mediaItemCount)
+        c.queue.autoplayStart.value = -1
+    }
+
     fun togglePlay() = withPlayer { p ->
         if (!p.isPlaying) ensureStarted()
         if (p.playbackState == Player.STATE_IDLE) p.prepare()
@@ -333,7 +377,23 @@ class PlayerConnection(private val context: Context, private val c: AppContainer
 
     suspend fun videoIdFor(song: Song): String? = service?.videoIdFor(song)?.id ?: if (song.isVideo) song.id else null
 
+    private val _sleepEndOfSong = MutableStateFlow(false)
+    /** The sleep timer is set to pause when the current song ends. */
+    val sleepEndOfSong: StateFlow<Boolean> = _sleepEndOfSong
+
+    fun setSleepEndOfSong(on: Boolean) {
+        _sleepEndOfSong.value = on
+        if (on) _sleepAt.value = 0
+        withPlayer { it.pauseAtEndOfMediaItems = on }
+    }
+
+    override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+        // Paused at the end of the song for the sleep timer: done; playing on from here goes on as usual.
+        if (!playWhenReady && reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM && _sleepEndOfSong.value) setSleepEndOfSong(false)
+    }
+
     fun setSleepTimer(minutes: Int) {
+        if (_sleepEndOfSong.value) setSleepEndOfSong(false)
         _sleepAt.value = if (minutes <= 0) 0 else System.currentTimeMillis() + minutes * 60_000L
         if (minutes > 0) scope.launch {
             val target = _sleepAt.value

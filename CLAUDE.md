@@ -14,6 +14,8 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
 - Build release APK: `./gradlew :app:assembleRelease` → `app/build/outputs/apk/release/`
 - Debug build: `./gradlew :app:assembleDebug`
 - Unit tests: `./gradlew :app:testDebugUnitTest` (some hit live lyric/YT Music endpoints — needs network, can flake)
+- Test copy beside the real install: `./gradlew :app:assembleDebug -PsideBySide` (app id `com.prism.music.dev`, debug key,
+  its own data; the real Prism isn't touched). Remove it with `adb uninstall com.prism.music.dev`.
 
 ## Map (`app/src/main/java/com/prism/music/`)
 - `MainActivity.kt` — entry point
@@ -62,11 +64,36 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
   files on the phone are looked up on YT Music and shown in Downloads (`DownloadInfo.lossless`), playing from the file.
   Runs on launch, ~15 s after MediaStore changes, and every 3 h (`LosslessSyncWorker`). Removing one only hides it
   (`lossless_hidden` prefs); Prism never deletes or moves the user's files.
+- Frosted pages (`ui/components/Frosted.kt`, after Apple Music's iOS 27 artist pages): artist, album and playlist pages draw
+  `FrostedBackdrop` (the hero picture software-blurred via `ui/theme/Blur.kt` so it works below Android 12, lined up under the
+  hero, which `dissolveBottom()` fades into it; its foot row then runs down the page and settles into `ArtPalette.settle`).
+  `ArtworkAccent` swaps the page's `primary` for the artwork's colour. Off switch: Appearance → "Frosted artist & album pages"
+  (`frostedPages`). Content on them uses `FrostedPanel` / `frostFill()`; `FrostedBar` always blurs (ignores the Glass setting).
+- Artist signatures: `ui/theme/ArtistType.kt` (styles incl. Autograph = `FontFamily.Cursive`, and Outline/Neon/Gradient
+  effects drawn in `ui/components/Signature.kt`, written on left to right). Automatic picks stay genre-based for 2M+ audiences;
+  a per-artist pick (long-press the name, or ⋯ → Signature style) lives in `data/ArtistPrefs.kt` (`artist_prefs` prefs, which
+  also hold starred artists). Starring = YouTube `subscription/subscribe` on `ArtistPage.channelId` when signed in (that's
+  the artist's real channel, not always the topic-channel browse id). Real artist logos would need a third-party API key
+  (TheAudioDB's free tier is too limited), so they're not used.
+- Sharing: `ui/components/ShareSheet.kt` (story card recorded at 1080 px wide via a GraphicsLayer, copy/send link, track list
+  for Prism-only lists; an owned PRIVATE playlist can be made UNLISTED from the sheet). Links in `data/ShareLinks.kt`, which
+  also parses links shared *to* Prism (MainActivity's ACTION_SEND filter, "Play in Prism"; youtu.be/youtube.com → music.youtube.com).
+- Playlist editing (`YouTubeMusic`): `editPlaylist` (name/description/privacy actions on `browse/edit_playlist`),
+  `removeFromPlaylist` (needs `playlistItemData.playlistSetVideoId`, collected per page into `CollectionPage.setVideoIds` /
+  `LiveCollection.setVideoIds`), `setLibrarySaved` (`like/like` on a playlist id; albums use their `OLAK5uy_…` id), and
+  `CollectionPage.owned/privacy/savedToLibrary` from the editable header and the header's bookmark toggle.
+- Listen Together (`playback/together/`): local network only, no relay. Host = `ServerSocket` on port 47312 (else any port),
+  advertised by NSD as `_prismlisten._tcp`; guests need its 4-digit code. One JSON `Msg` per line (`Protocol.kt`, bump
+  `Msg.VERSION` on incompatible changes). Host broadcasts `State` (current + next 24 songs, playhead at host's
+  `elapsedRealtime`) on changes, seeks and every 3 s; guests sync clocks NTP-style (`ClockSync`) and follow via
+  `PlayerConnection.follow` / `replaceUpcoming`, seeking when >650 ms off; a local pause/skip marks them out of step until
+  Resync. `QueueState.followingHost` turns off autoplay and dislike-skipping while following. Every song from a peer goes
+  through `fromPeer()` (YouTube ids and YouTube image hosts only). Internet (remote) sessions would need a relay server: not built.
 - Not affiliated with Google/YouTube — keep the disclaimer in README.
 - `*.apk`, `local.properties`, keystores are gitignored.
 
 ## Current status / Next steps
-- **v1.4.4 (versionCode 14) is GitHub "Latest"** (2026-10-10): plays reach the account's YT Music history again
+- v1.4.4 (versionCode 14, 2026-10-10): plays reach the account's YT Music history again
   (checked on the phone). The WEB_REMIX `player` call (`YouTubeMusic.playerExtras`) answers "Video unavailable" with no
   `videostatsPlaybackUrl` unless it sends the player JS's `signatureTimestamp` (`StreamResolver.signatureTimestamp()`).
   Logcat tag `PrismHistory` logs each ping's HTTP code. Don't use TV-client tracking URLs for history: YouTube takes
@@ -103,4 +130,11 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
   Keep it optional/no-pressure; no in-app donation prompts unless the user asks.
 - On the user's Wi-Fi, `gh` API calls fail (`invalid character '<'`); git push works. Ask them to switch to hotspot.
 - An untracked `Prism/` subfolder duplicates the project (with build output and logs) — decide whether to delete it.
+- **v1.5.0 (versionCode 15) is GitHub "Latest"** (2026-10-10): the QOL update — frosted artist/album/playlist pages, artist
+  signatures and favourites, share sheet + "Play in Prism", Listen Together, playlist edit/remove/save-to-library/new playlist,
+  add-to-playlist sheet, queue save/clear, sleep "end of song". Built and unit-tested; checked on the Pixel with the
+  side-by-side test copy (signed out): artist page dark + light, signatures, album/playlist pages, share sheet + image
+  export, Listen Together hosting (a PC guest joined over Wi-Fi; wrong code refused; NSD advert seen). Not yet tried:
+  two phones following each other, signed-in actions (save to library, edit/remove, favourite → subscribe).
+  Haze blur doesn't draw for elements inside the NavHost's own hazeSource, hence `ScrollEdge` instead of a blurred bar.
 - Next steps: _(fill in)_

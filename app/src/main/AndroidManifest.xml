@@ -54,6 +54,12 @@
                 <data android:scheme="https" />
                 <data android:host="music.youtube.com" />
             </intent-filter>
+            <!-- YouTube / YouTube Music links shared from other apps ("Play in Prism"). -->
+            <intent-filter android:label="@string/open_in_prism">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
         </activity>
 
         <service

@@ -33,6 +33,7 @@ import androidx.compose.material.icons.rounded.Dashboard
 import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.GraphicEq
+import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.Mood
@@ -321,6 +322,7 @@ private fun GreetingSection(recent: List<Song>) {
                 HomeShortcut.MOODS -> Icons.Rounded.Mood to Routes.MOODS
                 HomeShortcut.SEARCH -> Icons.Rounded.Search to Routes.SEARCH
                 HomeShortcut.EQUALIZER -> Icons.Rounded.GraphicEq to Routes.EQ
+                HomeShortcut.TOGETHER -> Icons.Rounded.Groups to Routes.TOGETHER
             }
             val playable = when (sc) {
                 HomeShortcut.LIKED -> Playable.Liked

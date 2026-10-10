@@ -187,13 +187,16 @@ private fun StatTile(label: String, value: String, modifier: Modifier = Modifier
 fun SleepTimerDialog(onDismiss: () -> Unit) {
     val pc = LocalContainer.current.player
     val sleepAt by pc.sleepAt.collectAsState()
+    val endOfSong by pc.sleepEndOfSong.collectAsState()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Sleep timer") },
         text = {
             Column {
-                if (sleepAt > 0) Text("Stops in ${((sleepAt - System.currentTimeMillis()) / 60_000).coerceAtLeast(0) + 1} min", color = MaterialTheme.colorScheme.primary)
+                if (endOfSong) Text("Stops when this song ends", color = MaterialTheme.colorScheme.primary)
+                else if (sleepAt > 0) Text("Stops in ${((sleepAt - System.currentTimeMillis()) / 60_000).coerceAtLeast(0) + 1} min", color = MaterialTheme.colorScheme.primary)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(endOfSong, { pc.setSleepEndOfSong(true); onDismiss() }, { Text("End of song") })
                     listOf(5, 10, 15, 30, 45, 60, 90).forEach { m ->
                         FilterChip(false, { pc.setSleepTimer(m); onDismiss() }, { Text("$m min") })
                     }
@@ -201,6 +204,8 @@ fun SleepTimerDialog(onDismiss: () -> Unit) {
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
-        dismissButton = if (sleepAt > 0) ({ TextButton(onClick = { pc.setSleepTimer(0); onDismiss() }) { Text("Turn off") } }) else null,
+        dismissButton = if (sleepAt > 0 || endOfSong) ({
+            TextButton(onClick = { pc.setSleepTimer(0); pc.setSleepEndOfSong(false); onDismiss() }) { Text("Turn off") }
+        }) else null,
     )
 }

@@ -54,6 +54,7 @@ import com.prism.music.data.model.Song
 import com.prism.music.data.model.hiRes
 import com.prism.music.playback.QueueEntry
 import com.prism.music.ui.theme.LocalContainer
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /** The queue, inside the player: now playing, what's next, then autoplay. */
@@ -91,8 +92,27 @@ fun InlineQueue(onRevealPlayer: () -> Unit, onHidePlayer: () -> Unit, modifier: 
         }
     }
 
+    var saving by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    if (saving) com.prism.music.ui.components.NewPlaylistDialog(onDismiss = { saving = false }) { name, privacy ->
+        saving = false
+        val songs = (listOfNotNull(now) + order).map { it.song.id }.distinct().take(300)
+        c.scope.launch(kotlinx.coroutines.Dispatchers.Main) {
+            val id = runCatching { c.ytm.createPlaylist(name, songs, privacy = privacy) }.getOrNull()
+            android.widget.Toast.makeText(context, if (id != null) "Saved ${songs.size} songs to $name" else "Couldn't save the queue", android.widget.Toast.LENGTH_SHORT).show()
+            if (id != null) c.library.refreshCollections()
+        }
+    }
+
     Column(modifier.fillMaxWidth()) {
-        Text("Queue", style = MaterialTheme.typography.titleLarge, color = Color.White)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Queue", style = MaterialTheme.typography.titleLarge, color = Color.White, modifier = Modifier.weight(1f))
+            if (settings.isLoggedIn && queue.size > 1) QueueChip("Save") { saving = true }
+            if (order.isNotEmpty()) {
+                Spacer(Modifier.width(8.dp))
+                QueueChip("Clear") { pc.clearUpcoming() }
+            }
+        }
         Spacer(Modifier.height(4.dp))
         LazyColumn(state = listState, modifier = Modifier.fillMaxWidth().nestedScroll(controlsOnScroll), contentPadding = PaddingValues(bottom = 24.dp)) {
             if (now != null) {
@@ -138,6 +158,16 @@ private fun LazyListScope.queueSection(rows: List<QueueEntry>, reorder: Boolean 
             },
         )
     }
+}
+
+/** A small action at the top of the queue ("Save", "Clear"). */
+@Composable
+private fun QueueChip(label: String, onClick: () -> Unit) {
+    Text(
+        label, style = MaterialTheme.typography.labelLarge, color = Color.White,
+        modifier = Modifier.clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.12f)).clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 7.dp),
+    )
 }
 
 @Composable

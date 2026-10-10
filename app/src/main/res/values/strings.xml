@@ -3,4 +3,6 @@
     <string name="app_name">Prism</string>
     <string name="downloads">Downloads</string>
     <string name="playback">Playback</string>
+    <!-- In other apps' share sheets, for YouTube and YouTube Music links. -->
+    <string name="open_in_prism">Play in Prism</string>
 </resources>

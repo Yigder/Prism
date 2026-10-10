@@ -50,7 +50,7 @@ enum class LyricsSource(val label: String) {
 /** Tiles in Home's greeting section. */
 enum class HomeShortcut(val label: String) {
     LIKED("Liked songs"), DOWNLOADS("Downloads"), REPLAY("Replay"), LIBRARY("Library"),
-    MOODS("Moods & genres"), SEARCH("Search"), EQUALIZER("Equalizer"),
+    MOODS("Moods & genres"), SEARCH("Search"), EQUALIZER("Equalizer"), TOGETHER("Listen together"),
 }
 
 /** A playlist pinned to Home's greeting tiles. */
@@ -265,6 +265,8 @@ data class AppSettings(
     val libraryStartTab: String = "PLAYLISTS",
     /** Playlist pages open with their picture edge to edge, like an artist page. */
     val playlistHeroCover: Boolean = true,
+    /** Artist, album and playlist pages sit on frosted glass made from their picture (Apple Music's look). */
+    val frostedPages: Boolean = true,
     val replayThemeColors: Boolean = false,
 ) {
     val isLoggedIn: Boolean get() = cookie.contains("SAPISID")
@@ -357,6 +359,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val libraryView = stringPreferencesKey("library_view")
         val libraryStartTab = stringPreferencesKey("library_start_tab")
         val playlistHeroCover = booleanPreferencesKey("playlist_hero_cover")
+        val frostedPages = booleanPreferencesKey("frosted_pages")
         val replayThemeColors = booleanPreferencesKey("replay_theme_colors")
 
         /** Everything the "Reset look" button puts back. */
@@ -364,7 +367,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             listOf(
                 fontChoice, textScale, corners, uiDensity, titleSize, cardSize, reduceMotion, navStyle, navLabels, navHideOnScroll,
                 navTabs, startTab, miniPlayerStyle, miniSkipButtons, miniProgress, playerBackground, playerArtCorners, transportStyle,
-                scrubberStyle, artShrinkOnPause, showOutputDevice, lyricsAlign, libraryView, playlistHeroCover, replayThemeColors,
+                scrubberStyle, artShrinkOnPause, showOutputDevice, lyricsAlign, libraryView, playlistHeroCover, frostedPages, replayThemeColors,
             )
         }
     }
@@ -471,6 +474,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             libraryView = p.enum(K.libraryView, d.libraryView),
             libraryStartTab = p[K.libraryStartTab] ?: d.libraryStartTab,
             playlistHeroCover = p[K.playlistHeroCover] ?: d.playlistHeroCover,
+            frostedPages = p[K.frostedPages] ?: d.frostedPages,
             replayThemeColors = p[K.replayThemeColors] ?: d.replayThemeColors,
         )
     }
@@ -590,6 +594,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     fun setLibraryView(v: LibraryView) = edit { it[K.libraryView] = v.name }
     fun setLibraryStartTab(v: String) = edit { it[K.libraryStartTab] = v }
     fun setPlaylistHeroCover(v: Boolean) = edit { it[K.playlistHeroCover] = v }
+    fun setFrostedPages(v: Boolean) = edit { it[K.frostedPages] = v }
     fun setReplayThemeColors(v: Boolean) = edit { it[K.replayThemeColors] = v }
 
     /** Puts every look & layout option back to how Prism ships (colours and backgrounds are left alone). */

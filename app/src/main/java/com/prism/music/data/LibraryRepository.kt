@@ -207,6 +207,34 @@ class LibraryRepository(private val c: AppContainer) {
         c.scope.launch { sync() }
     }
 
+    /**
+     * Stars an artist (or takes the star off). Kept on the phone either way; signed in, it also
+     * subscribes to them on YouTube Music ([channelId]), which is what YouTube's own app does.
+     */
+    fun setFavoriteArtist(artist: FavoriteArtist, channelId: String?, on: Boolean) {
+        c.artistPrefs.setFavorite(artist, on)
+        if (on && artists.value.none { it.id == artist.id }) {
+            artists.value = listOf(ArtistItem(artist.id, artist.name, "Artist", artist.thumbnail)) + artists.value
+        }
+        if (c.settings.current.isLoggedIn && channelId != null) c.scope.launch(Dispatchers.IO) {
+            runCatching { c.ytm.subscribe(channelId, on) }.onFailure { lastError.value = "Couldn't update ${artist.name} on YouTube Music: ${it.message}" }
+        }
+    }
+
+    /** Saves an album or playlist to the account's library, or takes it out. False if YouTube Music refused. */
+    suspend fun setSaved(playlistId: String, saved: Boolean): Boolean = withContext(Dispatchers.IO) {
+        runCatching { c.ytm.setLibrarySaved(playlistId, saved) }.isSuccess.also { ok -> if (ok) refreshCollections() }
+    }
+
+    /** Fetches the library's playlists and albums again (after one is saved, created or changed). */
+    fun refreshCollections() {
+        if (!c.settings.current.isLoggedIn) return
+        c.scope.launch(Dispatchers.IO) {
+            runCatching { playlists.value = c.ytm.libraryPlaylists() }
+            runCatching { albums.value = c.ytm.libraryAlbums() }
+        }
+    }
+
     companion object {
         /** Albums your songs come from, most songs first. Fills the Albums tab beyond the ones saved on YouTube Music. */
         fun albumsFrom(songs: List<Song>): List<AlbumItem> = songs

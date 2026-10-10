@@ -14,6 +14,7 @@ import com.prism.music.data.model.Song
 import com.prism.music.data.model.SongItem
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -127,6 +128,9 @@ class YouTubeMusic(private val api: InnerTube) {
         }
         val playlistId = res.findFirst("watchPlaylistEndpoint").str("playlistId")
             ?: res.findFirst("microformatDataRenderer").str("urlCanonical")?.substringAfter("list=", "")?.takeIf { it.isNotBlank() }
+        // "Other versions" sits beside the track list (deluxe, clean, live editions).
+        val others = Parser.shelves(res).firstOrNull { it.title.equals("Other versions", true) }?.items.orEmpty()
+            .filter { it.id != browseId }
         return CollectionPage(
             id = browseId,
             kind = CollectionKind.ALBUM,
@@ -143,19 +147,40 @@ class YouTubeMusic(private val api: InnerTube) {
                 val id = r.str("playlistItemData", "videoId") ?: return@mapNotNull null
                 Parser.playCount(r)?.let { id to it }
             }.toMap(),
+            artistThumbnail = header.obj("straplineThumbnail").bestThumbnail(),
+            savedToLibrary = libraryToggle(header),
+            otherVersions = others,
+            explicit = header.arr("subtitleBadge")?.any { it.str("musicInlineBadgeRenderer", "icon", "iconType") == "MUSIC_EXPLICIT_BADGE" } == true,
         )
     }
+
+    /** The header's bookmark ("Save to library") state; only meaningful when signed in. */
+    private fun libraryToggle(header: JsonElement?): Boolean? {
+        if (!api.signedIn) return null
+        val toggle = header.arr("buttons")?.firstNotNullOfOrNull { it.obj("toggleButtonRenderer") } ?: return null
+        return toggle.str("isToggled") == "true"
+    }
+
+    /** A playlist's songs' setVideoIds (what removing one from an owned playlist needs), by video id. */
+    private fun setVideoIdsIn(node: JsonElement?): Map<String, String> =
+        node.findAll("musicResponsiveListItemRenderer").mapNotNull { r ->
+            val id = r.str("playlistItemData", "videoId") ?: return@mapNotNull null
+            r.str("playlistItemData", "playlistSetVideoId")?.let { id to it }
+        }.toMap()
 
     suspend fun playlist(playlistId: String): CollectionPage {
         val browseId = if (playlistId.startsWith("VL")) playlistId else "VL$playlistId"
         val res = browse(browseId)
+        // The account's own playlists come with an edit header (and their visibility in it).
+        val editable = res.findFirst("musicEditablePlaylistDetailHeaderRenderer")
         val header = res.findFirst("musicResponsiveHeaderRenderer")
-            ?: res.findFirst("musicEditablePlaylistDetailHeaderRenderer").findFirst("musicResponsiveHeaderRenderer")
+            ?: editable.findFirst("musicResponsiveHeaderRenderer")
             ?: res.findFirst("musicDetailHeaderRenderer")
         val shelf = res.findFirst("musicPlaylistShelfRenderer") ?: res.findFirst("musicShelfRenderer")
         val songs = (shelf.arr("contents") ?: emptyList()).mapNotNull {
             it.obj("musicResponsiveListItemRenderer")?.let { r -> (Parser.responsive(r) as? SongItem)?.song }
         }
+        val owned = editable != null && api.signedIn
         return CollectionPage(
             id = playlistId.removePrefix("VL"),
             kind = CollectionKind.PLAYLIST,
@@ -167,16 +192,26 @@ class YouTubeMusic(private val api: InnerTube) {
             songs = songs,
             continuation = Parser.continuation(shelf),
             playlistId = playlistId.removePrefix("VL"),
+            owned = owned,
+            privacy = if (owned) editable.findFirst("musicPlaylistEditHeaderRenderer").str("privacy") else null,
+            savedToLibrary = if (owned) null else libraryToggle(header),
+            setVideoIds = if (owned) setVideoIdsIn(shelf) else emptyMap(),
         )
     }
 
-    suspend fun playlistContinuation(token: String): Pair<List<Song>, String?> {
+    /** One more page of a long playlist. */
+    class PlaylistChunk(val songs: List<Song>, val next: String?, val setVideoIds: Map<String, String>)
+
+    suspend fun playlistPage(token: String): PlaylistChunk {
         val res = api.post("browse", buildJsonObject { put("continuation", token) })
         val items = res.findAll("musicResponsiveListItemRenderer").mapNotNull { (Parser.responsive(it) as? SongItem)?.song }
         val next = res.findAll("continuationItemRenderer").firstOrNull()?.findFirst("continuationCommand").str("token")
             ?: res.findFirst("musicPlaylistShelfContinuation").let { Parser.continuation(it) }
-        return items to next
+        return PlaylistChunk(items, next, setVideoIdsIn(res))
     }
+
+    suspend fun playlistContinuation(token: String): Pair<List<Song>, String?> =
+        playlistPage(token).let { it.songs to it.next }
 
     /** Loads every song of a playlist, following continuations up to [limit]. */
     suspend fun playlistAll(playlistId: String, limit: Int = 2000): CollectionPage {
@@ -222,6 +257,8 @@ class YouTubeMusic(private val api: InnerTube) {
             shuffleParams = header.findFirst("playButton").let { b ->
                 b.findFirst("watchEndpoint").str("params") ?: b.findFirst("watchPlaylistEndpoint").str("params")
             },
+            channelId = header.findFirst("subscribeButtonRenderer").str("channelId"),
+            subscribed = header.findFirst("subscribeButtonRenderer").str("subscribed") == "true",
         )
     }
 
@@ -431,14 +468,55 @@ class YouTubeMusic(private val api: InnerTube) {
         })
     }
 
-    suspend fun createPlaylist(title: String, videoIds: List<String>, description: String = ""): String? {
+    suspend fun createPlaylist(title: String, videoIds: List<String>, description: String = "", privacy: String = "PRIVATE"): String? {
         val res = api.post("playlist/create", buildJsonObject {
             put("title", title)
             put("description", description)
-            put("privacyStatus", "PRIVATE")
+            put("privacyStatus", privacy)
             putJsonArray("videoIds") { videoIds.forEach { add(it) } }
         })
         return res.str("playlistId")
+    }
+
+    /** Renames an owned playlist, rewrites its description and/or changes who can open it ("PRIVATE", "UNLISTED", "PUBLIC"). */
+    suspend fun editPlaylist(playlistId: String, title: String? = null, description: String? = null, privacy: String? = null) {
+        if (title == null && description == null && privacy == null) return
+        api.post("browse/edit_playlist", buildJsonObject {
+            put("playlistId", playlistId.removePrefix("VL"))
+            putJsonArray("actions") {
+                title?.let { addJsonObject { put("action", "ACTION_SET_PLAYLIST_NAME"); put("playlistName", it) } }
+                description?.let { addJsonObject { put("action", "ACTION_SET_PLAYLIST_DESCRIPTION"); put("playlistDescription", it) } }
+                privacy?.let { addJsonObject { put("action", "ACTION_SET_PLAYLIST_PRIVACY"); put("playlistPrivacy", it) } }
+            }
+        })
+    }
+
+    /** Takes one song out of an owned playlist; [setVideoId] says which copy (a playlist can hold a song twice). */
+    suspend fun removeFromPlaylist(playlistId: String, videoId: String, setVideoId: String) {
+        api.post("browse/edit_playlist", buildJsonObject {
+            put("playlistId", playlistId.removePrefix("VL"))
+            putJsonArray("actions") {
+                addJsonObject {
+                    put("action", "ACTION_REMOVE_VIDEO")
+                    put("removedVideoId", videoId)
+                    put("setVideoId", setVideoId)
+                }
+            }
+        })
+    }
+
+    /** Saves an album (by its playlist id) or someone else's playlist to the library, or takes it out. */
+    suspend fun setLibrarySaved(playlistId: String, saved: Boolean) {
+        api.post(if (saved) "like/like" else "like/removelike", buildJsonObject {
+            putJsonObject("target") { put("playlistId", playlistId.removePrefix("VL")) }
+        })
+    }
+
+    /** Subscribes to (or unsubscribes from) an artist's channel. */
+    suspend fun subscribe(channelId: String, subscribed: Boolean) {
+        api.post(if (subscribed) "subscription/subscribe" else "subscription/unsubscribe", buildJsonObject {
+            putJsonArray("channelIds") { add(channelId) }
+        })
     }
 
     /** Deletes a playlist the account owns. */

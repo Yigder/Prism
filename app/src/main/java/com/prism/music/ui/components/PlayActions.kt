@@ -17,6 +17,7 @@ import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Radio
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -73,10 +74,12 @@ fun rememberPlayMenu(): (Playable) -> Unit {
 @Composable
 fun PlayActionsSheet(target: Playable, extra: List<SheetItem> = emptyList(), onDismiss: () -> Unit) {
     val item = (target as? Playable.Of)?.item
-    if (item is SongItem) { SongActionsSheet(item.song, onDismiss); return }
+    if (item is SongItem) { SongActionsSheet(item.song, extra, onDismiss = onDismiss); return }
     val c = LocalContainer.current
     val context = LocalContext.current
     val liked by c.library.liked.collectAsState()
+    var sharing by remember { mutableStateOf<ShareTarget?>(null) }
+    sharing?.let { t -> ShareSheet(t) { sharing = null; onDismiss() }; return }
     val ui = com.prism.music.ui.theme.LocalUi.current
     val (title, subtitle) = when (target) {
         Playable.Liked -> "Liked songs" to "${liked.size} songs"
@@ -128,6 +131,13 @@ fun PlayActionsSheet(target: Playable, extra: List<SheetItem> = emptyList(), onD
                 SheetAction(Icons.Rounded.Shuffle, "Shuffle") { close { play(shuffle = true) } }
             }
             extra.forEach { e -> SheetAction(e.icon, e.label) { close(e.onClick) } }
+            SheetAction(Icons.Rounded.Share, "Share") {
+                sharing = when (target) {
+                    Playable.Liked -> ShareTarget("Liked songs", "${liked.size} songs", "Playlist", art, null, songs = liked)
+                    Playable.Downloads -> c.downloads.completedSongs().let { ShareTarget("Downloads", "${it.size} songs", "Playlist", art, null, songs = it) }
+                    is Playable.Of -> target.item.shareTarget(art)
+                }
+            }
             Spacer(Modifier.height(24.dp))
         }
     }

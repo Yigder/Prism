@@ -49,7 +49,9 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.LibraryMusic
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.WifiTethering
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
@@ -149,7 +151,7 @@ class MainActivity : ComponentActivity() {
         // Picks up lossless files added while Prism is closed.
         com.prism.music.download.LosslessSyncWorker.schedule(this)
         if (c.settings.current.isLoggedIn) c.library.syncInBackground()
-        deepLink.value = intent?.data
+        deepLink.value = linkIn(intent)
         setContent {
             CompositionLocalProvider(LocalContainer provides c) {
                 PrismRoot(deepLink)
@@ -159,7 +161,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        deepLink.value = intent.data
+        linkIn(intent)?.let { deepLink.value = it }
+    }
+
+    /** A music.youtube.com link opened in Prism, or a YouTube / YouTube Music link shared to it. */
+    private fun linkIn(intent: Intent?): Uri? = when (intent?.action) {
+        Intent.ACTION_SEND -> com.prism.music.data.ShareLinks.findIn(intent.getStringExtra(Intent.EXTRA_TEXT))?.let(Uri::parse).also {
+            if (it == null) Toast.makeText(this, "That isn't a YouTube or YouTube Music link", Toast.LENGTH_SHORT).show()
+        }
+        else -> intent?.data
     }
 }
 
@@ -224,11 +234,14 @@ private fun PrismRoot(deepLink: MutableStateFlow<Uri?>) {
         val showChrome = route != Routes.LOGIN && route != Routes.WELCOME
         val tabs = settings.navTabs.map { it.tab() }
 
+        val together by c.together.state.collectAsState()
+        val inSession = together is com.prism.music.playback.together.TogetherState.Hosting || together is com.prism.music.playback.together.TogetherState.Guest
         // Room the pages leave at the bottom for the bar, the mini player and the system's own bar.
         val navInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         val bottomPadding = navInset + navHeight(settings.navStyle) +
             (if (settings.navStyle == NavBarStyle.DOCKED) 0.dp else 16.dp) +
-            (if (song != null) miniHeight(settings.miniPlayerStyle) + 8.dp else 0.dp)
+            (if (song != null) miniHeight(settings.miniPlayerStyle) + 8.dp else 0.dp) +
+            (if (inSession) 42.dp else 0.dp)
 
         // Decided once: the tab Prism opens on is the root every other tab sits on, and the welcome
         // screen is a real destination, so signing in from it navigates inside a graph that already exists.
@@ -263,6 +276,9 @@ private fun PrismRoot(deepLink: MutableStateFlow<Uri?>) {
 
         LaunchedEffect(Unit) {
             c.player.errors.collect { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+        }
+        LaunchedEffect(Unit) {
+            c.together.events.collect { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
         }
         LaunchedEffect(Unit) {
             deepLink.collect { uri -> if (uri != null) { handleDeepLink(uri, navigator, c); deepLink.value = null } }
@@ -303,6 +319,7 @@ private fun PrismRoot(deepLink: MutableStateFlow<Uri?>) {
                         composable(Routes.CATALOGUE) { ScreenBackdrop(BackdropScreen.HOME) { CatalogueScreen(bottomPadding) } }
                         composable(Routes.MOODS) { ScreenBackdrop(BackdropScreen.SEARCH) { com.prism.music.ui.screens.MoodsScreen(bottomPadding) } }
                         composable(Routes.IMPORT) { ScreenBackdrop(BackdropScreen.LIBRARY) { com.prism.music.ui.screens.ImportScreen(bottomPadding) } }
+                        composable(Routes.TOGETHER) { ScreenBackdrop(BackdropScreen.LIBRARY) { com.prism.music.ui.screens.TogetherScreen(bottomPadding) } }
                         composable(Routes.DOWNLOADS) { CollectionScreen(CollectionType.DOWNLOADS, "downloads", null, bottomPadding) }
                         composable(Routes.LOGIN) {
                             LoginScreen(
@@ -347,6 +364,9 @@ private fun PrismRoot(deepLink: MutableStateFlow<Uri?>) {
                         Modifier.align(Alignment.BottomCenter).fillMaxWidth()
                             .then(if (docked) Modifier else Modifier.navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp)),
                     ) {
+                        AnimatedVisibility(inSession && !playerOpen && route != Routes.TOGETHER, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut()) {
+                            TogetherPill(together, Modifier.padding(bottom = 8.dp)) { navigator.go(Routes.TOGETHER) }
+                        }
                         AnimatedVisibility(song != null && !playerOpen, enter = slideInVertically { it } + fadeIn(), exit = slideOutVertically { it } + fadeOut()) {
                             MiniPlayer(
                                 Modifier.padding(bottom = 8.dp).then(if (docked) Modifier.padding(horizontal = 10.dp) else Modifier),
@@ -363,6 +383,34 @@ private fun PrismRoot(deepLink: MutableStateFlow<Uri?>) {
                 ) {
                     NowPlayingScreen { playerOpen = false }
                 }
+            }
+        }
+    }
+}
+
+/** Above the mini player while a Listen Together session is on: who with, and a way back to it. */
+@Composable
+private fun TogetherPill(state: com.prism.music.playback.together.TogetherState, modifier: Modifier, onClick: () -> Unit) {
+    val (icon, text) = when (state) {
+        is com.prism.music.playback.together.TogetherState.Hosting ->
+            Icons.Rounded.WifiTethering to "Hosting · code ${state.code}" + when (state.guests.size) { 0 -> ""; 1 -> " · 1 listening"; else -> " · ${state.guests.size} listening" }
+        is com.prism.music.playback.together.TogetherState.Guest ->
+            Icons.Rounded.Groups to "With ${state.hostName}" + when {
+                !state.listenHere -> " · adding songs"
+                !state.inSync -> " · out of step"
+                else -> ""
+            }
+        else -> return
+    }
+    Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        GlassSurface(Modifier.height(34.dp), shape = RoundedCornerShape(17.dp), elevation = 4.dp) {
+            Row(
+                Modifier.fillMaxHeight().clickable(onClickLabel = "Open Listen together", onClick = onClick).padding(horizontal = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(icon, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(6.dp))
+                Text(text, style = MaterialTheme.typography.labelLarge, maxLines = 1)
             }
         }
     }

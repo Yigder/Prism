@@ -29,6 +29,7 @@ import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.FormatQuote
+import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Photo
 import androidx.compose.material.icons.rounded.PlaylistPlay
@@ -62,6 +63,7 @@ import com.prism.music.ui.Routes
 import com.prism.music.ui.components.Artwork
 import com.prism.music.ui.components.PlaylistPicker
 import com.prism.music.ui.components.PrismSheet
+import com.prism.music.ui.components.shareTarget
 import com.prism.music.ui.theme.LocalContainer
 
 /** One tile in [PlayerOptionsSheet]. [active] lights it up (a mode that's on). */
@@ -93,9 +95,13 @@ fun PlayerOptionsSheet(
     val hidden by c.canvas.hidden.collectAsState()
     val saved by c.canvas.saved.collectAsState()
     val sleepAt by c.player.sleepAt.collectAsState()
+    val sleepEnd by c.player.sleepEndOfSong.collectAsState()
+    val together by c.together.state.collectAsState()
     var pickPlaylist by remember { mutableStateOf(false) }
+    var sharing by remember { mutableStateOf(false) }
 
     if (pickPlaylist) { PlaylistPicker(song) { pickPlaylist = false; onDismiss() }; return }
+    if (sharing) { com.prism.music.ui.components.ShareSheet(song.shareTarget()) { sharing = false; onDismiss() }; return }
 
     val isLiked = song.id in liked
     val dl = downloads[song.id]
@@ -118,8 +124,13 @@ fun PlayerOptionsSheet(
         Option(Icons.Rounded.Refresh, "Re-download") { onRedownloadLyrics(); toast("Downloading lyrics again") },
     )
     val sleepMin = if (sleepAt > 0) ((sleepAt - System.currentTimeMillis()) / 60_000).coerceAtLeast(0) + 1 else 0
+    val inSession = together !is com.prism.music.playback.together.TogetherState.Idle
     val playerRow = listOfNotNull(
-        Option(Icons.Rounded.Bedtime, if (sleepAt > 0) "Sleep · ${sleepMin}m" else "Sleep timer", active = sleepAt > 0, onClick = onSleepTimer),
+        Option(
+            Icons.Rounded.Bedtime, when { sleepEnd -> "Sleep · song end"; sleepAt > 0 -> "Sleep · ${sleepMin}m"; else -> "Sleep timer" },
+            active = sleepAt > 0 || sleepEnd, onClick = onSleepTimer,
+        ),
+        Option(Icons.Rounded.Groups, if (inSession) "Together · on" else "Together", active = inSession) { onCollapse(); nav.go(Routes.TOGETHER) },
         Option(Icons.Rounded.DataUsage, "Stats", active = statsShown, onClick = onToggleStats),
         if (!hasCanvas) null else if (song.id in hidden) Option(Icons.Rounded.Photo, "Still cover", active = true, keepOpen = true) { c.canvas.setHidden(song.id, false) }
         else Option(Icons.Rounded.Animation, "Animated", keepOpen = true) { c.canvas.setHidden(song.id, true) },
@@ -154,15 +165,7 @@ fun PlayerOptionsSheet(
                 }
                 RoundButton(if (isLiked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, if (isLiked) "Remove from liked" else "Like") { c.library.toggleLike(song) }
                 Spacer(Modifier.width(8.dp))
-                RoundButton(Icons.Rounded.Share, "Share") {
-                    close {
-                        val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(android.content.Intent.EXTRA_TEXT, "https://music.youtube.com/watch?v=${song.id}")
-                        }
-                        context.startActivity(android.content.Intent.createChooser(send, "Share song"))
-                    }
-                }
+                RoundButton(Icons.Rounded.Share, "Share") { sharing = true }
             }
             OptionRow(null, songRow, ::pick)
             OptionRow("Lyrics", lyricsRow, ::pick)

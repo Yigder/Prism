@@ -28,7 +28,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.DownloadDone
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.Login
@@ -94,7 +96,9 @@ fun LibraryScreen(bottomPadding: Dp) {
     val sync by c.library.syncState.collectAsState()
     val dls by c.downloads.downloads.collectAsState()
     val thumbs by c.library.artistThumbs.collectAsState()
+    val favorites by c.artistPrefs.favorites.collectAsState()
     val scope = rememberCoroutineScope()
+    var creating by remember { mutableStateOf(false) }
     val startPage = remember { LibTab.entries.indexOfFirst { it.name == settings.libraryStartTab }.coerceAtLeast(0) }
     val pager = rememberPagerState(initialPage = startPage) { LibTab.entries.size }
     val asList = settings.libraryView == com.prism.music.data.prefs.LibraryView.LIST
@@ -111,8 +115,10 @@ fun LibraryScreen(bottomPadding: Dp) {
     val albums = remember(remoteAlbums, mine) {
         (remoteAlbums + LibraryRepository.albumsFrom(mine)).distinctBy { it.id }
     }
-    val artists = remember(remoteArtists, mine, thumbs) {
-        (remoteArtists + LibraryRepository.artistsFrom(mine)).distinctBy { it.id }.map { a ->
+    // Starred artists lead, marked as favourites.
+    val artists = remember(remoteArtists, mine, thumbs, favorites) {
+        val starred = favorites.map { f -> ArtistItem(f.id, f.name, "★ Favourite", f.thumbnail) }
+        (starred + remoteArtists + LibraryRepository.artistsFrom(mine)).distinctBy { it.id }.map { a ->
             if (a.thumbnail == null && a is ArtistItem) a.copy(thumbnail = thumbs[a.id]) else a
         }
     }
@@ -140,11 +146,12 @@ fun LibraryScreen(bottomPadding: Dp) {
         }
     }
     val artistSongs = remember(mine) { mine.flatMap { s -> s.artists.mapNotNull { it.id } }.groupingBy { it }.eachCount() }
-    val sortedArtists = remember(artists, artistSort, artistSongs) {
+    val sortedArtists = remember(artists, artistSort, artistSongs, favorites) {
+        val fav = favorites.map { it.id }.toSet()
         when (artistSort) {
             ArtistSort.LIBRARY -> artists
-            ArtistSort.MOST -> artists.sortedByDescending { artistSongs[it.id] ?: 0 }
-            ArtistSort.NAME -> artists.sortedBy { it.title.lowercase().removePrefix("the ") }
+            ArtistSort.MOST -> artists.sortedWith(compareByDescending<com.prism.music.data.model.BrowseItem> { it.id in fav }.thenByDescending { artistSongs[it.id] ?: 0 })
+            ArtistSort.NAME -> artists.sortedWith(compareByDescending<com.prism.music.data.model.BrowseItem> { it.id in fav }.thenBy { it.title.lowercase().removePrefix("the ") })
         }
     }
     LaunchedEffect(pager.currentPage == LibTab.ARTISTS.ordinal, artists.size) {
@@ -189,7 +196,7 @@ fun LibraryScreen(bottomPadding: Dp) {
                             EmptyState(Icons.Rounded.LibraryMusic, "Sign in to sync your library", "Your playlists, albums, artists and likes from YouTube Music will appear here.")
                             Button(onClick = { nav.go(Routes.LOGIN) }) { Icon(Icons.Rounded.Login, null); Spacer(Modifier.width(8.dp)); Text("Sign in") }
                         } else {
-                            EmptyState(Icons.Rounded.LibraryMusic, "Nothing here yet", "Like or download songs and their  show up here.")
+                            EmptyState(Icons.Rounded.LibraryMusic, "Nothing here yet", "Like or download songs, or star artists, and they'll show up here.")
                         }
                     }
                 }
@@ -198,6 +205,8 @@ fun LibraryScreen(bottomPadding: Dp) {
                         item { ShortcutTile("Liked songs", "${liked.size} songs", Icons.Rounded.Favorite, asList, art = c.covers.custom("liked"), onLongClick = { menu(com.prism.music.ui.components.Playable.Liked) }) { nav.go(Routes.liked()) } }
                         item { ShortcutTile("Downloads", "${dls.values.count { it.state == androidx.media3.exoplayer.offline.Download.STATE_COMPLETED }} songs", Icons.Rounded.DownloadDone, asList, onLongClick = { menu(com.prism.music.ui.components.Playable.Downloads) }) { nav.go(Routes.DOWNLOADS) } }
                         item { ShortcutTile("Replay", "Your listening recap", Icons.Rounded.History, asList) { nav.go(Routes.REPLAY) } }
+                        item { ShortcutTile("Listen together", "With friends on the same Wi-Fi", Icons.Rounded.Groups, asList) { nav.go(Routes.TOGETHER) } }
+                        if (settings.isLoggedIn) item { ShortcutTile("New playlist", "Make one on YouTube Music", Icons.Rounded.Add, asList) { creating = true } }
                         if (settings.isLoggedIn) item { ShortcutTile("Import playlists", "From Spotify, Apple Music…", Icons.AutoMirrored.Rounded.PlaylistAdd, asList) { nav.go(Routes.IMPORT) } }
                         if (!settings.isLoggedIn) item(span = { GridItemSpan(maxLineSpan) }) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -230,6 +239,21 @@ fun LibraryScreen(bottomPadding: Dp) {
                         items(sortedArtists, key = { "r" + it.id }) { a -> LibraryItem(a, asList) { nav.open(a, onSong) } }
                     }
                     LibTab.DOWNLOADS -> item(span = { GridItemSpan(maxLineSpan) }) { DownloadsSummary() }
+                }
+            }
+        }
+    }
+
+    if (creating) {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        com.prism.music.ui.components.NewPlaylistDialog(onDismiss = { creating = false }) { name, privacy ->
+            creating = false
+            scope.launch {
+                val id = runCatching { c.ytm.createPlaylist(name, emptyList(), privacy = privacy) }.getOrNull()
+                if (id == null) android.widget.Toast.makeText(context, "Couldn't make the playlist", android.widget.Toast.LENGTH_SHORT).show()
+                else {
+                    c.library.refreshCollections()
+                    nav.go(Routes.playlist(id))
                 }
             }
         }

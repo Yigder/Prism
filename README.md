@@ -38,6 +38,8 @@ Updating works the same way: install the new APK over the old one, and your down
 | 🎨 **Make it yours** | Font, text size, corners, spacing, nav bar, mini player, player background and controls, lyrics alignment, Replay colours and eleven screen backgrounds. |
 | 📊 **Replay** | A private, on-device recap of your listening, with a full-screen story. |
 | 🎬 **Music videos** | Switch any song to its music video in one tap, with lyrics in sync and full-screen landscape. |
+| 🎧 **Listen together** | Phones on the same Wi-Fi play in step, or friends add songs to your queue. No account, no server. |
+| 🔗 **Share anything** | Story cards and links for songs, albums, playlists and artists, plus "Play in Prism" for YouTube links. |
 | 📥 **Offline** | Downloads and smart downloads, with lyrics saved alongside every song. |
 | 🎚️ **Sound** | 10-band EQ, loudness normalization, Prism Spatial, skip silence and lossless playback. |
 | 🚗 **Android Auto** | Shuffle play, extra player buttons and lyrics on the car screen. |
@@ -49,20 +51,27 @@ Updating works the same way: install the new APK over the old one, and your down
 - **Player.** Full-bleed artwork and animated covers. Shows the codec and bitrate (or Lossless / Downloaded), with stats in an in-player panel.
 - **Music videos.** Tap the video toggle under the player to switch any song to its official music video. Playback carries on from the same spot, and the lyrics stay in sync. Fit or fill the frame, go full screen, or turn the phone sideways for edge-to-edge landscape. Video quality goes from 480p up to 1440p in Playback & sound.
 - **Sound.** 10-band equalizer with presets, bass boost, loudness normalization (uses YouTube's own loudness data, works offline), Prism Spatial for any headphones, skip silence, and a lossless mode that plays matching FLAC files on the phone.
-- **Autoplay and radio.** The queue keeps going with similar music after an album or playlist ends. Shuffle makes a fresh order every time.
+- **Autoplay and radio.** The queue keeps going with similar music after an album or playlist ends. Shuffle makes a fresh order every time. Save the queue as a playlist, or clear what's up next.
+- **Sleep timer** for a set time or until the current song ends.
 
 ### Finding music
 - **Search as you type**, with a ranked "Top results" view across songs, albums, artists, playlists and videos.
-- **Artist pages** in the style of Apple Music: full-bleed photo, latest release, top songs, albums, singles, live albums and similar artists.
-- **Albums** star their most-played songs. **Playlists** sort by title, artist, album, duration or genre, and filter by genre.
+- **Artist pages** in the style of Apple Music's 2026 redesign: the photo frosts over into a backdrop made of its colours, the name is set in a signature typeface that suits the artist (long-press it to pick your own, from Autograph to Neon), and Info, Play, Shuffle and Favourite sit right under it. The latest release gets a spotlight card, then top songs, albums, singles, videos, live, appearances and similar artists.
+- **Albums** star their most-played songs, show the release type, year and explicit badge, and end with other versions and more by the artist. **Playlists** sort by title, artist, album, duration or genre, and filter by genre. Both sit on the same frosted backdrop (switchable in Appearance), with big Play and Shuffle buttons.
 
 ### Your library
 - **Home your way.** Custom greeting, shortcut tiles and pinned playlists.
 - **Downloads** work like a playlist, with counts, size, saved lyrics, sorting and bulk delete. Smart downloads keep a chosen amount of your favourites on the phone.
 - **Replay.** Minutes, top songs, artists and genres. Play or shuffle your top 250.
 - **Custom playlist pictures** and **backgrounds** for Home, Search, Library, Replay and Settings.
-- Signed in, likes, playlists, albums and artists sync both ways.
+- Signed in, likes, playlists, albums and artists sync both ways. **Add albums and playlists to your library**, **star your favourite artists** (they lead Library → Artists and are subscribed on YouTube Music), **make new playlists**, and add songs to them from a searchable sheet.
+- **Your playlists, your way:** rename them, rewrite the description, choose private, unlisted or public, take songs out, or delete them.
 - **Import playlists from Spotify, Apple Music and more** with [TuneMyMusic](https://www.tunemymusic.com) (Library → Import playlists). It copies them into your YouTube Music account, and Prism syncs them in when you come back.
+
+### Together and sharing
+- **Listen together.** Start a session and friends on the same Wi-Fi (or your hotspot) join with a four-digit code. They can play the same music on their own phones, kept in step with yours, or just add songs to your queue, party style. You decide whether guests can also play, pause and skip. Phones talk to each other directly: there's no Prism server, and nothing is shared once the session ends.
+- **Share** any song, album, playlist or artist as a link or as a story card made from its artwork. A private playlist's link only works for you, so the share sheet offers to make it unlisted. Liked songs and Downloads share as a card and a track list.
+- **Play in Prism:** share a YouTube or YouTube Music link from any app to Prism to open it.
 
 ### Android Auto
 - Browse Home, Liked songs, your library and recent plays, and search by voice.
@@ -89,7 +98,9 @@ Updating works the same way: install the new APK over the old one, and your down
 
 Prism doesn't ship artwork, fonts or code copied from other apps, but several ideas and data sources come from elsewhere:
 
-- **Apple Music** inspired the artist page layout, starred most-played album tracks, headline artist typefaces and the animated cover style.
+- **Apple Music** inspired the artist page layout (including its 2026 frosted redesign, with the name and Info, Play and Favourite centred under the photo), starred most-played album tracks, headline artist typefaces and the animated cover style.
+- **Spotify Jam** inspired Listen Together (built here to work without any server), and Spotify and Apple Music's share cards inspired the story cards.
+- **Signatures** use fonts already on the phone, such as Android's own Dancing Script for the Autograph style.
 - **BitChord** (itself modelled on Apple Music) inspired the Now Playing screen.
 - **Spotify Wrapped** inspired the Replay story, including its "what's playing" card.
 - **Lyrics:** [Better Lyrics](https://betterlyrics.org) (Apple Music TTML and QQ Music "Portato"), NetEase, KuGou, LyricsPlus, Bini, [LRCLIB](https://lrclib.net), Unison, Genius, YouTube Music and [Lyrics.ovh](https://lyrics.ovh). Lyrics belong to their rights holders.
@@ -101,7 +112,7 @@ Prism doesn't ship artwork, fonts or code copied from other apps, but several id
 
 ## Privacy
 
-Prism talks to YouTube Music and the lyric services directly from your phone. There is no Prism server and no telemetry. Listening history, Replay stats, downloads and settings stay on the device; if you sign in, your session is stored only in the app's private storage.
+Prism talks to YouTube Music and the lyric services directly from your phone. There is no Prism server and no telemetry. Listening history, Replay stats, downloads and settings stay on the device; if you sign in, your session is stored only in the app's private storage. Listen Together only ever talks to the other phones in your session, on your local network, and only while it's open.
 
 ## Support Prism
 
@@ -133,6 +144,7 @@ Unit tests (some call live lyric and YouTube Music endpoints, so they need a net
 | Stream resolving (NewPipe Extractor) | `data/stream/` |
 | Lyric providers and TTML / LRC / QRC / YRC / KRC parsers | `data/lyrics/` |
 | Playback service, audio effects, Android Auto and car lyrics | `playback/` |
+| Listen Together (local-network sessions) | `playback/together/` |
 | Downloads and smart downloads | `download/` |
 | Compose UI and design kit | `ui/` |
 

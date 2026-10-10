@@ -325,6 +325,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.appearance() {
                 Chips(GlassKind.entries, s.glassKind, { it.label }) { prefs.setGlassKind(it) }
             }
             Toggle("Frosted Glass", "Soft blurred glass instead, without the refraction", s.frostedGlass) { prefs.setFrostedGlass(it) }
+            Toggle("Frosted artist & album pages", "Artist, album and playlist pages sit on frosted glass made from their picture, and take its colour", s.frostedPages) { prefs.setFrostedPages(it) }
         }
     }
     item(key = "motion") {

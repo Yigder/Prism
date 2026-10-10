@@ -23,4 +23,6 @@ class QueueState {
     @Volatile var autoplayLoading = false
     /** Index in the queue where autoplay suggestions begin (-1 when none). */
     val autoplayStart = MutableStateFlow(-1)
+    /** Playing along with a Listen Together host: their queue decides what's next (no autoplay or skipping here). */
+    @Volatile var followingHost = false
 }

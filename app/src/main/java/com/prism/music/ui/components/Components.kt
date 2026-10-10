@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -34,6 +35,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Album
 import androidx.compose.material.icons.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Close
@@ -44,6 +46,8 @@ import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material.icons.rounded.Explicit
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
+import androidx.compose.material.icons.rounded.GroupAdd
+import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
@@ -167,6 +171,8 @@ fun SongRow(
     onLongClick: (() -> Unit)? = null,
     /** Marks one of an album's most-played tracks with a star, as Apple Music does. */
     starred: Boolean = false,
+    /** More rows for the song's menu (e.g. "Remove from this playlist"). */
+    extraActions: List<SheetItem> = emptyList(),
     onClick: () -> Unit,
 ) {
     val c = LocalContainer.current
@@ -223,7 +229,7 @@ fun SongRow(
         if (song.id in liked) Icon(Icons.Rounded.Favorite, null, Modifier.size(15.dp), tint = scheme.primary)
         IconButton(onClick = { menu = true }) { Icon(Icons.Rounded.MoreHoriz, "More", tint = scheme.onSurfaceVariant.copy(alpha = 0.8f)) }
     }
-    if (menu) SongActionsSheet(song) { menu = false }
+    if (menu) SongActionsSheet(song, extraActions) { menu = false }
 }
 
 @Composable
@@ -361,13 +367,14 @@ fun MarqueeText(text: String, modifier: Modifier = Modifier, style: androidx.com
     Text(text, modifier.basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 2500), style = style, color = color, maxLines = 1)
 }
 
-/** A search pill for filtering a list in place ("Search in playlist"), as you type. */
+/** A search pill for filtering a list in place ("Search in playlist"), as you type. [container] defaults to the theme's. */
 @Composable
-fun SearchField(query: String, hint: String, onChange: (String) -> Unit, modifier: Modifier = Modifier) {
+fun SearchField(query: String, hint: String, onChange: (String) -> Unit, modifier: Modifier = Modifier, container: Color = Color.Unspecified) {
     val scheme = MaterialTheme.colorScheme
     val focus = androidx.compose.ui.platform.LocalFocusManager.current
     Row(
-        modifier.fillMaxWidth().height(46.dp).clip(com.prism.music.ui.theme.LocalUi.current.shape(23.dp)).background(scheme.surfaceContainerHigh).padding(start = 14.dp, end = 4.dp),
+        modifier.fillMaxWidth().height(46.dp).clip(com.prism.music.ui.theme.LocalUi.current.shape(23.dp))
+            .background(if (container != Color.Unspecified) container else scheme.surfaceContainerHigh).padding(start = 14.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(Icons.Rounded.Search, null, Modifier.size(20.dp), tint = scheme.onSurfaceVariant)
@@ -438,19 +445,23 @@ fun PrismSheet(
 
 // ---------------------------------------------------------------- Song actions
 
+/** A song's menu. [extra] adds rows before Share (e.g. "Remove from this playlist"). */
 @Composable
-fun SongActionsSheet(song: Song, onDismiss: () -> Unit) {
+fun SongActionsSheet(song: Song, extra: List<SheetItem> = emptyList(), onDismiss: () -> Unit) {
     val c = LocalContainer.current
     val nav = LocalNavigator.current
     val context = LocalContext.current
     val liked by c.library.likedIds.collectAsState()
     val downloads by c.downloads.downloads.collectAsState()
     var pickPlaylist by remember { mutableStateOf(false) }
+    var sharing by remember { mutableStateOf(false) }
     val isLiked = song.id in liked
     val dl = downloads[song.id]
+    val together by c.together.state.collectAsState()
+    val guest = together as? com.prism.music.playback.together.TogetherState.Guest
 
-    // The playlist picker takes over from the sheet.
-    if (!pickPlaylist) PrismSheet(onDismiss = onDismiss) { hide ->
+    // The playlist picker and the share sheet take over from the sheet.
+    if (!pickPlaylist && !sharing) PrismSheet(onDismiss = onDismiss) { hide ->
       fun close(action: () -> Unit) = hide(action)
       Column(Modifier.verticalScroll(rememberScrollState())) {
         Row(Modifier.padding(horizontal = 20.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -463,8 +474,18 @@ fun SongActionsSheet(song: Song, onDismiss: () -> Unit) {
             if (song.durationSec > 0) Text(formatDuration(song.durationSec), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         HorizontalDivider(Modifier.padding(horizontal = 20.dp, vertical = 12.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-        SheetAction(Icons.Rounded.PlaylistPlay, "Play next") { close { c.player.playNext(song) } }
-        SheetAction(Icons.AutoMirrored.Rounded.QueueMusic, "Add to queue") { close { c.player.addToQueue(song) } }
+        // In someone's Listen Together session, songs go into their queue.
+        if (guest != null) {
+            SheetAction(Icons.Rounded.Groups, "Play next in ${guest.hostName}'s session") {
+                close { c.together.suggest(song, next = true); android.widget.Toast.makeText(context, "Sent to ${guest.hostName}", android.widget.Toast.LENGTH_SHORT).show() }
+            }
+            SheetAction(Icons.Rounded.GroupAdd, "Add to ${guest.hostName}'s queue") {
+                close { c.together.suggest(song, next = false); android.widget.Toast.makeText(context, "Sent to ${guest.hostName}", android.widget.Toast.LENGTH_SHORT).show() }
+            }
+        } else {
+            SheetAction(Icons.Rounded.PlaylistPlay, "Play next") { close { c.player.playNext(song) } }
+            SheetAction(Icons.AutoMirrored.Rounded.QueueMusic, "Add to queue") { close { c.player.addToQueue(song) } }
+        }
         SheetAction(Icons.Rounded.Radio, "Start radio") { close { c.player.playRadio(song) } }
         SheetAction(if (isLiked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, if (isLiked) "Remove from liked songs" else "Add to liked songs") {
             close { c.library.toggleLike(song) }
@@ -476,19 +497,13 @@ fun SongActionsSheet(song: Song, onDismiss: () -> Unit) {
         if (c.settings.current.isLoggedIn) SheetAction(Icons.AutoMirrored.Rounded.PlaylistAdd, "Add to playlist") { pickPlaylist = true }
         song.album?.id?.let { id -> SheetAction(Icons.Rounded.Album, "Go to album") { close { nav.go(Routes.album(id)) } } }
         song.artists.firstOrNull { it.id != null }?.let { a -> SheetAction(Icons.Rounded.Person, "Go to ${a.name}") { close { nav.go(Routes.artist(a.id!!)) } } }
-        SheetAction(Icons.Rounded.Share, "Share") {
-            close {
-                val send = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(android.content.Intent.EXTRA_TEXT, "https://music.youtube.com/watch?v=${song.id}")
-                }
-                context.startActivity(android.content.Intent.createChooser(send, "Share song"))
-            }
-        }
+        extra.forEach { e -> SheetAction(e.icon, e.label) { close(e.onClick) } }
+        SheetAction(Icons.Rounded.Share, "Share") { sharing = true }
         Spacer(Modifier.height(24.dp))
       }
     }
     if (pickPlaylist) PlaylistPicker(song) { pickPlaylist = false; onDismiss() }
+    if (sharing) ShareSheet(song.shareTarget()) { sharing = false; onDismiss() }
 }
 
 /** One extra row for [SongActionsSheet]. */
@@ -509,37 +524,91 @@ fun SheetAction(icon: ImageVector, label: String, onClick: () -> Unit) {
     }
 }
 
+/** Adds [song] to one of the account's playlists, or to a new one. */
 @Composable
 fun PlaylistPicker(song: Song, onDismiss: () -> Unit) {
     val c = LocalContainer.current
     val playlists by c.library.playlists.collectAsState()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Add to playlist") },
-        text = {
-            Column {
-                if (playlists.isEmpty()) Text("Sync your library first (Library → refresh).")
-                playlists.filterIsInstance<PlaylistItem>().filter { !it.id.startsWith("LM") && !it.isMix }.take(30).forEach { p ->
+    var creating by remember { mutableStateOf(false) }
+    var query by remember { mutableStateOf("") }
+    fun toast(text: String) = android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_SHORT).show()
+    if (creating) {
+        NewPlaylistDialog(onDismiss = { creating = false; onDismiss() }) { name, privacy ->
+            creating = false
+            onDismiss()
+            c.scope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                val id = runCatching { c.ytm.createPlaylist(name, listOf(song.id), privacy = privacy) }.getOrNull()
+                toast(if (id != null) "Added to $name" else "Couldn't make the playlist")
+                if (id != null) c.library.refreshCollections()
+            }
+        }
+        return
+    }
+    val mine = playlists.filterIsInstance<PlaylistItem>().filter { !it.id.startsWith("LM") && !it.isMix }
+    val shown = if (query.isBlank()) mine else mine.filter { it.title.contains(query.trim(), ignoreCase = true) }
+    PrismSheet(onDismiss = onDismiss) { close ->
+        Column(Modifier.padding(bottom = 20.dp)) {
+            Text("Add to playlist", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 20.dp))
+            Text(song.title, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 20.dp))
+            Spacer(Modifier.height(10.dp))
+            SheetAction(Icons.Rounded.Add, "New playlist") { creating = true }
+            if (mine.size > 8) SearchField(query, "Find a playlist", { query = it }, Modifier.padding(horizontal = 20.dp, vertical = 6.dp))
+            if (mine.isEmpty()) Text(
+                "Your playlists show up here once your library has synced.", style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(20.dp),
+            )
+            androidx.compose.foundation.lazy.LazyColumn(Modifier.heightIn(max = 440.dp)) {
+                items(shown, key = { it.id }) { p ->
                     Row(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable {
-                            scope.launch {
-                                val ok = runCatching { c.ytm.addToPlaylist(p.id, song.id) }.isSuccess
-                                android.widget.Toast.makeText(context, if (ok) "Added to ${p.title}" else "Couldn't add to ${p.title}", android.widget.Toast.LENGTH_SHORT).show()
-                                onDismiss()
+                        Modifier.fillMaxWidth().clickable {
+                            close {
+                                c.scope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                                    val ok = runCatching { c.ytm.addToPlaylist(p.id, song.id) }.isSuccess
+                                    toast(if (ok) "Added to ${p.title}" else "Couldn't add to ${p.title}")
+                                }
                             }
-                        }.padding(8.dp),
+                        }.padding(horizontal = 20.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Artwork(c.covers.art(p), Modifier.size(40.dp), RoundedCornerShape(8.dp), size = 120)
-                        Spacer(Modifier.width(12.dp))
-                        Text(p.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Artwork(c.covers.art(p), Modifier.size(46.dp), com.prism.music.ui.theme.LocalUi.current.smallArt, size = 120, placeholderIcon = Icons.AutoMirrored.Rounded.QueueMusic)
+                        Spacer(Modifier.width(14.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(p.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            if (p.subtitle.isNotBlank()) Text(p.subtitle.removePrefix("Playlist • "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
                     }
                 }
             }
+        }
+    }
+}
+
+/** Name a new YouTube Music playlist and choose who can open it. */
+@Composable
+fun NewPlaylistDialog(onDismiss: () -> Unit, onCreate: (name: String, privacy: String) -> Unit) {
+    var name by remember { mutableStateOf("") }
+    var privacy by remember { mutableStateOf("PRIVATE") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("New playlist") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                androidx.compose.material3.OutlinedTextField(name, { name = it.take(150) }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Segmented(listOf("PRIVATE", "UNLISTED", "PUBLIC"), privacy, { when (it) { "PRIVATE" -> "Private"; "UNLISTED" -> "Unlisted"; else -> "Public" } }) { privacy = it }
+                Text(
+                    when (privacy) {
+                        "PRIVATE" -> "Only you can see it."
+                        "UNLISTED" -> "Anyone with the link can open it, so it's easy to share."
+                        else -> "Anyone can find it."
+                    },
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
+        confirmButton = { TextButton(onClick = { onCreate(name.trim(), privacy) }, enabled = name.isNotBlank()) { Text("Create") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }
 

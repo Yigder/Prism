@@ -213,7 +213,7 @@ class PlaybackService : MediaLibraryService(), Player.Listener {
         flushPlayTime()
         val song = mediaItem?.toSong() ?: return
         // Disliked songs are passed over when the queue reaches them on its own (tapping one still plays it).
-        if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO && c.library.isDisliked(song.id) && player.hasNextMediaItem()) {
+        if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO && !c.queue.followingHost && c.library.isDisliked(song.id) && player.hasNextMediaItem()) {
             player.seekToNextMediaItem()
             return
         }
@@ -329,7 +329,7 @@ class PlaybackService : MediaLibraryService(), Player.Listener {
      */
     fun maybeAutoplay() {
         val src = c.queue.source.value
-        if (!c.settings.current.autoplay || player.mediaItemCount == 0) return
+        if (!c.settings.current.autoplay || player.mediaItemCount == 0 || c.queue.followingHost) return
         if (src.kind != QueueKind.SINGLE && player.repeatMode != Player.REPEAT_MODE_OFF) return
         if (player.mediaItemCount - player.currentMediaItemIndex > 3 || c.queue.autoplayLoading) return
         val seed = src.seedId ?: player.getMediaItemAt(player.mediaItemCount - 1).mediaId.takeIf { it.isNotBlank() } ?: return
