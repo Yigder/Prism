@@ -99,7 +99,7 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
 
 ## Current status / Next steps
 - v1.5.1 (versionCode 16, 2026-10-10): Home, Search, Library, Replay and Settings rebuilt on the 1.5 frosted look
-  (see "Frosted pages" above). Compiles; not yet checked on the phone, not yet released on GitHub.
+  (see "Frosted pages" above). **GitHub "Latest"** (commit `ff71b95`, `Prism.apk` release-key signed); not yet checked on the phone.
 - v1.4.4 (versionCode 14, 2026-10-10): plays reach the account's YT Music history again
   (checked on the phone). The WEB_REMIX `player` call (`YouTubeMusic.playerExtras`) answers "Video unavailable" with no
   `videostatsPlaybackUrl` unless it sends the player JS's `signatureTimestamp` (`StreamResolver.signatureTimestamp()`).
