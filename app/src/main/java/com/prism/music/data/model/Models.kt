@@ -149,6 +149,9 @@ data class PlayerExtras(
     val loudnessDb: Double?,
     val trackingUrl: String?,
     val watchtimeUrl: String?,
+    /** The client the tracking URLs were issued to; their pings name it. */
+    val clientName: String = "WEB_REMIX",
+    val clientVersion: String? = null,
 )
 
 /** Rewrites a YouTube / Google image URL to request a given square size. */

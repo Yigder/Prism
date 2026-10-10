@@ -12,8 +12,10 @@ import com.prism.music.data.model.SearchResult
 import com.prism.music.data.model.Shelf
 import com.prism.music.data.model.Song
 import com.prism.music.data.model.SongItem
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -325,26 +327,46 @@ class YouTubeMusic(private val api: InnerTube) {
     }
 
     /** Fetches loudness + playback tracking info for normalization and history sync. */
-    suspend fun playerExtras(videoId: String): PlayerExtras {
-        val res = api.post("player", buildJsonObject {
-            put("videoId", videoId)
-            putJsonObject("playbackContext") {
-                putJsonObject("contentPlaybackContext") { put("html5Preference", "HTML5_PREF_WANTS") }
-            }
-        })
+    suspend fun playerExtras(videoId: String, signedIn: Boolean = false): PlayerExtras {
+        val res = runCatching {
+            api.post("player", buildJsonObject {
+                put("videoId", videoId)
+                putJsonObject("playbackContext") {
+                    putJsonObject("contentPlaybackContext") { put("html5Preference", "HTML5_PREF_WANTS") }
+                }
+            })
+        }.getOrNull()
+        val web = PlayerExtras(
+            loudnessDb = res?.str("playerConfig", "audioConfig", "loudnessDb")?.toDoubleOrNull(),
+            trackingUrl = res?.str("playbackTracking", "videostatsPlaybackUrl", "baseUrl"),
+            watchtimeUrl = res?.str("playbackTracking", "videostatsWatchtimeUrl", "baseUrl"),
+        )
+        if (web.trackingUrl != null || !signedIn) return web
+        // The web app's player often answers "Video unavailable" now (it wants a PO token), leaving
+        // no tracking URL, so plays never reached the account's history. The TV client still gives one.
+        val tv = runCatching {
+            withContext(Dispatchers.IO) { api.signedInPlayer(InnerTube.PlayerClient.TV, videoId, null) }
+        }.getOrNull() ?: return web
         return PlayerExtras(
-            loudnessDb = res.str("playerConfig", "audioConfig", "loudnessDb")?.toDoubleOrNull(),
-            trackingUrl = res.str("playbackTracking", "videostatsPlaybackUrl", "baseUrl"),
-            watchtimeUrl = res.str("playbackTracking", "videostatsWatchtimeUrl", "baseUrl"),
+            loudnessDb = web.loudnessDb ?: tv.str("playerConfig", "audioConfig", "loudnessDb")?.toDoubleOrNull(),
+            trackingUrl = tv.str("playbackTracking", "videostatsPlaybackUrl", "baseUrl"),
+            watchtimeUrl = tv.str("playbackTracking", "videostatsWatchtimeUrl", "baseUrl"),
+            clientName = InnerTube.PlayerClient.TV.clientName,
+            clientVersion = InnerTube.TV_CLIENT_VERSION,
         )
     }
 
     /** Registers a play in the user's YouTube Music history so recommendations stay in sync. */
     suspend fun registerPlayback(extras: PlayerExtras) {
-        val base = extras.trackingUrl ?: return
+        val base = extras.trackingUrl ?: run {
+            android.util.Log.w("PrismHistory", "no tracking URL; play not sent to YouTube Music")
+            return
+        }
         val cpn = (1..16).map { "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_".random() }.joinToString("")
         val sep = if (base.contains("?")) "&" else "?"
-        api.ping("$base${sep}ver=2&c=WEB_REMIX&cver=${api.clientVersion}&cpn=$cpn")
+        val cver = extras.clientVersion ?: api.clientVersion
+        api.ping("$base${sep}ver=2&c=${extras.clientName}&cver=$cver&cpn=$cpn")
+        android.util.Log.i("PrismHistory", "play sent to YouTube Music as ${extras.clientName}")
     }
 
     // ---------------------------------------------------------------- Account & library
