@@ -94,6 +94,19 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
   `PlayerConnection.follow` / `replaceUpcoming`, seeking when >650 ms off; a local pause/skip marks them out of step until
   Resync. `QueueState.followingHost` turns off autoplay and dislike-skipping while following. Every song from a peer goes
   through `fromPeer()` (YouTube ids and YouTube image hosts only). Internet (remote) sessions would need a relay server: not built.
+- Menus (unreleased, after 1.5.1): song long-press/⋯ (`SongActionsSheet`), album/playlist/artist long-press (`PlayActionsSheet`) and the
+  player's ⋯ (`PlayerOptionsSheet`, plus its Lyrics source / timing sheets) share `ui/components/ActionSheet.kt`: the item's artwork as
+  frosted glass (`FrostedBackdrop`, `ArtworkAccent`), `ActionHeader` + `SheetIconButton`s, `QuickActions` tiles, `ActionGroup` panes of `ActionItem`s.
+- Uncensoring: `Uncensor` (in `Lyrics.kt`) fills starred words from Genius's text, timings kept; applied in `LyricsRepository.fetch`/`saved`
+  when `skipCensored` ("Uncensor lyrics") is on. Lyrics.ovh was dropped. Musixmatch was tried as a keyless karaoke source and doesn't work
+  (desktop token is a placeholder that matches every song to "NOKIA"; the iOS token needs signed requests): don't retry it.
+- Search taste: `TasteRepository.searchTaste()` (a year of plays, likes, starred + library artists) feeds `SearchRank.rank(…, taste)`;
+  known artists climb when the query is whole words of their name, and are added if YouTube's artist results miss them.
+- Liked songs playlist: `data/LikedPlaylist.kt` mirrors likes into an owned YT playlist (oldest first, adds/removes; full reconcile after
+  library sync). Library playlist order: `LibraryRepository.playlistOrder`/`playlistSort` (`library_order` prefs), Rearrange mode uses
+  `ui/components/Reorder.kt`. Artist pages list up to 20 top songs (from the "See all" playlist).
+- Picture-in-picture: `MainActivity.setPipEligible`/`enterPip` (auto-enter on 12+, `onUserLeaveHint` below), `LocalPip` makes
+  `NowPlayingScreen` show only the video (`FullscreenVideo(pip = true)`); PiP controls come from the media session.
 - Not affiliated with Google/YouTube — keep the disclaimer in README.
 - `*.apk`, `local.properties`, keystores are gitignored.
 

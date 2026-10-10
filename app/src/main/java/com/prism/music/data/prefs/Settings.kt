@@ -44,7 +44,6 @@ enum class LyricsSource(val label: String) {
     UNISON("Unison"),
     YTMUSIC("YouTube Music"),
     GENIUS("Genius"),
-    LYRICSOVH("Lyrics.ovh"),
 }
 
 /** Tiles in Home's greeting section. */
@@ -148,7 +147,7 @@ object HomeSections {
 /** The order lyric sources are tried in on a fresh install. */
 val defaultLyricsOrder = listOf(
     LyricsSource.KUGOU, LyricsSource.QQ, LyricsSource.APPLE, LyricsSource.LYRICSPLUS, LyricsSource.BINI, LyricsSource.YTMUSIC,
-    LyricsSource.NETEASE, LyricsSource.LRCLIB, LyricsSource.UNISON, LyricsSource.GENIUS, LyricsSource.LYRICSOVH,
+    LyricsSource.NETEASE, LyricsSource.LRCLIB, LyricsSource.UNISON, LyricsSource.GENIUS,
 )
 
 data class AppSettings(

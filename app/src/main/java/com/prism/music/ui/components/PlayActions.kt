@@ -16,6 +16,7 @@ import androidx.compose.material.icons.rounded.DownloadDone
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.PlaylistPlay
 import androidx.compose.material.icons.rounded.Radio
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Shuffle
@@ -103,43 +104,48 @@ fun PlayActionsSheet(target: Playable, extra: List<SheetItem> = emptyList(), onD
         c.player.playQueue(loaded.first, 0, loaded.second, shuffle = shuffle && item !is ArtistItem)
     }
 
-    PrismSheet(onDismiss = onDismiss) { close ->
-        Column {
-            Row(Modifier.padding(horizontal = 20.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                Artwork(
-                    art, Modifier.size(60.dp), if (item is ArtistItem) CircleShape else ui.art, size = 226,
-                    placeholderIcon = when {
-                        target == Playable.Liked -> Icons.Rounded.Favorite
-                        target == Playable.Downloads -> Icons.Rounded.DownloadDone
-                        item is ArtistItem -> Icons.Rounded.Person
-                        item is AlbumItem -> Icons.Rounded.Album
-                        else -> Icons.AutoMirrored.Rounded.QueueMusic
-                    },
-                )
-                Spacer(Modifier.width(14.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
-            HorizontalDivider(Modifier.padding(horizontal = 20.dp, vertical = 12.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-            if (item is ArtistItem) {
-                SheetAction(Icons.Rounded.Shuffle, "Shuffle songs") { close { play(shuffle = true) } }
-                SheetAction(Icons.Rounded.Radio, "Start mix") { close { play(shuffle = false, mix = true) } }
-            } else {
-                SheetAction(Icons.Rounded.PlayArrow, "Play") { close { play(shuffle = false) } }
-                SheetAction(Icons.Rounded.Shuffle, "Shuffle") { close { play(shuffle = true) } }
-            }
-            extra.forEach { e -> SheetAction(e.icon, e.label) { close(e.onClick) } }
-            SheetAction(Icons.Rounded.Share, "Share") {
+    /** The whole list after the current song ([next]) or at the end of the queue. */
+    fun queue(next: Boolean) = c.scope.launch(Dispatchers.Main) {
+        val loaded = runCatching { withContext(Dispatchers.IO) { songsFor(c, target, shuffle = false, mix = false) } }.getOrNull()
+        if (loaded == null || loaded.first.isEmpty()) {
+            Toast.makeText(context, if (loaded == null) "Couldn't load \"$title\"" else "Nothing to play in \"$title\"", Toast.LENGTH_SHORT).show()
+            return@launch
+        }
+        if (next) c.player.playNext(loaded.first, loaded.second) else c.player.addToQueue(loaded.first, loaded.second)
+        Toast.makeText(context, "${loaded.first.size} songs ${if (next) "playing next" else "added to the queue"}", Toast.LENGTH_SHORT).show()
+    }
+    val quick = if (item is ArtistItem) listOf(
+        ActionItem(Icons.Rounded.Shuffle, "Shuffle") { play(shuffle = true) },
+        ActionItem(Icons.Rounded.Radio, "Mix") { play(shuffle = false, mix = true) },
+    ) else listOf(
+        ActionItem(Icons.Rounded.PlayArrow, "Play") { play(shuffle = false) },
+        ActionItem(Icons.Rounded.Shuffle, "Shuffle") { play(shuffle = true) },
+        ActionItem(Icons.Rounded.PlaylistPlay, "Play next") { queue(next = true) },
+        ActionItem(Icons.AutoMirrored.Rounded.QueueMusic, "Add to queue") { queue(next = false) },
+    )
+
+    ActionSheet(art, onDismiss) { close ->
+        ActionHeader(
+            art, title, subtitle,
+            shape = if (item is ArtistItem) CircleShape else ui.art,
+            placeholderIcon = when {
+                target == Playable.Liked -> Icons.Rounded.Favorite
+                target == Playable.Downloads -> Icons.Rounded.DownloadDone
+                item is ArtistItem -> Icons.Rounded.Person
+                item is AlbumItem -> Icons.Rounded.Album
+                else -> Icons.AutoMirrored.Rounded.QueueMusic
+            },
+        ) {
+            SheetIconButton(Icons.Rounded.Share, "Share") {
                 sharing = when (target) {
                     Playable.Liked -> ShareTarget("Liked songs", "${liked.size} songs", "Playlist", art, null, songs = liked)
                     Playable.Downloads -> c.downloads.completedSongs().let { ShareTarget("Downloads", "${it.size} songs", "Playlist", art, null, songs = it) }
                     is Playable.Of -> target.item.shareTarget(art)
                 }
             }
-            Spacer(Modifier.height(24.dp))
         }
+        QuickActions(quick) { runAction(it, close) }
+        ActionGroup(null, extra.map { it.toAction() }) { runAction(it, close) }
     }
 }
 

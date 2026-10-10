@@ -91,6 +91,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import com.prism.music.ui.components.pane
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -641,42 +642,41 @@ fun LyricsProviderSheet(state: LyricsState, onDismiss: () -> Unit) {
     val settings by c.settings.flow.collectAsState()
     val scope = rememberCoroutineScope()
     LaunchedEffect(state.song.id) { state.probeAll(settings.lyricsOrder) }
-    com.prism.music.ui.components.PrismSheet(onDismiss, containerColor = Color(0xFF1C1C1E), contentColor = Color.White) { close ->
-        Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Lyrics source", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+    val scheme = MaterialTheme.colorScheme
+    val ui = com.prism.music.ui.theme.LocalUi.current
+    // The same frosted sheet as the player's ⋯ menu it opens from.
+    com.prism.music.ui.components.ActionSheet(state.song.thumbnail, onDismiss) { close ->
+        Row(Modifier.fillMaxWidth().padding(start = 24.dp, end = 16.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Lyrics source", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
             // Up top, where it can't scroll out of reach.
-            state.source?.let { src ->
-                Row(
-                    Modifier.clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.12f))
-                        .clickable { state.redownload(); close {} }
-                        .padding(start = 12.dp, end = 14.dp, top = 8.dp, bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Icons.Rounded.Refresh, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("Re-download", style = MaterialTheme.typography.labelLarge)
-                }
+            state.source?.let {
+                com.prism.music.ui.components.PrismChip(false, { state.redownload(); close {} }, "Re-download", icon = Icons.Rounded.Refresh)
             }
         }
         state.source?.let { src ->
             Text(
                 "Re-download fetches ${src.label}'s lyrics again and replaces the saved copy",
-                style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.45f),
+                style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 24.dp),
             )
         }
-        Column(Modifier.padding(top = 6.dp, bottom = 28.dp).verticalScroll(rememberScrollState())) {
-            settings.lyricsOrder.forEach { src ->
+        Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp).fillMaxWidth().pane(ui.card, scheme.surfaceContainerHigh)) {
+            settings.lyricsOrder.forEachIndexed { i, src ->
                 val st = state.providers[src] ?: ProviderState.UNKNOWN
                 val starred = state.censoredSources[src] == true
+                val chosen = state.source == src && state.lyrics != null
+                if (i > 0) androidx.compose.material3.HorizontalDivider(Modifier.padding(start = 16.dp), color = scheme.onSurface.copy(alpha = 0.08f))
                 Row(
                     Modifier.fillMaxWidth()
                         .clickable(enabled = st != ProviderState.NONE) { state.select(src); close {} }
-                        .padding(horizontal = 24.dp, vertical = 10.dp),
+                        .padding(horizontal = 16.dp, vertical = 11.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text(src.label, style = MaterialTheme.typography.bodyLarge, color = Color.White.copy(alpha = if (st == ProviderState.NONE) 0.4f else 1f))
+                        Text(
+                            src.label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium,
+                            color = when { chosen -> scheme.primary; st == ProviderState.NONE -> scheme.onSurface.copy(alpha = 0.4f); else -> scheme.onSurface },
+                        )
                         Text(
                             when (st) {
                                 ProviderState.LOADING, ProviderState.UNKNOWN -> "Checking…"
@@ -684,16 +684,15 @@ fun LyricsProviderSheet(state: LyricsState, onDismiss: () -> Unit) {
                                 ProviderState.FOUND_PLAIN -> "Plain text"
                                 ProviderState.NONE -> "Not available for this song"
                             } + if (starred && st != ProviderState.NONE) " · Censored" else "",
-                            style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.55f),
+                            style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
                         )
                     }
                     when {
-                        state.source == src && state.lyrics != null -> Icon(Icons.Rounded.Check, "Selected", tint = Color.White)
-                        st == ProviderState.LOADING -> CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                        chosen -> Icon(Icons.Rounded.Check, "Selected", tint = scheme.primary)
+                        st == ProviderState.LOADING -> CircularProgressIndicator(Modifier.size(18.dp), color = scheme.onSurfaceVariant, strokeWidth = 2.dp)
                     }
                 }
             }
         }
     }
 }
-

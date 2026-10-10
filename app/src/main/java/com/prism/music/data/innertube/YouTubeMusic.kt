@@ -84,12 +84,15 @@ class YouTubeMusic(private val api: InnerTube) {
         return res.findAll("searchSuggestionRenderer").mapNotNull { it.obj("suggestion").text() }.distinct()
     }
 
-    /** Songs, albums, artists, playlists and videos at once, ranked by how well they match ([SearchRank]). */
-    suspend fun searchTop(query: String): TopSearch = kotlinx.coroutines.coroutineScope {
+    /**
+     * Songs, albums, artists, playlists and videos at once, ranked by how well they match and how
+     * well they fit the listener's [taste] ([SearchRank]).
+     */
+    suspend fun searchTop(query: String, taste: SearchRank.Taste = SearchRank.Taste.NONE): TopSearch = kotlinx.coroutines.coroutineScope {
         val kinds = listOf(SearchFilter.SONGS, SearchFilter.ALBUMS, SearchFilter.ARTISTS, SearchFilter.PLAYLISTS, SearchFilter.VIDEOS)
         val results = kinds.map { f -> async { f to runCatching { search(query, f).items }.getOrDefault(emptyList()) } }.awaitAll()
         if (results.all { it.second.isEmpty() }) throw java.io.IOException("Search failed")
-        SearchRank.rank(query, results)
+        SearchRank.rank(query, results, taste)
     }
 
     suspend fun search(query: String, filter: SearchFilter, continuation: String? = null): SearchResult {
@@ -466,6 +469,57 @@ class YouTubeMusic(private val api: InnerTube) {
                 }
             }
         })
+    }
+
+    /** Adds many songs to an owned playlist, 50 to a request; ones already in it are skipped. */
+    suspend fun addAllToPlaylist(playlistId: String, videoIds: List<String>) {
+        videoIds.chunked(50).forEach { chunk ->
+            api.post("browse/edit_playlist", buildJsonObject {
+                put("playlistId", playlistId.removePrefix("VL"))
+                putJsonArray("actions") {
+                    chunk.forEach { id ->
+                        addJsonObject {
+                            put("action", "ACTION_ADD_VIDEO")
+                            put("addedVideoId", id)
+                            put("dedupeOption", "DEDUPE_OPTION_SKIP")
+                        }
+                    }
+                }
+            })
+        }
+    }
+
+    /** Takes many songs out of an owned playlist, 50 to a request; each is (videoId, setVideoId). */
+    suspend fun removeAllFromPlaylist(playlistId: String, items: List<Pair<String, String>>) {
+        items.chunked(50).forEach { chunk ->
+            api.post("browse/edit_playlist", buildJsonObject {
+                put("playlistId", playlistId.removePrefix("VL"))
+                putJsonArray("actions") {
+                    chunk.forEach { (videoId, setVideoId) ->
+                        addJsonObject {
+                            put("action", "ACTION_REMOVE_VIDEO")
+                            put("removedVideoId", videoId)
+                            put("setVideoId", setVideoId)
+                        }
+                    }
+                }
+            })
+        }
+    }
+
+    /** Everything in an owned playlist, video id -> setVideoId (its slot, for taking it out). */
+    suspend fun playlistSlots(playlistId: String, limit: Int = 10_000): Map<String, String> {
+        val first = playlist(playlistId)
+        if (!first.owned) throw java.io.IOException("Not your playlist")
+        val slots = LinkedHashMap(first.setVideoIds)
+        var token = first.continuation
+        while (token != null && slots.size < limit) {
+            val chunk = playlistPage(token)
+            if (chunk.songs.isEmpty()) break
+            slots.putAll(chunk.setVideoIds)
+            token = chunk.next
+        }
+        return slots
     }
 
     suspend fun createPlaylist(title: String, videoIds: List<String>, description: String = "", privacy: String = "PRIVATE"): String? {

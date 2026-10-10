@@ -156,6 +156,9 @@ private class ArtistSections(page: ArtistPage) {
     val others: List<Shelf> = rest.toList()
 }
 
+/** How many top songs the artist page lists (in columns of four). */
+private const val TOP_SONGS = 20
+
 private val yearRegex = Regex("\\b(19|20)\\d{2}\\b")
 private fun yearOf(item: BrowseItem): Int = yearRegex.find(item.subtitle)?.value?.toIntOrNull() ?: 0
 
@@ -213,15 +216,21 @@ private fun ArtistContent(page: ArtistPage, bottomPadding: Dp) {
     }
     val shuffle = { playList(page.shufflePlaylistId, page.name, page.shuffleVideoId, page.shuffleParams) }
     val mix = { playList(page.radioPlaylistId, "${page.name} Mix", page.radioVideoId, page.radioParams) }
+    // The page itself only carries five top songs; the list behind "See all" has the rest.
+    val quickTop = remember(sections) { sections.topSongs?.items?.filterIsInstance<SongItem>()?.map { it.song }.orEmpty() }
+    val fullTop by produceState<List<Song>?>(null, page.id) {
+        val id = sections.topSongs?.moreBrowseId?.takeIf { it.startsWith("VL") } ?: return@produceState
+        value = runCatching { c.ytm.playlist(id).songs }.getOrNull()?.filter { !it.isVideo }
+    }
+    val topSongs = fullTop?.takeIf { it.size > quickTop.size }?.take(TOP_SONGS) ?: quickTop
     // Play: their top songs in order (the whole list behind "See all" when it loads quickly).
     val playTop: () -> Unit = {
         val shelf = sections.topSongs
-        val quick = shelf?.items?.filterIsInstance<SongItem>()?.map { it.song }.orEmpty()
         scope.launch {
-            val full = shelf?.moreBrowseId?.takeIf { it.startsWith("VL") }?.let { id ->
+            val full = fullTop ?: shelf?.moreBrowseId?.takeIf { it.startsWith("VL") }?.let { id ->
                 withTimeoutOrNull(3_000) { runCatching { c.ytm.playlist(id).songs }.getOrNull() }
             }
-            val songs = full?.takeIf { it.size >= quick.size } ?: quick
+            val songs = full?.takeIf { it.size >= quickTop.size } ?: quickTop
             if (songs.isNotEmpty()) c.player.playQueue(songs, 0, QueueSource(QueueKind.PLAYLIST, "${page.name}: Top songs"))
             else shuffle()
         }
@@ -266,7 +275,7 @@ private fun ArtistContent(page: ArtistPage, bottomPadding: Dp) {
                 sections.topSongs?.let { shelf ->
                     item("top") {
                         AppleHeader("Top Songs", more(shelf))
-                        TopSongsGrid(shelf.items.filterIsInstance<SongItem>().map { it.song }, "${page.name}: Top songs")
+                        TopSongsGrid(topSongs, "${page.name}: Top songs")
                     }
                 }
                 sections.albums?.let { s -> item("albums") { AppleHeader("Albums", more(s)); CardRow(s.items, 168.dp, open = open) } }
@@ -497,7 +506,11 @@ private fun TopSongsGrid(songs: List<Song>, title: String) {
                     val index = col * 4 + i
                     Row(
                         Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
-                            .clickable { c.player.playQueue(songs, index, QueueSource(QueueKind.OTHER, title)) }
+                            .combinedClickable(
+                                onClick = { c.player.playQueue(songs, index, QueueSource(QueueKind.OTHER, title)) },
+                                // Held, a top song offers the same menu as a song anywhere else.
+                                onLongClick = { menuFor = s },
+                            )
                             .padding(vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {

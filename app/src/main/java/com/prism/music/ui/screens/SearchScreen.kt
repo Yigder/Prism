@@ -152,7 +152,9 @@ fun SearchScreen(bottomPadding: Dp) {
         // Earlier results stay on screen until these land, so nothing flashes.
         if (filter == SearchFilter.TOP) {
             if (top == null) top = Load.Loading
-            top = runCatching { c.ytm.searchTop(live) }.fold({ Load.Ok(it) }, { Load.Err(it.message ?: "Search failed") })
+            // Leaned toward what this listener plays (built on the phone, never sent anywhere).
+            val taste = runCatching { c.taste.searchTaste() }.getOrDefault(com.prism.music.data.innertube.SearchRank.Taste.NONE)
+            top = runCatching { c.ytm.searchTop(live, taste) }.fold({ Load.Ok(it) }, { Load.Err(it.message ?: "Search failed") })
         } else {
             if (list == null) list = Load.Loading
             list = runCatching { c.ytm.search(live, filter) }

@@ -113,17 +113,20 @@ fun NerdStatsPanel(modifier: Modifier = Modifier) {
 @Composable
 fun LyricsTimingSheet(onDismiss: () -> Unit) {
     val pc = LocalContainer.current.player
+    val song by pc.currentSong.collectAsState()
     val offset by pc.lyricOffset.collectAsState()
     val sync by pc.videoSync.collectAsState()
     val videoMode by pc.videoMode.collectAsState()
+    val scheme = MaterialTheme.colorScheme
     fun fmt(ms: Long) = (if (ms > 0) "+" else if (ms < 0) "−" else "") + "%.1f s".format(kotlin.math.abs(ms) / 1000f)
     fun nudge(d: Long) = pc.setLyricOffset((offset + d).coerceIn(-15_000, 15_000))
-    com.prism.music.ui.components.PrismSheet(onDismiss, containerColor = Color(0xFF1C1C1E), contentColor = Color.White) {
-        Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 32.dp)) {
-            Text("Lyrics timing", style = MaterialTheme.typography.titleLarge)
+    // The same frosted sheet as the player's ⋯ menu it opens from.
+    com.prism.music.ui.components.ActionSheet(song?.thumbnail, onDismiss) {
+        Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 10.dp)) {
+            Text("Lyrics timing", style = MaterialTheme.typography.titleLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
             Text(
                 if (videoMode) "For this song's music video" else "For this song",
-                style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.55f),
+                style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(20.dp))
             Text(
@@ -135,20 +138,17 @@ fun LyricsTimingSheet(onDismiss: () -> Unit) {
                 listOf(-500L to "−0.5", -100L to "−0.1", 100L to "+0.1", 500L to "+0.5").forEach { (d, label) ->
                     Text(
                         label, style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.12f))
+                        modifier = Modifier.clip(RoundedCornerShape(50)).background(com.prism.music.ui.components.quietFill())
                             .clickable { nudge(d) }.padding(horizontal = 18.dp, vertical = 10.dp),
                     )
                 }
             }
             Row(Modifier.fillMaxWidth().padding(top = 6.dp, start = 4.dp, end = 4.dp)) {
-                Text("Later", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.45f), modifier = Modifier.weight(1f))
-                Text("Earlier", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.45f))
+                Text("Later", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                Text("Earlier", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
             }
-            Slider(
-                offset / 1000f, { pc.setLyricOffset((it * 10).roundToInt() * 100L) }, valueRange = -10f..10f,
-                colors = SliderDefaults.colors(thumbColor = Color.White, activeTrackColor = Color.White, inactiveTrackColor = Color.White.copy(alpha = 0.2f)),
-            )
-            if (offset != 0L) TextButton(onClick = { pc.setLyricOffset(0) }, Modifier.align(Alignment.End)) { Text("Reset", color = Color.White) }
+            Slider(offset / 1000f, { pc.setLyricOffset((it * 10).roundToInt() * 100L) }, valueRange = -10f..10f)
+            if (offset != 0L) TextButton(onClick = { pc.setLyricOffset(0) }, Modifier.align(Alignment.End)) { Text("Reset") }
             if (videoMode) {
                 Spacer(Modifier.height(10.dp))
                 Text("Music video", style = MaterialTheme.typography.titleSmall)
@@ -163,11 +163,11 @@ fun LyricsTimingSheet(onDismiss: () -> Unit) {
                         VideoSyncState.Unmatched -> "Couldn't match this video to the song automatically. Use the controls above to line the lyrics up."
                         VideoSyncState.Off -> "The video uses the song's own timing."
                     },
-                    style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.6f),
+                    style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
                 )
                 if (sync is VideoSyncState.Synced || sync == VideoSyncState.Unmatched) {
                     TextButton(onClick = { pc.resyncVideo() }) {
-                        Text(if (sync == VideoSyncState.Unmatched) "Try again" else "Match again", color = Color.White)
+                        Text(if (sync == VideoSyncState.Unmatched) "Try again" else "Match again")
                     }
                 }
             }

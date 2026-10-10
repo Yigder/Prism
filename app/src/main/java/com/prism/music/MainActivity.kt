@@ -153,10 +153,55 @@ class MainActivity : ComponentActivity() {
         if (c.settings.current.isLoggedIn) c.library.syncInBackground()
         deepLink.value = linkIn(intent)
         setContent {
-            CompositionLocalProvider(LocalContainer provides c) {
+            CompositionLocalProvider(LocalContainer provides c, com.prism.music.ui.player.LocalPip provides inPip.value) {
                 PrismRoot(deepLink)
             }
         }
+    }
+
+    // ---------------------------------------------------------------- Picture-in-picture
+
+    /** True while Prism is shown as a picture-in-picture window (a music video floating over other apps). */
+    private val inPip = androidx.compose.runtime.mutableStateOf(false)
+    /** A music video is playing on the open player, so leaving Prism floats it. */
+    private var pipEligible = false
+    private var pipAspect = android.util.Rational(16, 9)
+
+    private val pipSupported by lazy { packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_PICTURE_IN_PICTURE) }
+
+    private fun pipParams(): android.app.PictureInPictureParams = android.app.PictureInPictureParams.Builder()
+        .setAspectRatio(pipAspect)
+        .apply { if (Build.VERSION.SDK_INT >= 31) { setAutoEnterEnabled(pipEligible); setSeamlessResizeEnabled(true) } }
+        .build()
+
+    /** The player says whether a music video is playing on it, and its shape ([width] × [height], 0 if unknown). */
+    fun setPipEligible(eligible: Boolean, width: Int = 0, height: Int = 0) {
+        if (!pipSupported) return
+        pipEligible = eligible
+        // Android only takes ratios between 1:2.39 and 2.39:1.
+        if (width > 0 && height > 0) pipAspect = android.util.Rational(width, height).let { r ->
+            when {
+                r.toFloat() > 2.39f -> android.util.Rational(239, 100)
+                r.toFloat() < 1 / 2.39f -> android.util.Rational(100, 239)
+                else -> r
+            }
+        }
+        // Android 12+ floats the video by itself when the listener goes Home.
+        runCatching { setPictureInPictureParams(pipParams()) }
+    }
+
+    /** Floats the music video now (the player's PiP button). False if Android or the listener's settings won't allow it. */
+    fun enterPip(): Boolean = pipSupported && runCatching { enterPictureInPictureMode(pipParams()) }.getOrDefault(false)
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        // Before Android 12 there's no auto-enter: going Home with a video playing floats it here.
+        if (Build.VERSION.SDK_INT < 31 && pipEligible) enterPip()
+    }
+
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: android.content.res.Configuration) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        inPip.value = isInPictureInPictureMode
     }
 
     override fun onNewIntent(intent: Intent) {

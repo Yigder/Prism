@@ -112,6 +112,8 @@ class AppContainer(val app: Application) {
 
     val artistPrefs = com.prism.music.data.ArtistPrefs(app)
     val library = LibraryRepository(this)
+    /** Liked songs mirrored into a real YouTube Music playlist, when the listener turns that on. */
+    val likedPlaylist = com.prism.music.data.LikedPlaylist(this)
     val localLossless = com.prism.music.data.local.LocalLossless(app)
     val losslessSync by lazy { com.prism.music.download.LosslessSync(app, this) }
     // Started only after localLossless exists: a launch from an earlier init block can run on a

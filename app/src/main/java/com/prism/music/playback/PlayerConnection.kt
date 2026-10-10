@@ -272,6 +272,23 @@ class PlayerConnection(private val context: Context, private val c: AppContainer
         if (p.mediaItemCount == 0) playSingle(song) else p.addMediaItem(song.toMediaItem())
     }
 
+    /** A whole album or playlist straight after the current song (or played, with nothing on). */
+    fun playNext(songs: List<Song>, source: QueueSource) {
+        if (songs.isEmpty()) return
+        withPlayer { p ->
+            if (p.mediaItemCount == 0) playQueue(songs, 0, source)
+            else p.addMediaItems(p.currentMediaItemIndex + 1, songs.map { it.toMediaItem() })
+        }
+    }
+
+    /** A whole album or playlist at the end of the queue (or played, with nothing on). */
+    fun addToQueue(songs: List<Song>, source: QueueSource) {
+        if (songs.isEmpty()) return
+        withPlayer { p ->
+            if (p.mediaItemCount == 0) playQueue(songs, 0, source) else p.addMediaItems(songs.map { it.toMediaItem() })
+        }
+    }
+
     /** Listen Together: plays the host's queue ([songs], the current one first) from [positionMs], as songs, in order. */
     fun follow(songs: List<Song>, positionMs: Long, title: String, playing: Boolean) {
         if (songs.isEmpty()) return

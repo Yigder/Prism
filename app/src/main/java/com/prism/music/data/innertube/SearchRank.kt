@@ -16,9 +16,42 @@ data class TopSearch(val top: BrowseItem?, val sections: List<Pair<SearchFilter,
 /**
  * Ranks results from YouTube Music's per-kind searches. Its own mixed search leans on
  * whatever is trending ("AM" turns up podcasts), so Prism asks for songs, albums, artists,
- * playlists and videos separately and judges how well each matches what was typed.
+ * playlists and videos separately and judges how well each matches what was typed, and
+ * how well it fits what the listener plays ([Taste]).
  */
 object SearchRank {
+    /** An artist the listener knows, with how much (0..1). */
+    data class KnownArtist(val id: String?, val name: String, val thumbnail: String?, val familiarity: Double)
+
+    /**
+     * What the listener plays, for leaning results their way: "A Day" should find A Day to
+     * Remember for someone who plays them, before an EP of that name. Built on the phone from
+     * play history, likes and the library ([com.prism.music.data.TasteRepository.searchTaste]).
+     */
+    class Taste(artists: List<KnownArtist>, val songs: Map<String, Double>) {
+        val artists: Map<String, KnownArtist> = artists.groupBy { norm(it.name) }.mapValues { (_, l) -> l.maxBy { it.familiarity } }
+        fun artist(name: String): Double = artists[norm(name)]?.familiarity ?: 0.0
+        companion object { val NONE = Taste(emptyList(), emptyMap()) }
+    }
+
+    /** How far a result the listener knows well can climb past a closer match they don't. */
+    private const val TASTE_BOOST = 0.45
+
+    /** 0..1: how much the listener plays [item] (or its artist). */
+    fun familiarity(item: BrowseItem, taste: Taste): Double = when (item) {
+        is ArtistItem -> taste.artist(item.title)
+        is SongItem -> maxOf(taste.songs[item.id] ?: 0.0, 0.6 * (item.song.artists.maxOfOrNull { taste.artist(it.name) } ?: 0.0))
+        // "Album • A Day to Remember • 2009"
+        is AlbumItem -> 0.7 * (item.subtitle.split(" • ").maxOfOrNull { taste.artist(it) } ?: 0.0)
+        else -> 0.0
+    }
+
+    /** Every typed word is a whole word of the title ("a day" in "A Day to Remember", not "halo" in "Halocene"). */
+    private fun wholeWords(query: String, title: String): Boolean {
+        val t = norm(title).split(" ").toSet()
+        return norm(query).split(" ").all { it in t }
+    }
+
     private val limits = mapOf(
         SearchFilter.SONGS to 6, SearchFilter.ALBUMS to 8, SearchFilter.ARTISTS to 6,
         SearchFilter.PLAYLISTS to 8, SearchFilter.VIDEOS to 6,
@@ -66,20 +99,53 @@ object SearchRank {
         else -> 0.5
     }
 
-    fun score(query: String, item: BrowseItem, position: Int): Double {
+    fun score(query: String, item: BrowseItem, position: Int, taste: Taste = Taste.NONE): Double {
         val extra = when (item) {
             is SongItem -> item.song.artistText
             else -> item.subtitle
         }
+        val m = match(query, item.title, extra)
+        val fam = if (m >= 0.6) familiarity(item, taste) else 0.0
+        // An artist the listener plays counts as a big one, whatever YouTube says of their audience.
+        val w = if (item is ArtistItem && fam > 0.0) 1.0 else weight(item)
         // YouTube's own order within each kind stands in for popularity (a cover album ranks below the original).
-        return match(query, item.title, extra) * weight(item) - position * 0.08
+        val base = m * w - position * 0.08
+        // What the listener plays climbs, but only when it really answers what was typed;
+        // half a word ("halo" of "Halocene") only nudges it.
+        if (fam <= 0.0) return base
+        val fit = if (m >= 0.95 || wholeWords(query, item.title)) 1.0 else 0.2
+        return base + TASTE_BOOST * fam * fit
     }
 
-    fun rank(query: String, results: List<Pair<SearchFilter, List<BrowseItem>>>): TopSearch {
-        val trimmed = results.mapNotNull { (f, items) ->
+    /**
+     * Artists the listener plays whose name starts with every word typed ("a day" → A Day to
+     * Remember), for when YouTube's artist search leaves them out.
+     */
+    fun knownArtists(query: String, taste: Taste): List<ArtistItem> {
+        val q = norm(query)
+        // Too short to mean one artist ("the" starts half the library).
+        if (q.length < 4) return emptyList()
+        return taste.artists.values
+            .filter { a -> a.id != null && a.familiarity >= 0.5 && norm(a.name).let { n -> n == q || n.startsWith("$q ") } }
+            .sortedByDescending { it.familiarity }
+            .take(2)
+            .map { ArtistItem(it.id!!, it.name, "Artist", it.thumbnail) }
+    }
+
+    fun rank(query: String, results: List<Pair<SearchFilter, List<BrowseItem>>>, taste: Taste = Taste.NONE): TopSearch {
+        // The listener's own artists lead YouTube's artist results when they fit and are missing from them.
+        val known = knownArtists(query, taste)
+        val withKnown = results.map { (f, items) ->
+            if (f != SearchFilter.ARTISTS) f to items
+            else f to (known.filter { k -> items.none { it.id == k.id || norm(it.title) == norm(k.title) } } + items)
+        }.let { list ->
+            if (list.any { it.first == SearchFilter.ARTISTS } || known.isEmpty()) list
+            else list + (SearchFilter.ARTISTS to known)
+        }
+        val trimmed = withKnown.mapNotNull { (f, items) ->
             items.distinctBy { it.id }.take(limits[f] ?: 6).takeIf { it.isNotEmpty() }?.let { f to it }
         }
-        val scored = trimmed.map { (f, items) -> Triple(f, items, items.mapIndexed { i, it -> score(query, it, i) }) }
+        val scored = trimmed.map { (f, items) -> Triple(f, items, items.mapIndexed { i, it -> score(query, it, i, taste) }) }
         var top = scored.flatMap { (_, items, scores) -> items.zip(scores).take(3) }.maxByOrNull { it.second }?.first
         // A title track ("After Hours" by The Weeknd) gives way to the album it names.
         (top as? SongItem)?.song?.let { song ->

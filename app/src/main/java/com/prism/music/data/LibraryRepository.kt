@@ -106,6 +106,8 @@ class LibraryRepository(private val c: AppContainer) {
             }
             syncState.value = SyncState.DONE
             lastError.value = null
+            // Likes from YouTube Music are in: bring the Liked songs playlist (if there is one) in line.
+            c.likedPlaylist.syncInBackground(full = true)
         } catch (e: Exception) {
             lastError.value = e.message
             syncState.value = SyncState.ERROR
@@ -197,10 +199,29 @@ class LibraryRepository(private val c: AppContainer) {
         runCatching { c.ytm.deletePlaylist(item.id) }
             .recoverCatching { c.ytm.unsavePlaylist(item.id) }
             .onSuccess {
+                if (c.likedPlaylist.playlistId.value == item.id) c.likedPlaylist.forget()
                 val pins = c.settings.current.homePlaylists
                 if (pins.any { it.id == item.id }) c.settings.setHomePlaylists(pins.filterNot { it.id == item.id })
             }
             .onFailure { playlists.value = before }
+    }
+
+    private val orderPrefs = c.app.getSharedPreferences("library_order", android.content.Context.MODE_PRIVATE)
+
+    /** The listener's own order for the Library's playlists (ids, top first); empty until they arrange them. */
+    val playlistOrder = MutableStateFlow(orderPrefs.getString("playlists", "")!!.split("\n").filter { it.isNotBlank() })
+
+    /** How the Library's playlists are sorted (a name the Library screen knows), or null for its default. */
+    val playlistSort = MutableStateFlow(orderPrefs.getString("playlist_sort", null))
+
+    fun setPlaylistOrder(ids: List<String>) {
+        playlistOrder.value = ids
+        orderPrefs.edit().putString("playlists", ids.joinToString("\n")).apply()
+    }
+
+    fun setPlaylistSort(name: String) {
+        playlistSort.value = name
+        orderPrefs.edit().putString("playlist_sort", name).apply()
     }
 
     fun syncInBackground() {
@@ -236,6 +257,17 @@ class LibraryRepository(private val c: AppContainer) {
     }
 
     companion object {
+        /**
+         * [items] in the listener's [order]; ones not placed yet (new playlists) lead, in the
+         * order YouTube Music lists them.
+         */
+        fun <T : BrowseItem> inOrder(items: List<T>, order: List<String>): List<T> {
+            if (order.isEmpty()) return items
+            val at = order.withIndex().associate { it.value to it.index }
+            val (placed, fresh) = items.partition { it.id in at }
+            return fresh + placed.sortedBy { at.getValue(it.id) }
+        }
+
         /** Albums your songs come from, most songs first. Fills the Albums tab beyond the ones saved on YouTube Music. */
         fun albumsFrom(songs: List<Song>): List<AlbumItem> = songs
             .filter { it.album?.id != null && !it.isVideo }

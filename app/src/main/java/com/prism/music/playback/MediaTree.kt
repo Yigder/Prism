@@ -144,7 +144,12 @@ class MediaTree(private val c: AppContainer) {
     }
 
     suspend fun search(query: String): Int {
-        searchResults = runCatching { c.ytm.search(query, SearchFilter.SONGS).items.filterIsInstance<SongItem>().map { it.song } }.getOrDefault(emptyList())
+        val found = runCatching { c.ytm.search(query, SearchFilter.SONGS).items.filterIsInstance<SongItem>() }.getOrDefault(emptyList())
+        // Songs the listener plays (and their artists') come first, as in the app's search.
+        val taste = runCatching { c.taste.searchTaste() }.getOrDefault(com.prism.music.data.innertube.SearchRank.Taste.NONE)
+        searchResults = found.withIndex()
+            .sortedByDescending { (i, item) -> com.prism.music.data.innertube.SearchRank.score(query, item, i, taste) }
+            .map { it.value.song }
         searchResults.forEach { songs[it.id] = it }
         return searchResults.size
     }

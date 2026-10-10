@@ -60,6 +60,7 @@ import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.FormatQuote
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.FullscreenExit
+import androidx.compose.material.icons.rounded.PictureInPictureAlt
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Pause
@@ -238,8 +239,20 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
             else -> onCollapse()
         }
     }
-    if (videoMode && (fullscreenVideo || landscape)) {
-        FullscreenVideo(song, forceLandscape = fullscreenVideo, onExit = { fullscreenVideo = false })
+    // Picture-in-picture: a music video playing here floats over other apps when the listener
+    // leaves Prism (or taps the PiP button); the window then shows just the video.
+    val inPip = LocalPip.current
+    val activity = view.context as? com.prism.music.MainActivity
+    DisposableEffect(videoMode, isPlaying, activity) {
+        val size = pc.player?.videoSize
+        activity?.setPipEligible(
+            videoMode && isPlaying,
+            ((size?.width ?: 0) * (size?.pixelWidthHeightRatio ?: 1f)).toInt(), size?.height ?: 0,
+        )
+        onDispose { activity?.setPipEligible(false) }
+    }
+    if (videoMode && (fullscreenVideo || landscape || inPip)) {
+        FullscreenVideo(song, forceLandscape = fullscreenVideo && !inPip, pip = inPip, onExit = { fullscreenVideo = false })
         return
     }
 
@@ -443,6 +456,11 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                             MusicVideoSurface(Modifier.fillMaxSize(), fill = videoFill)
                             Row(Modifier.align(Alignment.BottomEnd).padding(10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 VideoChip(Icons.Rounded.AspectRatio, if (videoFill) "Fit video" else "Fill") { videoFill = !videoFill }
+                                if (activity != null) VideoChip(Icons.Rounded.PictureInPictureAlt, "Picture-in-picture") {
+                                    if (!activity.enterPip()) android.widget.Toast.makeText(
+                                        context, "Picture-in-picture is off for Prism in Android's settings", android.widget.Toast.LENGTH_SHORT,
+                                    ).show()
+                                }
                                 VideoChip(Icons.Rounded.Fullscreen, "Full screen") { fullscreenVideo = true }
                             }
                         }
@@ -659,9 +677,15 @@ fun MusicVideoSurface(modifier: Modifier, fill: Boolean) {
     )
 }
 
-/** Edge-to-edge landscape video with tap-to-show controls. */
+/** True while Prism is a picture-in-picture window (provided by MainActivity). */
+val LocalPip = androidx.compose.runtime.compositionLocalOf { false }
+
+/**
+ * Edge-to-edge landscape video with tap-to-show controls. In picture-in-picture ([pip]) it's the
+ * video alone: Android draws the window's own controls (from the media session) over it.
+ */
 @Composable
-private fun FullscreenVideo(song: Song, forceLandscape: Boolean, onExit: () -> Unit) {
+private fun FullscreenVideo(song: Song, forceLandscape: Boolean, pip: Boolean = false, onExit: () -> Unit) {
     val pc = LocalContainer.current.player
     val view = LocalView.current
     val activity = view.context as? Activity
@@ -686,7 +710,7 @@ private fun FullscreenVideo(song: Song, forceLandscape: Boolean, onExit: () -> U
             .pointerInput(Unit) { detectTapGestures(onTap = { controls = !controls }, onDoubleTap = { pc.togglePlay() }) },
     ) {
         MusicVideoSurface(Modifier.fillMaxSize(), fill = false)
-        AnimatedVisibility(controls, enter = fadeIn(), exit = fadeOut()) {
+        AnimatedVisibility(controls && !pip, enter = fadeIn(), exit = fadeOut()) {
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f))) {
                 Column(Modifier.align(Alignment.TopStart).padding(24.dp)) {
                     Text(song.title, color = Color.White, style = MaterialTheme.typography.titleLarge, maxLines = 1)

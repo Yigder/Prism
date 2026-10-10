@@ -31,6 +31,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Sort
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DeleteOutline
@@ -368,6 +369,10 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
     }
     var coverSheet by remember { mutableStateOf(false) }
     if (coverSheet && coverKey != null) CoverSheet(coverKey, page.songs) { coverSheet = false }
+    // Liked songs: made into (and kept in step with) a real YouTube Music playlist.
+    var likedPlaylistSheet by remember { mutableStateOf(false) }
+    val likedPlaylistId by c.likedPlaylist.playlistId.collectAsState()
+    if (likedPlaylistSheet) LikedPlaylistSheet(art ?: songs.firstOrNull()?.thumbnail) { likedPlaylistSheet = false }
     var sharing by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
@@ -519,6 +524,10 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                 live.page.artists.firstOrNull { it.id != null }?.let { a ->
                     DropdownMenuItem({ Text("Go to ${a.name}") }, { close(); nav.go(Routes.artist(a.id!!)) }, leadingIcon = { Icon(Icons.Rounded.Person, null) })
                 }
+                if (type == CollectionType.LIKED) DropdownMenuItem(
+                    { Text(if (likedPlaylistId != null) "Playlist · kept up to date" else "Make it a playlist") }, { close(); likedPlaylistSheet = true },
+                    leadingIcon = { Icon(Icons.AutoMirrored.Rounded.PlaylistAdd, null) },
+                )
                 if (coverKey != null) DropdownMenuItem({ Text("Change picture") }, { close(); coverSheet = true }, leadingIcon = { Icon(Icons.Rounded.PhotoLibrary, null) })
                 if (type == CollectionType.PLAYLIST && live.page.owned) {
                     DropdownMenuItem({ Text("Edit details") }, { close(); editing = true }, leadingIcon = { Icon(Icons.Rounded.Edit, null) })

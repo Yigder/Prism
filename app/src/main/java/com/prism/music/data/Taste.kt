@@ -1,6 +1,7 @@
 package com.prism.music.data
 
 import com.prism.music.AppContainer
+import com.prism.music.data.innertube.SearchRank
 import com.prism.music.data.meta.Genres
 import com.prism.music.data.model.MoodItem
 import com.prism.music.data.model.Shelf
@@ -9,6 +10,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Calendar
+import kotlin.math.ln
 
 /** Moods & genres tiles ordered by how well they fit what you listen to. */
 data class RankedCategories(
@@ -50,6 +52,46 @@ class TasteRepository(private val c: AppContainer) {
         weights.forEach { (id, w) -> genres[id]?.let { g -> byGenre.merge(g, w, Double::plus) } }
         val total = byGenre.values.sum().takeIf { it > 0 } ?: return emptyMap()
         return byGenre.mapValues { it.value / total }.also { cached = System.currentTimeMillis() to it }
+    }
+
+    @Volatile private var searchCached: Pair<Long, SearchRank.Taste>? = null
+
+    /**
+     * The artists and songs the listener knows, for leaning search their way: a year of plays,
+     * liked songs, starred artists and the library's artists. Kept for a few minutes.
+     */
+    suspend fun searchTaste(): SearchRank.Taste {
+        searchCached?.let { (at, t) -> if (System.currentTimeMillis() - at < 5 * 60_000) return t }
+        val now = System.currentTimeMillis()
+        val since = now - 365L * 86_400_000
+        val plays = c.db.plays()
+        // Artist name -> (plays, id); a liked song counts as two plays.
+        val artistPlays = HashMap<String, Pair<Double, String?>>()
+        fun add(name: String, n: Double, id: String?) {
+            val key = name.trim().takeIf { it.isNotEmpty() } ?: return
+            val (p, i) = artistPlays[key] ?: (0.0 to null)
+            artistPlays[key] = (p + n) to (i ?: id)
+        }
+        val thumbs = c.library.artistThumbs.value
+        // "Artist, Featured" is stored joined; the first name is the one with the id.
+        plays.topArtists(since, now, 300).forEach { a ->
+            a.artistName.split(", ").forEachIndexed { i, n -> add(n, a.plays.toDouble() * if (i == 0) 1.0 else 0.4, if (i == 0) a.artistId else null) }
+        }
+        c.db.songs().liked().forEach { s ->
+            s.artistName.split(", ").forEachIndexed { i, n -> add(n, if (i == 0) 2.0 else 0.8, if (i == 0) s.artistId else null) }
+        }
+        val artists = artistPlays.map { (name, v) ->
+            val (n, id) = v
+            SearchRank.KnownArtist(id, name, id?.let { thumbs[it] }, 0.5 + 0.5 * (ln(1 + n) / ln(1 + 60.0)).coerceAtMost(1.0))
+        }.toMutableList()
+        // Starred artists are known best; artists saved on YouTube Music count for a fair bit too.
+        c.artistPrefs.favorites.value.forEach { f -> artists += SearchRank.KnownArtist(f.id, f.name, f.thumbnail ?: thumbs[f.id], 1.0) }
+        c.library.artists.value.forEach { a -> artists += SearchRank.KnownArtist(a.id, a.title, a.thumbnail ?: thumbs[a.id], 0.7) }
+
+        val songs = HashMap<String, Double>()
+        plays.topSongs(since, now, 500).forEach { s -> songs[s.songId] = 0.5 + 0.5 * (ln(1.0 + s.plays) / ln(1 + 30.0)).coerceAtMost(1.0) }
+        c.library.likedIds.value.forEach { id -> songs[id] = maxOf(songs[id] ?: 0.0, 0.8) }
+        return SearchRank.Taste(artists, songs).also { searchCached = System.currentTimeMillis() to it }
     }
 
     suspend fun rank(shelves: List<Shelf>): RankedCategories {

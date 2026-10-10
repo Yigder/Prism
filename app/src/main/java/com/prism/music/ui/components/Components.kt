@@ -58,6 +58,8 @@ import androidx.compose.material.icons.rounded.PlaylistPlay
 import androidx.compose.material.icons.rounded.Radio
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.ThumbDown
+import androidx.compose.material.icons.rounded.ThumbDownOffAlt
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -411,6 +413,7 @@ fun PrismSheet(
     onDismiss: () -> Unit,
     containerColor: Color = androidx.compose.material3.BottomSheetDefaults.ContainerColor,
     contentColor: Color = androidx.compose.material3.contentColorFor(containerColor),
+    dragHandle: (@Composable () -> Unit)? = { androidx.compose.material3.BottomSheetDefaults.DragHandle() },
     content: @Composable androidx.compose.foundation.layout.ColumnScope.(close: (then: () -> Unit) -> Unit) -> Unit,
 ) {
     val state = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -439,14 +442,17 @@ fun PrismSheet(
             scope.launch { try { state.hide() } finally { finish() } }
         }
     }
-    ModalBottomSheet(onDismissRequest = finish, sheetState = state, containerColor = containerColor, contentColor = contentColor) {
+    ModalBottomSheet(onDismissRequest = finish, sheetState = state, containerColor = containerColor, contentColor = contentColor, dragHandle = dragHandle) {
         content(close)
     }
 }
 
 // ---------------------------------------------------------------- Song actions
 
-/** A song's menu. [extra] adds rows before Share (e.g. "Remove from this playlist"). */
+/**
+ * A song's menu, wherever it's held or its ⋯ is tapped: like and share at hand, the queue
+ * actions as tiles, then where to go. [extra] adds rows (e.g. "Remove from this playlist").
+ */
 @Composable
 fun SongActionsSheet(song: Song, extra: List<SheetItem> = emptyList(), onDismiss: () -> Unit) {
     val c = LocalContainer.current
@@ -454,61 +460,66 @@ fun SongActionsSheet(song: Song, extra: List<SheetItem> = emptyList(), onDismiss
     val context = LocalContext.current
     val liked by c.library.likedIds.collectAsState()
     val downloads by c.downloads.downloads.collectAsState()
+    val disliked by c.library.dislikedIds.collectAsState()
     var pickPlaylist by remember { mutableStateOf(false) }
     var sharing by remember { mutableStateOf(false) }
     val isLiked = song.id in liked
     val dl = downloads[song.id]
+    val downloaded = dl?.state == androidx.media3.exoplayer.offline.Download.STATE_COMPLETED
     val together by c.together.state.collectAsState()
     val guest = together as? com.prism.music.playback.together.TogetherState.Guest
+    fun toast(text: String) = android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_SHORT).show()
 
     // The playlist picker and the share sheet take over from the sheet.
-    if (!pickPlaylist && !sharing) PrismSheet(onDismiss = onDismiss) { hide ->
-      fun close(action: () -> Unit) = hide(action)
-      Column(Modifier.verticalScroll(rememberScrollState())) {
-        Row(Modifier.padding(horizontal = 20.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Artwork(song.thumbnail, Modifier.size(60.dp), com.prism.music.ui.theme.LocalUi.current.art, size = 226)
-            Spacer(Modifier.width(14.dp))
-            Column(Modifier.weight(1f)) {
-                Text(song.title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(song.artistText, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+    if (pickPlaylist) { PlaylistPicker(song) { pickPlaylist = false; onDismiss() }; return }
+    if (sharing) { ShareSheet(song.shareTarget()) { sharing = false; onDismiss() }; return }
+
+    // In someone's Listen Together session, songs go into their queue.
+    val quick = listOf(
+        if (guest != null) ActionItem(Icons.Rounded.Groups, "Play next") { c.together.suggest(song, next = true); toast("Sent to ${guest.hostName}") }
+        else ActionItem(Icons.Rounded.PlaylistPlay, "Play next") { c.player.playNext(song) },
+        if (guest != null) ActionItem(Icons.Rounded.GroupAdd, "Add to queue") { c.together.suggest(song, next = false); toast("Sent to ${guest.hostName}") }
+        else ActionItem(Icons.AutoMirrored.Rounded.QueueMusic, "Add to queue") { c.player.addToQueue(song) },
+        ActionItem(Icons.Rounded.Radio, "Radio") { c.player.playRadio(song) },
+        ActionItem(
+            if (downloaded) Icons.Rounded.DownloadDone else Icons.Rounded.Download, "Download",
+            value = when { downloaded -> "Downloaded"; dl != null -> "${dl.percent.toInt().coerceAtLeast(0)}%"; else -> null },
+            active = downloaded, keepOpen = true,
+        ) { if (dl != null) c.downloads.remove(song.id) else c.downloads.download(song) },
+    )
+    val go = listOfNotNull(
+        if (c.settings.current.isLoggedIn) ActionItem(Icons.AutoMirrored.Rounded.PlaylistAdd, "Add to playlist", keepOpen = true) { pickPlaylist = true } else null,
+        song.album?.id?.let { id -> ActionItem(Icons.Rounded.Album, "Go to album", value = song.album?.title?.takeIf { it.length <= 22 }) { nav.go(Routes.album(id)) } },
+        song.artists.firstOrNull { it.id != null }?.let { a -> ActionItem(Icons.Rounded.Person, "Go to ${a.name}") { nav.go(Routes.artist(a.id!!)) } },
+    )
+    val more = extra.map { it.toAction() } + listOf(
+        if (song.id in disliked) ActionItem(Icons.Rounded.ThumbDown, "Not for me", active = true, keepOpen = true) { c.library.setDisliked(song, false) }
+        else ActionItem(Icons.Rounded.ThumbDownOffAlt, "Not for me") { c.library.setDisliked(song, true); toast("Got it — Prism will steer clear of this song") },
+    )
+
+    ActionSheet(song.thumbnail, onDismiss) { close ->
+        ActionHeader(
+            song.thumbnail, song.title,
+            listOfNotNull(song.artistText, formatDuration(song.durationSec).takeIf { it.isNotEmpty() }).joinToString(" · "),
+            placeholderIcon = Icons.Rounded.MusicNote,
+        ) {
+            SheetIconButton(if (isLiked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, if (isLiked) "Remove from liked songs" else "Add to liked songs", active = isLiked) {
+                c.library.toggleLike(song)
             }
-            if (song.durationSec > 0) Text(formatDuration(song.durationSec), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            SheetIconButton(Icons.Rounded.Share, "Share") { sharing = true }
         }
-        HorizontalDivider(Modifier.padding(horizontal = 20.dp, vertical = 12.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-        // In someone's Listen Together session, songs go into their queue.
-        if (guest != null) {
-            SheetAction(Icons.Rounded.Groups, "Play next in ${guest.hostName}'s session") {
-                close { c.together.suggest(song, next = true); android.widget.Toast.makeText(context, "Sent to ${guest.hostName}", android.widget.Toast.LENGTH_SHORT).show() }
-            }
-            SheetAction(Icons.Rounded.GroupAdd, "Add to ${guest.hostName}'s queue") {
-                close { c.together.suggest(song, next = false); android.widget.Toast.makeText(context, "Sent to ${guest.hostName}", android.widget.Toast.LENGTH_SHORT).show() }
-            }
-        } else {
-            SheetAction(Icons.Rounded.PlaylistPlay, "Play next") { close { c.player.playNext(song) } }
-            SheetAction(Icons.AutoMirrored.Rounded.QueueMusic, "Add to queue") { close { c.player.addToQueue(song) } }
-        }
-        SheetAction(Icons.Rounded.Radio, "Start radio") { close { c.player.playRadio(song) } }
-        SheetAction(if (isLiked) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder, if (isLiked) "Remove from liked songs" else "Add to liked songs") {
-            close { c.library.toggleLike(song) }
-        }
-        val downloaded = dl?.state == androidx.media3.exoplayer.offline.Download.STATE_COMPLETED
-        SheetAction(if (downloaded) Icons.Rounded.DownloadDone else Icons.Rounded.Download, if (downloaded) "Remove download" else if (dl != null) "Downloading… ${dl.percent.toInt().coerceAtLeast(0)}%" else "Download") {
-            close { if (dl != null) c.downloads.remove(song.id) else c.downloads.download(song) }
-        }
-        if (c.settings.current.isLoggedIn) SheetAction(Icons.AutoMirrored.Rounded.PlaylistAdd, "Add to playlist") { pickPlaylist = true }
-        song.album?.id?.let { id -> SheetAction(Icons.Rounded.Album, "Go to album") { close { nav.go(Routes.album(id)) } } }
-        song.artists.firstOrNull { it.id != null }?.let { a -> SheetAction(Icons.Rounded.Person, "Go to ${a.name}") { close { nav.go(Routes.artist(a.id!!)) } } }
-        extra.forEach { e -> SheetAction(e.icon, e.label) { close(e.onClick) } }
-        SheetAction(Icons.Rounded.Share, "Share") { sharing = true }
-        Spacer(Modifier.height(24.dp))
-      }
+        if (guest != null) Text(
+            "Adding to ${guest.hostName}'s session", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 24.dp, bottom = 8.dp),
+        )
+        QuickActions(quick) { runAction(it, close) }
+        ActionGroup(null, go) { runAction(it, close) }
+        ActionGroup(null, more) { runAction(it, close) }
     }
-    if (pickPlaylist) PlaylistPicker(song) { pickPlaylist = false; onDismiss() }
-    if (sharing) ShareSheet(song.shareTarget()) { sharing = false; onDismiss() }
 }
 
-/** One extra row for [SongActionsSheet]. */
-data class SheetItem(val icon: ImageVector, val label: String, val onClick: () -> Unit)
+/** One extra row for [SongActionsSheet] or [PlayActionsSheet]; [danger] marks a delete. */
+data class SheetItem(val icon: ImageVector, val label: String, val danger: Boolean = false, val onClick: () -> Unit)
 
 @Composable
 fun SheetAction(icon: ImageVector, label: String, onClick: () -> Unit) {

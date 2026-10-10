@@ -86,8 +86,8 @@ private fun SectionStyle.icon(): ImageVector = when (this) {
 }
 
 /**
- * Customize Home: the sections Home shows (in order — hold and drag to move — each with a look),
- * the greeting, the shortcut tiles, and a couple of options. Everything less common sits behind a row's ⋮ menu or a sheet.
+ * Customize Home: the greeting, the sections Home shows (in order — hold and drag to move — each
+ * with a look), the shortcut tiles, and a couple of options. Everything less common sits behind a row's ⋮ menu or a sheet.
  */
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
@@ -117,6 +117,12 @@ fun CatalogueScreen(bottomPadding: Dp) {
         spacing = 22.dp,
         actions = { RoundAction(Icons.Rounded.Restore, "Reset", glass = true) { save(HomeSections.initial) } },
     ) {
+        item(key = "greeting") {
+            Group("Greeting") {
+                GreetingField()
+                Toggle("Show your name", null, settings.greetingShowName) { c.settings.setGreetingShowName(it) }
+            }
+        }
         item(key = "sections") {
             Group("Sections") {
                 Note("Hold and drag a section to move it")
@@ -183,12 +189,6 @@ fun CatalogueScreen(bottomPadding: Dp) {
                     Spacer(Modifier.width(14.dp))
                     Text("Add a section", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
                 }
-            }
-        }
-        item(key = "greeting") {
-            Group("Greeting") {
-                GreetingField()
-                Toggle("Show your name", null, settings.greetingShowName) { c.settings.setGreetingShowName(it) }
             }
         }
         item(key = "tiles") {

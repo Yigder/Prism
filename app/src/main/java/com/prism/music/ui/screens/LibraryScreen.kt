@@ -4,6 +4,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.DragHandle
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.SwapVert
+import androidx.compose.material.icons.automirrored.rounded.QueueMusic
+import com.prism.music.ui.components.pane
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -85,6 +92,8 @@ private enum class LibTab(val label: String) { PLAYLISTS("Playlists"), SONGS("So
 private enum class SongSort(val label: String) { RECENT("Recently liked"), TITLE("Title"), ARTIST("Artist"), ALBUM("Album") }
 private enum class AlbumSort(val label: String) { LIBRARY("Library order"), MOST("Most songs"), TITLE("Title"), ARTIST("Artist") }
 private enum class ArtistSort(val label: String) { LIBRARY("Library order"), MOST("Most songs"), NAME("Name") }
+/** Saved by name ([com.prism.music.data.LibraryRepository.playlistSort]); CUSTOM is the listener's own order. */
+private enum class PlaylistSort(val label: String) { CUSTOM("Your order"), LIBRARY("Recent activity"), TITLE("Title") }
 
 @Composable
 fun LibraryScreen(bottomPadding: Dp) {
@@ -156,6 +165,25 @@ fun LibraryScreen(bottomPadding: Dp) {
             ArtistSort.NAME -> artists.sortedWith(compareByDescending<com.prism.music.data.model.BrowseItem> { it.id in fav }.thenBy { it.title.lowercase().removePrefix("the ") })
         }
     }
+    // Playlists: YouTube Music's order, by title, or the listener's own (arranged in Rearrange mode).
+    val playlistOrder by c.library.playlistOrder.collectAsState()
+    val playlistSortName by c.library.playlistSort.collectAsState()
+    val playlistSort = PlaylistSort.entries.firstOrNull { it.name == playlistSortName }
+        ?: if (playlistOrder.isEmpty()) PlaylistSort.LIBRARY else PlaylistSort.CUSTOM
+    val myPlaylists = remember(playlists) { playlists.filter { it.id != "LM" } }
+    val sortedPlaylists = remember(myPlaylists, playlistOrder, playlistSort) {
+        when (playlistSort) {
+            PlaylistSort.CUSTOM -> LibraryRepository.inOrder(myPlaylists, playlistOrder)
+            PlaylistSort.LIBRARY -> myPlaylists
+            PlaylistSort.TITLE -> myPlaylists.sortedBy { it.title.lowercase() }
+        }
+    }
+    var rearranging by rememberSaveable { mutableStateOf(false) }
+    // Moving one (or starting to) saves the whole order as shown, and switches to it.
+    fun saveOrder(list: List<com.prism.music.data.model.BrowseItem>) {
+        c.library.setPlaylistOrder(list.map { it.id })
+        c.library.setPlaylistSort(PlaylistSort.CUSTOM.name)
+    }
     LaunchedEffect(pager.currentPage == LibTab.ARTISTS.ordinal, artists.size) {
         if (pager.currentPage == LibTab.ARTISTS.ordinal) c.library.loadArtistThumbs(artists.filter { it.thumbnail == null }.take(60).map { it.id })
     }
@@ -216,7 +244,28 @@ fun LibraryScreen(bottomPadding: Dp) {
                                 Button(onClick = { nav.go(Routes.LOGIN) }) { Icon(Icons.Rounded.Login, null); Spacer(Modifier.width(8.dp)); Text("Sign in") }
                             }
                         }
-                        items(playlists.filter { it.id != "LM" }, key = { "p" + it.id }) { p ->
+                        if (myPlaylists.size > 1) item(span = { GridItemSpan(maxLineSpan) }) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(end = 8.dp)) {
+                                if (rearranging) Text(
+                                    "Hold and drag, or use the arrows", style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f).padding(start = 8.dp),
+                                ) else SortBar("${myPlaylists.size} playlists", PlaylistSort.entries, playlistSort, { it.label }, Modifier.weight(1f)) {
+                                    c.library.setPlaylistSort(it.name)
+                                }
+                                com.prism.music.ui.components.PrismChip(
+                                    rearranging,
+                                    {
+                                        if (!rearranging) saveOrder(sortedPlaylists)
+                                        rearranging = !rearranging
+                                    },
+                                    if (rearranging) "Done" else "Rearrange",
+                                    icon = if (rearranging) Icons.Rounded.Check else Icons.Rounded.SwapVert,
+                                )
+                            }
+                        }
+                        if (rearranging) item(span = { GridItemSpan(maxLineSpan) }) {
+                            RearrangePlaylists(sortedPlaylists, ::saveOrder)
+                        } else items(sortedPlaylists, key = { "p" + it.id }) { p ->
                             LibraryItem(p, asList, onLongClick = { menuFor = p }) { nav.open(p, onSong) }
                         }
                     }
@@ -264,7 +313,10 @@ fun LibraryScreen(bottomPadding: Dp) {
     menuFor?.let { p ->
         com.prism.music.ui.components.PlayActionsSheet(
             com.prism.music.ui.components.Playable.Of(p),
-            extra = listOf(com.prism.music.ui.components.SheetItem(Icons.Rounded.Delete, "Delete playlist") { deleting = p }),
+            extra = listOf(
+                com.prism.music.ui.components.SheetItem(Icons.Rounded.SwapVert, "Rearrange playlists") { saveOrder(sortedPlaylists); rearranging = true },
+                com.prism.music.ui.components.SheetItem(Icons.Rounded.Delete, "Delete playlist", danger = true) { deleting = p },
+            ),
         ) { menuFor = null }
     }
 
@@ -288,6 +340,41 @@ fun LibraryScreen(bottomPadding: Dp) {
         )
     }
 }
+/** The playlists as a list to put in order: hold and drag a row, or nudge it with its arrows. */
+@Composable
+private fun RearrangePlaylists(playlists: List<com.prism.music.data.model.BrowseItem>, onReorder: (List<com.prism.music.data.model.BrowseItem>) -> Unit) {
+    val c = LocalContainer.current
+    val ui = com.prism.music.ui.theme.LocalUi.current
+    val scheme = MaterialTheme.colorScheme
+    fun move(from: Int, to: Int) {
+        if (to !in playlists.indices) return
+        onReorder(playlists.toMutableList().apply { add(to, removeAt(from)) })
+    }
+    com.prism.music.ui.components.ReorderList(
+        playlists, { it.id }, onReorder,
+        Modifier.padding(horizontal = 8.dp).pane(ui.card).padding(vertical = 6.dp),
+    ) { p, i, held, drag ->
+        Row(
+            drag.fillMaxWidth().then(if (held) Modifier.background(scheme.surfaceContainerHighest) else Modifier)
+                .padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            com.prism.music.ui.components.Artwork(
+                c.covers.art(p), Modifier.size(44.dp), ui.smallArt, size = 226,
+                placeholderIcon = Icons.AutoMirrored.Rounded.QueueMusic,
+            )
+            Spacer(Modifier.width(12.dp))
+            Text(
+                p.title, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
+            IconButton(onClick = { move(i, i - 1) }, enabled = i > 0) { Icon(Icons.Rounded.KeyboardArrowUp, "Move ${p.title} up") }
+            IconButton(onClick = { move(i, i + 1) }, enabled = i < playlists.lastIndex) { Icon(Icons.Rounded.KeyboardArrowDown, "Move ${p.title} down") }
+            Icon(Icons.Rounded.DragHandle, null, Modifier.padding(end = 8.dp).size(20.dp), tint = scheme.onSurfaceVariant.copy(alpha = 0.6f))
+        }
+    }
+}
+
 /** An album, artist or playlist as a card (grid view) or a row (list view). */
 @Composable
 private fun LibraryItem(item: com.prism.music.data.model.BrowseItem, asList: Boolean, onLongClick: (() -> Unit)? = null, onClick: () -> Unit) {

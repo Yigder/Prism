@@ -19,6 +19,7 @@ import okhttp3.Request
 import org.jsoup.Jsoup
 import java.text.Normalizer
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /** One sung word (or syllable) with its own timing, for word-by-word highlighting. */
 data class LyricWord(val startMs: Long, val endMs: Long, val text: String)
@@ -55,6 +56,97 @@ private val censorMark = Regex(
     "\\p{L}[*#]+\\p{L}|\\b\\p{L}{1,3}[*#]{2,}|[*#]{2,}\\p{L}{1,3}\\b|[\\[(](?:censored|bleep(?:ed)?)[\\])]",
     RegexOption.IGNORE_CASE,
 )
+
+/**
+ * Puts starred-out words ("f**k", "sh*t") back from an uncensored text of the same song (Genius),
+ * keeping every line and word timing, so karaoke lyrics read in full. Each censored line is paired
+ * with the reference line sharing most of its other words; a starred word then takes the reference
+ * word that fits its letters (same length first) nearest where its neighbours put it. Words that
+ * can't be placed with confidence stay as they were.
+ */
+object Uncensor {
+    private val wordRe = Regex("[\\p{L}\\p{N}'’*#]+")
+    private fun key(w: String) = w.lowercase().replace(Regex("['’]"), "")
+    private fun isCensored(w: String) = w.any { it.isLetter() } && censorMark.containsMatchIn(w)
+
+    fun fill(lyrics: Lyrics, reference: String?): Lyrics {
+        if (reference.isNullOrBlank() || !lyrics.censored) return lyrics
+        val ref = reference.lines()
+            .map { l -> wordRe.findAll(l).map { it.value }.filter { w -> w.any(Char::isLetterOrDigit) }.toList() }
+            .filter { it.isNotEmpty() }
+        if (ref.isEmpty()) return lyrics
+        return lyrics.copy(lines = lyrics.lines.map { if (it.isGap || !censorMark.containsMatchIn(it.text)) it else fillLine(it, ref) })
+    }
+
+    internal fun fillLine(line: LyricLine, ref: List<List<String>>): LyricLine {
+        val words = wordRe.findAll(line.text).map { it.value }.toList()
+        val clean = words.filterNot(::isCensored).map(::key)
+        if (clean.isEmpty()) return line
+        val best = ref.maxByOrNull { r ->
+            val keys = r.map(::key).toSet()
+            clean.count { it in keys } - abs(r.size - words.size) * 0.01
+        } ?: return line
+        val bestKeys = best.map(::key)
+        // Most of the line's other words have to be there, or it's a different line.
+        if (clean.count { it in bestKeys } < maxOf(1, (clean.size * 0.6).roundToInt())) return line
+        val swaps = ArrayList<Pair<String, String>>()
+        words.forEachIndexed { i, w ->
+            if (!isCensored(w)) return@forEachIndexed
+            val expected = expectedIndex(i, words, bestKeys, best.size)
+            val pick = candidates(w, best, exact = true).ifEmpty { candidates(w, best, exact = false) }
+                .minByOrNull { abs(it - expected) } ?: return@forEachIndexed
+            swaps += w to matchCase(w, best[pick])
+        }
+        if (swaps.isEmpty()) return line
+        var text = line.text
+        swaps.forEach { (from, to) -> text = text.replaceFirst(from, to) }
+        // Karaoke words carry the same starred text; they're swapped in the same order.
+        var k = 0
+        val newWords = line.words.map { lw ->
+            var t = lw.text
+            while (k < swaps.size && t.contains(swaps[k].first)) { t = t.replaceFirst(swaps[k].first, swaps[k].second); k++ }
+            if (t == lw.text) lw else lw.copy(text = t)
+        }
+        return line.copy(text = text, words = newWords)
+    }
+
+    /** Where word [i] should sit in the reference line, going by its nearest uncensored neighbour. */
+    private fun expectedIndex(i: Int, words: List<String>, refKeys: List<String>, refSize: Int): Double {
+        for (d in 1 until words.size) {
+            words.getOrNull(i - d)?.takeIf { !isCensored(it) }?.let { w -> refKeys.indexOf(key(w)).takeIf { it >= 0 }?.let { return (it + d).toDouble() } }
+            words.getOrNull(i + d)?.takeIf { !isCensored(it) }?.let { w -> refKeys.indexOf(key(w)).takeIf { it >= 0 }?.let { return (it - d).toDouble() } }
+        }
+        return i.toDouble() * refSize / words.size.coerceAtLeast(1)
+    }
+
+    /** Reference words a starred word could be: its letters where they show, any letter under each star. */
+    private fun candidates(censored: String, ref: List<String>, exact: Boolean): List<Int> {
+        val pattern = StringBuilder()
+        var i = 0
+        while (i < censored.length) {
+            val ch = censored[i]
+            if (ch == '*' || ch == '#') {
+                var n = 0
+                while (i < censored.length && (censored[i] == '*' || censored[i] == '#')) { n++; i++ }
+                pattern.append(if (exact) "\\p{L}{$n}" else "\\p{L}+")
+                continue
+            }
+            pattern.append(if (ch == '\'' || ch == '’') "['’]?" else Regex.escape(ch.lowercase()))
+            i++
+        }
+        val re = Regex(pattern.toString())
+        return ref.indices.filter { j -> !isCensored(ref[j]) && re.matches(ref[j].lowercase()) }
+    }
+
+    private fun matchCase(censored: String, word: String): String {
+        val letters = censored.filter { it.isLetter() }
+        return when {
+            letters.length > 1 && letters.all { it.isUpperCase() } -> word.uppercase()
+            letters.firstOrNull()?.isUpperCase() == true && censored.first().isLetter() -> word.replaceFirstChar { it.uppercase() }
+            else -> word.replaceFirstChar { it.lowercase() }
+        }
+    }
+}
 
 private val creditLine = Regex(
     "^(\\s*(lyrics?|words|composed|composer|written|writer|produced|producer|arranged|music|mixed|mastered|vocals?)\\s*(by)?\\s*[:：]|.*(作词|作曲|编曲|制作人|制作|混音|母带|和声|吉他|贝斯|鼓)\\s*[:：]).*",
@@ -494,12 +586,6 @@ class LyricsRepository(
         return text.replace(Regex("\\n{3,}"), "\n\n").trim().takeIf { it.isNotBlank() }
     }
 
-    private fun fetchLyricsOvh(song: Song): String? {
-        val url = "https://api.lyrics.ovh/v1/".toHttpUrl().newBuilder()
-            .addPathSegment(song.primaryArtist).addPathSegment(cleanTitle(song.title)).build()
-        return getJson(url).str("lyrics")
-    }
-
     /** Apple Music TTML through the Bini catalogue (a second matcher over Apple's lyrics). */
     private fun fetchBini(song: Song): String? {
         fun query(withDuration: Boolean) = "https://lyrics-api.binimum.org/".toHttpUrl().newBuilder()
@@ -570,7 +656,21 @@ class LyricsRepository(
         return res.field("data").str("lyrics")?.takeIf { it.isNotBlank() }
     }
 
-    suspend fun fetch(song: Song, source: LyricsSource, force: Boolean = false): Lyrics? = withContext(Dispatchers.IO) {
+    /** [source]'s lyrics for [song] (saved copy first), with any starred-out words filled in ([uncensor]). */
+    suspend fun fetch(song: Song, source: LyricsSource, force: Boolean = false): Lyrics? =
+        fetchRaw(song, source, force)?.let { uncensor(song, it) }
+
+    /**
+     * Starred-out words put back from Genius's full text of the song, every timing kept ([Uncensor]).
+     * Only looked up when the lyrics are censored and the listener skips censored lyrics.
+     */
+    private suspend fun uncensor(song: Song, l: Lyrics): Lyrics {
+        if (!l.censored || l.source == LyricsSource.GENIUS || !skipCensored()) return l
+        val reference = fetchRaw(song, LyricsSource.GENIUS) ?: return l
+        return Uncensor.fill(l, reference.plain)
+    }
+
+    private suspend fun fetchRaw(song: Song, source: LyricsSource, force: Boolean = false): Lyrics? = withContext(Dispatchers.IO) {
         if (!force) dao.get(song.id, source.name)?.let { cached ->
             // A real answer is kept; a "not found" is retried after a day.
             // NetEase and KuGou answers from before they went word-by-word are fetched again once.
@@ -591,7 +691,6 @@ class LyricsRepository(
                 LyricsSource.KUGOU -> fetchKuGou(song)
                 LyricsSource.UNISON -> fetchUnison(song)
                 LyricsSource.GENIUS -> fetchGenius(song)
-                LyricsSource.LYRICSOVH -> fetchLyricsOvh(song)
             }
         } catch (e: kotlinx.coroutines.CancellationException) {
             // Never record a cancelled lookup as "no lyrics".
@@ -630,7 +729,10 @@ class LyricsRepository(
     private suspend fun saved(song: Song): Lyrics? = withContext(Dispatchers.IO) {
         val s = settings()
         val rows = dao.allFor(song.id).associateBy { it.source }
+        // Genius's text, if it's saved, fills in starred-out words offline too.
+        val reference = if (s.skipCensored) rows[LyricsSource.GENIUS.name]?.let { build(LyricsSource.GENIUS, it.content)?.plain } else null
         val all = s.lyricsOrder.mapNotNull { src -> rows[src.name]?.let { build(src, it.content) } }
+            .map { if (it.source == LyricsSource.GENIUS) it else Uncensor.fill(it, reference) }
             .filterNot { skipCensored() && it.censored }
         if (!s.preferSynced) return@withContext all.firstOrNull()
         all.maxByOrNull { level(it) }

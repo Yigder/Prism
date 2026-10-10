@@ -630,7 +630,7 @@ private fun LyricsSettings() {
     Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
         Group("Display") {
             Toggle("Prefer synced lyrics", "Skip plain-text results when a later source has time-synced lines", s.preferSynced) { prefs.setPreferSynced(it) }
-            Toggle("Skip censored lyrics", "Pass over a source that stars out swear words (f**k) when another has the full lyrics", s.skipCensored) { prefs.setSkipCensored(it) }
+            Toggle("Uncensor lyrics", "Fill starred-out swear words (f**k) back in from Genius, keeping word timings, and pass over a source that still stars them out", s.skipCensored) { prefs.setSkipCensored(it) }
             Toggle("Focus blur", "Lines further from the one being sung fall out of focus", s.lyricsBlur) { prefs.setLyricsBlur(it) }
             Label("Alignment")
             Chips(LyricsAlign.entries, s.lyricsAlign, { it.label }) { prefs.setLyricsAlign(it) }
