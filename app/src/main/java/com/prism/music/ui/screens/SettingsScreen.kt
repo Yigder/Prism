@@ -105,6 +105,7 @@ import com.prism.music.ui.LocalNavigator
 import com.prism.music.ui.Routes
 import com.prism.music.ui.components.PrismChip
 import com.prism.music.ui.components.SubPage
+import com.prism.music.ui.components.featurePane
 import com.prism.music.ui.theme.AccentSwatches
 import com.prism.music.ui.theme.AppFonts
 import com.prism.music.ui.theme.LocalAppSettings
@@ -243,27 +244,29 @@ private fun AccountCard() {
     val nav = LocalNavigator.current
     val ui = LocalUi.current
     val scheme = MaterialTheme.colorScheme
+    // A pane of frosted glass on a frosted page, the accent's gradient otherwise.
+    val frosted = com.prism.music.ui.components.LocalFrosted.current
+    val ink = com.prism.music.ui.components.featureInk()
     Row(
-        Modifier.fillMaxWidth().clip(ui.card)
-            .background(Brush.linearGradient(listOf(scheme.primaryContainer, scheme.tertiaryContainer.copy(alpha = 0.8f))))
+        Modifier.fillMaxWidth().featurePane(ui.card)
             .then(if (s.isLoggedIn) Modifier else Modifier.clickable { nav.go(Routes.LOGIN) })
             .padding(18.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(56.dp).clip(CircleShape).background(scheme.surface.copy(alpha = 0.5f)), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(56.dp).clip(CircleShape).background(if (frosted) com.prism.music.ui.components.frostFill(1.6f) else scheme.surface.copy(alpha = 0.5f)), contentAlignment = Alignment.Center) {
             if (s.isLoggedIn && s.accountAvatar.isNotBlank()) AsyncImage(s.accountAvatar, null, Modifier.fillMaxSize())
-            else Icon(if (s.isLoggedIn) Icons.Rounded.Person else Icons.Rounded.Login, null, tint = scheme.onPrimaryContainer)
+            else Icon(if (s.isLoggedIn) Icons.Rounded.Person else Icons.Rounded.Login, null, tint = if (frosted) scheme.primary else ink)
         }
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(
                 if (s.isLoggedIn) s.accountName.ifBlank { "YouTube Music" } else "Sign in to YouTube Music",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = scheme.onPrimaryContainer,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = ink,
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
             Text(
                 if (s.isLoggedIn) s.accountEmail.ifBlank { "Signed in" } else "Sync likes, playlists, history and recommendations",
-                style = MaterialTheme.typography.bodySmall, color = scheme.onPrimaryContainer.copy(alpha = 0.75f),
+                style = MaterialTheme.typography.bodySmall, color = ink.copy(alpha = 0.75f),
                 maxLines = 2, overflow = TextOverflow.Ellipsis,
             )
         }
@@ -271,7 +274,7 @@ private fun AccountCard() {
             c.settings.logout()
             CookieManager.getInstance().removeAllCookies(null)
         }) { Icon(Icons.AutoMirrored.Rounded.Logout, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Sign out") }
-        else Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = scheme.onPrimaryContainer)
+        else Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = ink)
     }
 }
 
@@ -325,7 +328,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.appearance() {
                 Chips(GlassKind.entries, s.glassKind, { it.label }) { prefs.setGlassKind(it) }
             }
             Toggle("Frosted Glass", "Soft blurred glass instead, without the refraction", s.frostedGlass) { prefs.setFrostedGlass(it) }
-            Toggle("Frosted artist & album pages", "Artist, album and playlist pages sit on frosted glass made from their picture, and take its colour", s.frostedPages) { prefs.setFrostedPages(it) }
+            Toggle("Frosted pages", "Artist, album and playlist pages sit on frosted glass made from their picture, and take its colour; Home, Library, Search and Settings on frost from what's playing", s.frostedPages) { prefs.setFrostedPages(it) }
         }
     }
     item(key = "motion") {
@@ -361,7 +364,7 @@ private fun FontPicker(current: FontChoice, onPick: (FontChoice) -> Unit) {
             val on = f == current
             Column(
                 Modifier.width(96.dp).clip(ui.tile)
-                    .background(if (on) scheme.primaryContainer else scheme.surfaceContainerHigh)
+                    .background(if (on) scheme.primaryContainer else com.prism.music.ui.components.quietFill())
                     .border(if (on) 2.dp else 0.dp, if (on) scheme.primary else Color.Transparent, ui.tile)
                     .clickable { onPick(f) }.padding(10.dp),
             ) {

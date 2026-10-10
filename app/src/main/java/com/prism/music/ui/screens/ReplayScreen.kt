@@ -156,7 +156,11 @@ fun ReplayScreen(bottomPadding: Dp) {
     }
     story?.let { ReplayStoryDialog(it) { story = null } }
 
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = bottomPadding + 24.dp)) {
+    val list = androidx.compose.foundation.lazy.rememberLazyListState()
+    val scrolled by remember { androidx.compose.runtime.derivedStateOf { list.firstVisibleItemIndex > 0 || list.firstVisibleItemScrollOffset > 24 } }
+    val edge by androidx.compose.animation.core.animateFloatAsState(if (scrolled) 1f else 0f, tween(220), label = "edge")
+    Box(Modifier.fillMaxSize()) {
+    LazyColumn(Modifier.fillMaxSize(), state = list, contentPadding = PaddingValues(bottom = bottomPadding + 24.dp)) {
         item {
             com.prism.music.ui.components.ScreenHeader("Replay", subtitle = "Your listening, recapped on-device")
         }
@@ -235,7 +239,7 @@ fun ReplayScreen(bottomPadding: Dp) {
                 d.genres.forEachIndexed { i, (g, ms) ->
                     val anim = remember(g, period) { Animatable(0f) }
                     LaunchedEffect(g, period) { anim.animateTo(ms / max.toFloat(), tween(900, delayMillis = i * 90)) }
-                    Box(Modifier.fillMaxWidth().height(40.dp).clip(com.prism.music.ui.theme.LocalUi.current.shape(12.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
+                    Box(Modifier.fillMaxWidth().height(40.dp).clip(com.prism.music.ui.theme.LocalUi.current.shape(12.dp)).background(com.prism.music.ui.components.quietFill())) {
                         Box(Modifier.fillMaxWidth(anim.value).height(40.dp).background(Brush.horizontalGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary))))
                         Text(g, style = MaterialTheme.typography.labelLarge, color = Color.White, modifier = Modifier.align(Alignment.CenterStart).padding(start = 12.dp))
                         Text(listenTime(ms), style = MaterialTheme.typography.labelMedium, modifier = Modifier.align(Alignment.CenterEnd).padding(end = 12.dp))
@@ -267,6 +271,8 @@ fun ReplayScreen(bottomPadding: Dp) {
                 }
             }
         }
+    }
+    com.prism.music.ui.components.TopScrollEdge({ edge })
     }
 }
 

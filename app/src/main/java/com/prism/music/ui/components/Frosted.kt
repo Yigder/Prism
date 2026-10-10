@@ -10,7 +10,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.requiredHeight
@@ -19,6 +22,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -223,6 +228,80 @@ fun FrostedBackdrop(
         drawRect(Brush.verticalGradient(0f to wash.copy(alpha = a0 * k), 0.45f to wash.copy(alpha = (a1 * k).coerceAtMost(0.9f)), 1f to wash.copy(alpha = (a2 * k).coerceAtMost(0.92f))))
         drawRect(grainBrush, alpha = if (dark) 0.5f else 0.35f)
     }
+}
+
+/**
+ * The frost behind the app's own pages (Home, Search, Library, Replay, Settings): the same
+ * frosted glass as the artist and album pages, made from the cover of what's playing (or what
+ * played last), so the whole app shares their look. It stays put while the page scrolls.
+ */
+@Composable
+fun AmbientFrost(modifier: Modifier = Modifier) {
+    val c = com.prism.music.ui.theme.LocalContainer.current
+    val current by c.player.currentSong.collectAsState()
+    val recent by c.library.recent.collectAsState()
+    val url = current?.thumbnail ?: recent.firstOrNull()?.thumbnail
+    val frost = rememberFrost(url)
+    val palette = rememberArtPalette(url)
+    FrostedBackdrop(frost, palette, AmbientFrostHeight, { 0f }, modifier, parallax = 0f)
+}
+
+/** How much of the top of a page the ambient frost's picture covers before it runs down the page. */
+val AmbientFrostHeight = 360.dp
+
+/** True on a page that sits on frosted glass: its panels, chips and buttons go see-through too. */
+val LocalFrosted = compositionLocalOf { false }
+
+/** The current page's backdrop, so a [ScrollEdge] can draw it again under the top bar. */
+@Immutable
+class PageBackdrop(val height: Dp, val draw: @Composable (Modifier) -> Unit)
+
+val LocalPageBackdrop = compositionLocalOf<PageBackdrop?> { null }
+
+/**
+ * The fill of a card or panel: frosted glass (with its light top edge) on a frosted page,
+ * [fallback] (the theme's container colour by default) elsewhere.
+ */
+@Composable
+fun Modifier.pane(shape: Shape, fallback: Color = Color.Unspecified): Modifier {
+    if (LocalFrosted.current) {
+        val dark = LocalIsDark.current
+        return clip(shape).background(frostFill())
+            .border(0.7.dp, Brush.verticalGradient(listOf(Color.White.copy(alpha = if (dark) 0.16f else 0.7f), Color.White.copy(alpha = 0.02f))), shape)
+    }
+    return clip(shape).background(if (fallback != Color.Unspecified) fallback else MaterialTheme.colorScheme.surfaceContainerHigh)
+}
+
+/**
+ * The fill of a feature card (a session code, the account, a call to action): frosted glass on a
+ * frosted page, the accent's gradient elsewhere. Text on it uses [featureInk].
+ */
+@Composable
+fun Modifier.featurePane(shape: Shape): Modifier {
+    if (LocalFrosted.current) return pane(shape)
+    val scheme = MaterialTheme.colorScheme
+    return clip(shape).background(Brush.linearGradient(listOf(scheme.primaryContainer, scheme.tertiaryContainer)))
+}
+
+/** Text and icons on a [featurePane]. */
+@Composable
+fun featureInk(): Color = if (LocalFrosted.current) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onPrimaryContainer
+
+/** A quiet fill for small controls (chips, round buttons): frosted on a frosted page, [fallback] elsewhere. */
+@Composable
+fun quietFill(fallback: Color = MaterialTheme.colorScheme.surfaceContainerHigh): Color =
+    if (LocalFrosted.current) frostFill(1.4f) else fallback
+
+/**
+ * A scroll edge under the status bar (and a [bar] below it) for pages on the app's own
+ * backdrop: content melts away under it rather than meeting a hard line. Draws nothing when
+ * the page has no backdrop to redraw.
+ */
+@Composable
+fun TopScrollEdge(visible: () -> Float, bar: Dp = 0.dp) {
+    val backdrop = LocalPageBackdrop.current ?: return
+    val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    ScrollEdge(visible, top + bar + 34.dp, backdrop.height) { m -> backdrop.draw(m) }
 }
 
 /** Fades the bottom of whatever it's on to nothing, from [start] (0–1 down the height) to the foot. */

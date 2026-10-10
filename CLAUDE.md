@@ -69,6 +69,11 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
   hero, which `dissolveBottom()` fades into it; its foot row then runs down the page and settles into `ArtPalette.settle`).
   `ArtworkAccent` swaps the page's `primary` for the artwork's colour. Off switch: Appearance → "Frosted artist & album pages"
   (`frostedPages`). Content on them uses `FrostedPanel` / `frostFill()`; `FrostedBar` always blurs (ignores the Glass setting).
+  The base screens (Home, Search, Library, Replay, Settings and their sub-pages) share the look: `ScreenBackdrop` draws
+  `AmbientFrost` (frost from the playing / last-played cover) as the Default background and provides `LocalFrosted` +
+  `LocalPageBackdrop`; shared pieces then go frosted on their own (`Modifier.pane`, `featurePane`/`featureInk`, `quietFill`,
+  `RoundAction`, `PrismChip`, `Segmented`, settings `Group`), and `SubPage`/`TopScrollEdge` melt content under the bar.
+  Base screens keep the user's accent (no `ArtworkAccent`).
 - Artist signatures: `ui/theme/ArtistType.kt` (styles incl. Autograph = `FontFamily.Cursive`, and Outline/Neon/Gradient
   effects drawn in `ui/components/Signature.kt`, written on left to right). Automatic picks stay genre-based for 2M+ audiences;
   a per-artist pick (long-press the name, or ⋯ → Signature style) lives in `data/ArtistPrefs.kt` (`artist_prefs` prefs, which
@@ -93,6 +98,8 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
 - `*.apk`, `local.properties`, keystores are gitignored.
 
 ## Current status / Next steps
+- v1.5.1 (versionCode 16, 2026-10-10): Home, Search, Library, Replay and Settings rebuilt on the 1.5 frosted look
+  (see "Frosted pages" above). Compiles; not yet checked on the phone, not yet released on GitHub.
 - v1.4.4 (versionCode 14, 2026-10-10): plays reach the account's YT Music history again
   (checked on the phone). The WEB_REMIX `player` call (`YouTubeMusic.playerExtras`) answers "Video unavailable" with no
   `videostatsPlaybackUrl` unless it sends the player JS's `signatureTimestamp` (`StreamResolver.signatureTimestamp()`).

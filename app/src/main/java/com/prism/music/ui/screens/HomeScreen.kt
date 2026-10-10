@@ -86,6 +86,14 @@ import com.prism.music.ui.components.Artwork
 import com.prism.music.ui.components.ErrorState
 import com.prism.music.ui.components.ItemCard
 import com.prism.music.ui.components.ItemCarousel
+import com.prism.music.ui.components.LocalFrosted
+import com.prism.music.ui.components.TopScrollEdge
+import com.prism.music.ui.components.pane
+import com.prism.music.ui.components.quietFill
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.derivedStateOf
 import com.prism.music.ui.components.LoadingState
 import com.prism.music.ui.components.MoodTile
 import com.prism.music.ui.components.SectionHeader
@@ -137,12 +145,17 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
     val onSong: (SongItem) -> Unit = { c.player.playSingle(it.song) }
     val openItem: (BrowseItem) -> Unit = { nav.open(it, onSong) }
 
+    val list = rememberLazyListState()
+    // Content melts away under the status bar once the greeting has scrolled off.
+    val scrolled by remember { derivedStateOf { list.firstVisibleItemIndex > 0 || list.firstVisibleItemScrollOffset > 24 } }
+    val edge by animateFloatAsState(if (scrolled) 1f else 0f, tween(220), label = "edge")
+    Box(Modifier.fillMaxSize()) {
     PullToRefreshBox(
         isRefreshing = home.refreshing,
         onRefresh = { home.reload(true); moods.reload(true) },
         modifier = Modifier.fillMaxSize(),
     ) {
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = bottomPadding + 16.dp)) {
+        LazyColumn(Modifier.fillMaxSize(), state = list, contentPadding = PaddingValues(bottom = bottomPadding + 16.dp)) {
             item { HomeTopBar() }
             item(key = "update") { UpdateBanner() }
             if (home.state is Load.Loading && shelves.isEmpty()) item { LoadingState() }
@@ -192,7 +205,7 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
                     horizontalArrangement = Arrangement.Center,
                 ) {
                     Row(
-                        Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                        Modifier.pane(CircleShape)
                             .clickable { nav.go(Routes.CATALOGUE) }.padding(horizontal = 18.dp, vertical = 11.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -203,6 +216,8 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
                 }
             }
         }
+    }
+    TopScrollEdge({ edge })
     }
 }
 
@@ -230,11 +245,11 @@ private fun HomeTopBar() {
         com.prism.music.ui.components.RoundAction(Icons.Rounded.Dashboard, "Customize home") { nav.go(Routes.CATALOGUE) }
         Spacer(Modifier.width(8.dp))
         Box(
-            Modifier.size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer).clickable { nav.go(Routes.SETTINGS) },
+            Modifier.size(42.dp).clip(CircleShape).background(quietFill(MaterialTheme.colorScheme.primaryContainer)).clickable { nav.go(Routes.SETTINGS) },
             contentAlignment = Alignment.Center,
         ) {
             if (settings.accountAvatar.isNotBlank()) AsyncImage(settings.accountAvatar, "Account", Modifier.fillMaxSize())
-            else Icon(Icons.Rounded.Person, "Settings", tint = MaterialTheme.colorScheme.onPrimaryContainer)
+            else Icon(Icons.Rounded.Person, "Settings", tint = if (LocalFrosted.current) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onPrimaryContainer)
         }
     }
 }
@@ -266,6 +281,9 @@ private fun UpdateBanner() {
     val busy = progress is com.prism.music.data.UpdateProgress.Downloading || progress is com.prism.music.data.UpdateProgress.Installing
     val ui = com.prism.music.ui.theme.LocalUi.current
     val scheme = MaterialTheme.colorScheme
+    // A frosted panel with an accent icon on frosted pages; the accent's container colour otherwise.
+    val frosted = LocalFrosted.current
+    val ink = if (frosted) scheme.onSurface else scheme.onPrimaryContainer
     val (title, detail) = when (val p = progress) {
         is com.prism.music.data.UpdateProgress.Downloading ->
             "Downloading Prism ${u.version}…" to (p.fraction?.let { "${(it * 100).toInt()}%" } ?: "Starting")
@@ -276,8 +294,7 @@ private fun UpdateBanner() {
         is com.prism.music.data.UpdateProgress.NewSignature -> "Prism ${u.version} needs a reinstall" to "Tap to move over; your things come with you"
     }
     Column(
-        Modifier.padding(start = 16.dp, end = 16.dp, top = ui.gap(14.dp)).fillMaxWidth().clip(ui.shape(16.dp))
-            .background(scheme.primaryContainer)
+        Modifier.padding(start = 16.dp, end = 16.dp, top = ui.gap(14.dp)).fillMaxWidth().pane(ui.shape(16.dp), scheme.primaryContainer)
             .clickable(enabled = !busy) {
                 when {
                     !u.isApk -> runCatching { uri.openUri(u.url) }
@@ -288,17 +305,17 @@ private fun UpdateBanner() {
             },
     ) {
         Row(Modifier.padding(start = 16.dp, top = 6.dp, bottom = 6.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Rounded.SystemUpdate, null, tint = scheme.onPrimaryContainer)
+            Icon(Icons.Rounded.SystemUpdate, null, tint = if (frosted) scheme.primary else ink)
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f).padding(vertical = if (busy) 10.dp else 0.dp)) {
-                Text(title, style = MaterialTheme.typography.titleSmall, color = scheme.onPrimaryContainer)
-                Text(detail, style = MaterialTheme.typography.bodySmall, color = scheme.onPrimaryContainer.copy(alpha = 0.8f))
+                Text(title, style = MaterialTheme.typography.titleSmall, color = ink)
+                Text(detail, style = MaterialTheme.typography.bodySmall, color = ink.copy(alpha = 0.8f))
             }
-            if (!busy) IconButton(onClick = { c.updates.dismiss() }) { Icon(Icons.Rounded.Close, "Dismiss", tint = scheme.onPrimaryContainer) }
+            if (!busy) IconButton(onClick = { c.updates.dismiss() }) { Icon(Icons.Rounded.Close, "Dismiss", tint = ink) }
         }
         (progress as? com.prism.music.data.UpdateProgress.Downloading)?.let { p ->
-            val color = scheme.onPrimaryContainer
-            val track = scheme.onPrimaryContainer.copy(alpha = 0.2f)
+            val color = if (frosted) scheme.primary else ink
+            val track = ink.copy(alpha = 0.2f)
             if (p.fraction != null) androidx.compose.material3.LinearProgressIndicator(progress = { p.fraction }, Modifier.fillMaxWidth(), color = color, trackColor = track)
             else androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth(), color = color, trackColor = track)
         }
@@ -351,8 +368,7 @@ private fun GreetingSection(recent: List<Song>) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 row.forEach { t ->
                     Row(
-                        Modifier.weight(1f).height(58.dp).clip(ui.shape(14.dp))
-                            .background(scheme.surfaceContainerHigh.copy(alpha = 0.9f))
+                        Modifier.weight(1f).height(58.dp).pane(ui.shape(14.dp), scheme.surfaceContainerHigh.copy(alpha = 0.9f))
                             .combinedClickable(onClick = t.onClick, onLongClick = t.playable?.let { p -> { menu(p) } })
                             .padding(6.dp),
                         verticalAlignment = Alignment.CenterVertically,

@@ -63,6 +63,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.prism.music.ui.LocalNavigator
+import com.prism.music.ui.components.pane
 import com.prism.music.ui.theme.Backdrop
 import com.prism.music.ui.theme.BackdropLayer
 import com.prism.music.ui.theme.BackdropScreen
@@ -111,7 +112,7 @@ fun BackgroundsScreen(bottomPadding: Dp) {
         horizontalPadding = 16.dp, spacing = 12.dp,
     ) {
             item {
-                Column(Modifier.clip(ui.card).background(MaterialTheme.colorScheme.surfaceContainer).padding(vertical = 8.dp)) {
+                Column(Modifier.pane(ui.card, MaterialTheme.colorScheme.surfaceContainer).padding(vertical = 8.dp)) {
                     Row(Modifier.fillMaxWidth().clickable { everywhere = !everywhere }.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text("Same on every screen", style = MaterialTheme.typography.bodyLarge)
@@ -171,7 +172,7 @@ fun BackgroundsScreen(bottomPadding: Dp) {
               }
             } }
             item {
-                Column(Modifier.padding(top = 8.dp).clip(ui.card).background(MaterialTheme.colorScheme.surfaceContainer).padding(16.dp)) {
+                Column(Modifier.padding(top = 8.dp).pane(ui.card, MaterialTheme.colorScheme.surfaceContainer).padding(16.dp)) {
                     Text("Softness", style = MaterialTheme.typography.bodyLarge)
                     Text("How much the theme colour washes over the background, for easier reading", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Slider(dim, { dim = it }, valueRange = 0f..0.8f, onValueChangeFinished = { c.settings.setBackdropDim(dim) })

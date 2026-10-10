@@ -74,6 +74,8 @@ import com.prism.music.ui.components.ItemCard
 import com.prism.music.ui.components.PagerChips
 import com.prism.music.ui.components.SortBar
 import com.prism.music.ui.components.SongRow
+import com.prism.music.ui.components.featureInk
+import com.prism.music.ui.components.featurePane
 import com.prism.music.ui.theme.LocalAppSettings
 import com.prism.music.ui.theme.LocalContainer
 import kotlinx.coroutines.launch
@@ -334,17 +336,17 @@ private fun DownloadsSummary() {
     val dls by c.downloads.downloads.collectAsState()
     val done = dls.values.filter { it.state == androidx.media3.exoplayer.offline.Download.STATE_COMPLETED }
     val active = dls.values.filter { it.state != androidx.media3.exoplayer.offline.Download.STATE_COMPLETED }
+    val ink = featureInk()
     Column(Modifier.padding(8.dp)) {
         Box(
-            Modifier.fillMaxWidth().clip(com.prism.music.ui.theme.LocalUi.current.card)
-                .background(Brush.linearGradient(listOf(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.tertiaryContainer)))
+            Modifier.fillMaxWidth().featurePane(com.prism.music.ui.theme.LocalUi.current.card)
                 .clickable { nav.go(Routes.DOWNLOADS) }.padding(20.dp),
         ) {
             Column {
-                Text("${done.size} songs offline", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                Text("${done.size} songs offline", style = MaterialTheme.typography.titleLarge, color = ink)
                 Text(
                     "%.1f MB used".format(done.sumOf { it.bytes } / 1_048_576.0) + if (active.isNotEmpty()) " · ${active.size} in progress" else "",
-                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                    style = MaterialTheme.typography.bodyMedium, color = ink.copy(alpha = 0.8f),
                 )
                 Text("Open downloads →", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 8.dp))
             }

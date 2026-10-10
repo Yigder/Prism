@@ -86,6 +86,7 @@ import com.prism.music.ui.components.MoodTile
 import com.prism.music.ui.components.SectionHeader
 import com.prism.music.ui.components.SongRow
 import com.prism.music.ui.components.playable
+import com.prism.music.ui.components.pane
 import com.prism.music.ui.components.rememberPlayMenu
 import com.prism.music.ui.rememberLoad
 import com.prism.music.ui.theme.GlassSurface
@@ -355,8 +356,11 @@ private fun TopCard(item: BrowseItem, onClick: () -> Unit, onPlay: () -> Unit) {
     }
     val ui = com.prism.music.ui.theme.LocalUi.current
     Row(
-        Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth().clip(ui.card)
-            .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(scheme.surfaceContainerHigh, scheme.primaryContainer.copy(alpha = 0.55f))))
+        Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth()
+            .then(
+                if (com.prism.music.ui.components.LocalFrosted.current) Modifier.pane(ui.card)
+                else Modifier.clip(ui.card).background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(scheme.surfaceContainerHigh, scheme.primaryContainer.copy(alpha = 0.55f))))
+            )
             .clickable(onClick = onClick).padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

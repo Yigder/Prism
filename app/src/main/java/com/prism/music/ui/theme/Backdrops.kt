@@ -12,9 +12,19 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import com.prism.music.ui.components.AmbientFrost
+import com.prism.music.ui.components.LocalFrosted
+import com.prism.music.ui.components.LocalPageBackdrop
+import com.prism.music.ui.components.PageBackdrop
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -60,15 +70,31 @@ enum class Backdrop(val label: String, val colors: List<Long>) {
     }
 }
 
-/** Draws [screen]'s chosen background behind [content]. */
+/**
+ * Draws [screen]'s chosen background behind [content]. With frosted pages on, the default is the
+ * frost made from what's playing (as on artist and album pages), and the page's panels, chips and
+ * buttons turn to frosted glass over it, whichever background it has.
+ */
 @Composable
 fun ScreenBackdrop(screen: BackdropScreen, content: @Composable BoxScope.() -> Unit) {
     val c = LocalContainer.current
     val s by c.settings.flow.collectAsState()
     val (style, photo) = Backdrop.parse(s.backdrops[screen.name])
-    Box(Modifier.fillMaxSize()) {
-        if (style != Backdrop.DEFAULT) BackdropLayer(style, photo, s.backdropDim, s.backdropMotion && !s.reduceMotion, Modifier.fillMaxSize())
-        content()
+    val motion = s.backdropMotion && !s.reduceMotion
+    val frosted = s.frostedPages
+    val density = LocalDensity.current
+    var height by remember { mutableStateOf(0.dp) }
+    val draw: @Composable (Modifier) -> Unit = { m ->
+        when {
+            style != Backdrop.DEFAULT -> BackdropLayer(style, photo, s.backdropDim, motion, m)
+            frosted -> AmbientFrost(m)
+            else -> Box(m.fillMaxSize().background(MaterialTheme.colorScheme.background))
+        }
+    }
+    val page = remember(style, photo, frosted, height, s.backdropDim, motion) { PageBackdrop(height, draw) }
+    Box(Modifier.fillMaxSize().onSizeChanged { height = with(density) { it.height.toDp() } }) {
+        if (style != Backdrop.DEFAULT || frosted) draw(Modifier.fillMaxSize())
+        CompositionLocalProvider(LocalFrosted provides frosted, LocalPageBackdrop provides page) { content() }
     }
 }
 
@@ -79,7 +105,8 @@ fun BackdropLayer(style: Backdrop, photo: String?, dim: Float, motion: Boolean, 
     val dark = bg.red + bg.green + bg.blue < 1.5f
     Box(modifier) {
         when (style) {
-            Backdrop.DEFAULT -> Box(Modifier.fillMaxSize().background(bg))
+            // With frosted pages on, the default is the frost from what's playing (the previews show it so).
+            Backdrop.DEFAULT -> if (LocalAppSettings.current.frostedPages) AmbientFrost(Modifier.fillMaxSize()) else Box(Modifier.fillMaxSize().background(bg))
             Backdrop.ARTWORK -> {
                 val song by LocalContainer.current.player.currentSong.collectAsState()
                 Box(Modifier.fillMaxSize().background(bg))

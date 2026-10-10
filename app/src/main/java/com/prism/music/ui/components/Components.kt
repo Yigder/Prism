@@ -39,6 +39,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Album
 import androidx.compose.material.icons.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Download
@@ -131,31 +132,31 @@ fun Artwork(
     }
 }
 
+/**
+ * A shelf's heading, as Apple Music sets them (and the artist pages do): a quiet strapline over a
+ * bold title, with a chevron right after it when the title opens the whole shelf.
+ */
 @Composable
 fun SectionHeader(title: String, modifier: Modifier = Modifier, strapline: String? = null, onMore: (() -> Unit)? = null) {
     val ui = com.prism.music.ui.theme.LocalUi.current
     val scheme = MaterialTheme.colorScheme
-    Row(
+    Column(
         modifier.fillMaxWidth()
-            .padding(start = 20.dp, end = 12.dp, top = ui.gap(26.dp), bottom = ui.gap(10.dp)),
-        verticalAlignment = Alignment.Bottom,
+            .padding(start = 20.dp, end = 20.dp, top = ui.gap(26.dp), bottom = ui.gap(10.dp)),
     ) {
-        Column(Modifier.weight(1f)) {
-            if (!strapline.isNullOrBlank()) Text(
-                strapline, style = MaterialTheme.typography.labelMedium,
-                color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
-                maxLines = 1, overflow = TextOverflow.Ellipsis,
-            )
-        }
-        if (onMore != null) Row(
-            Modifier.clip(CircleShape).clickable(onClick = onMore).padding(start = 10.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+        if (!strapline.isNullOrBlank()) Text(
+            strapline, style = MaterialTheme.typography.labelMedium,
+            color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        )
+        Row(
+            Modifier.clip(RoundedCornerShape(8.dp)).then(if (onMore != null) Modifier.clickable(onClickLabel = "See all", onClick = onMore) else Modifier),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("See all", style = MaterialTheme.typography.labelLarge, color = scheme.onSurfaceVariant)
-            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, "More", Modifier.size(20.dp), tint = scheme.onSurfaceVariant)
+            Text(
+                title, Modifier.weight(1f, fill = false), style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+            if (onMore != null) Icon(Icons.Rounded.ChevronRight, "See all", Modifier.size(26.dp), tint = scheme.onSurfaceVariant)
         }
     }
 }
@@ -329,7 +330,7 @@ fun LoadingState(modifier: Modifier = Modifier) {
 fun ErrorState(message: String, modifier: Modifier = Modifier, onRetry: (() -> Unit)? = null) {
     Column(modifier.fillMaxWidth().padding(40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
-            Modifier.size(64.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHigh),
+            Modifier.size(64.dp).clip(CircleShape).background(quietFill()),
             contentAlignment = Alignment.Center,
         ) { Icon(Icons.Rounded.CloudOff, null, Modifier.size(30.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
         Spacer(Modifier.height(14.dp))
@@ -374,7 +375,7 @@ fun SearchField(query: String, hint: String, onChange: (String) -> Unit, modifie
     val focus = androidx.compose.ui.platform.LocalFocusManager.current
     Row(
         modifier.fillMaxWidth().height(46.dp).clip(com.prism.music.ui.theme.LocalUi.current.shape(23.dp))
-            .background(if (container != Color.Unspecified) container else scheme.surfaceContainerHigh).padding(start = 14.dp, end = 4.dp),
+            .background(if (container != Color.Unspecified) container else quietFill()).padding(start = 14.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(Icons.Rounded.Search, null, Modifier.size(20.dp), tint = scheme.onSurfaceVariant)

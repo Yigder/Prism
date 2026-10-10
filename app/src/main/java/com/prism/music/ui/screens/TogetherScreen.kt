@@ -64,6 +64,10 @@ import com.prism.music.ui.Routes
 import com.prism.music.ui.components.Artwork
 import com.prism.music.ui.components.Eyebrow
 import com.prism.music.ui.components.SubPage
+import com.prism.music.ui.components.LocalFrosted
+import com.prism.music.ui.components.featureInk
+import com.prism.music.ui.components.featurePane
+import com.prism.music.ui.components.pane
 import com.prism.music.ui.theme.LocalContainer
 import com.prism.music.ui.theme.LocalUi
 import kotlinx.coroutines.launch
@@ -172,25 +176,25 @@ private fun Hosting(s: TogetherState.Hosting) {
     val nav = LocalNavigator.current
     val song by c.player.currentSong.collectAsState()
     val ui = LocalUi.current
-    val scheme = MaterialTheme.colorScheme
+    val ink = featureInk()
     Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
         Column(
-            Modifier.fillMaxWidth().clip(ui.card).background(Brush.linearGradient(listOf(scheme.primaryContainer, scheme.tertiaryContainer))).padding(22.dp),
+            Modifier.fillMaxWidth().featurePane(ui.card).padding(22.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Eyebrow("Session code", color = scheme.onPrimaryContainer.copy(alpha = 0.8f))
+            Eyebrow("Session code", color = ink.copy(alpha = 0.8f))
             Text(
-                s.code.toCharArray().joinToString(" "), color = scheme.onPrimaryContainer,
+                s.code.toCharArray().joinToString(" "), color = ink,
                 style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Black, letterSpacing = 0.08.em),
             )
             Text(
                 "Friends open Listen together in Prism on the same Wi-Fi, tap your session and enter this code.",
-                style = MaterialTheme.typography.bodySmall, color = scheme.onPrimaryContainer.copy(alpha = 0.85f), textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodySmall, color = ink.copy(alpha = 0.85f), textAlign = TextAlign.Center,
             )
             s.address?.let {
                 Text(
                     "Not showing up for them? They can join with " + if (s.port == Together.PORT) it else "$it:${s.port}",
-                    style = MaterialTheme.typography.labelMedium, color = scheme.onPrimaryContainer.copy(alpha = 0.7f), textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelMedium, color = ink.copy(alpha = 0.7f), textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 8.dp),
                 )
             }
@@ -266,7 +270,7 @@ private fun HostControls(now: Msg.State) {
 private fun NowPlayingCard(song: Song?, caption: String) {
     val ui = LocalUi.current
     Row(
-        Modifier.fillMaxWidth().clip(ui.card).background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.94f)).padding(14.dp),
+        Modifier.fillMaxWidth().pane(ui.card, MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.94f)).padding(14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Artwork(song?.thumbnail, Modifier.size(72.dp), ui.art, size = 300)
@@ -294,15 +298,15 @@ private fun QueueLine(song: Song) {
 @Composable
 private fun BigCard(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, body: String, action: String, onClick: () -> Unit) {
     val ui = LocalUi.current
-    val scheme = MaterialTheme.colorScheme
+    val ink = featureInk()
     Column(
-        Modifier.fillMaxWidth().clip(ui.card).background(Brush.linearGradient(listOf(scheme.primaryContainer, scheme.tertiaryContainer)))
+        Modifier.fillMaxWidth().featurePane(ui.card)
             .clickable(onClick = onClick).padding(20.dp),
     ) {
-        Icon(icon, null, Modifier.size(30.dp), tint = scheme.onPrimaryContainer)
+        Icon(icon, null, Modifier.size(30.dp), tint = if (LocalFrosted.current) MaterialTheme.colorScheme.primary else ink)
         Spacer(Modifier.height(10.dp))
-        Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = scheme.onPrimaryContainer)
-        Text(body, style = MaterialTheme.typography.bodyMedium, color = scheme.onPrimaryContainer.copy(alpha = 0.85f))
+        Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = ink)
+        Text(body, style = MaterialTheme.typography.bodyMedium, color = ink.copy(alpha = 0.85f))
         Spacer(Modifier.height(14.dp))
         Button(onClick = onClick) { Text(action) }
     }
