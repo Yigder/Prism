@@ -311,7 +311,7 @@ class PlaybackService : MediaLibraryService(), Player.Listener {
         songLoudness = c.loudness.getFloat(song.id, Float.NaN).takeIf { !it.isNaN() }
         applyNormalization()
         extrasJob = scope.launch {
-            val ex = runCatching { withContext(Dispatchers.IO) { c.ytm.playerExtras(song.id, c.settings.current.isLoggedIn) } }.getOrNull()
+            val ex = runCatching { withContext(Dispatchers.IO) { c.ytm.playerExtras(song.id, c.streams.signatureTimestamp()) } }.getOrNull()
             ex?.loudnessDb?.toFloat()?.let { loud ->
                 c.loudness.edit().putFloat(song.id, loud).apply()
                 if (trackedSong?.id == song.id) { songLoudness = loud; applyNormalization() }

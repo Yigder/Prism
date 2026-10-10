@@ -66,10 +66,12 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
 - `*.apk`, `local.properties`, keystores are gitignored.
 
 ## Current status / Next steps
-- **v1.4.3 (versionCode 13) is GitHub "Latest"** (2026-10-10): plays reach the account's YT Music history again. The
-  WEB_REMIX `player` call (`YouTubeMusic.playerExtras`) now answers "Video unavailable" (wants a PO token), so it had no
-  `videostatsPlaybackUrl`; signed in, the tracking URL now comes from the TV client (`signedInPlayer`), pinged as
-  `TVHTML5`. Logcat tag `PrismHistory`. Not yet confirmed on the phone that plays appear in YT Music history.
+- **v1.4.4 (versionCode 14) is GitHub "Latest"** (2026-10-10): plays reach the account's YT Music history again
+  (checked on the phone). The WEB_REMIX `player` call (`YouTubeMusic.playerExtras`) answers "Video unavailable" with no
+  `videostatsPlaybackUrl` unless it sends the player JS's `signatureTimestamp` (`StreamResolver.signatureTimestamp()`).
+  Logcat tag `PrismHistory` logs each ping's HTTP code. Don't use TV-client tracking URLs for history: YouTube takes
+  their pings (204) but never adds them to YT Music history.
+- v1.4.3 (versionCode 13, 2026-10-10): tried that TV-client tracking URL; plays still didn't reach history.
 - v1.4.2 (versionCode 12, 2026-10-09): age-restricted and Music Premium-only songs play when
   signed in, deciphered by `PlayerJsSolver` (checked on the phone: "Neighbors" by J. Cole, BMTH "Fuck", seeking).
 - v1.4.1 (versionCode 11, 2026-10-09): lossless sync (lossless files on the phone show up in Downloads, rescanned on

@@ -216,10 +216,10 @@ class InnerTube(
     }
 
     /** Fire-and-forget GET used for playback-history pings. */
-    suspend fun ping(url: String) = withContext(Dispatchers.IO) {
+    suspend fun ping(url: String): Int? = withContext(Dispatchers.IO) {
         runCatching {
             val req = Request.Builder().url(url).get().applyHeaders().build()
-            http.newCall(req).execute().close()
-        }
+            http.newCall(req).execute().use { it.code }
+        }.getOrNull()
     }
 }

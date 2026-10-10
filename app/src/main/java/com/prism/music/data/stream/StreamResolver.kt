@@ -303,6 +303,10 @@ class StreamResolver(
     )
 
     private val solver = PlayerJsSolver(context, http)
+
+    /** The current player JS's signature timestamp, or null if it couldn't be fetched. Blocking. */
+    fun signatureTimestamp(): Int? = runCatching { solver.currentPlayer().second }
+        .onFailure { Log.w("StreamResolver", "Couldn't get YouTube's player JS: $it") }.getOrNull()
     private val cache = ConcurrentHashMap<String, Formats>()
     /** Resolutions under way, so the player and a prefetch never resolve the same song twice at once. */
     private val inflight = ConcurrentHashMap<String, CompletableFuture<Formats>>()

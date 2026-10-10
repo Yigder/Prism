@@ -154,7 +154,7 @@ class DownloadRepository(private val context: Context, private val c: AppContain
             // Lyrics come down with the song (karaoke if any source has it), so they're there offline too.
             ensureLyrics(song, force = true)
             // ...and its loudness, so normalization works offline.
-            if (!c.loudness.contains(song.id)) runCatching { c.ytm.playerExtras(song.id).loudnessDb?.let { c.loudness.edit().putFloat(song.id, it.toFloat()).apply() } }
+            if (!c.loudness.contains(song.id)) runCatching { c.ytm.playerExtras(song.id, c.streams.signatureTimestamp()).loudnessDb?.let { c.loudness.edit().putFloat(song.id, it.toFloat()).apply() } }
         }
         DownloadService.sendAddDownload(context, PrismDownloadService::class.java, request, false)
     }
