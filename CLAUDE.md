@@ -118,6 +118,21 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
   v1.0.0 (2026-10-04) is marked pre-release.
 - Release flow: build `assembleRelease`, upload the APK as `Prism.apk` (README links to
   `releases/latest/download/Prism.apk`), notes include the Android Auto "parked/passengers only" warning.
+  Check the signer before uploading (`apksigner verify --print-certs` → SHA-256 `cbc462bc…`). Commit with
+  `git commit -F <file>` (a multi-line `-F -` here-string in PowerShell failed and git treated the message as paths), and
+  only tag after the commit succeeded — the first v1.5.0 tag landed on the 1.4.4 commit and had to be deleted and redone.
+  `gh release create vX.Y.Z Prism.apk --title "Prism X.Y.Z" --notes-file notes.md --latest` worked from this machine.
+- PowerShell 5.1 encoding trap: `Get-Content -Raw` reads BOM-less UTF-8 as ANSI and `Set-Content -Encoding utf8` adds a BOM,
+  so a read-replace-write mangles `·`, `—`, `…`, `•` (e.g. `" • "` → `" â€¢ "`). It hit `CollectionScreen.kt` and
+  `build.gradle.kts` during 1.5.0 (both repaired). Use the Edit tool, or `[IO.File]::ReadAllText/WriteAllText` with
+  `UTF8Encoding($false)`; afterwards grep for `â€|Â·` to be sure.
+- Phone checks: the Pixel 10 Pro XL is the owner's personal phone (wireless adb). Ask before touching it; use the
+  side-by-side test copy (`-PsideBySide`, `com.prism.music.dev`) rather than replacing the real install. Find tap targets with
+  `adb shell uiautomator dump` (match `text` or `content-desc`), decline the test copy's notification prompt, never act in
+  the system share chooser (it shows personal contacts), and afterwards `rm` temp files from /sdcard, `am force-stop` the
+  test copy and press Home. A PC on the same Wi-Fi can join a Listen Together session as a test guest with a raw TCP
+  client sending `{"t":"hello","name":"Test PC","code":"NNNN","version":1}` (don't send `add`: it starts playback).
+  The `com.prism.music.dev` copy from the 1.5.0 checks may still be on the phone (`adb uninstall com.prism.music.dev`).
 - README screenshots (`docs/screenshots/`) were retaken for 1.1 on a Pixel 10 Pro XL with personal info
   and the mini player blurred (no way to hide the mini player in release builds). Keep blurring on retakes.
   `video.jpg` (music video playing, Kid Cudi) was added 2026-10-06 with the README "Music videos" feature notes.
@@ -130,11 +145,13 @@ offline downloads, EQ/spatial audio, on-device "Replay" stats, and full Android 
   Keep it optional/no-pressure; no in-app donation prompts unless the user asks.
 - On the user's Wi-Fi, `gh` API calls fail (`invalid character '<'`); git push works. Ask them to switch to hotspot.
 - An untracked `Prism/` subfolder duplicates the project (with build output and logs) — decide whether to delete it.
-- **v1.5.0 (versionCode 15) is GitHub "Latest"** (2026-10-10): the QOL update — frosted artist/album/playlist pages, artist
+- **v1.5.0 (versionCode 15, commit `75c5c7f`) is GitHub "Latest"** (2026-10-10, with `Prism.apk`, release-key signed): the QOL update — frosted artist/album/playlist pages, artist
   signatures and favourites, share sheet + "Play in Prism", Listen Together, playlist edit/remove/save-to-library/new playlist,
   add-to-playlist sheet, queue save/clear, sleep "end of song". Built and unit-tested; checked on the Pixel with the
   side-by-side test copy (signed out): artist page dark + light, signatures, album/playlist pages, share sheet + image
   export, Listen Together hosting (a PC guest joined over Wi-Fi; wrong code refused; NSD advert seen). Not yet tried:
   two phones following each other, signed-in actions (save to library, edit/remove, favourite → subscribe).
   Haze blur doesn't draw for elements inside the NavHost's own hazeSource, hence `ScrollEdge` instead of a blurred bar.
-- Next steps: _(fill in)_
+- Next steps: try 1.5.0's untested paths on the phone (two phones in a Listen Together session; signed-in save to library,
+  playlist edit/remove/delete, favourite → subscribe). Possible later: remote (internet) Listen Together, which needs a
+  relay server and so an owner decision given the no-server rule; real artist logos, which need a third-party API key.
