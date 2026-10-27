@@ -576,10 +576,12 @@ class StreamResolver(
                 innerTube.signedInPlayer(client, videoId, player?.second)
             } catch (e: Exception) {
                 reason = reason ?: e.message
+                runCatching { com.prism.music.playback.AudioDiagnostics.log("stream", "$videoId client ${client.name} failed: $e") }
                 continue
             }
             if (res.str("playabilityStatus", "status") != "OK") {
                 reason = res.str("playabilityStatus", "reason") ?: reason
+                runCatching { com.prism.music.playback.AudioDiagnostics.log("stream", "$videoId client ${client.name} not playable: ${res.str("playabilityStatus", "status")} / ${res.str("playabilityStatus", "reason")}") }
                 continue
             }
             val f = parsePlayer(res, player?.first, via = "account (${client.name})")

@@ -42,8 +42,8 @@ class InnerTube(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
         private val JSON_TYPE = "application/json".toMediaType()
         val json = Json { ignoreUnknownKeys = true; isLenient = true }
-        /** The TV client's version (YouTube on smart TVs); bump it if TV playback starts being refused. */
-        const val TV_CLIENT_VERSION = "7.20250923.13.00"
+        /** yt-dlp's tv_samsung client version (PR #17723); bump it if TV playback starts being refused. */
+        const val TV_CLIENT_VERSION = "5.20260707"
         /** The YouTube Music Android app version [androidMusicPost] asks as (for synced lyrics). */
         const val ANDROID_MUSIC_VERSION = "7.27.52"
         /** youtube.com's web client, for [webPost] (live stream search). */
@@ -330,9 +330,22 @@ class InnerTube(
      * Tried and dropped as anonymous fallbacks (2026-10): ANDROID_VR answers, but googlevideo refuses its streams past
      * the first megabyte; TV without cookies answers "The page needs to be reloaded".
      */
-    enum class PlayerClient(val clientName: String, val nameId: Int, val userAgent: String, val origin: String) {
-        /** YouTube on TVs: takes the signed-in cookies, plays age-restricted and Premium-only songs, needs no PO token. */
-        TV("TVHTML5", 7, "Mozilla/5.0 (ChromiumStylePlatform) Cobalt/Version", "https://www.youtube.com"),
+    enum class PlayerClient(
+        val clientName: String, val nameId: Int, val userAgent: String, val origin: String,
+        val deviceMake: String? = null, val deviceModel: String? = null,
+        val osName: String? = null, val osVersion: String? = null,
+    ) {
+        /**
+         * YouTube on TVs, as yt-dlp's tv_samsung client (PR #17723): takes the signed-in cookies, plays
+         * age-restricted and Premium-only songs, needs no PO token, and has to identify as a Samsung/Tizen TV
+         * or YouTube answers "The page needs to be reloaded".
+         */
+        TV(
+            "TVHTML5", 7,
+            "Mozilla/5.0 (SMART-TV; Linux; Tizen 2.4.0) AppleWebKit/538.1 (KHTML, like Gecko) Version/2.4.0 TV Safari/538.1",
+            "https://www.youtube.com",
+            deviceMake = "Samsung", deviceModel = "UKS9800", osName = "Tizen", osVersion = "2.4.0",
+        ),
         /** The YouTube Music web app itself. */
         WEB_REMIX("WEB_REMIX", 67, InnerTube.USER_AGENT, InnerTube.ORIGIN),
     }
@@ -353,6 +366,10 @@ class InnerTube(
                     put("hl", hl)
                     put("gl", gl)
                     put("userAgent", client.userAgent)
+                    client.deviceMake?.let { put("deviceMake", it) }
+                    client.deviceModel?.let { put("deviceModel", it) }
+                    client.osName?.let { put("osName", it) }
+                    client.osVersion?.let { put("osVersion", it) }
                     if (visitorData.isNotBlank()) put("visitorData", visitorData)
                 }
                 putJsonObject("user") {
