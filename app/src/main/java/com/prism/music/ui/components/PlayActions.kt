@@ -163,9 +163,13 @@ fun PlayActionsSheet(target: Playable, extra: List<SheetItem> = emptyList(), ext
         // opens as another album page, whose bookmark didn't reach this one).
         val inLibrary = item is AlbumItem && c.settings.current.isLoggedIn && c.library.albums.value.any { it.id == item.id }
         // Saved on the phone (no account): taken out of the phone's library.
-        val savedHere = item is AlbumItem && !c.settings.current.isLoggedIn && c.prismLibrary.isSaved(item.id)
+        val savedHere = !c.settings.current.isLoggedIn && when (item) {
+            is AlbumItem -> c.prismLibrary.isSaved(item.id)
+            is PlaylistItem -> c.prismLibrary.isPlaylistSaved(item.id)
+            else -> false
+        }
         val remove = if (savedHere) listOf(ActionItem(PrismIcons.Delete, "Remove from library") {
-            c.prismLibrary.unsaveAlbum(item.id)
+            if (item is AlbumItem) c.prismLibrary.unsaveAlbum(item.id) else if (item != null) c.prismLibrary.unsavePlaylist(item.id)
             Toast.makeText(context, "Removed from your library", Toast.LENGTH_SHORT).show()
         }) else if (inLibrary) listOf(ActionItem(PrismIcons.Delete, "Remove from library") {
             c.scope.launch(Dispatchers.Main) {
@@ -184,10 +188,28 @@ fun PlayActionsSheet(target: Playable, extra: List<SheetItem> = emptyList(), ext
                 c.player.playDjSet(loaded.first, loaded.second)
             }
         })
+        // A YouTube playlist, copied whole into a Prism playlist of your own (H7; signed in or not).
+        val copyable: Pair<String, String>? = when {
+            item is PlaylistItem && !item.isMix -> item.id to item.title
+            target is Playable.Page && !target.album -> target.share.url?.let { PLAYLIST_IN_LINK.find(it)?.groupValues?.get(1) }?.let { it to target.title }
+            else -> null
+        }?.takeIf { (id, _) -> !com.prism.music.data.PrismLibrary.isMix(id) && !com.prism.music.data.PrismLibrary.isPrismList(id) }
+        val copy = copyable?.let { (id, name) ->
+            listOf(ActionItem(PrismIcons.PlaylistAdd, "Save a copy as a Prism playlist") { copyToPrism(c, context, id, name) })
+        }.orEmpty()
+        // A section of its own on Home (1.7.6): its songs, under its name.
+        val pin = item?.let { com.prism.music.ui.screens.OwnSections.pinOf(it) }?.let { cfg ->
+            val layout = c.settings.current.homeLayout
+            val on = layout.any { it.key == cfg.key }
+            listOf(ActionItem(if (on) PrismIcons.PinFilled else PrismIcons.Pin, if (on) "Unpin from Home" else "Pin to Home") {
+                c.settings.setHomeLayout(if (on) layout.filterNot { it.key == cfg.key } else listOf(cfg) + layout)
+                Toast.makeText(context, if (on) "Taken off Home" else "Pinned to the top of Home", Toast.LENGTH_SHORT).show()
+            })
+        }.orEmpty()
         if (extraTitle != null) {
-            ActionGroup(null, djSet + remove) { runAction(it, close) }
+            ActionGroup(null, djSet + copy + pin + remove) { runAction(it, close) }
             ActionGroup(extraTitle, extra.map { it.toAction() }) { runAction(it, close) }
-        } else ActionGroup(null, djSet + extra.map { it.toAction() } + remove) { runAction(it, close) }
+        } else ActionGroup(null, djSet + copy + pin + extra.map { it.toAction() } + remove) { runAction(it, close) }
     }
 }
 
@@ -218,7 +240,18 @@ private fun LibraryToggle(item: BrowseItem?) {
             }
         }
         is PlaylistItem -> {
-            if (!signedIn || item.isMix || item.id.startsWith("RD") || com.prism.music.data.PrismLibrary.isPrismList(item.id)) return
+            if (item.isMix || com.prism.music.data.PrismLibrary.isMix(item.id) || com.prism.music.data.PrismLibrary.isPrismList(item.id)) return
+            if (!signedIn) {
+                // Without an account, kept on the phone as a bookmark (H7).
+                val here by c.prismLibrary.playlists.collectAsState()
+                val saved = here.any { com.prism.music.data.PrismLibrary.samePlaylist(it.id, item.id) }
+                SheetIconButton(if (saved) PrismIcons.LibraryAdded else PrismIcons.LibraryAdd, if (saved) "Remove from library" else "Add to library") {
+                    if (saved) c.prismLibrary.unsavePlaylist(item.id)
+                    else c.prismLibrary.savePlaylist(com.prism.music.data.SavedPlaylist(item.id, item.title, item.subtitle, item.thumbnail, System.currentTimeMillis()))
+                    Toast.makeText(context, if (saved) "Removed from your library" else "Added to your library", Toast.LENGTH_SHORT).show()
+                }
+                return
+            }
             val playlists by c.library.playlists.collectAsState()
             val saved = playlists.any { it.id.removePrefix("VL") == item.id.removePrefix("VL") }
             SheetIconButton(if (saved) PrismIcons.LibraryAdded else PrismIcons.LibraryAdd, if (saved) "Remove from library" else "Add to library") {
@@ -231,11 +264,30 @@ private fun LibraryToggle(item: BrowseItem?) {
         is ArtistItem -> {
             val favorites by c.artistPrefs.favorites.collectAsState()
             val starred = favorites.any { it.id == item.id }
-            SheetIconButton(if (starred) PrismIcons.StarFilled else PrismIcons.Star, if (starred) "Remove from favourites" else "Add to favourites") {
+            SheetIconButton(if (starred) PrismIcons.StarFilled else PrismIcons.Star, if (starred) "Remove from favorites" else "Add to favorites") {
                 c.library.setFavoriteArtist(com.prism.music.data.FavoriteArtist(item.id, item.title, item.thumbnail), null, !starred)
             }
         }
         else -> Unit
+    }
+}
+
+private val PLAYLIST_IN_LINK = Regex("[?&]list=([A-Za-z0-9_-]+)")
+
+/**
+ * Every song of the YouTube playlist [id] (all its pages), into a new Prism playlist named [title] (H7): the copy is
+ * yours, on the phone, and stays as it is when the original changes.
+ */
+fun copyToPrism(c: AppContainer, context: android.content.Context, id: String, title: String) {
+    Toast.makeText(context, "Copying \"$title\"…", Toast.LENGTH_SHORT).show()
+    c.scope.launch(Dispatchers.Main) {
+        val songs = runCatching { withContext(Dispatchers.IO) { c.ytm.playlistAll(id, 5000).songs } }.getOrNull()
+        if (songs.isNullOrEmpty()) {
+            Toast.makeText(context, if (songs == null) "Couldn't load \"$title\"" else "\"$title\" has no songs to copy", Toast.LENGTH_SHORT).show()
+            return@launch
+        }
+        c.prismLibrary.create(title, songs)
+        Toast.makeText(context, "Saved \"$title\" as a Prism playlist (${com.prism.music.data.model.songCount(songs.size)})", Toast.LENGTH_SHORT).show()
     }
 }
 

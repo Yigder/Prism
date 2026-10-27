@@ -62,6 +62,7 @@ import com.prism.music.ui.components.PlayingBars
 import com.prism.music.ui.components.RoundAction
 import com.prism.music.ui.components.SectionHeader
 import com.prism.music.ui.components.SongActionsSheet
+import androidx.compose.ui.text.withLink
 import com.prism.music.ui.components.SubPage
 import com.prism.music.ui.components.quietFill
 import com.prism.music.ui.rememberLoad
@@ -266,13 +267,13 @@ fun PodcastScreen(id: String, bottomPadding: Dp) {
                                 }
                             }
                         }
-                        p.description?.let { d ->
-                            Text(
-                                d, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = if (expanded) Int.MAX_VALUE else 3, overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.padding(top = 14.dp).clickable { expanded = !expanded },
-                            )
-                        }
+                        // Some shows have none on YouTube (JRE's page showed nothing at all): said plainly.
+                        Text(
+                            p.description ?: "YouTube has no description for this show.",
+                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = if (expanded) Int.MAX_VALUE else 3, overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(top = 14.dp).then(if (p.description != null) Modifier.clickable { expanded = !expanded } else Modifier),
+                        )
                     }
                 }
                 item(key = "eps-h") { SectionHeader("Episodes") }
@@ -285,6 +286,7 @@ fun PodcastScreen(id: String, bottomPadding: Dp) {
                         ),
                         playing = current?.id == e.song.id,
                         leftMs = local?.leftMs,
+                        about = ShowAbout(p.title, p.description),
                     ) { playEpisode(c, e.song, p.title) }
                 }
                 if (next != null && show != null) item(key = "more") {
@@ -319,11 +321,14 @@ fun EpisodeRow(
     showShow: Boolean = false,
     playing: Boolean = false,
     leftMs: Long? = null,
+    /** The show it's from (its name and description), for the details sheet. */
+    about: ShowAbout? = null,
     onClick: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
     val ui = LocalUi.current
     var menu by remember { mutableStateOf(false) }
+    var details by remember { mutableStateOf(false) }
     val song = e.song
     val dim = e.played && !playing
     Row(
@@ -360,17 +365,84 @@ fun EpisodeRow(
             }
             if (e.progress > 0.01f && !e.played) com.prism.music.ui.components.PrismProgressBar({ e.progress }, Modifier.padding(top = 6.dp).fillMaxWidth(0.6f))
             e.description?.let {
+                // Tapping the start of the description opens all of it.
                 Text(
                     it.replace(Regex("\\s+"), " "), maxLines = 2, overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant.copy(alpha = 0.85f),
-                    modifier = Modifier.padding(top = 4.dp),
+                    modifier = Modifier.padding(top = 4.dp).clickable(onClickLabel = "Episode details") { details = true },
                 )
             }
         }
         IconButton(onClick = { menu = true }) { Icon(PrismIcons.More, "More", tint = scheme.onSurfaceVariant.copy(alpha = 0.8f)) }
     }
-    if (menu) SongActionsSheet(song) { menu = false }
+    if (menu) SongActionsSheet(song, extra = listOf(com.prism.music.ui.components.SheetItem(PrismIcons.Info, "Episode details") { details = true })) { menu = false }
+    if (details) EpisodeDetailsSheet(e, about, leftMs) { details = false }
 }
+
+/** A show's name and description, as its page has them. */
+data class ShowAbout(val title: String, val description: String?)
+
+/**
+ * Everything about an episode (H6): its whole description (links open in the browser), date and length, then the show
+ * it's from. YouTube gives some shows no description at all; that's said rather than left blank.
+ */
+@Composable
+private fun EpisodeDetailsSheet(e: Episode, about: ShowAbout?, leftMs: Long?, onDismiss: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val song = e.song
+    com.prism.music.ui.components.ActionSheet(song.thumbnail, onDismiss) { _ ->
+        com.prism.music.ui.components.ActionHeader(
+            song.thumbnail, song.title,
+            listOfNotNull(
+                e.date,
+                song.durationSec.takeIf { it > 0 }?.let { formatLength(it.toLong()) },
+                leftMs?.takeIf { it > 0 && !e.played }?.let { "${formatLength(it / 1000)} left" },
+                "Played".takeIf { e.played },
+            ).joinToString(" • ").ifEmpty { null },
+            shape = LocalUi.current.shape(8.dp), placeholderIcon = PrismIcons.Podcasts,
+        )
+        Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 24.dp)) {
+            Text(
+                e.description?.let { withLinks(it, scheme.primary) } ?: androidx.compose.ui.text.AnnotatedString("YouTube has no description for this episode."),
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (e.description == null) scheme.onSurfaceVariant else scheme.onSurface,
+            )
+            val showName = about?.title ?: song.artistText.takeIf { song.artists.isNotEmpty() }
+            if (showName != null) {
+                Text(
+                    "ABOUT THE SHOW", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 22.dp, bottom = 6.dp),
+                )
+                Text(showName, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+                // Only on a show's own page do we have its description; elsewhere the show's name is enough.
+                if (about != null) Text(
+                    about.description?.let { withLinks(it, scheme.primary) } ?: androidx.compose.ui.text.AnnotatedString("YouTube has no description for this show."),
+                    style = MaterialTheme.typography.bodyMedium, color = scheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        }
+    }
+}
+
+private val URL_IN_TEXT = Regex("""https?://[^\s<>"')\]]+""")
+
+/** [text] with every web address in it tappable (opened in the browser). */
+private fun withLinks(text: String, color: androidx.compose.ui.graphics.Color): androidx.compose.ui.text.AnnotatedString =
+    androidx.compose.ui.text.buildAnnotatedString {
+        var at = 0
+        for (m in URL_IN_TEXT.findAll(text)) {
+            append(text.substring(at, m.range.first))
+            val url = m.value.trimEnd('.', ',', ';', ':', '!', '?')
+            withLink(
+                androidx.compose.ui.text.LinkAnnotation.Url(
+                    url, androidx.compose.ui.text.TextLinkStyles(androidx.compose.ui.text.SpanStyle(color = color)),
+                ),
+            ) { append(url) }
+            at = m.range.first + url.length
+        }
+        append(text.substring(at))
+    }
 
 /** "1 hr 12 min", "47 min", "40 sec". */
 private fun formatLength(sec: Long): String {

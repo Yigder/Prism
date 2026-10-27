@@ -43,7 +43,6 @@ import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-import com.prism.music.data.canvas.CANVAS_MAX_SIDE
 import com.prism.music.data.canvas.CanvasArtwork
 import com.prism.music.ui.theme.LocalContainer
 
@@ -81,14 +80,26 @@ fun CanvasPlayer(
     val player = remember {
         // Clips come from the phone when they've played before (or were saved), else stream and are kept.
         val sources = DefaultMediaSourceFactory(c.canvasStore.dataSourceFactory({ clip }) { keep })
-        ExoPlayer.Builder(context).setMediaSourceFactory(sources).build().apply {
+        val side = com.prism.music.data.canvas.canvasMaxSide(context)
+        ExoPlayer.Builder(context).setMediaSourceFactory(sources)
+            // A clip of a few seconds, looping, mostly read from the phone: a few seconds ahead is plenty. With the
+            // player's defaults (50 s, up to 128 MB for video) it kept loading further loops of the same clip and
+            // held ~50 MB of it in memory (heap dump on the budget emulator, 1.7.6).
+            .setLoadControl(
+                androidx.media3.exoplayer.DefaultLoadControl.Builder()
+                    .setBufferDurationsMs(4_000, 10_000, 1_000, 2_000)
+                    .setTargetBufferBytes(8 * 1024 * 1024)
+                    .setPrioritizeTimeOverSizeThresholds(false)
+                    .build()
+            )
+            .build().apply {
             volume = 0f
             repeatMode = Player.REPEAT_MODE_ONE
-            // Always the same rendition (H.264, the best up to CANVAS_MAX_SIDE), so what was kept last
+            // Always the same rendition (H.264, the best up to canvasMaxSide), so what was kept last
             // time, or saved ahead by CanvasStore (which picks the same one), is what plays.
             trackSelectionParameters = trackSelectionParameters.buildUpon()
                 .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, true)
-                .setMaxVideoSize(CANVAS_MAX_SIDE, CANVAS_MAX_SIDE)
+                .setMaxVideoSize(side, side)
                 .clearViewportSizeConstraints()
                 .setPreferredVideoMimeType(MimeTypes.VIDEO_H264)
                 .setForceHighestSupportedBitrate(true)
@@ -195,9 +206,9 @@ internal fun TextureView.cropTo(clipAspect: Float) {
     setTransform(m)
 }
 
-/** Dissolve the bottom edge on the TextureView's own node (a Compose mask can't reach video frames). */
+/** Dissolve the bottom edge on the view's own node (a Compose mask can't reach video frames). */
 @RequiresApi(31)
-private fun TextureView.bottomFade(fraction: Float) {
+internal fun android.view.View.bottomFade(fraction: Float) {
     if (fraction <= 0.001f || height <= 0) { setRenderEffect(null); return }
     val h = height.toFloat()
     val gradient = LinearGradient(0f, h * (1f - fraction), 0f, h, android.graphics.Color.BLACK, android.graphics.Color.TRANSPARENT, Shader.TileMode.CLAMP)
@@ -205,7 +216,9 @@ private fun TextureView.bottomFade(fraction: Float) {
 }
 
 /** Pre-API-31 bottom fade: draw the child into a layer and mask it. */
-private class FadingFrame(context: Context) : FrameLayout(context) {
+internal class FadingFrame(context: Context) : FrameLayout(context) {
+    /** The fade asked for (Android 12+ draws it as a render effect instead of [fade]). */
+    var wanted = 0f
     var fade = 0f
         set(v) { if (v != field) { field = v; invalidate() } }
     private val paint = Paint().apply { xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN) }

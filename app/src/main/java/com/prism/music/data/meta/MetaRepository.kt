@@ -102,14 +102,25 @@ object Genres {
         }
     }
 
+    /**
+     * Answers by raw name. The same few hundred names ("Pop", "Hip-Hop/Rap"…) come back for every song of every artist
+     * read from the iTunes cache at each start, and each regex test makes a matcher that holds native memory until a
+     * garbage collection: ~120 tests a name ran into a million matchers and ~200 MB of native memory a minute after
+     * start (release check 1.7.6, mid emulator).
+     */
+    private val known = java.util.concurrent.ConcurrentHashMap<String, String>()
+    private const val NONE = ""
+
     /** The category for a raw genre name, or null if it doesn't say enough. */
     fun normalize(raw: String?): String? {
         if (raw.isNullOrBlank()) return null
+        known[raw]?.let { return it.ifEmpty { null } }
         val l = raw.lowercase()
         // Electronic, though they name hip-hop ("Chill Out/Trip-Hop/Lounge").
-        if ("trip-hop" in l || "trip hop" in l || "chill out" in l || "chillout" in l || "lounge" in l) return "Dance & electronic"
-        for ((name, keys) in patterns) if (keys.any { it.containsMatchIn(l) }) return name
-        return null
+        val found = if ("trip-hop" in l || "trip hop" in l || "chill out" in l || "chillout" in l || "lounge" in l) "Dance & electronic"
+        else patterns.firstOrNull { (_, keys) -> keys.any { it.containsMatchIn(l) } }?.first
+        if (known.size < 4_000) known[raw] = found ?: NONE
+        return found
     }
 }
 

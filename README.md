@@ -15,7 +15,7 @@ A free, open-source YouTube Music client for Android, with word-by-word lyrics, 
 
 ### [⬇ Download Prism.apk](../../releases/latest/download/Prism.apk)
 
-[What's new in 1.7.5](../../releases/tag/v1.7.5) · [Changelog](CHANGELOG.md) · [Watch the film](../../releases/download/v1.7.0/Prism-1.7-film.mp4)
+[What's new in 1.7.6](../../releases/tag/v1.7.6) · [Changelog](CHANGELOG.md) · [Watch the film](../../releases/download/v1.7.0/Prism-1.7-film.mp4)
 
 <a href="../../releases/download/v1.7.0/Prism-1.7-film.mp4"><img src="docs/screenshots/preview.gif" width="720" alt="Prism 1.7: word-by-word lyrics on the player. Click to watch the full film."></a>
 
@@ -29,14 +29,30 @@ A free, open-source YouTube Music client for Android, with word-by-word lyrics, 
 > [!NOTE]
 > Prism is an independent, unofficial app. It is not affiliated with, endorsed by, or connected to Google, YouTube or YouTube Music.
 
-## New in 1.7.5: lyrics, your way
+## New in 1.7.6: Home, Library and Search your way, and a lighter, faster Prism
+
+The fifth of the 1.7.x customization updates, and a performance one.
+
+<img src="docs/screenshots/home-yours.jpg" width="32%" alt="Home with a picture behind the greeting, a playlist pinned as its own section, and the mini player joined to the tab bar">
+<img src="docs/screenshots/search-lyrics.jpg" width="32%" alt="Search by lyrics: a line typed into the search box finds The Weeknd's Nothing Without You, with the line quoted">
+<img src="docs/screenshots/library-yours.jpg" width="32%" alt="Library's playlists as a grid of three, with a folder, a cover made in Prism and YouTube playlists kept without an account">
+<img src="docs/screenshots/search-landing.jpg" width="32%" alt="Search before you type: recently opened, recent searches and your artists">
+<img src="docs/screenshots/cover-maker.jpg" width="32%" alt="Make a cover: a playlist's name over two colors and a pattern, with the split light around it">
+<img src="docs/screenshots/settings-hub.jpg" width="32%" alt="Settings sorted by what they do, with Performance mode at the top">
+
+- **Performance mode:** one switch for slower phones that draws Prism about as lightly as 1.6 did (no blur, glass, moving backgrounds or animated covers), with nothing you picked changed. In testing on Android 9, Home scrolled with half the processor time and frames drew 4–5× faster. Phones on Android 9 or older, or with 4 GB of memory or less, are offered it once.
+- **Faster and lighter for everyone:** about 200 MB less memory in the first minute after opening (the likely cause of Prism being closed on phones with little memory, #103), animated covers using far less memory, long playlists and searches that no longer hold up the screen, and Library and Settings opening faster after an update.
+- **Search, redesigned (#124):** type a line from a song and find it **from the lyrics**. Before you type: what you opened lately, recent searches, your artists, and moods and genres. While typing, just suggestions with their pictures, then one row of chips, and your own matches (library, this phone) right after the top result.
+- **Home your way:** pin any album, playlist, artist or mix as its own section, sections from your own listening, rename any section, and a new top of Home (a picture, or the playing cover, behind the greeting).
+- **Library your way:** playlist folders, pinned items, a list or grid for each tab with 2–4 covers across, **make your own playlist covers** and use your own photo of an artist.
+- **Tabs your way:** Downloads, Liked songs and Podcasts as tabs (up to six), rename them, words only, height and background, swipe between tabs, and a mini player joined to the tab bar.
+- **Playlists without an account:** keep any YouTube playlist in your library signed out, save a copy as your own Prism playlist, save the queue, or open a playlist from a link.
+- **Settings, easier to find:** sorted by what they do (Customize Prism, Playback & sound, Lyrics & Sing, Controls & gestures, …), shorter pages, every mobile-data switch in one place.
+- **From GitHub:** Home opens straight away (#126), full-bleed music videos (#120), the player's lyric line centered and on two lines (#121), Featured and Community playlists in Search (#130), Quick picks and Speed dial in any language (#131), and fixes for podcast episodes turning LIVE (#128), local songs' covers (#129) and settings listed twice (#127). See the [changelog](CHANGELOG.md).
+
+## 1.7.5: lyrics, your way
 
 The fourth of the 1.7.x customization updates, plus five of your GitHub requests and a lighter Prism.
-
-<img src="docs/screenshots/lyrics-glow.jpg" width="24%" alt="Glow: the sung line glowing in the shape of its letters, on the blurred cover">
-<img src="docs/screenshots/lyrics-card.jpg" width="24%" alt="Bold card: big bold lyrics on a color from the cover, the sung words filling in white">
-<img src="docs/screenshots/lyrics-styles.jpg" width="24%" alt="Lyrics settings: six styles, each shown as it looks">
-<img src="docs/screenshots/history.jpg" width="24%" alt="Library's new History tab: what you played, by day">
 
 - **Six lyric styles:** Prism, Classic karaoke, **Bold card** (big bold lines on the cover's color), **Glow**, **Typewriter** and **Calm**. Pick their colors, weight, spacing, focus blur, capitals, where the sung line sits, how translations sit with each line, and what's behind the lyrics (blurred cover, animated cover, the cover's color or your own). Every choice shows what it looks like.
 - **History** in Library: what you played, by day, on this phone or (signed in) on your YouTube Music account (#118).
@@ -171,7 +187,7 @@ A **Prism Account** is just a name and picture on your phone: no email, no passw
 <img src="docs/screenshots/android-auto-lyrics.jpg" width="600" alt="Prism on Android Auto, the sung line shown in place of the song title">
 
 > [!WARNING]
-> **Android Auto lyrics are for passengers and for use while parked only.** Do not read lyrics while driving. You can turn car lyrics off in Settings → Lyrics → Android Auto, or with the lyrics button on the car's player.
+> **Android Auto lyrics are for passengers and for use while parked only.** Do not read lyrics while driving. You can turn car lyrics off in Settings → Car & devices → Android Auto, or with the lyrics button on the car's player.
 
 ## Install
 
@@ -200,7 +216,7 @@ Prism doesn't ship artwork, fonts or code copied from other apps, but several id
 - **Sing** separates voices with Deezer's [Spleeter](https://github.com/deezer/spleeter) model (MIT), as converted to ONNX by [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx), on [ONNX Runtime](https://github.com/microsoft/onnxruntime).
 - **Headphone correction** profiles come from [AutoEq](https://github.com/jaakkopasanen/AutoEq) (MIT); **release dates** for Release Radar from Deezer's public API; **genres** from Apple's iTunes Search API, then Deezer's.
 - **Fonts:** Outfit, Manrope, Plus Jakarta Sans, Urbanist, Nunito, Fraunces and Geist Mono, all under the SIL Open Font License.
-- **Libraries:** [NewPipe Extractor](https://github.com/TeamNewPipe/NewPipeExtractor), [Haze](https://github.com/chrisbanes/haze), [Coil](https://coil-kt.github.io/coil/), Media3 ExoPlayer and the rest of the stack below. Every library and its license is listed in the app under Settings → About → Open-source licenses.
+- **Libraries:** [NewPipe Extractor](https://github.com/TeamNewPipe/NewPipeExtractor), [Haze](https://github.com/chrisbanes/haze), [Coil](https://coil-kt.github.io/coil/), Media3 ExoPlayer and the rest of the stack below. Every library and its license is listed in the app under Settings → Backup & about → Open-source licenses.
 - **The film's music** is "Minimal Tech" by PaulYudin (Pixabay).
 - Music and metadata are streamed from YouTube Music. All trademarks belong to their owners.
 
@@ -249,4 +265,4 @@ Copyright (C) 2026 Yigder
 
 Prism is free software: you can redistribute it and/or modify it under the terms of the [GNU General Public License](LICENSE) as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. It is distributed in the hope that it will be useful, but without any warranty; see the license for details.
 
-The license covers Prism's own code. The libraries it's built with keep their own licenses (listed in the app under Settings → About → Open-source licenses). Music, artwork, lyrics and the YouTube and YouTube Music names belong to their respective owners, and Prism is not affiliated with Google or YouTube.
+The license covers Prism's own code. The libraries it's built with keep their own licenses (listed in the app under Settings → Backup & about → Open-source licenses). Music, artwork, lyrics and the YouTube and YouTube Music names belong to their respective owners, and Prism is not affiliated with Google or YouTube.

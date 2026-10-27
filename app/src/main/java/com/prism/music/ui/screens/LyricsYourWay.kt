@@ -284,6 +284,39 @@ fun LyricsPlacementGroup() {
         ) { PositionSample(it.fraction, s.lyricsAhead.lines) }
         Label("Lines to come", info = "How many of the next lines show; the rest appear as the song gets to them.")
         Chips(LyricsAhead.entries, s.lyricsAhead, { it.label }) { prefs.setLyricsAhead(it) }
+        Label("The line on the player", info = "The lyric over the progress bar, on the player itself.")
+        ChoiceCards(
+            listOf(LyricsAlign.START, LyricsAlign.CENTER), s.lyricsStripAlign, title = { if (it == LyricsAlign.START) "Left" else "Centered" },
+            detail = { null }, onSelect = { prefs.setLyricsStripAlign(it) },
+        ) { StripSample(it == LyricsAlign.CENTER, if (s.lyricsStripTwoLines) 2 else 1) }
+        Toggle(
+            "Up to two lines", "A long line wraps instead of being cut off", s.lyricsStripTwoLines,
+            info = "The line keeps room for two lines all the time, so the player doesn't move as the lines change.",
+        ) { prefs.setLyricsStripTwoLines(it) }
+    }
+}
+
+/** The player's foot as bars: the lyric line ([rows] lines, left or [centered]) over the progress bar. */
+@Composable
+private fun StripSample(centered: Boolean, rows: Int) {
+    val light = Brush.horizontalGradient(*com.prism.music.ui.theme.PrismTokens.spectrumColors(true).toTypedArray())
+    Box(Modifier.fillMaxWidth().height(64.dp).clip(RoundedCornerShape(12.dp)).background(Brush.verticalGradient(listOf(Color(0xFF2A2140), SampleDark)))) {
+        androidx.compose.foundation.Canvas(Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 10.dp)) {
+            val h = 4.dp.toPx()
+            val gap = 5.dp.toPx()
+            val bar = size.height - 2.dp.toPx()
+            // Progress bar: a third played.
+            drawRoundRect(Color.White.copy(alpha = 0.25f), androidx.compose.ui.geometry.Offset(0f, bar), androidx.compose.ui.geometry.Size(size.width, 2.dp.toPx()))
+            drawRoundRect(light, androidx.compose.ui.geometry.Offset(0f, bar), androidx.compose.ui.geometry.Size(size.width * 0.34f, 2.dp.toPx()))
+            // The line, bottom up; a two-line one wraps its end onto the second.
+            val widths = if (rows > 1) listOf(0.86f, 0.46f) else listOf(0.58f)
+            widths.forEachIndexed { i, f ->
+                val w = size.width * f
+                val y = bar - 8.dp.toPx() - (widths.size - i) * (h + gap)
+                val x = if (centered) (size.width - w) / 2 else 0f
+                drawRoundRect(Color.White.copy(alpha = 0.85f), androidx.compose.ui.geometry.Offset(x, y), androidx.compose.ui.geometry.Size(w, h), androidx.compose.ui.geometry.CornerRadius(h))
+            }
+        }
     }
 }
 

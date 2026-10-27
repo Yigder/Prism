@@ -101,8 +101,15 @@ fun InlineQueue(onRevealPlayer: () -> Unit, onHidePlayer: () -> Unit, modifier: 
 
     var saving by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
-    if (saving) com.prism.music.ui.components.NewPlaylistDialog(onDismiss = { saving = false }) { name, privacy ->
+    if (saving) com.prism.music.ui.components.NewPlaylistDialog(onDismiss = { saving = false }, local = !settings.isLoggedIn) { name, privacy ->
         saving = false
+        // Signed out, the queue becomes a Prism playlist on the phone (H7).
+        if (!settings.isLoggedIn) {
+            val list = (listOfNotNull(now) + order).map { it.song }.filter { !it.isLive && !it.isEpisode }.distinctBy { it.id }
+            c.prismLibrary.create(name, list)
+            android.widget.Toast.makeText(context, "Saved ${com.prism.music.data.model.songCount(list.size)} to $name", android.widget.Toast.LENGTH_SHORT).show()
+            return@NewPlaylistDialog
+        }
         val songs = (listOfNotNull(now) + order).map { it.song.id }.distinct().take(300)
         c.scope.launch(kotlinx.coroutines.Dispatchers.Main) {
             val id = runCatching { c.ytm.createPlaylist(name, songs, privacy = privacy) }.getOrNull()
@@ -118,7 +125,7 @@ fun InlineQueue(onRevealPlayer: () -> Unit, onHidePlayer: () -> Unit, modifier: 
                 QueueChip("DJ", selected = dj) { pc.setDjMode(!dj) }
                 Spacer(Modifier.width(8.dp))
             }
-            if (settings.isLoggedIn && queue.size > 1) QueueChip("Save") { saving = true }
+            if (queue.size > 1) QueueChip("Save") { saving = true }
             if (order.isNotEmpty()) {
                 Spacer(Modifier.width(8.dp))
                 QueueChip("Clear") { pc.clearUpcoming() }

@@ -33,6 +33,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
@@ -128,8 +129,16 @@ class PrismApp : Application(), coil3.SingletonImageLoader.Factory {
         container.scope.launch(kotlinx.coroutines.Dispatchers.IO) { runCatching { CrashLog.recordExits(this@PrismApp) } }
         com.prism.music.playback.MainThreadWatch.toLogcat = BuildConfig.APPLICATION_ID.endsWith(".dev")
         container.scope.launch {
-            container.settings.flow.map { it.audioDiagnostics }.distinctUntilChanged().collect { on ->
+            container.settings.flow.map { it.audioDiagnostics }.distinctUntilChanged().collectLatest { on ->
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { com.prism.music.playback.MainThreadWatch.setEnabled(on) }
+                // And what Prism's memory is made of, every half minute (#103/#134: the phone closed Prism with gigabytes
+                // in use, and the kind that grew says where to look).
+                if (on) kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    while (true) {
+                        runCatching { com.prism.music.playback.AudioDiagnostics.log("memory", MemoryLine.now()) }
+                        kotlinx.coroutines.delay(30_000)
+                    }
+                }
             }
         }
         // A lyrics save into a music file that Prism closing cut short is put right (#16).
@@ -157,6 +166,19 @@ class PrismApp : Application(), coil3.SingletonImageLoader.Factory {
 }
 
 val Context.container: AppContainer get() = (applicationContext as PrismApp).container
+
+/** One line of what this process's memory is made of, for diagnostics (in MB, as Android's own meminfo counts it). */
+internal object MemoryLine {
+    fun now(): String {
+        val mi = android.os.Debug.MemoryInfo().also { android.os.Debug.getMemoryInfo(it) }
+        fun mb(stat: String) = (mi.getMemoryStat(stat)?.toLongOrNull() ?: 0L) / 1024
+        val threads = java.io.File("/proc/self/task").list()?.size ?: Thread.activeCount()
+        val rt = Runtime.getRuntime()
+        return "total ${mb("summary.total-pss")} MB (Java ${mb("summary.java-heap")}, native ${mb("summary.native-heap")}, " +
+            "graphics ${mb("summary.graphics")}, code ${mb("summary.code")}, other ${mb("summary.private-other")}, swapped ${mb("summary.total-swap")}); " +
+            "Java heap ${(rt.totalMemory() - rt.freeMemory()) / 1_048_576} of ${rt.maxMemory() / 1_048_576} MB; $threads threads"
+    }
+}
 
 /** Hand-rolled dependency graph; everything lives for the app process. */
 @OptIn(UnstableApi::class)
@@ -216,10 +238,14 @@ class AppContainer(val app: Application) {
     val artwork = com.prism.music.data.ArtworkStore(app, http) { quietNetwork() }
     /** The library's lists and opened playlists and albums, kept so they open offline. */
     val offline = com.prism.music.data.OfflineLibrary(app)
+    /** The last Home, shown at once at the next start while the new one loads (#126). */
+    val homeCache = com.prism.music.data.HomeCache(app.filesDir)
     val lyrics = LyricsRepository(http, db.lyrics(), ytm) { settings.current }.apply {
         choices = app.getSharedPreferences("lyrics_choice", android.content.Context.MODE_PRIVATE)
         searchNames = app.getSharedPreferences("lyrics_search_as", android.content.Context.MODE_PRIVATE)
     }
+    /** Search by a line of the lyrics, from the box itself (1.7.6). */
+    val lyricSearch = com.prism.music.data.lyrics.LyricSearch(http, ytm, db.lyricsSearch(), db.songs(), lyrics::textLines)
     val meta = MetaRepository(http, db.meta())
     val canvas = com.prism.music.data.canvas.CanvasRepository(http).apply {
         hiddenPrefs = app.getSharedPreferences("canvas_hidden", android.content.Context.MODE_PRIVATE)

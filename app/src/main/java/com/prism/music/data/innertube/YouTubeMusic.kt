@@ -31,7 +31,10 @@ enum class SearchFilter(val label: String, val params: String?) {
     VIDEOS("Videos", "EgWKAQIQAWoMEA4QChADEAQQCRAF"),
     ALBUMS("Albums", "EgWKAQIYAWoMEA4QChADEAQQCRAF"),
     ARTISTS("Artists", "EgWKAQIgAWoMEA4QChADEAQQCRAF"),
-    PLAYLISTS("Playlists", "EgeKAQQoAEABagwQDhAKEAMQBBAJEAU%3D"),
+    /** Playlists made by YouTube Music itself (#130). */
+    FEATURED_PLAYLISTS("Featured playlists", "EgeKAQQoADgBagwQDhAKEAMQBBAJEAU%3D"),
+    /** Playlists made by people. */
+    PLAYLISTS("Community playlists", "EgeKAQQoAEABagwQDhAKEAMQBBAJEAU%3D"),
     PODCASTS("Podcasts", "EgWKAQJQAWoMEA4QChADEAQQCRAF"),
     EPISODES("Episodes", "EgWKAQJIAWoMEA4QChADEAQQCRAF"),
     /** Streams on air now (lofi radios and the like), from youtube.com's search: YouTube Music has no such filter. */
@@ -82,17 +85,28 @@ class YouTubeMusic(private val api: InnerTube, private val songsEverywhere: () -
      * Keeps paging (up to [maxPages]) while [satisfied] is false, so shelves the user pinned
      * that YouTube happens to serve further down the feed still turn up.
      */
-    suspend fun fullHome(pages: Int = 3, maxPages: Int = pages, satisfied: (List<Shelf>) -> Boolean = { true }): List<Shelf> {
+    suspend fun fullHome(pages: Int = 3, maxPages: Int = pages, satisfied: (List<Shelf>) -> Boolean = { true }): List<Shelf> =
+        fullHomePages(pages, maxPages, satisfied).first
+
+    /** [fullHome], with the pages as YouTube sent them (Home keeps those to show straight away at the next start, #126). */
+    suspend fun fullHomePages(
+        pages: Int = 3, maxPages: Int = pages, satisfied: (List<Shelf>) -> Boolean = { true },
+    ): Pair<List<Shelf>, List<JsonObject>> {
         val all = mutableListOf<Shelf>()
-        var feed = home()
-        all += feed.shelves
+        val raw = mutableListOf<JsonObject>()
+        var res = browse("FEmusic_home")
+        raw += res
+        all += Parser.shelves(res)
+        var next = Parser.continuation(res.obj("continuationContents") ?: res.obj("contents"))
         var n = 1
-        while (feed.continuation != null && (n < pages || (n < maxPages && !satisfied(all)))) {
-            feed = runCatching { home(feed.continuation) }.getOrNull() ?: break
-            all += feed.shelves
+        while (next != null && (n < pages || (n < maxPages && !satisfied(all)))) {
+            res = runCatching { continueBrowse(next!!) }.getOrNull() ?: break
+            raw += res
+            all += Parser.shelves(res)
+            next = Parser.continuation(res.obj("continuationContents") ?: res.obj("contents"))
             n++
         }
-        return all.distinctBy { it.title }
+        return all.distinctBy { it.title } to raw
     }
 
     suspend fun moodsAndGenres(): List<Shelf> = Parser.shelves(browse("FEmusic_moods_and_genres"))
@@ -119,6 +133,17 @@ class YouTubeMusic(private val api: InnerTube, private val songsEverywhere: () -
         if (query.isBlank()) return emptyList()
         val res = api.post("music/get_search_suggestions", buildJsonObject { put("input", query) })
         return res.findAll("searchSuggestionRenderer").mapNotNull { it.obj("suggestion").text() }.distinct()
+    }
+
+    /**
+     * Typing suggestions (1.7.6 Search): the completions, and the artists, songs and albums YouTube Music offers beside
+     * them (with their pictures), in one request. Asked without the account, as searches are (#27).
+     */
+    suspend fun searchSuggestionsWithItems(query: String): Pair<List<String>, List<BrowseItem>> {
+        val res = api.postAnonymous("music/get_search_suggestions", buildJsonObject { put("input", query) })
+        val texts = res.findAll("searchSuggestionRenderer").mapNotNull { it.obj("suggestion").text() }.distinct()
+        val items = res.findAll("musicResponsiveListItemRenderer").mapNotNull { Parser.responsive(it) }.distinctBy { it.id }
+        return texts to items
     }
 
     /**

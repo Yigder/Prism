@@ -2,6 +2,8 @@ package com.prism.music.baselineprofile
 
 import androidx.benchmark.macro.MacrobenchmarkScope
 import androidx.test.uiautomator.By
+import androidx.test.uiautomator.StaleObjectException
+import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
 
 /** The app these journeys drive: the release build (and the build types the plugin derives from it). */
@@ -43,9 +45,11 @@ object Journeys {
         field.text = query
         // One of Prism's own suggestions under the box runs the search. (An injected Enter goes to the on-screen
         // keyboard, which took it as "accept the word suggestion" and never searched.)
-        val suggestion = device.wait(Until.findObjects(By.textStartsWith(query).pkg(PACKAGE)), WAIT)
-            ?.firstOrNull { it.className != "android.widget.EditText" }
-        suggestion?.click() ?: device.pressEnter()
+        // 1.7.6: the first one is "Search for “<query>”".
+        val suggestion = device.wait(Until.findObject(By.textStartsWith("Search for").pkg(PACKAGE)), WAIT)
+            ?: device.wait(Until.findObjects(By.textStartsWith(query).pkg(PACKAGE)), WAIT)
+                ?.firstOrNull { it.className != "android.widget.EditText" }
+        if (suggestion == null || !suggestion.tap()) device.pressEnter()
         // The results' first song row (rows have a "More" button).
         device.wait(Until.hasObject(By.desc("More")), WAIT)
         flingPage(down = true, times = 3)
@@ -63,15 +67,22 @@ object Journeys {
         device.click(device.displayWidth / 3, r.centerY())
         device.wait(Until.hasObject(By.desc("Lyrics")), WAIT)
         device.waitForIdle(2_000)
-        device.findObject(By.desc("Lyrics"))?.click()
+        device.findObject(By.desc("Lyrics"))?.tap()
         device.waitForIdle(3_000)
-        device.findObject(By.desc("Lyrics"))?.click()
+        device.findObject(By.desc("Lyrics"))?.tap()
         device.waitForIdle(1_000)
         // Swipe the player down.
         val w = device.displayWidth
         val h = device.displayHeight
         device.swipe(w / 2, h / 5, w / 2, h * 9 / 10, 25)
         device.waitForIdle(1_500)
+        // Still in the player (the lyrics took the swipe, or it didn't count)? Back closes the lyrics, then the player.
+        // While the player is open the tab bar is hidden from accessibility, so the Library tab shows it's closed.
+        repeat(3) {
+            if (device.hasObject(By.desc("Library").pkg(PACKAGE))) return
+            device.pressBack()
+            device.waitForIdle(1_500)
+        }
     }
 
     /** Library: its tiles and lists. */
@@ -82,17 +93,23 @@ object Journeys {
         flingPage(down = false, times = 2)
     }
 
-    /** Settings from Home's top bar, and the Appearance page. */
+    /** Settings (its tab), and the Customize Prism page. */
     fun MacrobenchmarkScope.settings() {
-        tab("Home")
-        device.wait(Until.findObject(By.desc("Settings")), WAIT)?.click() ?: return
-        device.wait(Until.findObject(By.text("Appearance")), WAIT)?.click()
+        tab("Settings")
+        device.wait(Until.findObject(By.text("Customize Prism")), WAIT)?.tap() ?: return
         device.waitForIdle(2_000)
         flingPage(down = true, times = 2)
         device.pressBack()
         device.waitForIdle(1_000)
         device.pressBack()
         device.waitForIdle(1_000)
+    }
+
+    /** A click that tolerates the view being redrawn between finding and clicking it (the lyrics button does). */
+    private fun UiObject2.tap(): Boolean = try {
+        click(); true
+    } catch (_: StaleObjectException) {
+        false
     }
 
     private fun MacrobenchmarkScope.tab(name: String) {

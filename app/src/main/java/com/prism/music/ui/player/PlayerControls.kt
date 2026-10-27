@@ -682,7 +682,10 @@ fun rememberPlayerVolume(): PlayerVolume {
     val v = remember { PlayerVolume(context, cast, prefs) }
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(lifecycle) {
-        lifecycle.tickWhileShown(500) { if (!v.dragging) v.level = v.read() }
+        // Asked of Android off the main thread: a binder call twice a second showed in a slow phone's stalls (#103).
+        lifecycle.tickWhileShown(500) {
+            if (!v.dragging) kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { v.read() }.let { if (!v.dragging) v.level = it }
+        }
     }
     return v
 }
@@ -986,7 +989,7 @@ fun OutputCaption() {
     var current by remember { mutableStateOf(currentOutput(context, preferred)) }
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(preferred, lifecycle) {
-        lifecycle.tickWhileShown(1500) { current = currentOutput(context, preferred) }
+        lifecycle.tickWhileShown(1500) { current = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { currentOutput(context, preferred) } }
     }
     var picking by remember { mutableStateOf(false) }
     val castState by c.cast.state.collectAsState()
@@ -1122,8 +1125,9 @@ fun OutputPickerSheet(phoneName: String, onDismiss: () -> Unit) {
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(preferred, lifecycle) {
         lifecycle.tickWhileShown(1000) {
-            options = outputOptions(context)
-            current = currentOutput(context, preferred)
+            val (o, now) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { outputOptions(context) to currentOutput(context, preferred) }
+            options = o
+            current = now
         }
     }
     val castState by c.cast.state.collectAsState()

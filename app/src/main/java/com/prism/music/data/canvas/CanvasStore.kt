@@ -34,13 +34,22 @@ import java.io.File
 const val CANVAS_MAX_SIDE = 1280
 
 /**
+ * The largest rendition for this phone: no wider than its screen (1.7.6). A 720 px phone took the 1080 px clip, whose
+ * frames cost it more memory and decoding than it can show. The player and the saved copies use the same size.
+ */
+fun canvasMaxSide(context: Context): Int {
+    val m = context.resources.displayMetrics
+    return minOf(m.widthPixels, m.heightPixels).coerceIn(480, CANVAS_MAX_SIDE)
+}
+
+/**
  * Where animated-cover clips live on the phone: recently played ones (a 400 MB cache) and saved ones
  * (kept for good — from the player, a whole album at a time, or with a download). Saved files are
  * keyed by "clipUrl|part", so a clip shared by an album's songs is stored once.
  */
 @OptIn(UnstableApi::class)
 class CanvasStore(
-    context: Context,
+    private val context: Context,
     private val http: OkHttpClient,
     private val repo: CanvasRepository,
     private val ytm: YouTubeMusic,
@@ -137,16 +146,17 @@ class CanvasStore(
 
     /**
      * The rendition the player settles on: H.264 (preferred there too), the highest bitrate that
-     * fits [CANVAS_MAX_SIDE]. Null for a playlist with a single rendition.
+     * fits [canvasMaxSide]. Null for a playlist with a single rendition.
      */
     private fun variantFor(url: String): Int? {
         val playlist = http.newCall(Request.Builder().url(url).build()).execute().use { r ->
             if (!r.isSuccessful) return null
             HlsPlaylistParser().parse(Uri.parse(url), r.body.byteStream())
         } as? HlsMultivariantPlaylist ?: return null
+        val side = canvasMaxSide(context)
         val fits = playlist.variants.withIndex().filter { (_, v) ->
-            v.format.width <= CANVAS_MAX_SIDE && v.format.height <= CANVAS_MAX_SIDE
-        }.ifEmpty { playlist.variants.withIndex().toList() }
+            v.format.width <= side && v.format.height <= side
+        }.ifEmpty { listOfNotNull(playlist.variants.withIndex().minByOrNull { it.value.format.width }) }
         val avc = fits.filter { it.value.format.codecs?.contains("avc1") == true }.ifEmpty { fits }
         return avc.maxByOrNull { it.value.format.bitrate }?.index
     }

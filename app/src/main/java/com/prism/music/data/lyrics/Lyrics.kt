@@ -209,12 +209,17 @@ object Editions {
         "acoustic", "instrumental", "demo", "short version", "long version", "club mix", "unplugged", "sped up", "slowed",
     )
 
+    // Compiled once: marks() runs for every saved lyric row read back (all downloads' lyrics at each start).
+    private val bracketed = Regex("[(\\[]([^)\\]]*)[)\\]]")
+    private val wordPatterns = words.map { it to Regex("(?<![\\p{L}])${Regex.escape(it)}(?![\\p{L}])") }
+
     /** The words in brackets or after " - " that name an edition ("Single Version", "Live at Wembley"). */
     private fun marks(title: String): Set<String> {
         val t = title.lowercase()
-        val tails = Regex("[(\\[]([^)\\]]*)[)\\]]").findAll(t).map { it.groupValues[1] } + t.substringAfter(" - ", "")
+        val tails = bracketed.findAll(t).map { it.groupValues[1] } + t.substringAfter(" - ", "")
         val tail = tails.joinToString(" ")
-        return words.filter { Regex("(?<![\\p{L}])${Regex.escape(it)}(?![\\p{L}])").containsMatchIn(tail) }.toSet()
+        // A word that isn't in the tail at all can't be a mark: skip its regex (and the native matcher it makes).
+        return wordPatterns.filter { (w, re) -> w in tail && re.containsMatchIn(tail) }.map { it.first }.toSet()
     }
 
     /**
@@ -553,6 +558,10 @@ class LyricsRepository(
         song.durationSec <= 0 || sec == null || sec <= 0 || abs(sec - song.durationSec) <= MAX_LENGTH_GAP_SEC
 
     private fun build(source: LyricsSource, text: String?): Lyrics? = parse(source, text)?.let(::untimedIfBogus)
+
+    /** A saved answer's lines as plain text, whatever its format (Search's lyric search). */
+    fun textLines(stored: String): List<String> =
+        parse(LyricsSource.LRCLIB, stored)?.lines?.filter { !it.isGap && it.text.isNotBlank() }?.map { it.text }.orEmpty()
 
     /**
      * Some sources label plain lyrics as synced and stamp every line 0:00 (LyricsPlus for "4 Steps Back, 2 Steps Forward"

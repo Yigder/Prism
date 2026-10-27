@@ -379,6 +379,9 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
     // The animated cover plays behind the whole player instead of in the cover (not with full-bleed artwork, which
     // already shows it edge to edge).
     val canvasBehind = settings.canvasFillsBackground && !heroMode && !videoMode && !wide
+    // Full-bleed video (#120): the video runs edge to edge from the top of the screen and fades into the background,
+    // in the full-bleed cover's place; the box it would sit in keeps only its buttons.
+    val videoBehind = settings.videoFullBleed && videoMode && !wide
     var heroHeight by remember { mutableStateOf(0.dp) }
     val heroT = animateFloatAsState(if (heroMode && (artLoaded || canvasCover > 0f)) 1f else 0f, tween(420, easing = FastOutSlowInEasing), label = "hero")
     val heroVisible: () -> Float = { heroT.value * (1f - p()) }
@@ -529,6 +532,12 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                 presentationAlpha = { (1f - 2f * p()).coerceIn(0f, 1f) },
             )
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Black.copy(alpha = 0.25f), 0.5f to Color.Black.copy(alpha = 0.45f), 1f to Color.Black.copy(alpha = 0.75f))))
+        }
+        if (videoBehind && heroHeight > 0.dp && !collapsePastHalf) {
+            MusicVideoSurface(
+                Modifier.fillMaxWidth().height(heroHeight), fill = true, bottomFade = HERO_FADE,
+                alpha = { (1f - 2f * p()).coerceIn(0f, 1f) },
+            )
         }
 
         // ------------------------------------------------ Full-bleed banner (+ canvas)
@@ -737,9 +746,13 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                                 .graphicsLayer { alpha = 1f - 2f * p() }
                                 .then(sleeveGesture),
                         ) {
-                            MusicVideoSurface(Modifier.fillMaxSize(), fill = videoFill)
+                            // One video view at a time: full-bleed, it's drawn behind the player (see videoBehind).
+                            if (!videoBehind) MusicVideoSurface(Modifier.fillMaxSize(), fill = videoFill)
                             Row(Modifier.align(Alignment.BottomEnd).padding(10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                VideoChip(PrismIcons.AspectRatio, if (videoFill) "Fit video" else "Fill") { videoFill = !videoFill }
+                                if (!videoBehind) VideoChip(PrismIcons.AspectRatio, if (videoFill) "Fit video" else "Fill") { videoFill = !videoFill }
+                                if (!wide) VideoChip(PrismIcons.FillIn, if (videoBehind) "Video in a box" else "Full-bleed video") {
+                                    c.settings.setVideoFullBleed(!settings.videoFullBleed)
+                                }
                                 if (activity != null) VideoChip(PrismIcons.PictureInPicture, "Picture-in-picture") {
                                     if (!activity.enterPip()) android.widget.Toast.makeText(
                                         context, "Picture-in-picture is off for Prism in Android's settings", android.widget.Toast.LENGTH_SHORT,
@@ -1052,25 +1065,38 @@ private fun VideoChip(icon: androidx.compose.ui.graphics.vector.ImageVector, des
     ) { Icon(icon, description, tint = Color.White, modifier = Modifier.size(20.dp)) }
 }
 
-/** The main player's video, drawn on a TextureView so it composes with the layout. */
+/**
+ * The main player's video, drawn on a TextureView so it composes with the layout. [bottomFade]: the share of its
+ * height, from the bottom, over which it dissolves into what's behind (the full-bleed video, #120).
+ */
 @OptIn(UnstableApi::class)
 @Composable
-fun MusicVideoSurface(modifier: Modifier, fill: Boolean) {
+fun MusicVideoSurface(modifier: Modifier, fill: Boolean, bottomFade: Float = 0f, alpha: () -> Float = { 1f }) {
     val pc = LocalContainer.current.player
     AndroidView(
         factory = { ctx ->
-            (LayoutInflater.from(ctx).inflate(R.layout.texture_player, null) as PlayerView).apply {
-                useController = false
-                setShutterBackgroundColor(android.graphics.Color.TRANSPARENT)
-                setKeepContentOnPlayerReset(true)
-                player = pc.player
+            FadingFrame(ctx).apply {
+                addView((LayoutInflater.from(ctx).inflate(R.layout.texture_player, this, false) as PlayerView).apply {
+                    useController = false
+                    setShutterBackgroundColor(android.graphics.Color.TRANSPARENT)
+                    setKeepContentOnPlayerReset(true)
+                    player = pc.player
+                })
+                // The fade's gradient is as tall as the view: laid out again, it's made again.
+                if (android.os.Build.VERSION.SDK_INT >= 31) addOnLayoutChangeListener { v, _, top, _, bottom, _, oldTop, _, oldBottom ->
+                    if (bottom - top != oldBottom - oldTop) v.bottomFade((v as FadingFrame).wanted)
+                }
             }
         },
-        update = {
-            it.resizeMode = if (fill) AspectRatioFrameLayout.RESIZE_MODE_ZOOM else AspectRatioFrameLayout.RESIZE_MODE_FIT
-            if (it.player !== pc.player) it.player = pc.player
+        update = { frame ->
+            val view = frame.getChildAt(0) as PlayerView
+            view.resizeMode = if (fill) AspectRatioFrameLayout.RESIZE_MODE_ZOOM else AspectRatioFrameLayout.RESIZE_MODE_FIT
+            if (view.player !== pc.player) view.player = pc.player
+            frame.alpha = alpha()
+            frame.wanted = bottomFade
+            if (android.os.Build.VERSION.SDK_INT >= 31) frame.bottomFade(bottomFade) else frame.fade = bottomFade
         },
-        onRelease = { it.player = null },
+        onRelease = { (it.getChildAt(0) as PlayerView).player = null },
         modifier = modifier,
     )
 }

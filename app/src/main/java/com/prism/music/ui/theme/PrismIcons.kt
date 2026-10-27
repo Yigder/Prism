@@ -230,6 +230,10 @@ object PrismIcons {
     val ThumbDownFilled = drawn("ThumbDown", filled = true)
     val Bookmark = drawn("Bookmark")
     val BookmarkFilled = drawn("Bookmark", filled = true)
+    val Folder = drawn("Folder")
+    val FolderFilled = drawn("Folder", filled = true)
+    val Pin = drawn("Pin")
+    val PinFilled = drawn("Pin", filled = true)
     val Download = drawn("Download").or { Cupertino.Download }
     val DownloadDone = drawn("DownloadDone").or { Cupertino.DownloadDone }
     val DownloadCircle = drawn("DownloadCircle")
@@ -262,6 +266,9 @@ object PrismIcons {
     val Cast = drawn("Cast")
     val Tv = drawn("Tv")
     val Handoff = drawn("Handoff")
+    // Settings' Car & devices and Controls & gestures pages (1.7.6).
+    val Car = drawn("Car")
+    val Touch = drawn("Touch")
     val Speed = drawn("Speed")
     val Timer = drawn("Timer")
     val Moon = drawn("Moon")

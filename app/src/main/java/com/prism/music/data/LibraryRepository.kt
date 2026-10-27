@@ -91,7 +91,7 @@ class LibraryRepository(private val c: AppContainer) {
     /** Signed out: the account's lists, and its playlists and albums kept for offline, are gone from the phone. */
     fun forgetAccount() {
         playlists.value = emptyList(); albums.value = emptyList(); artists.value = emptyList()
-        c.scope.launch(Dispatchers.IO) { c.offline.clear() }
+        c.scope.launch(Dispatchers.IO) { c.offline.clear(); c.homeCache.clear() }
     }
 
     /**
@@ -344,6 +344,15 @@ class LibraryRepository(private val c: AppContainer) {
      * How the listener last sorted a list ("liked", "downloads", "playlist:<id>", "library:songs"…), as a name the
      * screen knows; null for its default. Kept so a sort isn't lost on leaving the page.
      */
+    /** Playlists, albums and artists pinned to the top of their Library tab (1.7.6), by id, newest pin first. */
+    val pinned = MutableStateFlow(orderPrefs.getString("pinned", "")!!.split("\n").filter { it.isNotBlank() })
+
+    fun setPinned(id: String, on: Boolean) {
+        val now = pinned.value.filterNot { it == id }.let { if (on) listOf(id) + it else it }
+        pinned.value = now
+        orderPrefs.edit().putString("pinned", now.joinToString("\n")).apply()
+    }
+
     fun sortOf(list: String): String? = orderPrefs.getString("sort:$list", null)
 
     fun setSort(list: String, name: String?) {

@@ -64,7 +64,12 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
-fun MiniPlayer(modifier: Modifier = Modifier, onOpen: () -> Unit) {
+fun MiniPlayer(
+    modifier: Modifier = Modifier,
+    /** No surface of its own: it sits in the tab bar's glass ("Joined to the tab bar", 1.7.6). */
+    bare: Boolean = false,
+    onOpen: () -> Unit,
+) {
     val pc = LocalContainer.current.player
     val song by pc.currentSong.collectAsState()
     val playing by pc.isPlaying.collectAsState()
@@ -103,7 +108,7 @@ fun MiniPlayer(modifier: Modifier = Modifier, onOpen: () -> Unit) {
         }
     }
 
-    // Card is Spectrum's bar (1.7): flat, edge to edge over the tab bar, the split-light progress line along its top.
+    // Card: the full-width piece of glass over the tab bar, its progress line along the bottom.
     val bar = style == MiniPlayerStyle.CARD
     val height = when (style) { MiniPlayerStyle.CARD -> 64.dp; MiniPlayerStyle.SLIM -> 54.dp; MiniPlayerStyle.PILL -> 56.dp }
     val shape = when (style) {
@@ -114,22 +119,13 @@ fun MiniPlayer(modifier: Modifier = Modifier, onOpen: () -> Unit) {
     val artSize = when (style) { MiniPlayerStyle.CARD -> 44.dp; MiniPlayerStyle.SLIM -> 40.dp; MiniPlayerStyle.PILL -> 44.dp }
     val artShape = if (style == MiniPlayerStyle.PILL) CircleShape else if (bar) ui.smallArt else ui.shape(9.dp)
     fun fraction() = (position.value.toFloat() / pc.duration.coerceAtLeast(1)).coerceIn(0f, 1f)
-    val glass = settings.liquidGlass || settings.frostedGlass
     val dark = com.prism.music.ui.theme.LocalIsDark.current
+    // The same piece of glass as the tab bar under it, with the tab bar's own Background (see-through, solid…): Card used
+    // to turn into a solid bar with the progress along its top whenever Frosted Glass was off (owner, 1.7.6).
+    val tint = com.prism.music.navFill(settings.navBarFill)
     val surface: @Composable (Modifier, @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit) -> Unit = { m, content ->
-        if (bar && !glass) Box(
-            m.clip(shape).background(scheme.surfaceContainerLow)
-                .drawBehind {
-                    drawLine(scheme.hairline, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx() * 0.75f)
-                    val f = fraction()
-                    if (settings.miniProgress == MiniProgress.LINE && f > 0f) drawRect(
-                        androidx.compose.ui.graphics.Brush.horizontalGradient(*com.prism.music.ui.theme.PrismTokens.spectrumColors(dark).toTypedArray(), startX = 0f, endX = size.width),
-                        Offset(0f, 0f), androidx.compose.ui.geometry.Size(size.width * f, 2.dp.toPx()),
-                    )
-                },
-            content = content,
-        )
-        else GlassSurface(m, shape = shape, content = content)
+        if (bare) Box(m, content = content)
+        else GlassSurface(m, shape = shape, tint = tint, content = content)
     }
 
     surface(
@@ -238,7 +234,7 @@ fun MiniPlayer(modifier: Modifier = Modifier, onOpen: () -> Unit) {
                 IconButton(onClick = { haptics.click(); pc.next() }, modifier = Modifier.size(40.dp)) { Icon(PrismIcons.Next, "Next") }
             }
         }
-        if (settings.miniProgress == MiniProgress.LINE && !(bar && !glass)) {
+        if (settings.miniProgress == MiniProgress.LINE) {
             Canvas(Modifier.fillMaxWidth().height(2.dp).align(Alignment.BottomCenter).padding(horizontal = if (style == MiniPlayerStyle.PILL) 28.dp else 18.dp)) {
                 drawLine(scheme.onSurface.copy(alpha = 0.12f), Offset(0f, 0f), Offset(size.width, 0f), 2.5.dp.toPx(), StrokeCap.Round)
                 // Progress in split light (deeper on light glass).

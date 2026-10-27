@@ -30,8 +30,12 @@ class PlaylistCovers(private val context: Context) {
     /** The picture to show for playlist [id]: the listener's own if they picked one, else [fallback]. */
     fun art(id: String, fallback: String?): String? = covers[id] ?: fallback
 
-    /** Any item's picture, with a playlist's custom cover in place of YouTube's. */
-    fun art(item: BrowseItem): String? = if (item is PlaylistItem) art(item.id, item.thumbnail) else item.thumbnail
+    /** Any item's picture, with a playlist's custom cover (or an artist's own photo, 1.7.6) in place of YouTube's. */
+    fun art(item: BrowseItem): String? = when (item) {
+        is PlaylistItem -> art(item.id, item.thumbnail)
+        is com.prism.music.data.model.ArtistItem -> covers["artist:${item.id}"] ?: item.thumbnail
+        else -> item.thumbnail
+    }
 
     private fun put(id: String, value: String) {
         val old = covers[id]
@@ -57,6 +61,19 @@ class PlaylistCovers(private val context: Context) {
         withContext(Dispatchers.Main) { put(id, Uri.fromFile(file).toString()) }
         true
     }
+
+    /** A picture made in Prism (the cover maker), saved as a photo would be. */
+    suspend fun useBitmap(id: String, bmp: Bitmap): Boolean = withContext(Dispatchers.IO) {
+        dir.mkdirs()
+        val safe = id.replace(Regex("[^A-Za-z0-9_-]"), "_")
+        val file = File(dir, "$safe-${System.currentTimeMillis()}.jpg")
+        runCatching { file.outputStream().use { bmp.compress(Bitmap.CompressFormat.JPEG, 92, it) } }.getOrElse { return@withContext false }
+        withContext(Dispatchers.Main) { put(id, Uri.fromFile(file).toString()) }
+        true
+    }
+
+    /** An artist's own photo (1.7.6), kept under the artist's id. */
+    fun artistKey(id: String) = "artist:$id"
 
     fun reset(id: String) {
         val old = covers.remove(id) ?: return

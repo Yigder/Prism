@@ -142,6 +142,8 @@ data class Shelf(
     val grid: Boolean = false,
     /** A carousel of song rows (a few per column) rather than cards: how YouTube Music lays out Quick picks. */
     val rows: Boolean = false,
+    /** Cards a few per column: how YouTube Music lays out your own Speed dial and Listen again, in any language. */
+    val stacked: Boolean = false,
 )
 
 /**
@@ -153,8 +155,12 @@ data class Shelf(
 fun List<Shelf>.quickPicks(): Shelf? = firstOrNull { it.title.equals("Quick picks", true) }
     ?: firstOrNull { s -> s.rows && s.title.lowercase() !in RECENT_SHELVES && s.items.count { it is SongItem } * 2 > s.items.size }
 
-/** YouTube's own Speed dial (or, where it isn't offered, "Listen again"): what Home's Speed dial section starts from. */
+/**
+ * YouTube's own Speed dial (or, where it isn't offered, "Listen again"): what Home's Speed dial section starts from.
+ * In another language (#131: "Marcación rápida") it's known by its shape, cards stacked a few per column.
+ */
 fun List<Shelf>.speedDial(): Shelf? = firstOrNull { it.title.equals("Speed dial", true) } ?: firstOrNull { it.title.equals("Listen again", true) }
+    ?: firstOrNull { it.stacked && !it.rows }
 
 /** Home shelves that are your own history, by their English titles. */
 private val RECENT_SHELVES = setOf("listen again", "speed dial", "recently played", "keep listening")

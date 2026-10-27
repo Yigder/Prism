@@ -261,7 +261,7 @@ fun LocalMusicScreen(bottomPadding: Dp) {
         artist != null -> artist.albums.flatMap { a -> a.tracks.filter { t -> t in artist.tracks } }.map { it.song } to artist.name
         openRecent -> recent to "Recently played"
         else -> when (section) {
-            LocalSection.FAVOURITES -> favourites to "Favourites"
+            LocalSection.FAVOURITES -> favourites to "Favorites"
             LocalSection.ADDED_SONGS -> addedSongs to "Recently added"
             LocalSection.ADDED_ALBUMS -> addedAlbums.flatMap { a -> a.tracks.map { it.song } } to "Added albums"
             LocalSection.DOWNLOADS -> downloads to "Downloads"
@@ -338,8 +338,8 @@ fun LocalMusicScreen(bottomPadding: Dp) {
                 HorizontalPager(pager, Modifier.weight(1f), userScrollEnabled = false) { page ->
                     when (sections.getOrNull(page)) {
                         LocalSection.SONGS -> SongsPage(songsSorted, sort, { saveOrders(orders.copy(songs = it)) }, "Local files", bottomPadding)
-                        LocalSection.FAVOURITES -> if (favourites.isEmpty()) EmptyState(PrismIcons.Heart, "No favourites yet", "Like songs from your phone (♥ on the player or in a song's menu) and they gather here.")
-                            else SongsPage(favourites, sort, { saveOrders(orders.copy(songs = it)) }, "Favourites", bottomPadding)
+                        LocalSection.FAVOURITES -> if (favourites.isEmpty()) EmptyState(PrismIcons.Heart, "No favorites yet", "Like songs from your phone (♥ on the player or in a song's menu) and they gather here.")
+                            else SongsPage(favourites, sort, { saveOrders(orders.copy(songs = it)) }, "Favorites", bottomPadding)
                         LocalSection.ARTISTS -> ArtistsPage(sortedArtists(artists, orders.artists), bottomPadding, orders.artists, { saveOrders(orders.copy(artists = it)) }) { openArtist = it.key }
                         LocalSection.ALBUMS -> AlbumsPage(sortedAlbums(albums, orders.albums), bottomPadding, orders.albums, { saveOrders(orders.copy(albums = it)) }) { openAlbum = it.id }
                         LocalSection.ADDED_SONGS -> TrackList(addedSongs, "Recently added", bottomPadding)

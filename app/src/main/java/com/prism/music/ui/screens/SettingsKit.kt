@@ -87,6 +87,31 @@ fun Group(title: String, info: String? = null, content: @Composable ColumnScope.
     }
 }
 
+/**
+ * The less-used groups of a page, folded away under one row that names them (1.7.6: pages had a dozen groups each).
+ * It opens by itself when Settings search leads to one of [groups].
+ */
+@Composable
+fun MoreOptions(groups: List<String>, content: @Composable () -> Unit) {
+    val found = LocalSettingsFind.current in groups
+    var open by androidx.compose.runtime.saveable.rememberSaveable(groups.joinToString(), "more") { androidx.compose.runtime.mutableStateOf(found) }
+    val ui = LocalUi.current
+    Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(22.dp)) {
+        Row(
+            Modifier.fillMaxWidth().clip(ui.card).pane(ui.card).clickable(onClickLabel = if (open) "Show fewer options" else "Show more options") { open = !open }
+                .padding(horizontal = 16.dp, vertical = ui.gap(14.dp)),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(if (open) "Fewer options" else "More options", style = MaterialTheme.typography.bodyLarge)
+                if (!open) Text(groups.joinToString(", "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Icon(if (open) PrismIcons.ChevronUp else PrismIcons.ChevronDown, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if (open) content()
+    }
+}
+
 /** A small heading inside a group, above a choice. [info]: what the choice means, behind an ⓘ beside it. */
 @Composable
 fun Label(text: String, info: String? = null) {

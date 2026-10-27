@@ -119,10 +119,21 @@ class LocalMusic(private val context: Context, private val scope: CoroutineScope
         _scanned.value = true
         Log.i(TAG, "${out.size} music files")
         // The album's artwork as Android serves it (from the files' embedded covers): it opens as an image, so Coil,
-        // the media notification and the car can all show it.
-        val withArt = out.map { t -> artFor(t.albumId)?.let { t.copy(song = t.song.copy(thumbnail = it)) } ?: t }
+        // the media notification and the car can all show it. Android files untagged songs from one folder (and other
+        // mixes) under one album, whose artwork is then one file's cover for all of them (#129): those songs read their
+        // own covers instead.
+        val mixed = mixedAlbums(out)
+        val withArt = out.map { t ->
+            if (t.albumId in mixed) t else artFor(t.albumId)?.let { t.copy(song = t.song.copy(thumbnail = it)) } ?: t
+        }
         if (art.values.any { it != null }) publish(withArt)
-        fillEmbeddedArt(withArt)
+        val filled = fillEmbeddedArt(withArt, mixed)
+        // A song in a real album (a compilation) with no cover of its own still shows the album's.
+        val rest = filled.map { t ->
+            if (t.song.thumbnail != null || t.albumId !in mixed || t.song.album == null) t
+            else artFor(t.albumId)?.let { t.copy(song = t.song.copy(thumbnail = it)) } ?: t
+        }
+        if (rest != filled) publish(rest)
     }
 
     private fun publish(tracks: List<Track>) {
@@ -137,32 +148,52 @@ class LocalMusic(private val context: Context, private val scope: CoroutineScope
      * Songs whose album Android has no artwork for: the cover embedded in the file itself, read once and kept (#54), so
      * they show their own cover (offline, of course) instead of none. Files with no cover in them are remembered.
      */
-    private fun fillEmbeddedArt(tracks: List<Track>) {
+    private fun fillEmbeddedArt(tracks: List<Track>, mixed: Set<Long>): List<Track> {
         val missing = tracks.filter { it.song.thumbnail == null }
-        if (missing.isEmpty()) return
+        if (missing.isEmpty()) return tracks
         val found = HashMap<String, String>()
+        val none = ArrayList<String>()
+        var reads = 0
         for (t in missing) {
-            val key = if (t.albumId > 0) "a${t.albumId}" else "s${t.song.id.removePrefix(Song.LOCAL_PREFIX)}"
+            // One cover per album, except in mixed albums (see [mixedAlbums]), where each song keeps its own.
+            val key = if (t.albumId > 0 && t.albumId !in mixed) "a${t.albumId}" else "s${t.song.id.removePrefix(Song.LOCAL_PREFIX)}"
             val file = java.io.File(artDir, "$key.jpg")
             if (!file.exists()) {
-                if (noArt.contains(key) || found.size >= 400) continue
+                // Files are opened a few hundred a scan at most; the rest follow on the next scans.
+                if (key in none || noArt.contains(key) || reads >= MAX_COVER_READS) continue
+                reads++
                 val bytes = runCatching {
                     val r = android.media.MediaMetadataRetriever()
                     try { r.setDataSource(context, t.uri); r.embeddedPicture } finally { r.release() }
                 }.getOrNull()
-                if (bytes == null || bytes.isEmpty()) { noArt.edit().putBoolean(key, true).apply(); continue }
+                if (bytes == null || bytes.isEmpty()) { none += key; continue }
                 runCatching { file.writeBytes(bytes) }.onFailure { continue }
             }
             found[t.song.id] = Uri.fromFile(file).toString()
         }
-        if (found.isEmpty()) return
-        publish(tracks.map { t -> found[t.song.id]?.let { t.copy(song = t.song.copy(thumbnail = it)) } ?: t })
+        if (none.isNotEmpty()) noArt.edit().apply { none.forEach { putBoolean(it, true) } }.apply()
+        if (found.isEmpty()) return tracks
+        return tracks.map { t -> found[t.song.id]?.let { t.copy(song = t.song.copy(thumbnail = it)) } ?: t }.also(::publish)
     }
 
     companion object {
         private const val TAG = "PrismLocal"
         private const val MIN_DURATION_MS = 20_000L
+        private const val MAX_COVER_READS = 400
         private const val UNKNOWN = "<unknown>"
+
+        /**
+         * Album ids whose one artwork may be wrong for some of its songs (#129): a song with no album tag (Android groups
+         * those by folder), songs naming different albums, or different artists under one album name (a downloader's
+         * catch-all "album"). Their songs read their own embedded covers; a real compilation's files all carry its cover,
+         * so it looks the same, read once per song instead of once per album.
+         */
+        internal fun mixedAlbums(tracks: List<Track>): Set<Long> =
+            tracks.filter { it.albumId > 0 }.groupBy { it.albumId }.filterValues { songs ->
+                songs.size > 1 && (songs.any { it.song.album == null } ||
+                    songs.mapTo(HashSet()) { it.song.album?.title?.trim()?.lowercase() }.size > 1 ||
+                    songs.mapTo(HashSet()) { it.song.artists.firstOrNull()?.name?.trim()?.lowercase() }.size > 1)
+            }.keys
 
         /** "A; B" or "A / B" in a tag are several artists; "<unknown>" is none. */
         fun artistsOf(tag: String?): List<ArtistRef> {

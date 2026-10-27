@@ -157,7 +157,7 @@ private fun Opening(plan: TourPlan) {
         Spacer(Modifier.height(12.dp))
         Text(body, color = Color.White.copy(alpha = 0.78f), style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
         Spacer(Modifier.height(18.dp))
-        Text("You can take it again from Settings → About.", color = Color.White.copy(alpha = 0.5f), style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+        Text("You can take it again from Settings → Backup & about.", color = Color.White.copy(alpha = 0.5f), style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
     }
 }
 

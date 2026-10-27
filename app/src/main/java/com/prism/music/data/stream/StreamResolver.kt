@@ -284,6 +284,13 @@ class StreamException(message: String, cause: Throwable? = null) : Exception(mes
 class LiveStreamException(val videoId: String) : IOException("$videoId is a live stream")
 
 /**
+ * Whether a player answer is a stream on air now. A past broadcast (many podcasts' episodes, #128) still says
+ * `isLiveContent` and still carries an HLS manifest, but it has a length and no `isLive`: it plays as a normal video.
+ */
+internal fun isOnAir(isLive: Boolean, liveContent: Boolean, hasHls: Boolean, lengthSec: Long): Boolean =
+    isLive || liveContent && hasHls && lengthSec <= 0
+
+/**
  * Resolves playable googlevideo URLs for a video id. One direct request as YouTube's visionOS app comes first
  * ([InnerTube.visionOsPlayer], ~0.2 s); NewPipeExtractor does it anonymously when that has no plain answer; songs
  * YouTube won't play anonymously (age-restricted, Music Premium-only) are asked for again as the
@@ -630,7 +637,12 @@ class StreamResolver(
             muxed = muxed,
             durationSec = res.str("videoDetails", "lengthSeconds")?.toLongOrNull() ?: 0,
             expiresAtMs = System.currentTimeMillis() + expiresIn * 1000 - 10 * 60_000,
-            live = res.str("videoDetails", "isLive") == "true" || res.str("videoDetails", "isLiveContent") == "true" && data.str("hlsManifestUrl") != null,
+            live = isOnAir(
+                isLive = res.str("videoDetails", "isLive") == "true",
+                liveContent = res.str("videoDetails", "isLiveContent") == "true",
+                hasHls = data.str("hlsManifestUrl") != null,
+                lengthSec = res.str("videoDetails", "lengthSeconds")?.toLongOrNull() ?: 0,
+            ),
             hlsUrl = data.str("hlsManifestUrl"),
             via = via,
         )

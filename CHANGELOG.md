@@ -2,6 +2,142 @@
 
 What changed in each release. Older releases are described on the [Releases page](https://github.com/Yigder/Prism/releases).
 
+## 1.7.6
+
+Home, Library and Search your way, and a lighter, faster Prism. The fifth customization update, and a performance one:
+Performance mode for older phones, about 200 MB less memory at start, and quicker lists and Search.
+
+### You asked for it
+- **Home opens straight away** (#126): the last Home is kept on the phone and shows at once when Prism starts, while the
+  new one loads behind it, instead of a loading spinner. It goes when you sign out or switch accounts.
+- **Full-bleed video** (#120, Settings → Customize Prism → Player → Cover, or the new button on the video): a music video fills the top
+  of the player edge to edge and fades into the background, as on YouTube Music.
+- **The lyric line on the player, centered and on two lines** (#121, Settings → Customize Prism → Lyrics → More options → Where the lines go): the line
+  over the progress bar can sit in the middle, and a long line can wrap onto a second line instead of being cut off.
+- **Featured and Community playlists in Search** (#130): the Playlists filter is now two, YouTube Music's own playlists
+  and people's.
+- **Quick picks and Speed dial in any language** (#131): YouTube's Quick picks under another language's title stop at
+  each column like Prism's, YouTube's own Speed dial is found in any language, and Customize Home → "Speed dial: YouTube
+  Music's only" leaves out the tiles Prism adds from your plays.
+
+### Performance mode
+For phones that found 1.7 heavier than 1.6 (#103, #132, #134): **Settings → Performance mode**, one switch that draws
+Prism about as lightly as 1.6 did. It pauses blur and frosted glass, the frost behind pages, moving and illustrated
+backgrounds (pages are plain), animated covers, the visualizer, a drifting player background, focus blur and glow in the
+lyrics, the picture at the top of Home, and animations. Every feature keeps working, nothing you picked is changed, and
+it all comes back as it was when you turn it off. Phones on Android 9 or older, or with 4 GB of memory or less, are
+offered it once on Home. On the Android 9 emulator, scrolling Home with music playing took half the processor time and
+frames drew 4–5× faster with it on.
+
+### Faster everywhere
+- Pages read YouTube's answers into shelves and lists off the screen's thread (Home, albums, playlists, artists,
+  podcasts, moods, and every search): on a slow phone a long playlist held the screen up for a few hundred milliseconds.
+- Covers kept on the phone are looked up from memory, without working out each picture's file name again on every
+  frame of a scrolling list.
+- The player's volume and output are asked of Android in the background, and the moods ranking is worked out there too.
+- **Library and Settings open faster after an update**: the list of Prism's code that Android compiles ahead at install
+  now covers them too (since 1.7.4 it only had Home, Search and the player).
+- Playback diagnostics now note Prism's memory every half minute, by kind, to find what grows on phones that close Prism.
+- **Animated covers use far less memory**: their player kept up to 50 seconds of video loaded ahead (looping the same
+  few seconds over and over), about 50 MB on a budget phone; it now keeps 10 seconds at most (8 MB). And a cover is no
+  bigger than the screen: a 720 px phone plays the 720 px clip, not the 1080 px one. Prism's memory on a budget phone
+  with an animated cover playing went from 77 to 53 MB.
+
+### Settings, easier to find
+Settings are sorted by what they do, and every page is shorter. Nothing was removed; Settings search finds everything
+at its new place.
+- **Customize Prism** holds everything about how Prism looks, in one place: Looks, Color, Text, Icons & shapes, Glass &
+  backgrounds, then each part of Prism (Tabs & mini player, Home & Library, the Player, the Lyrics). The live preview
+  is at its top once, instead of pinned over every look page.
+- **Playback & sound**, **Lyrics & Sing** (sources, language, Sing), **Controls & gestures** (the player's swipes and
+  taps, holding previous / next, haptics, the notification's and car's buttons, Search's keyboard),
+  **Recommendations & Replay**, **Downloads, storage & data** and **Car & devices** (Android Auto, speakers and TVs,
+  Discord), then **Backup & about**.
+- **Every "on mobile data" choice is on one page** (Downloads, storage & data → Mobile data); they were on six.
+- Less-used groups (the player's title and visualizer, where lyric lines sit…) are folded under **More options**.
+- Color's preview, still pinned while you scroll, no longer lets the page show through behind it.
+
+### Search, redesigned (#124)
+Prism's own design, not YouTube's page:
+- **Search by lyrics, in the search box itself**: type a line from a song ("i was too busy tryna find you with someone else") and
+  the song it's from shows under **From the lyrics**, with the line as the song has it, first when the line is nearly
+  word for word. Lyrics already on your phone are looked through first (offline too), then Genius's lyrics. They show
+  only when Search didn't find the song by its name, and only for the words together as typed.
+- **Before you type**: what you opened lately by its picture, your recent searches, your artists as a row of photos,
+  and the moods and genres as Prism-drawn tiles (their color, a pattern, the split light). **Arrange this page**
+  shows, hides and orders the sections.
+- **While typing, only suggestions**: "Search for …", the completions, and the artists, songs and albums YouTube Music
+  suggests with their pictures (a tap opens or plays one at once). The chips and results wait until you search, or put
+  the keyboard away, so they no longer pile up under the suggestions.
+- **One row of chips**: "On this phone" is now the last chip, beside Songs, Videos, Albums and the rest, instead of a
+  row of its own above them.
+- **In your library** and **On this phone**: results that are already yours (liked songs, your playlists, albums and
+  artists) and matching music files and downloads come right after the top result.
+
+### Home your way
+- **Pin to Home**: hold any album, playlist, artist or mix and pick "Pin to Home": it becomes a section of its own at
+  the top of Home, its songs ready to play, its name opening its page.
+- **Sections from your own listening** (Customize Home → Add a section → Your own): Liked this month, Downloads you
+  haven't played, and Most played in each year you've listened.
+- **Rename any section** from its ⋮ in Customize Home.
+- **Leave off music video or podcast sections**: YouTube Music's own sections of those kinds stay off Home.
+- **The top of Home** (Customize Home → Top of Home): the greeting as now, just the buttons, the greeting over a
+  picture (one of the background designs or your own photo), or over the playing cover, frosted; Short, Medium or Tall.
+
+### Covers you make
+- **Make a cover** (a playlist's picture → Make a cover): its name in large type over two colors of your choosing, with a
+  pattern from the backgrounds and the split light around it if you like, seen as you make it.
+- **Your own photo of an artist** (an artist page's ⋯ → Use your own photo): on their page and in Library.
+- Both stay on this phone (and in backups); YouTube Music keeps its own pictures.
+
+### Library your way
+- **Playlist folders**: hold a playlist → "Move to a folder" (or make a new one there). Folders sit at the top of
+  Library → Playlists; a folder's page renames it or takes it apart. Kept on the phone, and in backups.
+- **Pin to the top**: hold a playlist, album or artist in Library to keep it first in its tab.
+- **Each tab its own view**: Playlists, Albums and Artists can each be a list or a grid (the button at the top of
+  Library switches the tab you're on).
+- **Covers across** (Auto, 2, 3 or 4) for the grid, and **Details under each one** to hide song counts, owners and years.
+
+### Tabs your way (Settings → Customize Prism → Tabs & mini player)
+- **More tabs**: Downloads, Liked songs and Podcasts can be tabs too, up to six in all.
+- **Rename any tab**: tap its name in Tabs.
+- **Words only**: the tabs' names without icons (they shrink to fit five or six).
+- **Height** (Compact, Standard, Tall) and **Background** (as the glass, see-through or solid) for the tab bar.
+- **Swipe between tabs** (off by default): a sideways swipe on a tab's page goes to the tab beside it; rows that
+  scroll sideways keep their swipes.
+- **Mini player joined to the tab bar**: one floating piece of glass, the mini player on top of the tabs.
+
+### Playlists without an account
+- **Keep a YouTube playlist in your library without signing in**: its page's "Add to library" (or a long press) keeps
+  it on the phone, in Library → Playlists, opened fresh from YouTube each time. Mixes, which change every time, aren't kept.
+- **Save a copy as a Prism playlist** (any YouTube playlist's ⋯ or long press, signed in or not): every song of it, in a
+  playlist of your own on the phone that stays as it is.
+- **The queue's Save works without an account too**, as a Prism playlist.
+- **Library → Playlists → Open a link**: paste a playlist's YouTube or YouTube Music link to open it, no share menu needed.
+
+### Podcasts
+- **Episode details**: an episode's ⋯ (or a tap on its description) shows all of it, with working links, its date and
+  length, and the show it's from. A show YouTube gives no description says so instead of showing nothing.
+
+### Fixes
+- **About 200 MB less memory in the first minute after Prism opens** (likely #103). With a big library, working out your
+  artists' genres from what was already kept on the phone ran a text pattern over every song of every artist, and each
+  of those checks held a little memory until Android tidied up: on the test phones Prism climbed from ~190 to ~340 MB
+  of native memory for most of a minute after opening, enough for Android to close it on a phone with little memory.
+  Now each genre name is worked out once; it stays near 110 MB. Reading saved lyrics back (for every download, at each
+  start) no longer builds its patterns again each time either.
+- **A search no longer shows "The coroutine scope left the composition"** as its error when it was interrupted by the
+  next letter typed, or by leaving the page.
+- **The Card mini player is glass like the tab bar** under it, with the tab bar's own background (see-through or
+  solid), and its progress line runs along its bottom edge. With Frosted Glass off it used to turn into a solid bar
+  with the progress line on top.
+- **Podcast episodes no longer turn LIVE** a few seconds in (#128). Episodes recorded from a live broadcast were taken for
+  streams still on air, so the length disappeared and the progress bar stopped seeking. They play as normal episodes now.
+- **Each local song shows its own cover** (#129). Android files untagged songs from one folder (and other mixes) as one
+  album, so one file's cover went on all of them. Those songs now show the cover inside each file.
+- **Player, Layout & navigation and Lyrics are listed once** in Settings (#127), under Customize Prism, no longer twice.
+- US spelling in the last few places: Favorites, Centered.
+
 ## 1.7.5
 
 The fourth customization update: lyrics, your way.

@@ -82,7 +82,8 @@ fun BackgroundsScreen(bottomPadding: Dp, forPlayer: Boolean = false) {
     val nav = LocalNavigator.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val s by c.settings.flow.collectAsState()
+    // What the listener picked, also while Performance mode draws plain pages.
+    val s by c.settings.stored.collectAsState()
     var screen by rememberSaveable { mutableStateOf(BackdropScreen.HOME) }
     var everywhere by rememberSaveable { mutableStateOf(!forPlayer && s.backdrops.screensOnly.values.toSet().size <= 1) }
     var dim by remember { mutableFloatStateOf(s.backdropDim) }
@@ -233,7 +234,7 @@ fun BackgroundsScreen(bottomPadding: Dp, forPlayer: Boolean = false) {
 }
 
 /** Copies a picked photo into the app (scaled to at most 1600 px), so it survives the original being moved. */
-private fun savePhoto(context: android.content.Context, uri: Uri, name: String): File? = runCatching {
+internal fun savePhoto(context: android.content.Context, uri: Uri, name: String): File? = runCatching {
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
     var sample = 1

@@ -39,6 +39,8 @@ object Tour {
     private const val V1_7_4 = 43
     /** Prism 1.7.5 (build 44): lyrics, your way. */
     private const val V1_7_5 = 44
+    /** Prism 1.7.6 (build 45): Home, Library and Search, your way. */
+    private const val V1_7_6 = 45
 
     /** Every step, in the order they're shown. */
     val steps: List<TourStep> = listOf(
@@ -46,7 +48,7 @@ object Tour {
             V1_7, PrismIcons.Home, "Home",
             "Your starting point, made from what you play.",
             listOf(
-                "The Replay card at the top: your year so far (pick its look in Settings → Home screen)",
+                "The Replay card at the top: your year so far (pick its look in Settings → Customize Prism → Home & Library)",
                 "Quick picks: songs around the artists you play, swipe across for more",
                 "Made for you: Daily Mixes, your time-of-day mix and Release Radar",
                 "The grid button at the top arranges Home's sections",
@@ -71,7 +73,7 @@ object Tour {
             listOf(
                 "Tap a line to jump there",
                 "Their source is at the bottom: tap it to pick another, or fix the timing from ⋯",
-                "Translate them, or read other scripts in Latin letters (Settings → Lyrics)",
+                "Translate them, or read other scripts in Latin letters (Settings → Lyrics & Sing)",
             ),
             listOf(PrismIcons.Translate, PrismIcons.Romanize),
         ),
@@ -166,7 +168,7 @@ object Tour {
         ),
         TourStep(
             V1_7_2, PrismIcons.Palette, "Color, your way",
-            "Settings → Appearance → Color: every choice shows what it looks like before you pick it.",
+            "Settings → Customize Prism → Color: every choice shows what it looks like before you pick it.",
             listOf(
                 "The light: 12 presets, White (Black in light mode), or your own colors",
                 "Your accent: any color, from a wheel, a code or the eyedropper",
@@ -190,7 +192,7 @@ object Tour {
         ),
         TourStep(
             V1_7_3, PrismIcons.Looks, "Looks",
-            "Settings → Appearance → Looks: your whole look, saved, switched and shared in one tap.",
+            "Settings → Customize Prism → Looks: your whole look, saved, switched and shared in one tap.",
             listOf(
                 "Try Prism's own: Paper, Midnight, Neon, Soft, Studio and Vinyl",
                 "Save yours, update it when you change it, and share it as a QR code, a code or a file",
@@ -204,13 +206,13 @@ object Tour {
         ),
         TourStep(
             V1_7_4, PrismIcons.PlayCircle, "The player, your way",
-            "Settings → Appearance → Player, or ⋯ → Player settings on the player itself.",
+            "Settings → Customize Prism → Player, or ⋯ → Player settings on the player itself.",
             listOf(
                 "Layouts: Standard, a big Cover, Lyrics first, Minimal, Vinyl or Cassette (they turn as it plays)",
                 "A visualizer if you'd like one: bars, a wave, a ring, a pulse or a glow (off unless you pick it)",
                 "Pick the buttons under the controls (speed is one), and the two beside play in your notification and car",
                 "Put the lyric line, progress bar, controls and volume in your order",
-                "A waveform progress bar, its color, the title centred or bigger, and which times show",
+                "A waveform progress bar, its color, the title centered or bigger, and which times show",
                 "Choose what swipes, a double tap and a long press do on the cover and the mini player",
             ),
             listOf(PrismIcons.Turntable, PrismIcons.Customize),
@@ -222,12 +224,12 @@ object Tour {
             listOf(
                 "Prism tells Android which of its parts to get ready ahead, and updates from the banner come ready, so they no longer run slow",
                 "Less work while lists scroll, while you type in Search, and while a song plays",
-                "If something still stutters, Settings → About → Diagnostics notes where it happened, to share",
+                "If something still stutters, Settings → Backup & about → Diagnostics notes where it happened, to share",
             ),
         ),
         TourStep(
             V1_7_5, PrismIcons.Lyrics, "Lyrics, your way",
-            "Settings → Lyrics: how your lyrics look, with an example of every choice.",
+            "Settings → Customize Prism → Lyrics: how your lyrics look, with an example of every choice.",
             listOf(
                 "Six styles: Prism, Classic karaoke, Bold card, Glow, Typewriter and Calm",
                 "The sung line and the others in white, your light, the accent, the cover's color or your own",
@@ -237,7 +239,7 @@ object Tour {
                 "A background of their own: plain dark, the cover blurred or moving, its color, or yours; immersive mode too",
             ),
             listOf(PrismIcons.Lyrics, PrismIcons.Palette),
-            showMe = Routes.settings("lyrics"),
+            showMe = Routes.settings("lyrics_look"),
         ),
         TourStep(
             V1_7_5, PrismIcons.History, "Also new",
@@ -245,12 +247,63 @@ object Tour {
             listOf(
                 "Library → History: what you played, by day, on this phone or on your account",
                 "Liked a song and its video? They show once, as the song",
-                "Prism's own volume, apart from the phone's (Settings → Player)",
-                "Hide the status bar (Layout & navigation)",
+                "Prism's own volume, apart from the phone's (Settings → Customize Prism → Player)",
+                "Hide the status bar (Customize Prism → Tabs & mini player)",
                 "Settings pages are tidier: tap ⓘ beside a setting for the details",
                 "Library's tiles: the edit button at the top of Library",
             ),
             listOf(PrismIcons.History, PrismIcons.HeartFilled),
+        ),
+        TourStep(
+            V1_7_6, PrismIcons.Home, "Home, your way",
+            "Customize Home (the button at the top of Home) has more in it.",
+            listOf(
+                "Hold any album, playlist, artist or mix → Pin to Home: a section of its own",
+                "Sections from your own listening: Liked this month, Downloads you haven't played, Most played in a year",
+                "Rename any section; leave YouTube Music's video or podcast sections off",
+                "The top of Home: the greeting, just the buttons, or the greeting over a picture or the playing cover",
+                "Home shows at once when Prism opens, while the new one loads",
+            ),
+            listOf(PrismIcons.Home, PrismIcons.Pin),
+            showMe = Routes.CATALOGUE,
+        ),
+        TourStep(
+            V1_7_6, PrismIcons.Library, "Library and tabs, your way",
+            "Folders, pins, and tabs of your own.",
+            listOf(
+                "Hold a playlist → Move to a folder; hold anything in Library → Pin to the top",
+                "Playlists, Albums and Artists each a list or a grid; 2, 3 or 4 covers across",
+                "Make a cover for a playlist, or use your own photo of an artist",
+                "Keep YouTube playlists and copy them as Prism playlists, no account needed",
+                "Tabs: Downloads, Liked songs or Podcasts as tabs, your own names, words only, swipe between them",
+            ),
+            listOf(PrismIcons.Folder, PrismIcons.Library),
+            showMe = Routes.settings("interface"),
+        ),
+        TourStep(
+            V1_7_6, PrismIcons.Search, "Search, redesigned",
+            "Search starts from your music.",
+            listOf(
+                "Type a line of a song's lyrics to find it",
+                "What you opened lately, your artists, and moods drawn by Prism",
+                "Artists and songs with their pictures while you type",
+                "Results already in your library, right after the top one",
+            ),
+            listOf(PrismIcons.Search, PrismIcons.Recognize),
+            showMe = Routes.SEARCH,
+        ),
+        TourStep(
+            V1_7_6, PrismIcons.Settings, "Settings, easier to find",
+            "Settings are sorted by what they do.",
+            listOf(
+                "Everything about how Prism looks is under Customize Prism",
+                "Gestures and buttons in Controls & gestures",
+                "Every mobile data choice on one page",
+                "Android Auto, speakers and Discord in Car & devices",
+                "Performance mode, at the top, for slower phones",
+            ),
+            listOf(PrismIcons.Settings, PrismIcons.Speed),
+            showMe = Routes.SETTINGS,
         ),
         TourStep(
             V1_7, PrismIcons.Update, "Stay in the loop",

@@ -7,6 +7,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -198,16 +199,21 @@ fun SubPage(
             content()
         }
         if (melts) TopScrollEdge({ bar }, 60.dp)
+        // Pinned, the preview sits on the page's own color edge to edge, so the rows scrolling up don't show beside or
+        // behind it (they did, through the title, on the owner's phone).
         if (pinned != null) androidx.compose.animation.AnimatedVisibility(
             showPinned,
-            Modifier.padding(top = statusTop + 60.dp, start = horizontalPadding + gutter, end = horizontalPadding + gutter),
+            Modifier.padding(top = statusTop + 60.dp).fillMaxWidth(),
             enter = androidx.compose.animation.fadeIn(tween(160)) + androidx.compose.animation.slideInVertically(tween(200)) { -it / 3 },
             exit = androidx.compose.animation.fadeOut(tween(140)),
-        ) { pinned() }
-        // On the ambient frost the content melts away under the bar; on a plain page the bar turns solid once scrolled.
+        ) {
+            Box(Modifier.fillMaxWidth().background(scheme.surface).padding(start = horizontalPadding + gutter, end = horizontalPadding + gutter, bottom = 6.dp)) { pinned() }
+        }
+        // On the ambient frost the content melts away under the bar; on a plain page the bar turns solid once scrolled
+        // (fully, while a preview is pinned under it).
         Box(
             Modifier.fillMaxWidth()
-                .background(if (melts) Color.Transparent else scheme.surface.copy(alpha = 0.92f * bar))
+                .background(if (showPinned) scheme.surface else if (melts) Color.Transparent else scheme.surface.copy(alpha = 0.92f * bar))
                 .statusBarsPadding()
                 .height(60.dp),
         ) {
@@ -226,7 +232,10 @@ fun SubPage(
 
 /** A choice: a glass pill, lifted and ringed in split light when picked ([idle] fills an unpicked one, where asked). */
 @Composable
-fun PrismChip(selected: Boolean, onClick: () -> Unit, label: String, modifier: Modifier = Modifier, icon: ImageVector? = null, idle: Color = Color.Unspecified) {
+fun PrismChip(
+    selected: Boolean, onClick: () -> Unit, label: String, modifier: Modifier = Modifier, icon: ImageVector? = null,
+    idle: Color = Color.Unspecified, onLongClick: (() -> Unit)? = null, onLongClickLabel: String? = null,
+) {
     val scheme = MaterialTheme.colorScheme
     val quiet = glassFill(1.2f)
     val lifted = glassFill(2.6f)
@@ -236,7 +245,10 @@ fun PrismChip(selected: Boolean, onClick: () -> Unit, label: String, modifier: M
         modifier.height(36.dp).clip(CircleShape).background(bg)
             .then(if (selected) Modifier.spectrumRing(CircleShape) else Modifier.border(1.dp, glassEdge(), CircleShape))
             .semantics { this.selected = selected }
-            .clickable(onClick = onClick).padding(horizontal = 15.dp),
+            .then(
+                if (onLongClick == null) Modifier.clickable(onClick = onClick)
+                else Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick, onLongClickLabel = onLongClickLabel),
+            ).padding(horizontal = 15.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) { Icon(icon, null, Modifier.size(18.dp), tint = fg); Spacer(Modifier.width(6.dp)) }

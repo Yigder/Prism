@@ -159,8 +159,10 @@ private fun Shelf.newestFirst() = copy(items = Releases.newestFirst(items))
  * own; the rest of the page sits on the frosted glass.
  */
 @Composable
-private fun ArtistContent(page: ArtistPage, bottomPadding: Dp) {
+private fun ArtistContent(fromYouTube: ArtistPage, bottomPadding: Dp) {
     val c = LocalContainer.current
+    // The listener's own photo of the artist (1.7.6), everywhere on the page, when they've picked one.
+    val page = c.covers.custom(c.covers.artistKey(fromYouTube.id))?.let { fromYouTube.copy(thumbnail = it) } ?: fromYouTube
     val nav = LocalNavigator.current
     val scope = rememberCoroutineScope()
     val onSong: (SongItem) -> Unit = { c.player.playSingle(it.song) }
@@ -394,7 +396,7 @@ private fun Hero(
             PlayCapsule(onPlay)
             HeroButton(PrismIcons.Shuffle, "Shuffle ${page.name}", onClick = onShuffle)
             HeroButton(
-                if (favorite) PrismIcons.StarFilled else PrismIcons.Star, if (favorite) "Remove from favourites" else "Add to favourites",
+                if (favorite) PrismIcons.StarFilled else PrismIcons.Star, if (favorite) "Remove from favorites" else "Add to favorites",
                 tint = if (favorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, onClick = onFavorite,
             )
         }
@@ -463,13 +465,32 @@ private fun TopBar(
                     DropdownMenu(menu, { menu = false }) {
                         DropdownMenuItem({ Text("Share artist") }, { menu = false; onShare() }, leadingIcon = { Icon(PrismIcons.Share, null) })
                         DropdownMenuItem(
-                            { Text(if (favorite) "Remove from favourites" else "Add to favourites") }, { menu = false; onFavorite() },
+                            { Text(if (favorite) "Remove from favorites" else "Add to favorites") }, { menu = false; onFavorite() },
                             leadingIcon = { Icon(if (favorite) PrismIcons.StarFilled else PrismIcons.Star, null) },
                         )
                         DropdownMenuItem({ Text("Signature style") }, { menu = false; onSignature() }, leadingIcon = { Icon(PrismIcons.Signature, null) })
                         DropdownMenuItem({ Text("Page color") }, { menu = false; onColor() }, leadingIcon = { Icon(PrismIcons.Palette, null) })
                         // Never in radios, autoplay, Smart Shuffle, mixes or Smart Downloads (Settings → Library & Replay → Exclusions).
                         val c = com.prism.music.ui.theme.LocalContainer.current
+                        // A photo of your own for the artist (1.7.6), on their page and in Library.
+                        val photoKey = c.covers.artistKey(page.id)
+                        val ownPhoto = c.covers.custom(photoKey) != null
+                        val photoScope = androidx.compose.runtime.rememberCoroutineScope()
+                        val context = androidx.compose.ui.platform.LocalContext.current
+                        val picker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()) { uri ->
+                            if (uri != null) photoScope.launch {
+                                if (!c.covers.usePhoto(photoKey, uri)) android.widget.Toast.makeText(context, "Couldn't use that picture", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        DropdownMenuItem(
+                            { Text("Use your own photo") },
+                            { menu = false; picker.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                            leadingIcon = { Icon(PrismIcons.Photo, null) },
+                        )
+                        if (ownPhoto) DropdownMenuItem(
+                            { Text("Use YouTube's photo") }, { menu = false; c.covers.reset(photoKey) },
+                            leadingIcon = { Icon(PrismIcons.History, null) },
+                        )
                         val excluded by c.exclusions.artists.collectAsState()
                         val out = excluded.any { it.id == page.id || it.name.equals(page.name, true) }
                         DropdownMenuItem(
@@ -671,7 +692,7 @@ private fun InfoSheet(page: ArtistPage, genre: String?, favorite: Boolean, onFav
                     page.subscribers?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
                 IconButton(onClick = onFavorite) {
-                    Icon(if (favorite) PrismIcons.StarFilled else PrismIcons.Star, if (favorite) "Remove from favourites" else "Add to favourites", tint = MaterialTheme.colorScheme.primary)
+                    Icon(if (favorite) PrismIcons.StarFilled else PrismIcons.Star, if (favorite) "Remove from favorites" else "Add to favorites", tint = MaterialTheme.colorScheme.primary)
                 }
                 IconButton(onClick = onShare) { Icon(PrismIcons.Share, "Share artist") }
             }

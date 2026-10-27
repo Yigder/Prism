@@ -114,16 +114,33 @@ class ArtworkStore(
          */
         fun keyOf(url: String?): String? {
             if (url.isNullOrBlank() || !url.startsWith("http")) return null
+            // Every picture on screen asks (Coil runs its interceptors on the main thread), so the answer is kept: a
+            // fresh SHA-1 and its hex for each cover of a long list showed up in a slow phone's stalls (#103).
+            keys[url]?.let { return it }
             val bare = url.removePrefix("https://").removePrefix("http://")
             val base = when {
                 bare.contains("googleusercontent.com") || bare.contains("ggpht.com") -> bare.substringBefore('=')
                 bare.contains("ytimg.com/vi") -> "ytimg:" + bare.substringAfter("/vi").substringAfter('/').substringBefore('/')
                 else -> bare
             }
-            return sha1(base)
+            if (keys.size > MAX_KEYS) keys.clear()
+            return sha1(base).also { keys[url] = it }
         }
 
-        private fun sha1(s: String) = MessageDigest.getInstance("SHA-1").digest(s.toByteArray()).joinToString("") { "%02x".format(it) }
+        private const val MAX_KEYS = 4_000
+        private val keys = ConcurrentHashMap<String, String>()
+        private val HEX = "0123456789abcdef".toCharArray()
+
+        private fun sha1(s: String): String {
+            val d = MessageDigest.getInstance("SHA-1").digest(s.toByteArray())
+            val out = CharArray(d.size * 2)
+            for (i in d.indices) {
+                val b = d[i].toInt() and 0xFF
+                out[i * 2] = HEX[b ushr 4]
+                out[i * 2 + 1] = HEX[b and 0x0F]
+            }
+            return String(out)
+        }
 
         /**
          * Keys the old [keyOf] gave many different covers at once (every mix's): their files are one of those covers

@@ -338,6 +338,7 @@ object Parser {
                     // Song rows, not cards: "Listen again" / "Speed dial" (your recent plays) also come a few per
                     // column (numItemsPerColumn), but as cards, and were taken for Quick picks.
                     rows = s.arr("contents")?.firstOrNull().obj("musicResponsiveListItemRenderer") != null,
+                    stacked = (s.str("numItemsPerColumn")?.toIntOrNull() ?: 1) > 1,
                 )
             }
             node.obj("musicShelfRenderer")?.let { s ->

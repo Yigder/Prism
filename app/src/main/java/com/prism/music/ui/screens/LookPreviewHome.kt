@@ -130,6 +130,9 @@ private fun NavTab.icon(): ImageVector = when (this) {
     NavTab.REPLAY -> PrismIcons.Replay
     NavTab.SETTINGS -> PrismIcons.Settings
     NavTab.LOCAL -> PrismIcons.Phone
+    NavTab.DOWNLOADS -> PrismIcons.Download
+    NavTab.LIKED -> PrismIcons.Heart
+    NavTab.PODCASTS -> PrismIcons.Podcasts
 }
 
 /** The tab bar in its style ([NavBarStyle]) with its labels, the first tab current. */
@@ -152,9 +155,10 @@ private fun TabBarPreview(c: ThemeColors) {
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                 if (docked && on) Box(Modifier.width(24.dp).height(2.dp).clip(CircleShape).background(light))
                 if (docked) Spacer(Modifier.height(6.dp))
-                Icon(tab.icon(), null, Modifier.size(22.dp), tint = if (on) scheme.onBackground else c.ink3)
-                val showLabel = !minimal && (s.navLabels == NavLabels.ALWAYS || (s.navLabels == NavLabels.SELECTED && on))
-                if (showLabel) Text(tab.label, style = MaterialTheme.typography.labelSmall, color = if (on) scheme.onBackground else c.ink3, maxLines = 1)
+                val words = !minimal && s.navLabels == NavLabels.WORDS
+                if (!words) Icon(tab.icon(), null, Modifier.size(22.dp), tint = if (on) scheme.onBackground else c.ink3)
+                val showLabel = !minimal && (s.navLabels == NavLabels.ALWAYS || words || (s.navLabels == NavLabels.SELECTED && on))
+                if (showLabel) Text(s.tabNames[tab] ?: tab.label, style = MaterialTheme.typography.labelSmall, color = if (on) scheme.onBackground else c.ink3, maxLines = 1)
                 if (!docked && on) Box(Modifier.padding(top = 3.dp).width(14.dp).height(2.dp).clip(CircleShape).background(light))
             }
         }

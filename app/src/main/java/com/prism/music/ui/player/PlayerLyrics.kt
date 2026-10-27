@@ -25,6 +25,7 @@ import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -388,12 +389,22 @@ fun CurrentLyricStrip(state: LyricsState, isPlaying: Boolean, onClick: () -> Uni
         (if (instead && roman != null) state.lines.mapIndexed { i, l -> roman.getOrNull(i) ?: l } else state.lines).map(look::shown)
     }
     val synced = lines.any { it.timeMs >= 0 }
-    Box(Modifier.fillMaxWidth().offset(y = 6.dp)) {
+    // Centered and up to two lines (#121), as the listener picks. Two lines keep their room all the time, so the
+    // player doesn't move up and down as lines change length; the line sits at the bottom of it, over the scrubber.
+    val centered = settings.lyricsStripAlign == com.prism.music.data.prefs.LyricsAlign.CENTER
+    val rows = if (settings.lyricsStripTwoLines) 2 else 1
+    val baseStyle = MaterialTheme.typography.titleMedium.let { if (centered) it.copy(textAlign = TextAlign.Center) else it }
+    val room = if (rows > 1) {
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val line = baseStyle.lineHeight.takeIf { it.isSp } ?: (baseStyle.fontSize * 1.35f)
+        Modifier.heightIn(min = with(density) { line.toDp() } * rows + 8.dp)
+    } else Modifier
+    Box(Modifier.fillMaxWidth().then(room).offset(y = 6.dp), contentAlignment = if (centered) Alignment.BottomCenter else Alignment.BottomStart) {
         when {
             // A podcast episode has no lyrics to look for: the line keeps its room, empty.
-            state.song.isEpisode -> Text(" ", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(vertical = 4.dp))
-            lines.isNotEmpty() && !synced -> StripRow(onClick, note = true) {
-                Text("Open lyrics", style = MaterialTheme.typography.titleMedium, color = Color.White, maxLines = 1)
+            state.song.isEpisode -> Text(" ", style = baseStyle, modifier = Modifier.padding(vertical = 4.dp))
+            lines.isNotEmpty() && !synced -> StripRow(onClick, note = true, centered = centered) {
+                Text("Open lyrics", style = baseStyle, color = Color.White, maxLines = 1)
             }
             lines.isNotEmpty() -> {
                 val clock = rememberLyricClock(isPlaying)
@@ -408,8 +419,8 @@ fun CurrentLyricStrip(state: LyricsState, isPlaying: Boolean, onClick: () -> Uni
                 }
                 // A right-to-left line (Arabic, Hebrew…) runs from the right of the strip, its arrow at its end on the left.
                 val rtl = !instrumental && isRtl(text)
-                val stripStyle = MaterialTheme.typography.titleMedium.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Content).withLyricsFont()
-                StripRow(onClick, note = instrumental, rtl = rtl) {
+                val stripStyle = baseStyle.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Content).withLyricsFont()
+                StripRow(onClick, note = instrumental, rtl = rtl, centered = centered) {
                     AnimatedContent(
                         index to text,
                         transitionSpec = {
@@ -421,38 +432,39 @@ fun CurrentLyricStrip(state: LyricsState, isPlaying: Boolean, onClick: () -> Uni
                     ) { (i, t) ->
                         val line = lines.getOrNull(i)
                         if (line != null && !line.isGap && (line.isWordSynced || look.style != com.prism.music.data.prefs.LyricsStyle.PRISM)) {
-                            SungLine(line, clock, stripStyle.copy(shadow = look.shadow), look, null, maxLines = 1, strip = true)
+                            SungLine(line, clock, stripStyle.copy(shadow = look.shadow), look, null, maxLines = rows, strip = true)
                         } else {
                             Text(
-                                t, style = stripStyle, color = if (instrumental) Color.White.copy(alpha = 0.5f) else Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                t, style = stripStyle, color = if (instrumental) Color.White.copy(alpha = 0.5f) else Color.White, maxLines = rows, overflow = TextOverflow.Ellipsis,
                             )
                         }
                     }
                 }
             }
             // On mobile data with "Lyrics on mobile data" off (#95): opening them looks them up.
-            state.waiting -> StripRow(onClick, note = false) {
-                Text("Tap to load lyrics", style = MaterialTheme.typography.titleMedium, color = Color.White.copy(alpha = 0.55f), maxLines = 1)
+            state.waiting -> StripRow(onClick, note = false, centered = centered) {
+                Text("Tap to load lyrics", style = baseStyle, color = Color.White.copy(alpha = 0.55f), maxLines = 1)
             }
             state.unavailable -> {
                 var visible by remember(state.song.id) { mutableStateOf(true) }
                 LaunchedEffect(state.song.id) { delay(4000); visible = false }
                 val a by animateFloatAsState(if (visible) 0.55f else 0f, tween(900), label = "na")
-                Text("Lyrics not available", style = MaterialTheme.typography.titleMedium, color = Color.White, maxLines = 1,
+                Text("Lyrics not available", style = baseStyle, color = Color.White, maxLines = 1,
                     modifier = Modifier.padding(vertical = 4.dp).graphicsLayer { alpha = a })
             }
-            else -> Text("Looking for lyrics…", style = MaterialTheme.typography.titleMedium, color = Color.White.copy(alpha = 0.55f), maxLines = 1, modifier = Modifier.padding(vertical = 4.dp))
+            else -> Text("Looking for lyrics…", style = baseStyle, color = Color.White.copy(alpha = 0.55f), maxLines = 1, modifier = Modifier.padding(vertical = 4.dp))
         }
     }
 }
 
 @Composable
-private fun StripRow(onClick: () -> Unit, note: Boolean, rtl: Boolean = false, content: @Composable () -> Unit) {
+private fun StripRow(onClick: () -> Unit, note: Boolean, rtl: Boolean = false, centered: Boolean = false, content: @Composable () -> Unit) {
     // The strip follows the line's own direction, not the phone's: a right-to-left line starts at the right and
     // its arrow (mirrored) follows it on the left.
     CompositionLocalProvider(LocalLayoutDirection provides if (rtl) LayoutDirection.Rtl else LayoutDirection.Ltr) {
         Row(
             Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).clickable(onClick = onClick).padding(vertical = 4.dp),
+            horizontalArrangement = if (centered) Arrangement.Center else Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (note) {

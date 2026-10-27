@@ -23,6 +23,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -45,6 +50,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -118,6 +124,15 @@ private val YOURS_KEYS = setOf(HomeSections.ON_REPEAT, HomeSections.REPEAT_REWIN
 
 fun shelfKey(title: String) = HomeSections.YT_PREFIX + title.trim().lowercase()
 
+/** What kind of section a YouTube shelf is, for "Leave off Home" (1.7.6): mostly music videos, or podcasts. */
+internal fun shelfKind(shelf: Shelf): String? {
+    val n = shelf.items.size.takeIf { it > 0 } ?: return null
+    val podcasts = shelf.items.count { it is com.prism.music.data.model.PodcastItem || (it is SongItem && it.song.isEpisode) }
+    if (podcasts * 2 > n) return HomeSections.KIND_PODCASTS
+    val videos = shelf.items.count { it is SongItem && it.song.isVideo }
+    return if (videos * 2 > n) HomeSections.KIND_VIDEOS else null
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
@@ -130,25 +145,31 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
         // can land on a later page or drop out entirely. Page further for them, and keep the last
         // copy we saw rather than silently hiding a section the user turned on.
         val wanted = layoutNow.filter { it.visible && it.key.startsWith(HomeSections.YT_PREFIX) }.map { it.key }.toSet()
-        val fresh = c.ytm.fullHome(pages = 3, maxPages = 8) { got -> wanted.all { k -> got.any { shelfKey(it.title) == k } } }
+        val (fresh, pages) = c.ytm.fullHomePages(pages = 3, maxPages = 8) { got -> wanted.all { k -> got.any { shelfKey(it.title) == k } } }
+        // Kept for the next start, to show while this loads again (#126).
+        c.scope.launch { c.homeCache.write(pages) }
         val freshKeys = fresh.map { shelfKey(it.title) }.toSet()
         val kept = homeShelfCache.value.filter { shelfKey(it.title).let { k -> k in wanted && k !in freshKeys } }
         (fresh + kept).also { homeShelfCache.value = it }
+    }
+    // The last Home (from this session, else kept on the phone) shows until the new one is in: no spinner at start.
+    val lastHome by produceState(homeShelfCache.value.ifEmpty { null }) {
+        if (value == null) value = c.homeCache.read()?.also { if (homeShelfCache.value.isEmpty()) homeShelfCache.value = it }
     }
     val moods = rememberLoad("moods") { c.taste.rank(runCatching { c.ytm.moodsAndGenres() }.getOrDefault(emptyList())) }
     val recent by c.library.recent.collectAsState()
     val liked by c.library.likedShown.collectAsState()
 
-    val shelves = (home.state as? Load.Ok)?.value ?: emptyList()
+    val shelves = (home.state as? Load.Ok)?.value ?: lastHome ?: emptyList()
     // A reload whose feed has no Quick picks keeps the last ones, rather than the section vanishing or swapping.
     val picks = remember(shelves) { shelves.quickPicks()?.also { lastQuickPicks.value = it } ?: lastQuickPicks.value }
     val dialOn = settings.homeLayout.any { it.key == HomeSections.SPEED_DIAL && it.visible }
     // The Speed dial section shows YouTube's own, so it isn't added again as a shelf of its own.
     val dial = shelves.speedDial()?.takeIf { dialOn }
-    val layout = remember(settings.homeLayout, shelves, settings.autoAddSections, picks) {
+    val layout = remember(settings.homeLayout, shelves, settings.autoAddSections, picks, settings.homeHideKinds) {
         val known = settings.homeLayout.map { it.key }.toSet()
         val extra = if (settings.autoAddSections) shelves
-            .filter { shelfKey(it.title) !in known && it !== picks && it !== dial }
+            .filter { shelfKey(it.title) !in known && it !== picks && it !== dial && shelfKind(it) !in settings.homeHideKinds }
             .map { HomeSectionConfig(shelfKey(it.title), it.title) } else emptyList()
         settings.homeLayout.filter { it.visible } + extra
     }
@@ -171,7 +192,12 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { speedDialFromHistory(c) }.getOrDefault(emptyList()) }
             .also { speedDialMine.value = it }
     }
-    val dialItems = remember(dial, dialMine) { (dial?.items.orEmpty().filter { it !is MoodItem } + dialMine).distinctBy { it.id }.take(SPEED_DIAL_SIZE) }
+    // YouTube's tiles lead; yours fill the rest, unless Customize Home says YouTube's only (#131). With none from
+    // YouTube (signed out, offline), yours stand in either way.
+    val youtubeDialOnly = settings.speedDialYouTubeOnly && (dial?.items?.size ?: 0) >= 3
+    val dialItems = remember(dial, dialMine, youtubeDialOnly) {
+        (dial?.items.orEmpty().filter { it !is MoodItem } + if (youtubeDialOnly) emptyList() else dialMine).distinctBy { it.id }.take(SPEED_DIAL_SIZE)
+    }
     // Quick picks made around the artists the listener plays (their favourites, new songs from radios of their top
     // artists, YouTube's own that fit): worked out once a session, again on pull to refresh.
     val youtubePicks = picks?.items?.filterIsInstance<SongItem>()?.map { it.song } ?: standIn
@@ -214,16 +240,21 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
     PullToRefreshBox(
         isRefreshing = home.refreshing,
         onRefresh = { standInPicks.value = emptyList(); refreshes++; home.reload(true); moods.reload(true) },
+        // (Your own sections load again too: they're keyed on [refreshes].)
         modifier = Modifier.fillMaxSize(),
     ) {
         LazyColumn(Modifier.fillMaxSize(), state = list, contentPadding = PaddingValues(bottom = bottomPadding + 16.dp)) {
             item { HomeTopBar() }
             item(key = "update") { UpdateBanner() }
+            item(key = "performance") { PerformanceOffer() }
             if (!online) item(key = "offline") { OfflineNote() }
             if (online && home.state is Load.Loading && shelves.isEmpty()) item { LoadingState() }
-            (home.state as? Load.Err)?.takeIf { online }?.let { e -> item { ErrorState(e.message) { home.reload(false) } } }
+            // With the last Home on show, a failed refresh leaves it there (pull to refresh tries again).
+            (home.state as? Load.Err)?.takeIf { online && shelves.isEmpty() }?.let { e -> item { ErrorState(e.message) { home.reload(false) } } }
 
-            layout.forEach { cfg ->
+            layout.forEach { raw ->
+                // A section renamed in Customize Home (1.7.6) goes by its new name, also where it reads its own title.
+                val cfg = if (raw.name != null) raw.copy(title = raw.name) else raw
                 item(key = cfg.key) {
                     // "Customize this" (1.7.3): a section opens its own style and Home's look.
                     Column(Modifier.customizable(com.prism.music.ui.components.CustomizeTarget.HOME_SECTION, cfg.key)) {
@@ -234,21 +265,21 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
                             // what you've just heard). Your recent plays themselves never do: that's Recently played.
                             // A pick starts a radio from it (#38), as on YouTube Music, unless Customize Home says to play them in order.
                             // Offline: the songs on the phone you're most likely to want, played in order.
-                            if (!online) { if (offlinePicks.isNotEmpty()) SongSection(cfg, "Quick picks", "Ready offline", offlinePicks, snap = true) }
+                            if (!online) { if (offlinePicks.isNotEmpty()) SongSection(cfg, cfg.titled("Quick picks"), "Ready offline", offlinePicks, snap = true) }
                             else if (pickSongs.isNotEmpty()) SongSection(
-                                cfg, "Quick picks", picks?.strapline, pickSongs, snap = true,
+                                cfg, cfg.titled("Quick picks"), picks?.strapline, pickSongs, snap = true,
                                 play = if (settings.quickPicksRadio) { list, i -> c.player.playRadio(list[i]) } else null,
                             )
                         }
-                        HomeSections.RECENT -> recent.filter(offline).take(20).let { if (it.isNotEmpty()) SongSection(cfg, cfg.title, null, it) }
-                        HomeSections.LIKED -> liked.filter(offline).take(20).let { if (it.isNotEmpty()) SongSection(cfg, "Liked songs", null, it) { nav.go(Routes.liked()) } }
-                        HomeSections.ON_REPEAT -> yours?.onRepeat?.takeIf { it.isNotEmpty() }?.let { SongSection(cfg, cfg.title, "Your most played this month", it) }
-                        HomeSections.REPEAT_REWIND -> yours?.repeatRewind?.takeIf { it.isNotEmpty() }?.let { SongSection(cfg, cfg.title, "What you used to play on repeat", it) }
-                        HomeSections.FORGOTTEN -> yours?.forgotten?.takeIf { it.isNotEmpty() }?.let { SongSection(cfg, cfg.title, "Favourites you haven't played in a while", it) }
+                        HomeSections.RECENT -> recent.filter(offline).take(20).let { if (it.isNotEmpty()) SongSection(cfg, cfg.titled(), null, it) }
+                        HomeSections.LIKED -> liked.filter(offline).take(20).let { if (it.isNotEmpty()) SongSection(cfg, cfg.titled("Liked songs"), null, it) { nav.go(Routes.liked()) } }
+                        HomeSections.ON_REPEAT -> yours?.onRepeat?.takeIf { it.isNotEmpty() }?.let { SongSection(cfg, cfg.titled(), "Your most played this month", it) }
+                        HomeSections.REPEAT_REWIND -> yours?.repeatRewind?.takeIf { it.isNotEmpty() }?.let { SongSection(cfg, cfg.titled(), "What you used to play on repeat", it) }
+                        HomeSections.FORGOTTEN -> yours?.forgotten?.takeIf { it.isNotEmpty() }?.let { SongSection(cfg, cfg.titled(), "Favorites you haven't played in a while", it) }
                         HomeSections.DOWNLOADS -> {
                             val dls by c.downloads.downloads.collectAsState()
                             val songs = remember(dls) { c.downloads.completedSongs() }
-                            if (songs.isNotEmpty()) SongSection(cfg, "Downloads", null, songs.take(20)) { nav.go(Routes.DOWNLOADS) }
+                            if (songs.isNotEmpty()) SongSection(cfg, cfg.titled("Downloads"), null, songs.take(20)) { nav.go(Routes.DOWNLOADS) }
                         }
                         HomeSections.SPEED_DIAL -> SpeedDialSection(cfg, if (online) dialItems else dialItems.filter { it is SongItem && c.availableOffline(it.id) }, openItem)
                         HomeSections.MADE_FOR_YOU -> MadeForYouSection(cfg, offline = !online, yours = yours?.mixes.orEmpty())
@@ -258,7 +289,7 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
                         HomeSections.MOODS -> if (online) {
                             val m = (moods.state as? Load.Ok)?.value?.picks?.take(12)
                             if (!m.isNullOrEmpty()) {
-                                SectionHeader(cfg.title, strapline = "Picked for you", onMore = { nav.go(Routes.MOODS) })
+                                SectionHeader(cfg.titled(), strapline = "Picked for you", onMore = { nav.go(Routes.MOODS) })
                                 if (cfg.style != SectionStyle.GRID) StyledEntries(cfg.style, m.map { mood ->
                                     val col = Color(mood.color or 0xFF000000).lit()
                                     HomeEntry(mood.id + mood.params, mood.title, fill = Brush.linearGradient(listOf(col, col.copy(alpha = 0.6f).compositeOver(Color.Black))), onFill = true, icon = PrismIcons.Mood) { openItem(mood) }
@@ -271,9 +302,19 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
                                 }
                             }
                         }
-                        else -> if (online) {
-                            // Not a shelf that already shows as Quick picks or Speed dial (it was on Home twice).
-                            val shelf = shelves.firstOrNull { shelfKey(it.title) == cfg.key }?.takeIf { it !== picks && it !== dial }
+                        // Your own (1.7.6): a pinned album, playlist, artist or mix, or a rule over your listening.
+                        else -> if (OwnSections.isOwn(cfg.key)) {
+                            val songs by OwnSections.rememberSongs(cfg.key, refreshes)
+                            val shownSongs = songs.filter(offline).take(if (cfg.style == SectionStyle.LIST) 20 else 30)
+                            if (shownSongs.isNotEmpty()) SongSection(
+                                cfg, cfg.titled(), OwnSections.strapline(cfg.key), shownSongs,
+                                onMore = OwnSections.pageOf(cfg.key)?.let { r -> { nav.go(r) } },
+                            )
+                        } else if (online) {
+                            // Not a shelf that already shows as Quick picks or Speed dial (it was on Home twice), nor of a
+                            // kind left off Home (Customize Home → Leave off Home).
+                            val shelf = shelves.firstOrNull { shelfKey(it.title) == cfg.key }
+                                ?.takeIf { it !== picks && it !== dial && shelfKind(it) !in settings.homeHideKinds }
                             if (shelf != null) ShelfSection(cfg, shelf, openItem)
                         }
                     }
@@ -299,6 +340,39 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
         }
     }
     TopScrollEdge({ edge })
+    }
+}
+
+/**
+ * Once, on a phone that may find 1.7's effects heavy (Android 9 or older, or 4 GB of memory or less): Performance mode,
+ * offered where it's seen. Either answer puts the card away for good; Settings has the switch.
+ */
+@Composable
+private fun PerformanceOffer() {
+    val c = LocalContainer.current
+    val settings = LocalAppSettings.current
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val slow = remember { com.prism.music.data.DevicePower.mayBeSlow(context) }
+    if (!slow || settings.performanceOffered || settings.performanceMode) return
+    val ui = com.prism.music.ui.theme.LocalUi.current
+    Column(
+        Modifier.padding(start = 16.dp, end = 16.dp, top = ui.gap(14.dp)).fillMaxWidth().pane(ui.shape(16.dp)).padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 4.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(PrismIcons.Speed, null, tint = MaterialTheme.colorScheme.onSurface)
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Make Prism lighter on this phone?", style = MaterialTheme.typography.titleSmall)
+                Text(
+                    "Performance mode pauses blur, moving backgrounds and animated covers. Every feature stays.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        Row(Modifier.align(Alignment.End)) {
+            com.prism.music.ui.components.PrismTextButton(onClick = { c.settings.setPerformanceOffered() }) { Text("No thanks") }
+            com.prism.music.ui.components.PrismTextButton(onClick = { c.settings.setPerformanceMode(true) }) { Text("Turn on") }
+        }
     }
 }
 
@@ -333,11 +407,59 @@ private fun HomeTopBar() {
         java.text.SimpleDateFormat(android.text.format.DateFormat.getBestDateTimePattern(locale, "EEEEdMMMM"), locale).format(java.util.Date())
     }
     val ui = com.prism.music.ui.theme.LocalUi.current
+    val header = settings.homeHeader
+    // A picture behind the greeting (1.7.6): it runs up under the status bar and fades into the page at its foot.
+    if (header == com.prism.music.data.prefs.HomeHeader.PICTURE || header == com.prism.music.data.prefs.HomeHeader.NOW_PLAYING) {
+        val statusTop = androidx.compose.foundation.layout.WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+        Box(Modifier.fillMaxWidth().heightIn(min = statusTop + settings.homeHeaderHeight.dp.dp)) {
+            HeaderPicture(
+                header, settings.homeHeaderPicture,
+                Modifier.matchParentSize()
+                    .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+                    .drawWithContent {
+                        drawContent()
+                        drawRect(
+                            Brush.verticalGradient(0.45f to Color.Black, 1f to Color.Transparent),
+                            blendMode = androidx.compose.ui.graphics.BlendMode.DstIn,
+                        )
+                    },
+            )
+            Box(Modifier.align(Alignment.BottomStart)) { HomeTopRow(greeting, today, showGreeting = true) }
+        }
+        return
+    }
+    HomeTopRow(greeting, today, showGreeting = header != com.prism.music.data.prefs.HomeHeader.NONE)
+}
+
+/** What's behind a picture header: a background design or your photo, or the playing cover frosted. */
+@Composable
+private fun HeaderPicture(header: com.prism.music.data.prefs.HomeHeader, picture: String, modifier: Modifier) {
+    val c = LocalContainer.current
+    if (header == com.prism.music.data.prefs.HomeHeader.NOW_PLAYING) {
+        val current by c.player.currentSong.collectAsState()
+        val recent by c.library.recent.collectAsState()
+        val frost = com.prism.music.ui.components.rememberFrost((current ?: recent.firstOrNull())?.thumbnail)
+        Box(modifier) {
+            frost?.let { androidx.compose.foundation.Image(it.image, null, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.Crop) }
+        }
+        return
+    }
+    val (style, photo) = com.prism.music.ui.theme.Backdrop.parse(picture)
+    val s = LocalAppSettings.current
+    com.prism.music.ui.theme.BackdropLayer(style, photo, 0f, s.backdropMotion && !s.reduceMotion, modifier)
+}
+
+/** The greeting (unless [showGreeting] is off: just the buttons) and Home's round buttons. */
+@Composable
+private fun HomeTopRow(greeting: String, today: String, showGreeting: Boolean) {
+    val nav = LocalNavigator.current
+    val settings = LocalAppSettings.current
+    val ui = com.prism.music.ui.theme.LocalUi.current
     Row(
         Modifier.fillMaxWidth().statusBarsPadding().padding(start = 20.dp, end = 14.dp, top = ui.gap(14.dp)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(Modifier.weight(1f)) {
+        if (showGreeting) Column(Modifier.weight(1f)) {
             com.prism.music.ui.components.Eyebrow(today)
             Text(greeting, style = com.prism.music.ui.components.pageTitleStyle(), maxLines = 2)
             val profile by LocalContainer.current.account.profile.collectAsState()
@@ -347,7 +469,7 @@ private fun HomeTopBar() {
             )
             // Settings, Home screen, Continue line hides it.
             if (settings.homeContinue) ContextLine()
-        }
+        } else Spacer(Modifier.weight(1f))
         // Podcasts live a tap away from Home (as on Spotify's), in the same quiet round button as Customize.
         // With the top Customize button off, Podcasts moves over into its place, beside the account.
         // Settings → Home screen → "Podcasts button" off (#28): Podcasts opens from Library instead.
@@ -612,21 +734,16 @@ private fun SongSection(
 @Composable
 private fun ShelfSection(cfg: HomeSectionConfig, shelf: Shelf, open: (BrowseItem) -> Unit) {
     val nav = LocalNavigator.current
-    val c = LocalContainer.current
-    SectionHeader(shelf.title, strapline = shelf.strapline, onMore = shelf.moreBrowseId?.let { id -> { nav.go(Routes.browse(id, shelf.moreParams, shelf.title)) } })
+    val more = shelf.moreBrowseId?.let { id -> { nav.go(Routes.browse(id, shelf.moreParams, shelf.title)) } }
     val songs = shelf.items.filterIsInstance<SongItem>().map { it.song }
-    val allSongs = songs.size == shelf.items.size
-    when {
-        cfg.style == SectionStyle.LIST && allSongs -> LazyHorizontalGrid(
-            GridCells.Fixed(songs.size.coerceIn(1, 4)), Modifier.height(64.dp * songs.size.coerceIn(1, 4)), contentPadding = PaddingValues(horizontal = 4.dp),
-        ) {
-            items(songs.size) { i ->
-                Box(Modifier.width(330.dp)) { SongRow(songs[i]) { c.player.playQueue(songs, i, QueueSource(QueueKind.OTHER, shelf.title)) } }
-            }
-        }
-        // Every style, for every kind of item (List used to fall back to a carousel unless they were all songs).
-        else -> StyledItems(cfg.style, shelf.items, open)
+    // A shelf of song rows (YouTube's own Quick picks in another language, #131) stops on each column as Prism's does.
+    if (cfg.style == SectionStyle.LIST && songs.size == shelf.items.size) {
+        SongSection(cfg, cfg.titled(shelf.title), shelf.strapline, songs, snap = shelf.rows, onMore = more)
+        return
     }
+    SectionHeader(cfg.titled(shelf.title), strapline = shelf.strapline, onMore = more)
+    // Every style, for every kind of item (List used to fall back to a carousel unless they were all songs).
+    StyledItems(cfg.style, shelf.items, open)
 }
 
 /**

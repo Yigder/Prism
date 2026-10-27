@@ -33,6 +33,12 @@ class TasteRepository(private val c: AppContainer) {
     /** Genre bucket (see [com.prism.music.data.meta.Genres]) -> share of listening, summing to 1. */
     suspend fun profile(): Map<String, Double> {
         cached?.let { (at, p) -> if (System.currentTimeMillis() - at < 10 * 60_000) return p }
+        // Off the main thread: Search's moods ask for it from the screen, and on a slow phone weighing a few hundred
+        // songs held a frame up (#103's diagnostics).
+        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { buildProfile() }
+    }
+
+    private suspend fun buildProfile(): Map<String, Double> {
         val now = System.currentTimeMillis()
         val weights = LinkedHashMap<String, Double>()
         c.db.plays().tasteTopSongs(now - 90L * 86_400_000, now, 120).forEach { weights.merge(it.songId, it.plays.toDouble(), Double::plus) }
@@ -104,7 +110,9 @@ class TasteRepository(private val c: AppContainer) {
 
     suspend fun rank(shelves: List<Shelf>): RankedCategories {
         val profile = runCatching { profile() }.getOrDefault(emptyMap())
-        return CategoryRanker.rank(shelves, profile, Calendar.getInstance().get(Calendar.HOUR_OF_DAY))
+        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            CategoryRanker.rank(shelves, profile, Calendar.getInstance().get(Calendar.HOUR_OF_DAY))
+        }
     }
 }
 
