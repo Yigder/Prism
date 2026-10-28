@@ -50,9 +50,13 @@ import java.util.concurrent.TimeUnit
 private const val PREBUFFER_BYTES = 320L * 1024
 private const val YIELD_MS = 8_000L
 
-class PrismApp : Application(), coil3.SingletonImageLoader.Factory {
+class PrismApp : Application(), coil3.SingletonImageLoader.Factory, androidx.work.Configuration.Provider {
     lateinit var container: AppContainer
         private set
+
+    /** WorkManager's manifest initializer is absent from the installed release; initialize it on first use. */
+    override val workManagerConfiguration: androidx.work.Configuration
+        get() = androidx.work.Configuration.Builder().build()
 
     /**
      * Every image in Prism goes through here: covers saved on the phone are shown from their files (offline too, #54),
@@ -254,6 +258,9 @@ class AppContainer(val app: Application) {
     val canvas = com.prism.music.data.canvas.CanvasRepository(http).apply {
         hiddenPrefs = app.getSharedPreferences("canvas_hidden", android.content.Context.MODE_PRIVATE)
         savedPrefs = app.getSharedPreferences("canvas_saved", android.content.Context.MODE_PRIVATE)
+        spotifyCanvas = com.prism.music.data.canvas.SpotifyCanvasProvider(
+            app, http, app.getSharedPreferences("spotify_canvas", android.content.Context.MODE_PRIVATE),
+        )
         useIndex(File(app.filesDir, "canvas_index.json"))
     }
     val videoSync by lazy { com.prism.music.playback.VideoSync(app, streamHttp, streams, scope) }

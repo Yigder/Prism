@@ -162,7 +162,7 @@ internal fun WidePlayerContent(
             Column(Modifier.fillMaxWidth().weight(1f).windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 32.dp, vertical = 8.dp)) {
                 PlayerCredits(song, onMore, onCollapse)
                 Spacer(Modifier.height(4.dp))
-                CurrentLyricStrip(lyricsState, isPlaying && !covered) { }
+                CurrentLyricStrip(lyricsState, isPlaying && !covered, onClick = { })
                 deck(true)
             }
         }

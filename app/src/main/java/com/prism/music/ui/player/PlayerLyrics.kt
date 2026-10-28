@@ -377,7 +377,7 @@ internal fun List<LyricLine>.activeAt(ms: Long): List<Int> {
 
 /** Current lyric, one line, directly above the scrubber. */
 @Composable
-fun CurrentLyricStrip(state: LyricsState, isPlaying: Boolean, onClick: () -> Unit) {
+fun CurrentLyricStrip(state: LyricsState, isPlaying: Boolean, onClick: () -> Unit, maxLines: Int? = null) {
     // Romanized "instead": the strip sings the Latin spelling too (same timings).
     val roman = rememberRomanized(state)
     val instead = romanizeMode(state.song.id) == com.prism.music.data.prefs.RomanizeMode.INSTEAD
@@ -392,7 +392,7 @@ fun CurrentLyricStrip(state: LyricsState, isPlaying: Boolean, onClick: () -> Uni
     // Centered and up to two lines (#121), as the listener picks. Two lines keep their room all the time, so the
     // player doesn't move up and down as lines change length; the line sits at the bottom of it, over the scrubber.
     val centered = settings.lyricsStripAlign == com.prism.music.data.prefs.LyricsAlign.CENTER
-    val rows = if (settings.lyricsStripTwoLines) 2 else 1
+    val rows = maxLines ?: if (settings.lyricsStripTwoLines) 2 else 1
     val baseStyle = MaterialTheme.typography.titleMedium.let { if (centered) it.copy(textAlign = TextAlign.Center) else it }
     val room = if (rows > 1) {
         val density = androidx.compose.ui.platform.LocalDensity.current

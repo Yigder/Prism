@@ -20,6 +20,8 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -88,6 +90,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.constrain
 import androidx.compose.ui.unit.constrainHeight
@@ -218,7 +221,12 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
     // Settings → Player → Layout (1.7.4); a wide player (tablet, landscape) keeps its own.
     val wideNow = com.prism.music.ui.theme.LocalWindowLayout.current.let { it.twoPanePlayer || it.shortLandscape || it.tabletop }
     val layout = if (wideNow) com.prism.music.data.prefs.PlayerLayout.STANDARD else settings.playerLayout
-    val lyricsState = rememberLyricsState(song, opened = lyricsOpen || settings.immersivePlayer || showProviders || layout == com.prism.music.data.prefs.PlayerLayout.LYRICS)
+    val cachedSpotifyCanvas = settings.canvasEnabled && settings.canvasSpotifyEnabled && settings.canvasSpotifyLyrics &&
+        c.canvas.cached(song, settings.canvasSourcePriority, settings.canvasSpotifyEnabled, settings.canvasAppleEnabled)?.source == "spotify"
+    val lyricsState = rememberLyricsState(
+        song,
+        opened = lyricsOpen || settings.immersivePlayer || showProviders || layout == com.prism.music.data.prefs.PlayerLayout.LYRICS || cachedSpotifyCanvas,
+    )
     // With the lyrics in, the best part can start where a line does (or come from the chorus, without a heat curve).
     LaunchedEffect(song.id, lyricsState.lyrics) { if (lyricsState.lyrics?.synced == true) c.bestParts.refine(song) }
     // The playhead is read only where it's shown (the scrubber), so the player isn't recomposed as the song plays.
@@ -354,13 +362,17 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
     val metered = remember { context.getSystemService(ConnectivityManager::class.java)?.isActiveNetworkMetered == true }
     val savedCanvases by c.canvas.saved.collectAsState()
     val canvasSaved = savedCanvases.has(song.id, com.prism.music.data.canvas.CanvasRepository.albumKey(song))
-    val songCanvas by produceState<CanvasArtwork?>(c.canvas.cached(song), song.id, song.album?.title, settings.canvasEnabled) {
+    val songCanvas by produceState<CanvasArtwork?>(
+        c.canvas.cached(song, settings.canvasSourcePriority, settings.canvasSpotifyEnabled, settings.canvasAppleEnabled),
+        song.id, song.album?.title, settings.canvasEnabled, settings.canvasSourcePriority,
+        settings.canvasSpotifyEnabled, settings.canvasAppleEnabled,
+    ) {
         // Saved clips play from the phone, so mobile data doesn't matter for them.
         if (!settings.canvasEnabled || (metered && (!settings.canvasOnCellular || settings.dataSaver) && !c.canvas.isSaved(song))) { value = null; return@produceState }
-        val known = c.canvas.cached(song)
+        val known = c.canvas.cached(song, settings.canvasSourcePriority, settings.canvasSpotifyEnabled, settings.canvasAppleEnabled)
         value = known
         if (known == null) delay(500)
-        value = c.canvas.canvasFor(song)
+        value = c.canvas.canvasFor(song, settings.canvasSourcePriority, settings.canvasSpotifyEnabled, settings.canvasAppleEnabled)
     }
     // Animated artwork can be switched off per song from the song options.
     val canvasHidden by c.canvas.hidden.collectAsState()
@@ -377,10 +389,26 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
     val vinyl = layout == com.prism.music.data.prefs.PlayerLayout.VINYL && !videoMode
     // Cassette (1.7.4): the cover on a tape, its reels turning.
     val cassette = layout == com.prism.music.data.prefs.PlayerLayout.CASSETTE && !videoMode
-    val heroMode = settings.fullBleedArtwork && !videoMode && !wide && !vinyl && !cassette
-    // The animated cover plays behind the whole player instead of in the cover (not with full-bleed artwork, which
-    // already shows it edge to edge).
-    val canvasBehind = settings.canvasFillsBackground && !heroMode && !videoMode && !wide
+    val spotifyCanvas = canvas?.source == "spotify"
+    val appleArtwork = canvas?.source == "apple"
+    // Spotify Canvas always fills the player. Apple Music artwork uses its own optional fill setting.
+    val canvasBehind = (spotifyCanvas || (appleArtwork && settings.canvasFillsBackground)) && !videoMode && !wide
+    val heroMode = settings.fullBleedArtwork && !canvasBehind && !videoMode && !wide && !vinyl && !cassette
+    val canvasBackgroundMode = canvasBehind && spotifyCanvas
+    val showCanvasLyrics = canvasBackgroundMode && settings.canvasSpotifyLyrics && !lyricsOpen
+    var canvasControlsVisible by remember(song.id) { mutableStateOf(true) }
+    LaunchedEffect(song.id, canvasBackgroundMode, canvasCover > 0.9f, covered, canvasControlsVisible) {
+        if (!canvasBackgroundMode || covered) {
+            canvasControlsVisible = true
+        } else if (canvasControlsVisible && canvasCover > 0.9f) {
+            delay(2_000)
+            canvasControlsVisible = false
+        }
+    }
+    val standardControlsAlpha by animateFloatAsState(
+        if (!canvasBackgroundMode || canvasControlsVisible) 1f else 0f,
+        tween(360, easing = FastOutSlowInEasing), label = "canvasControls",
+    )
     // Full-bleed video (#120): the video runs edge to edge from the top of the screen and fades into the background,
     // in the full-bleed cover's place; the box it would sit in keeps only its buttons.
     val videoBehind = settings.videoFullBleed && videoMode && !wide
@@ -538,6 +566,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
             CanvasPlayer(
                 clip, canvasSaved, isPlaying, Modifier.fillMaxSize(), hold = covered,
                 presentationAlpha = { (1f - 2f * p()).coerceIn(0f, 1f) },
+                onCoverChanged = { canvasCover = it },
             )
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Black.copy(alpha = 0.25f), 0.5f to Color.Black.copy(alpha = 0.45f), 1f to Color.Black.copy(alpha = 0.75f))))
         }
@@ -712,7 +741,14 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
             onSingNeedsDownload = { showSing = true },
             onButton = onButton,
         ) else
-        Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().then(skipGesture), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().then(skipGesture)
+                .graphicsLayer {
+                    alpha = standardControlsAlpha
+                    translationY = (1f - standardControlsAlpha) * 28.dp.toPx()
+                },
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
             // ------------------------------------------------ Handle + caption
             Box(Modifier.fillMaxWidth().height(DISMISS_STRIP).then(dismissGesture)) {
                 Box(
@@ -813,6 +849,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                                     alpha = when {
                                         videoMode -> (2f * p() - 1f).coerceIn(0f, 1f)
                                         heroMode && artLoaded -> 1f - heroVisible()
+                                        canvasBehind -> 1f - canvasCover
                                         else -> 1f
                                     }
                                 }
@@ -840,7 +877,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                                 modifier = Modifier.fillMaxSize(),
                             )
                             }
-                            if (!heroMode && !videoMode && !canvasBehind && !vinyl && !cassette) canvas?.takeIf { !collapsePastHalf }?.let { clip ->
+                            if (!heroMode && !videoMode && !canvasBehind && !vinyl && !cassette) canvas?.takeIf { !collapsePastHalf && it.source != "spotify" }?.let { clip ->
                                 CanvasPlayer(clip, canvasSaved, isPlaying, Modifier.fillMaxSize(), onCoverChanged = { canvasCover = it })
                             }
                         }
@@ -985,8 +1022,14 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                         } else {
                             // The parts in the listener's order (Settings → Player → Arrange, 1.7.4); what's switched off
                             // elsewhere stays off.
-                            val parts = settings.playerDeck.filter { it != com.prism.music.data.prefs.DeckPart.STRIP || (!lyricsOpen && settings.lyricsOnPlayer) }
+                            val parts = settings.playerDeck.filter {
+                                it != com.prism.music.data.prefs.DeckPart.STRIP ||
+                                    (!lyricsOpen && !canvasBackgroundMode && settings.lyricsOnPlayer)
+                            }
                             parts.forEachIndexed { i, part ->
+                                if (part == com.prism.music.data.prefs.DeckPart.SCRUBBER && showCanvasLyrics && lyricsState.lyrics?.synced == true) {
+                                    CurrentLyricStrip(lyricsState, isPlaying && !covered, openLyrics, maxLines = 1)
+                                }
                                 when (part) {
                                     com.prism.music.data.prefs.DeckPart.STRIP -> CurrentLyricStrip(lyricsState, isPlaying && !covered, openLyrics)
                                     com.prism.music.data.prefs.DeckPart.SCRUBBER -> PlayheadScrubber(position, pc.duration) {
@@ -1024,6 +1067,41 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                         Spacer(Modifier.height(deckGap))
                     }
                 }
+            }
+        }
+        if (canvasBackgroundMode && !canvasControlsVisible) {
+            Box(
+                Modifier.fillMaxSize().clickable(
+                    interactionSource = remember { MutableInteractionSource() }, indication = null,
+                ) { canvasControlsVisible = true },
+            )
+        }
+        AnimatedVisibility(
+            visible = canvasBackgroundMode && !canvasControlsVisible,
+            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(horizontal = 18.dp, vertical = 14.dp),
+            enter = fadeIn(tween(260)) + slideInVertically(tween(320, easing = FastOutSlowInEasing)) { it / 2 },
+            exit = fadeOut(tween(220)) + slideOutVertically(tween(280, easing = FastOutSlowInEasing)) { it / 2 },
+        ) {
+            Column(
+                Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 12.dp),
+            ) {
+                if (showCanvasLyrics && lyricsState.lyrics?.synced == true) {
+                    CurrentLyricStrip(lyricsState, isPlaying && !covered, onClick = { canvasControlsVisible = true })
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(song.title, color = Color.White, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(song.artistText, color = Color.White.copy(alpha = 0.72f), style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    val isLiked = song.id in liked
+                    CircleGlyph(if (isLiked) PrismIcons.HeartFilled else PrismIcons.Heart, if (isLiked) "Remove from liked" else "Like", isLiked) {
+                        c.library.toggleLike(song)
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    CircleGlyph(PrismIcons.More, "Song options") { showActions = true }
+                }
+                Spacer(Modifier.height(6.dp))
+                PlayerScrubber(position.value, pc.duration)
             }
         }
     }

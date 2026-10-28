@@ -260,6 +260,8 @@ enum class Preload(val label: String, val songs: Int) { START("Next song's start
 /** Where immersive mode's lyrics go: a line at a time high, in the middle or low on the screen, or all of them over it. */
 enum class ImmersiveLyrics(val label: String) { HIGH("High"), MIDDLE("Middle"), LOW("Low"), FULL("Full screen") }
 enum class ImmersiveArt(val label: String, val zoom: Float) { FILL("Fill the screen", 1f), ZOOMED("Zoomed out", 0.4f), WHOLE("Whole cover", 0f) }
+/** Which online animated-art source gets first chance when more than one has a match. */
+enum class CanvasSourcePriority(val label: String) { SPOTIFY("Spotify first"), APPLE("Apple Music first") }
 /** [WAVE] (1.7.4): the song's own loudness, drawn from its scan, as the bar (a plain line until the song's been scanned). */
 enum class ScrubberStyle(val label: String) {
     HAIRLINE("Hairline"), BOLD("Bold"), THUMB("Thumb"), WAVE("Waveform"),
@@ -654,6 +656,10 @@ data class AppSettings(
     /** Animated cover art (motion artwork / video covers) over the sleeve. */
     val canvasEnabled: Boolean = true,
     val canvasOnCellular: Boolean = true,
+    val canvasSpotifyEnabled: Boolean = true,
+    val canvasSpotifyLyrics: Boolean = true,
+    val canvasAppleEnabled: Boolean = true,
+    val canvasSourcePriority: CanvasSourcePriority = CanvasSourcePriority.SPOTIFY,
     val hideVolumeBar: Boolean = true,
     /** "Playing from …" above the artwork in the player. */
     val showPlayingFrom: Boolean = true,
@@ -1095,6 +1101,10 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val preloadCellular = booleanPreferencesKey("preload_cellular")
         val canvasEnabled = booleanPreferencesKey("canvas_enabled")
         val canvasOnCellular = booleanPreferencesKey("canvas_on_cellular")
+        val canvasSpotifyEnabled = booleanPreferencesKey("canvas_spotify_enabled")
+        val canvasSpotifyLyrics = booleanPreferencesKey("canvas_spotify_lyrics")
+        val canvasAppleEnabled = booleanPreferencesKey("canvas_apple_enabled")
+        val canvasSourcePriority = stringPreferencesKey("canvas_source_priority")
         val hideVolumeBar = booleanPreferencesKey("hide_volume_bar")
         val showPlayingFrom = booleanPreferencesKey("show_playing_from")
         val spatial = booleanPreferencesKey("soft_spatial")
@@ -1375,6 +1385,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 "merge_liked_videos", "volume_control", "app_volume", "speed_dial_youtube_only", "swipe_tabs",
                 "onboarded", "cookie", "visitor_data", "data_sync_id", "auth_user", "discord_presence", "account_name", "account_email",
                 "account_avatar", "haptics", "immersive_player", "preload", "preload_cellular", "canvas_enabled", "canvas_on_cellular",
+                "canvas_spotify_enabled", "canvas_spotify_lyrics", "canvas_apple_enabled", "canvas_source_priority",
                 "soft_spatial", "soft_spatial_amount", "lyrics_on_player", "lyrics_order", "lyrics_off", "prefer_synced", "skip_censored",
                 "lyrics_translate", "lyrics_translate_to", "romanize_lyrics", "romanize_all", "sing_cellular", "sing_always_ready",
                 "sing_cache_mb", "dj_flow", "release_notifications", "rewind_notification", "web_remote", "handoff_available",
@@ -1481,6 +1492,10 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             preloadCellular = p[K.preloadCellular] ?: d.preloadCellular,
             canvasEnabled = p[K.canvasEnabled] ?: d.canvasEnabled,
             canvasOnCellular = p[K.canvasOnCellular] ?: d.canvasOnCellular,
+            canvasSpotifyEnabled = p[K.canvasSpotifyEnabled] ?: d.canvasSpotifyEnabled,
+            canvasSpotifyLyrics = p[K.canvasSpotifyLyrics] ?: d.canvasSpotifyLyrics,
+            canvasAppleEnabled = p[K.canvasAppleEnabled] ?: d.canvasAppleEnabled,
+            canvasSourcePriority = p.enum(K.canvasSourcePriority, d.canvasSourcePriority),
             hideVolumeBar = p[K.hideVolumeBar] ?: d.hideVolumeBar,
             showPlayingFrom = p[K.showPlayingFrom] ?: d.showPlayingFrom,
             spatial = p[K.spatial] ?: d.spatial,
@@ -1870,6 +1885,10 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     fun setPreloadCellular(v: Boolean) = edit { it[K.preloadCellular] = v }
     fun setCanvasEnabled(v: Boolean) = edit { it[K.canvasEnabled] = v }
     fun setCanvasOnCellular(v: Boolean) = edit { it[K.canvasOnCellular] = v }
+    fun setCanvasSpotifyEnabled(v: Boolean) = edit { it[K.canvasSpotifyEnabled] = v }
+    fun setCanvasSpotifyLyrics(v: Boolean) = edit { it[K.canvasSpotifyLyrics] = v }
+    fun setCanvasAppleEnabled(v: Boolean) = edit { it[K.canvasAppleEnabled] = v }
+    fun setCanvasSourcePriority(v: CanvasSourcePriority) = edit { it[K.canvasSourcePriority] = v.name }
     fun setHideVolumeBar(v: Boolean) = edit { it[K.hideVolumeBar] = v }
     fun setShowPlayingFrom(v: Boolean) = edit { it[K.showPlayingFrom] = v }
     fun setSpatial(v: Boolean) = edit { it[K.spatial] = v }

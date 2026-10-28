@@ -57,6 +57,18 @@
             android:shell="${profileable}"
             tools:targetApi="29" />
 
+        <!-- WorkManager initializes on first use from PrismApp's Configuration.Provider. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+
         <!-- The app's one screen. Its launcher entries are the aliases below, one per app icon (#20). -->
         <activity
             android:name=".PrismActivity"

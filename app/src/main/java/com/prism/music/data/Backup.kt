@@ -71,6 +71,7 @@ class Backup(private val c: AppContainer) {
         File(data, "shared_prefs").listFiles()?.forEach { f ->
             // Saved animated covers live with the downloads; without them, the list of them would point at nothing.
             // The Discord sign-in is a key to the whole Discord account: it never goes in a backup file.
+            // spotify_canvas.xml intentionally stays in the backup so Canvas sign-in can move with the user's settings.
             if (f.name == "discord.xml") return@forEach
             // Prism Connect's pairings (paired browsers, handoff keys) belong to this phone, not to a copy restored elsewhere.
             if (f.name == "connect_remote.xml" || f.name == "connect_handoff.xml") return@forEach
