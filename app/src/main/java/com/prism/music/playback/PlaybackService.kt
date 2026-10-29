@@ -854,6 +854,11 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         // a direct link away, and the next answer comes the other way, through NewPipe); after that it falls back to
         // the song itself — never skip ahead.
         player.currentMediaItem?.videoModeId?.let { videoId ->
+            AudioDiagnostics.log(
+                "video",
+                "$id error=${error.errorCodeName} videoMode=$videoId isVideo=${player.currentMediaItem?.toSong()?.isVideo == true} " +
+                    "cause=${(error.cause ?: error).message?.take(160)}",
+            )
             val key = "video:$videoId"
             val tries = retries[key] ?: 0
             val parse = generateSequence(error as Throwable) { it.cause }.any { it is androidx.media3.common.ParserException }
@@ -938,6 +943,18 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
                 player.prepare()
                 player.play()
             }
+            return
+        }
+        // A queue item that is itself a video: if its picture failed, the item's audio may still resolve. Try the
+        // item once more as audio-only before giving up (an item already playing audio-only gets one fresh go too).
+        if ((song?.isVideo == true || song?.isEpisode == true) && retries["audio-only:$id"] == null) {
+            retries["audio-only:$id"] = 1
+            AudioDiagnostics.log("video", "$id audio-only retry after a video failure")
+            val pos = player.currentPosition
+            c.streams.invalidate(id)
+            player.prepare()
+            player.seekTo(pos)
+            player.play()
             return
         }
         failAndSkip(error)
@@ -1440,6 +1457,7 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         videoWatchdog?.cancel()
         val idx = player.currentMediaItemIndex
         val current = player.currentMediaItem ?: return
+        if (current.mediaId != songId) return
         val song = current.toSong() ?: return
         if (song.isLive) {
             swapInPlace(idx, song.toMediaItem(null))
@@ -1451,6 +1469,9 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         }
         current.videoModeId?.let { failedVideos += it; prefetched -= it }
         android.util.Log.w("PrismVideo", "video ${current.videoModeId} for $songId didn't load (${player.playerError?.errorCodeName ?: "no picture in time"}); back to the song")
+        runCatching {
+            com.prism.music.playback.AudioDiagnostics.log("video", "$songId video ${current.videoModeId} failed; playing the song's audio instead")
+        }
         val lag = current.videoModeId?.takeIf { it != song.id }?.let { c.videoSync.cached(song.id, it) } ?: 0L
         val pos = (player.currentPosition - lag).coerceAtLeast(0)
         swapInPlace(idx, song.toMediaItem(null))

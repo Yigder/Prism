@@ -5,8 +5,10 @@ import android.net.ConnectivityManager
 import android.net.Uri
 import com.prism.music.data.innertube.InnerTube
 import com.prism.music.data.innertube.arr
+import com.prism.music.data.innertube.findFirst
 import com.prism.music.data.innertube.obj
 import com.prism.music.data.innertube.str
+import com.prism.music.data.innertube.text
 import com.prism.music.data.prefs.AudioQuality
 import kotlinx.serialization.json.JsonObject
 import com.prism.music.data.prefs.SettingsRepository
@@ -376,6 +378,7 @@ class StreamResolver(
      * direct link, so it failed twice and was skipped); it goes through NewPipe, as before the direct lookup.
      */
     fun invalidate(videoId: String, refused: Boolean = false) {
+        unplayableUntil.remove(videoId)
         val was = cache.remove(videoId)
         // The account's own link was the one turned away (its web client's links stop after the first megabyte without
         // a PO token, GitHub #188 #192): asking as the account again gets the same, so the other ways are tried first
@@ -407,6 +410,25 @@ class StreamResolver(
     /** Songs whose account link was turned away: the anonymous ways come first for them ([invalidate]). */
     private val accountRefused = ConcurrentHashMap.newKeySet<String>()
 
+    /** Until when a track YouTube said was UNPLAYABLE on every account client is not asked for again. */
+    private val unplayableUntil = ConcurrentHashMap<String, Long>()
+
+    /** The settings the last UNPLAYABLE check saw; a sign-in or settings change clears the backoff. */
+    @Volatile
+    private var settingsFingerprint = 0
+
+    private fun clearUnplayableIfSettingsChanged() {
+        val fingerprint = settings.current.hashCode()
+        if (fingerprint == settingsFingerprint) return
+        settingsFingerprint = fingerprint
+        if (unplayableUntil.isEmpty()) return
+        unplayableUntil.clear()
+        Log.i("PrismStream", "settings or sign-in changed: clearing the UNPLAYABLE backoff")
+        runCatching {
+            com.prism.music.playback.AudioDiagnostics.log("stream", "settings or sign-in changed: clearing the UNPLAYABLE backoff")
+        }
+    }
+
     /** Whether [videoId]'s account link was turned away this session ([invalidate]); playback falls back sooner then. */
     fun accountWasRefused(videoId: String): Boolean = videoId in accountRefused
 
@@ -416,7 +438,12 @@ class StreamResolver(
     }
 
     private fun formats(videoId: String): Formats {
+        clearUnplayableIfSettingsChanged()
         cache[videoId]?.let { if (System.currentTimeMillis() < it.expiresAtMs) return it }
+        unplayableUntil[videoId]?.let { until ->
+            if (System.currentTimeMillis() < until) throw StreamException("This track is not available")
+            unplayableUntil.remove(videoId)
+        }
         val mine = CompletableFuture<Formats>()
         val running = inflight.putIfAbsent(videoId, mine)
         if (running != null) {
@@ -532,6 +559,7 @@ class StreamResolver(
         if (status != "OK") {
             val reason = res.str("playabilityStatus", "reason")
             Log.i("StreamResolver", "Direct lookup of $videoId: $status ($reason)")
+            logPlayability(videoId, "visionOS", res)
             if (reason?.contains("bot", ignoreCase = true) == true) {
                 directOffUntil = System.currentTimeMillis() + BLOCK_BACKOFF_MS
             } else if (signedIn && status == "LOGIN_REQUIRED") {
@@ -589,26 +617,46 @@ class StreamResolver(
         var reason: String? = null
         // A live answer without an HLS manifest is kept only until a client gives one ([liveManifest] fills it in).
         var liveWithoutHls: Formats? = null
+        var unplayable = true
         for (client in InnerTube.PlayerClient.entries) {
             val res = try {
                 innerTube.signedInPlayer(client, videoId, player?.second)
             } catch (e: Exception) {
+                unplayable = false
                 reason = reason ?: e.message
                 noteClient(client, "request failed: ${e.message}")
+                runCatching { com.prism.music.playback.AudioDiagnostics.log("stream", "$videoId client ${client.name} failed: $e") }
                 continue
             }
             val status = res.str("playabilityStatus", "status")
             if (status != "OK") {
+                if (status != "UNPLAYABLE") unplayable = false
                 reason = res.str("playabilityStatus", "reason") ?: reason
+                logPlayability(videoId, client.name, res)
                 noteClient(client, "$status (${res.str("playabilityStatus", "reason")})")
+                runCatching { com.prism.music.playback.AudioDiagnostics.log("stream", "$videoId client ${client.name} not playable: ${res.str("playabilityStatus", "status")} / ${res.str("playabilityStatus", "reason")}") }
                 continue
             }
+            unplayable = false
             val f = parsePlayer(res, player?.first, via = "account (${client.name})")
             if (f.live && f.hlsUrl == null) { liveWithoutHls = liveWithoutHls ?: f; continue }
             if (f.audio.isNotEmpty() || (f.live && f.hlsUrl != null)) return f
+            val sabr = res.obj("streamingData")?.str("serverAbrStreamingUrl") != null
+            runCatching {
+                com.prism.music.playback.AudioDiagnostics.log(
+                    "stream", "$videoId ${client.name} OK but no usable links; serverAbrStreamingUrl=${if (sabr) "yes (SABR only)" else "no"}",
+                )
+            }
             noteClient(client, "OK but no audio links (${linkless(res)})")
         }
         liveWithoutHls?.let { return it }
+        if (unplayable) {
+            unplayableUntil[videoId] = System.currentTimeMillis() + UNPLAYABLE_BACKOFF_MS
+            Log.i("PrismStream", "$videoId is UNPLAYABLE on every account client; not asking again for a few minutes")
+            runCatching {
+                com.prism.music.playback.AudioDiagnostics.log("stream", "$videoId is UNPLAYABLE on every account client; not asking again for a few minutes")
+            }
+        }
         throw StreamException(reason ?: "Couldn't load this track")
     }
 
@@ -626,6 +674,27 @@ class StreamResolver(
     }
 
     private val clientNotes = ConcurrentHashMap.newKeySet<String>()
+
+    /**
+     * Everything YouTube said about a refused player answer, for the diagnostics: status, reason, every subreason and
+     * the error screen's own messages. No cookies, tokens or visitorData.
+     */
+    private fun logPlayability(videoId: String, client: String, res: JsonObject) {
+        val ps = res.obj("playabilityStatus") ?: return
+        val errorScreen = ps.obj("errorScreen")
+        val subreason = ps.obj("subreason")?.text() ?: ps.str("subreason")
+        val subreasons = ps.findFirst("subreasons")?.toString()
+        val errorReason = errorScreen?.obj("errorReason")?.text() ?: errorScreen?.str("errorReason")
+        val errorDescription = errorScreen?.obj("errorDescription")?.text() ?: errorScreen?.str("errorDescription")
+        runCatching {
+            com.prism.music.playback.AudioDiagnostics.log(
+                "stream",
+                "$videoId $client playability: status=${ps.str("status")} reason=${ps.str("reason")} " +
+                    "subreason=$subreason subreasons=$subreasons errorReason=$errorReason " +
+                    "errorDescription=$errorDescription raw=${ps.toString()}",
+            )
+        }
+    }
 
     /** How an OK answer's formats come: without links at all is YouTube's newer streaming (SABR) only. */
     private fun linkless(res: JsonObject): String {
@@ -666,6 +735,7 @@ class StreamResolver(
         /** YouTube Music Premium's 256 kbps audio: AAC (141) and Opus (774). */
         val PREMIUM_ITAGS = setOf(141, 774)
         private const val BLOCK_BACKOFF_MS = 30 * 60_000L
+        private const val UNPLAYABLE_BACKOFF_MS = 5 * 60_000L
         const val BLOCKED = "YouTube is limiting playback on this network right now. Try again in a while, switch networks " +
             "(or turn off a VPN), or sign in."
 
@@ -681,6 +751,14 @@ class StreamResolver(
     private fun parsePlayer(res: JsonObject, playerId: String?, via: String = "visionOS"): Formats {
         val data = res.obj("streamingData")
         fun fmt(o: JsonObject): Fmt? {
+            if (o.arr("drmFamilies")?.isNotEmpty() == true) {
+                runCatching {
+                    com.prism.music.playback.AudioDiagnostics.log(
+                        "stream", "${res.str("videoDetails", "videoId")} skipping DRM ${o.str("itag")} ${o.str("mimeType")}",
+                    )
+                }
+                return null
+            }
             val mimeFull = o.str("mimeType") ?: return null
             val mime = mimeFull.substringBefore(";").trim()
             val codec = Regex("codecs=\"([^\"]+)\"").find(mimeFull)?.groupValues?.get(1)?.substringBefore(",")?.trim()
