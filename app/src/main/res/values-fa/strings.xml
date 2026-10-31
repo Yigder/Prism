@@ -3931,4 +3931,8 @@
     <string name="the_split_light_around_play_and_pause">نور شکسته دور پخش و مکث</string>
     <string name="mini_player_progress_color">رنگ پیشرفت پخش‌کنندهٔ کوچک</string>
     <string name="mini_player_fill_strength">شدت پرشدگی پخش‌کنندهٔ کوچک</string>
+    <string name="gestures_anywhere_on_the_player">حرکت‌ها در همه‌جای پخش‌کننده</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">نه فقط روی کاور: دور کنترل‌ها هم</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">کشیدن‌ها، دوضربه و نگه‌داشتن زیر عنوان هم کار می‌کنند، در فضای دور دکمه‌ها و نوارها. دکمه‌ها و نوارها ضربه‌های خودشان را نگه می‌دارند.</string>
+    <string name="gestures_everywhere_keywords">حرکت کشیدن دوضربه نگه داشتن پایین کنترل‌ها کل پخش‌کننده</string>
 </resources>

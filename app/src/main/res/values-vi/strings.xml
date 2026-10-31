@@ -3881,4 +3881,8 @@
     <string name="the_split_light_around_play_and_pause">Ánh sáng tách màu quanh nút phát và tạm dừng</string>
     <string name="mini_player_progress_color">Màu tiến trình của trình phát mini</string>
     <string name="mini_player_fill_strength">Độ đậm phần tô của trình phát mini</string>
+    <string name="gestures_anywhere_on_the_player">Cử chỉ ở mọi chỗ trên trình phát</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">Không chỉ trên ảnh bìa: quanh các nút điều khiển nữa</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Thao tác vuốt, nhấn đúp và nhấn giữ của bạn cũng hoạt động bên dưới tiêu đề, trong khoảng quanh các nút và thanh. Các nút và thanh vẫn giữ thao tác chạm riêng.</string>
+    <string name="gestures_everywhere_keywords">cử chỉ vuốt nhấn đúp nhấn giữ nửa dưới nút điều khiển cả trình phát</string>
 </resources>

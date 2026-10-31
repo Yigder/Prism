@@ -3881,4 +3881,8 @@
     <string name="the_split_light_around_play_and_pause">再生・一時停止のまわりの分光ライト</string>
     <string name="mini_player_progress_color">ミニプレーヤーの進行バーの色</string>
     <string name="mini_player_fill_strength">ミニプレーヤーの塗りの濃さ</string>
+    <string name="gestures_anywhere_on_the_player">プレーヤーのどこでもジェスチャー</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">カバーの上だけでなく、操作ボタンのまわりでも</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">スワイプ、ダブルタップ、長押しがタイトルの下、ボタンやバーのまわりの余白でも使えます。ボタンとバーはそれぞれのタップのままです。</string>
+    <string name="gestures_everywhere_keywords">ジェスチャー スワイプ ダブルタップ 長押し 下半分 操作 プレーヤー全体</string>
 </resources>

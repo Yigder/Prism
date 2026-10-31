@@ -3981,4 +3981,8 @@
     <string name="the_split_light_around_play_and_pause">La luz dividida alrededor de reproducir y pausar</string>
     <string name="mini_player_progress_color">Color del progreso del minirreproductor</string>
     <string name="mini_player_fill_strength">Intensidad del relleno del minirreproductor</string>
+    <string name="gestures_anywhere_on_the_player">Gestos en todo el reproductor</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">No solo en la portada: también alrededor de los controles</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Tus deslizamientos, doble toque y pulsación larga funcionan también debajo del título, en el espacio alrededor de los botones y las barras. Los botones y las barras conservan sus propios toques.</string>
+    <string name="gestures_everywhere_keywords">gesto deslizar doble toque pulsación larga parte inferior controles todo el reproductor</string>
 </resources>

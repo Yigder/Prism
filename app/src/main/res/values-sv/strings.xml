@@ -3931,4 +3931,8 @@
     <string name="the_split_light_around_play_and_pause">Det brutna ljuset runt spela och pausa</string>
     <string name="mini_player_progress_color">Miniplayerns förloppsfärg</string>
     <string name="mini_player_fill_strength">Miniplayerns fyllningsstyrka</string>
+    <string name="gestures_anywhere_on_the_player">Gester överallt i spelaren</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">Inte bara på omslaget: runt kontrollerna också</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Dina svep, dubbeltryck och långa tryck fungerar även under titeln, i utrymmet runt knapparna och fälten. Knapparna och fälten behåller sina egna tryck.</string>
+    <string name="gestures_everywhere_keywords">gest svep dubbeltryck långt tryck nedre delen kontroller hela spelaren</string>
 </resources>

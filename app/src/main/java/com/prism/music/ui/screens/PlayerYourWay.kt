@@ -664,6 +664,11 @@ fun PlayerGesturesGroup() {
         }
         if (s.coverDoubleTap == PlayerGesture.SEEK_SIDES) Chips(listOf(3, 5, 10, 15), s.doubleTapSeekSeconds.coerceAtLeast(3), { tr(R.string.s_a_tap, it) }) { prefs.setDoubleTapSeekSeconds(it) }
         GestureRow(tr(R.string.long_press), s.coverLongPress, PlayerGesture.choices()) { prefs.setGesture("cover_long_press", it) }
+        // #259 (1.7.9.2): the same gestures around the controls too.
+        Toggle(
+            tr(R.string.gestures_anywhere_on_the_player), tr(R.string.not_only_on_the_cover_around_the_controls_too), s.behavior.gesturesEverywhere,
+            info = tr(R.string.your_swipes_double_tap_and_long_press_work_below_the_title_too),
+        ) { prefs.setGesturesEverywhere(it) }
         Label(tr(R.string.mini_player))
         GestureRow(tr(R.string.swipe_left), s.miniSwipeLeft, PlayerGesture.choices(mini = true)) { prefs.setGesture("mini_swipe_left", it) }
         GestureRow(tr(R.string.swipe_right), s.miniSwipeRight, PlayerGesture.choices(mini = true)) { prefs.setGesture("mini_swipe_right", it) }

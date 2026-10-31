@@ -4031,4 +4031,8 @@
     <string name="the_split_light_around_play_and_pause">Rozložené světlo kolem přehrát a pozastavit</string>
     <string name="mini_player_progress_color">Barva průběhu mini přehrávače</string>
     <string name="mini_player_fill_strength">Síla výplně mini přehrávače</string>
+    <string name="gestures_anywhere_on_the_player">Gesta všude v přehrávači</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">Nejen na obalu: i kolem ovládání</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Vaše přejetí, dvojité klepnutí a dlouhé stisknutí fungují i pod názvem, v prostoru kolem tlačítek a pruhů. Tlačítka a pruhy si nechávají vlastní klepnutí.</string>
+    <string name="gestures_everywhere_keywords">gesto přejetí dvojité klepnutí dlouhé stisknutí spodní část ovládání celý přehrávač</string>
 </resources>

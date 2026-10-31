@@ -3954,4 +3954,8 @@
     <string name="the_split_light_around_play_and_pause">The split light around play and pause</string>
     <string name="mini_player_progress_color">Mini player\'s progress color</string>
     <string name="mini_player_fill_strength">Mini player\'s fill strength</string>
+    <string name="gestures_anywhere_on_the_player">Gestures anywhere on the player</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">Not only on the cover: around the controls too</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Your swipes, double tap and long press work below the title too, in the space around the buttons and bars. The buttons and bars keep their own taps.</string>
+    <string name="gestures_everywhere_keywords">gesture swipe double tap long press bottom lower half controls whole player</string>
 </resources>

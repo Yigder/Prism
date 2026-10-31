@@ -3981,4 +3981,8 @@
     <string name="the_split_light_around_play_and_pause">Lumina descompusă în jurul redării și pauzei</string>
     <string name="mini_player_progress_color">Culoarea progresului din mini player</string>
     <string name="mini_player_fill_strength">Intensitatea umplerii din mini player</string>
+    <string name="gestures_anywhere_on_the_player">Gesturi oriunde în player</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">Nu doar pe copertă: și în jurul comenzilor</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Glisările, atingerea dublă și apăsarea lungă merg și sub titlu, în spațiul din jurul butoanelor și barelor. Butoanele și barele își păstrează atingerile.</string>
+    <string name="gestures_everywhere_keywords">gest glisare atingere dublă apăsare lungă partea de jos comenzi tot playerul</string>
 </resources>

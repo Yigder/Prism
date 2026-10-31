@@ -3931,4 +3931,8 @@
     <string name="the_split_light_around_play_and_pause">Het gebroken licht rond afspelen en pauzeren</string>
     <string name="mini_player_progress_color">Voortgangskleur van de minispeler</string>
     <string name="mini_player_fill_strength">Vulsterkte van de minispeler</string>
+    <string name="gestures_anywhere_on_the_player">Gebaren overal op de speler</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">Niet alleen op de hoes: ook rond de bediening</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Je vegen, dubbeltikken en lang drukken werken ook onder de titel, in de ruimte rond de knoppen en balken. Knoppen en balken houden hun eigen tikken.</string>
+    <string name="gestures_everywhere_keywords">gebaar vegen dubbeltikken lang drukken onderkant bediening hele speler</string>
 </resources>

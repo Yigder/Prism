@@ -4031,4 +4031,8 @@
     <string name="the_split_light_around_play_and_pause">Rozszczepione światło wokół odtwarzania i pauzy</string>
     <string name="mini_player_progress_color">Kolor postępu w miniodtwarzaczu</string>
     <string name="mini_player_fill_strength">Siła wypełnienia miniodtwarzacza</string>
+    <string name="gestures_anywhere_on_the_player">Gesty w całym odtwarzaczu</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">Nie tylko na okładce: także wokół przycisków</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Twoje przesunięcia, dwukrotne kliknięcie i przytrzymanie działają też pod tytułem, w miejscu wokół przycisków i pasków. Przyciski i paski zachowują własne dotknięcia.</string>
+    <string name="gestures_everywhere_keywords">gest przesunięcie dwukrotne kliknięcie przytrzymanie dół sterowanie cały odtwarzacz</string>
 </resources>

@@ -4,6 +4,8 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.doubleClick
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -153,6 +155,30 @@ class PlayerOptionsTest {
         val played = columnDiff(split, accent, split.width / 2)
         val ahead = columnDiff(split, accent, split.width * 92 / 100)
         assertTrue("played part recolored ($played vs $ahead ahead)", played > 30f && played > ahead * 3f)
+    }
+
+    /**
+     * #259 (1.7.9.2): with "Gestures anywhere on the player", the cover's double tap (set to play/pause here) works on
+     * the blank space beside the controls too; off, the same double tap there does nothing.
+     */
+    @Test fun gesturesWorkAroundTheControlsWhenAsked() {
+        runBlocking { Fixture.container.settings.setGesture("cover_double_tap", com.prism.music.data.prefs.PlayerGesture.PLAY_PAUSE) }
+        openPlayer()
+        val player = Fixture.container.player
+        // Beside Previous, at the deck's very edge: no button or bar there.
+        val prev = compose.onAllNodes(androidx.compose.ui.test.hasContentDescription(tr(R.string.widget_previous))).fetchSemanticsNodes().first().boundsInRoot
+        val deck = compose.onAllNodes(hasTestTag("playerDeck")).fetchSemanticsNodes().first().boundsInRoot
+        val at = androidx.compose.ui.geometry.Offset(3 * density(), prev.center.y - deck.top)
+        fun doubleTapBeside() { compose.onAllNodes(hasTestTag("playerDeck")).onFirst().performTouchInput { doubleClick(at) }; compose.waitForIdle(); Thread.sleep(700) }
+
+        doubleTapBeside()
+        assertEquals("off: the controls' space ignores it", false, player.isPlaying.value)
+
+        runBlocking { Fixture.container.settings.setGesturesEverywhere(true) }
+        compose.waitForIdle(); Thread.sleep(500)
+        doubleTapBeside()
+        compose.waitUntil(5_000) { player.isPlaying.value }
+        instrumentation.runOnMainSync { player.setPlaying(false) }
     }
 
     private fun density() = Fixture.context.resources.displayMetrics.density

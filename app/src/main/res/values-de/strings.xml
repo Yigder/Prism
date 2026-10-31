@@ -3931,4 +3931,8 @@
     <string name="the_split_light_around_play_and_pause">Das zerlegte Licht um Wiedergabe und Pause</string>
     <string name="mini_player_progress_color">Fortschrittsfarbe des Mini-Players</string>
     <string name="mini_player_fill_strength">Füllstärke des Mini-Players</string>
+    <string name="gestures_anywhere_on_the_player">Gesten überall im Player</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">Nicht nur auf dem Cover: auch rund um die Bedienelemente</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Deine Wischgesten, Doppeltippen und langes Drücken funktionieren auch unter dem Titel, im Bereich um die Tasten und Leisten. Tasten und Leisten behalten ihr eigenes Tippen.</string>
+    <string name="gestures_everywhere_keywords">geste wischen doppeltippen lange drücken unten steuerung ganzer player</string>
 </resources>

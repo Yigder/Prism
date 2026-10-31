@@ -3881,4 +3881,8 @@
     <string name="the_split_light_around_play_and_pause">Cahaya terurai di sekitar putar dan jeda</string>
     <string name="mini_player_progress_color">Warna progres pemutar mini</string>
     <string name="mini_player_fill_strength">Kekuatan isian pemutar mini</string>
+    <string name="gestures_anywhere_on_the_player">Gestur di mana saja pada pemutar</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">Tidak hanya pada sampul: di sekitar kontrol juga</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Usapan, ketuk dua kali, dan tekan lama Anda juga berfungsi di bawah judul, di ruang sekitar tombol dan bilah. Tombol dan bilah tetap punya ketukan sendiri.</string>
+    <string name="gestures_everywhere_keywords">gestur usap ketuk dua kali tekan lama bagian bawah kontrol seluruh pemutar</string>
 </resources>

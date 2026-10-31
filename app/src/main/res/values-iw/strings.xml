@@ -3981,4 +3981,8 @@
     <string name="the_split_light_around_play_and_pause">האור המפוצל סביב הפעלה והשהיה</string>
     <string name="mini_player_progress_color">צבע ההתקדמות של הנגן המוקטן</string>
     <string name="mini_player_fill_strength">עוצמת המילוי של הנגן המוקטן</string>
+    <string name="gestures_anywhere_on_the_player">מחוות בכל הנגן</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">לא רק על העטיפה: גם סביב הפקדים</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">ההחלקות, ההקשה הכפולה והלחיצה הארוכה שלך עובדות גם מתחת לכותרת, באזור שסביב הכפתורים והפסים. הכפתורים והפסים שומרים על ההקשות שלהם.</string>
+    <string name="gestures_everywhere_keywords">מחווה החלקה הקשה כפולה לחיצה ארוכה חלק תחתון פקדים כל הנגן</string>
 </resources>

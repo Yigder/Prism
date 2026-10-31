@@ -3881,4 +3881,8 @@
     <string name="the_split_light_around_play_and_pause">재생·일시정지 주위의 분광 빛</string>
     <string name="mini_player_progress_color">미니 플레이어 진행 바 색상</string>
     <string name="mini_player_fill_strength">미니 플레이어 채우기 강도</string>
+    <string name="gestures_anywhere_on_the_player">플레이어 어디서나 제스처</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">커버뿐 아니라 컨트롤 주변에서도</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">스와이프, 두 번 탭, 길게 누르기가 제목 아래, 버튼과 바 주변 공간에서도 작동합니다. 버튼과 바는 원래의 탭을 유지합니다.</string>
+    <string name="gestures_everywhere_keywords">제스처 스와이프 두 번 탭 길게 누르기 아래쪽 컨트롤 플레이어 전체</string>
 </resources>

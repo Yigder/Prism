@@ -4131,4 +4131,8 @@
     <string name="the_split_light_around_play_and_pause">الضوء المنكسر حول التشغيل والإيقاف المؤقت</string>
     <string name="mini_player_progress_color">لون تقدم المشغّل المصغّر</string>
     <string name="mini_player_fill_strength">قوة تعبئة المشغّل المصغّر</string>
+    <string name="gestures_anywhere_on_the_player">الإيماءات في أي مكان على المشغّل</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">ليس على الغلاف فقط: حول عناصر التحكم أيضاً</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">تعمل السحبات والنقر المزدوج والضغط المطوّل أسفل العنوان أيضاً، في المساحة حول الأزرار والأشرطة. تحتفظ الأزرار والأشرطة بنقراتها الخاصة.</string>
+    <string name="gestures_everywhere_keywords">إيماءة سحب نقر مزدوج ضغط مطول الجزء السفلي عناصر التحكم المشغل كله</string>
 </resources>

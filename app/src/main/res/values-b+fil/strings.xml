@@ -3931,4 +3931,8 @@
     <string name="the_split_light_around_play_and_pause">Ang hinating liwanag sa paligid ng play at pause</string>
     <string name="mini_player_progress_color">Kulay ng progress ng mini player</string>
     <string name="mini_player_fill_strength">Lakas ng fill ng mini player</string>
+    <string name="gestures_anywhere_on_the_player">Gestures kahit saan sa player</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">Hindi lang sa cover: pati sa paligid ng mga kontrol</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Gumagana rin ang iyong mga swipe, double tap at long press sa ilalim ng pamagat, sa espasyo sa paligid ng mga button at bar. Pinapanatili ng mga button at bar ang sarili nilang tap.</string>
+    <string name="gestures_everywhere_keywords">gesture swipe double tap long press ibabang bahagi kontrol buong player</string>
 </resources>

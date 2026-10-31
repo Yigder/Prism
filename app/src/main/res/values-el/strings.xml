@@ -3931,4 +3931,8 @@
     <string name="the_split_light_around_play_and_pause">Το διασπασμένο φως γύρω από την αναπαραγωγή και την παύση</string>
     <string name="mini_player_progress_color">Χρώμα προόδου του mini player</string>
     <string name="mini_player_fill_strength">Ένταση γεμίσματος του mini player</string>
+    <string name="gestures_anywhere_on_the_player">Χειρονομίες παντού στο player</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">Όχι μόνο στο εξώφυλλο: και γύρω από τα χειριστήρια</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Τα σαρώματα, το διπλό πάτημα και το παρατεταμένο πάτημα λειτουργούν και κάτω από τον τίτλο, στον χώρο γύρω από τα κουμπιά και τις μπάρες. Τα κουμπιά και οι μπάρες κρατούν τα δικά τους πατήματα.</string>
+    <string name="gestures_everywhere_keywords">χειρονομία σάρωση διπλό πάτημα παρατεταμένο κάτω μέρος χειριστήρια όλο το player</string>
 </resources>

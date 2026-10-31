@@ -15,6 +15,9 @@ What changed in each release. Older releases are described on the [Releases page
 - **The mini player's progress, your way** (#231): Customize Prism → Tabs & mini player → Mini player has a progress
   bar color (your light as before, your accent, plain, or the cover's color) and, with Fill, how strong the fill is,
   up to nearly solid on frosted glass.
+- **Gestures anywhere on the player** (#259): Settings → Controls & gestures → Gestures has a new switch (off by
+  default). On, your swipes, double tap and long press work below the title too, in the space around the buttons and
+  bars (which keep their own taps).
 - **The ring around the player's play button can go** (#231): Customize Prism → Player → "Ring on the play button".
 
 ### Fixes

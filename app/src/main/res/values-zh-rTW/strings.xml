@@ -3881,4 +3881,8 @@
     <string name="the_split_light_around_play_and_pause">播放與暫停周圍的分光</string>
     <string name="mini_player_progress_color">迷你播放器的進度顏色</string>
     <string name="mini_player_fill_strength">迷你播放器的填色強度</string>
+    <string name="gestures_anywhere_on_the_player">在播放器任何位置使用手勢</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">不只在封面上，控制按鈕周圍也可以</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">你的滑動、輕觸兩下和長按在標題下方、按鈕和進度列周圍的空白處也能用。按鈕和進度列保留自己的輕觸。</string>
+    <string name="gestures_everywhere_keywords">手勢 滑動 輕觸兩下 長按 下半部 控制 整個播放器</string>
 </resources>

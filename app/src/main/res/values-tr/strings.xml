@@ -3931,4 +3931,8 @@
     <string name="the_split_light_around_play_and_pause">Oynat ve duraklat çevresindeki ayrışmış ışık</string>
     <string name="mini_player_progress_color">Mini oynatıcının ilerleme rengi</string>
     <string name="mini_player_fill_strength">Mini oynatıcının dolgu gücü</string>
+    <string name="gestures_anywhere_on_the_player">Oynatıcının her yerinde hareketler</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">Yalnızca kapakta değil: kontrollerin çevresinde de</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Kaydırmalarınız, çift dokunma ve uzun basma başlığın altında, düğmelerle çubukların çevresindeki alanda da çalışır. Düğmeler ve çubuklar kendi dokunuşlarını korur.</string>
+    <string name="gestures_everywhere_keywords">hareket kaydırma çift dokunma uzun basma alt kısım kontroller tüm oynatıcı</string>
 </resources>

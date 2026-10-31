@@ -3981,4 +3981,8 @@
     <string name="the_split_light_around_play_and_pause">La lumière décomposée autour de lecture et pause</string>
     <string name="mini_player_progress_color">Couleur de la progression du mini-lecteur</string>
     <string name="mini_player_fill_strength">Intensité du remplissage du mini-lecteur</string>
+    <string name="gestures_anywhere_on_the_player">Gestes partout sur le lecteur</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">Pas seulement sur la pochette : autour des commandes aussi</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Vos balayages, double appui et appui long fonctionnent aussi sous le titre, dans l\'espace autour des boutons et des barres. Les boutons et les barres gardent leurs propres appuis.</string>
+    <string name="gestures_everywhere_keywords">geste balayer double appui appui long bas commandes tout le lecteur</string>
 </resources>

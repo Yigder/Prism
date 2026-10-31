@@ -1054,7 +1054,11 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                             },
                         ) { change, amount -> change.consume(); total += amount }
                     }
-                    Column(swipes, horizontalAlignment = Alignment.CenterHorizontally) {
+                    // #259 (1.7.9.2): "Gestures anywhere on the player": the cover's swipes, double tap and long press work
+                    // around the controls too (the buttons and bars keep their own taps and drags).
+                    val coverGestures = if (settings.behavior.panelSwipes || !settings.behavior.gesturesEverywhere || lyricsOpen || queueOpen || statsOpen) Modifier
+                        else sleeveGesture.then(doubleTapSeek)
+                    Column(swipes.then(coverGestures).testTag("playerDeck"), horizontalAlignment = Alignment.CenterHorizontally) {
                         val deckGap = if (roomyCover) 12.dp else 18.dp
                         // With the lyrics open: Sing's one button at their lower right (1.7.8, V; their source is a line
                         // at their end), and the source as a button at the lower left when asked for (1.7.9).

@@ -3881,4 +3881,8 @@
     <string name="the_split_light_around_play_and_pause">แสงแยกสีรอบปุ่มเล่นและหยุดชั่วคราว</string>
     <string name="mini_player_progress_color">สีความคืบหน้าของมินิเพลเยอร์</string>
     <string name="mini_player_fill_strength">ความเข้มการเติมสีของมินิเพลเยอร์</string>
+    <string name="gestures_anywhere_on_the_player">ท่าทางได้ทุกที่บนเพลเยอร์</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">ไม่ใช่แค่บนปก: รอบปุ่มควบคุมด้วย</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">การปัด การแตะสองครั้ง และการกดค้าง ใช้ได้ใต้ชื่อเพลงด้วย ในพื้นที่รอบปุ่มและแถบ ปุ่มและแถบยังรับการแตะของตัวเอง</string>
+    <string name="gestures_everywhere_keywords">ท่าทาง ปัด แตะสองครั้ง กดค้าง ครึ่งล่าง ปุ่มควบคุม ทั้งเพลเยอร์</string>
 </resources>

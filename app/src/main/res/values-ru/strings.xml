@@ -4031,4 +4031,8 @@
     <string name="the_split_light_around_play_and_pause">Разложенный свет вокруг воспроизведения и паузы</string>
     <string name="mini_player_progress_color">Цвет прогресса мини-плеера</string>
     <string name="mini_player_fill_strength">Сила заливки мини-плеера</string>
+    <string name="gestures_anywhere_on_the_player">Жесты по всему плееру</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">Не только на обложке: и вокруг кнопок</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Ваши свайпы, двойное касание и долгое нажатие работают и под названием, в пространстве вокруг кнопок и полос. Кнопки и полосы сохраняют свои касания.</string>
+    <string name="gestures_everywhere_keywords">жест свайп двойное касание долгое нажатие нижняя часть управление весь плеер</string>
 </resources>

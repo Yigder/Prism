@@ -3881,4 +3881,8 @@
     <string name="the_split_light_around_play_and_pause">Cahaya terurai di sekeliling main dan jeda</string>
     <string name="mini_player_progress_color">Warna kemajuan pemain mini</string>
     <string name="mini_player_fill_strength">Kekuatan isian pemain mini</string>
+    <string name="gestures_anywhere_on_the_player">Gerak isyarat di mana-mana pada pemain</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">Bukan hanya pada kulit: di sekeliling kawalan juga</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Leretan, ketik dua kali dan tekan lama anda juga berfungsi di bawah tajuk, di ruang sekeliling butang dan bar. Butang dan bar mengekalkan ketikan sendiri.</string>
+    <string name="gestures_everywhere_keywords">gerak isyarat leret ketik dua kali tekan lama bahagian bawah kawalan seluruh pemain</string>
 </resources>

@@ -3981,4 +3981,8 @@
     <string name="the_split_light_around_play_and_pause">La luce scomposta attorno a riproduci e pausa</string>
     <string name="mini_player_progress_color">Colore dell\'avanzamento del mini player</string>
     <string name="mini_player_fill_strength">Intensità del riempimento del mini player</string>
+    <string name="gestures_anywhere_on_the_player">Gesti in tutto il player</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">Non solo sulla copertina: anche intorno ai controlli</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">I tuoi scorrimenti, doppio tocco e pressione prolungata funzionano anche sotto il titolo, nello spazio intorno a pulsanti e barre. Pulsanti e barre mantengono i propri tocchi.</string>
+    <string name="gestures_everywhere_keywords">gesto scorrere doppio tocco pressione prolungata parte bassa controlli tutto il player</string>
 </resources>

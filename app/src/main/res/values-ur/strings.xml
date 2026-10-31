@@ -3931,4 +3931,8 @@
     <string name="the_split_light_around_play_and_pause">پلے اور توقف کے گرد بکھری روشنی</string>
     <string name="mini_player_progress_color">منی پلیئر کی پیش رفت کا رنگ</string>
     <string name="mini_player_fill_strength">منی پلیئر کے بھراؤ کی شدت</string>
+    <string name="gestures_anywhere_on_the_player">پلیئر میں کہیں بھی اشارے</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">صرف کور پر نہیں: کنٹرولز کے آس پاس بھی</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">آپ کے سوائپ، ڈبل ٹیپ اور دیر تک دبانا عنوان کے نیچے بھی کام کرتے ہیں، بٹنوں اور بارز کے آس پاس کی جگہ میں۔ بٹن اور بار اپنے ٹیپ رکھتے ہیں۔</string>
+    <string name="gestures_everywhere_keywords">اشارہ سوائپ ڈبل ٹیپ دیر تک دبانا نیچے کا حصہ کنٹرولز پورا پلیئر</string>
 </resources>

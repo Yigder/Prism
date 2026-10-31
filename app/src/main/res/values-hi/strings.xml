@@ -3931,4 +3931,8 @@
     <string name="the_split_light_around_play_and_pause">प्ले और पॉज़ के चारों ओर बँटी रोशनी</string>
     <string name="mini_player_progress_color">मिनी प्लेयर की प्रगति का रंग</string>
     <string name="mini_player_fill_strength">मिनी प्लेयर के भराव की तीव्रता</string>
+    <string name="gestures_anywhere_on_the_player">प्लेयर में कहीं भी जेस्चर</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">सिर्फ़ कवर पर नहीं: कंट्रोल के आसपास भी</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">आपके स्वाइप, डबल टैप और देर तक दबाना शीर्षक के नीचे भी काम करते हैं, बटनों और बार के आसपास की जगह में। बटन और बार अपने टैप रखते हैं।</string>
+    <string name="gestures_everywhere_keywords">जेस्चर स्वाइप डबल टैप देर तक दबाना नीचे का हिस्सा कंट्रोल पूरा प्लेयर</string>
 </resources>

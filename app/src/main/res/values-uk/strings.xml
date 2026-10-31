@@ -4031,4 +4031,8 @@
     <string name="the_split_light_around_play_and_pause">Розкладене світло навколо відтворення й паузи</string>
     <string name="mini_player_progress_color">Колір прогресу міні-плеєра</string>
     <string name="mini_player_fill_strength">Сила заливки міні-плеєра</string>
+    <string name="gestures_anywhere_on_the_player">Жести по всьому плеєру</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">Не лише на обкладинці: і навколо кнопок</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Ваші свайпи, подвійний дотик і довге натискання працюють і під назвою, у просторі навколо кнопок і смуг. Кнопки й смуги зберігають власні дотики.</string>
+    <string name="gestures_everywhere_keywords">жест свайп подвійний дотик довге натискання нижня частина керування весь плеєр</string>
 </resources>

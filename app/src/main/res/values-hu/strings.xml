@@ -3931,4 +3931,8 @@
     <string name="the_split_light_around_play_and_pause">A felbontott fény a lejátszás és szünet körül</string>
     <string name="mini_player_progress_color">A minilejátszó haladásának színe</string>
     <string name="mini_player_fill_strength">A minilejátszó kitöltésének erőssége</string>
+    <string name="gestures_anywhere_on_the_player">Mozdulatok bárhol a lejátszón</string>
+    <string name="not_only_on_the_cover_around_the_controls_too">Nem csak a borítón: a vezérlők körül is</string>
+    <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">A húzások, a dupla koppintás és a hosszú nyomás a cím alatt is működnek, a gombok és sávok körüli részen. A gombok és sávok megtartják a saját koppintásukat.</string>
+    <string name="gestures_everywhere_keywords">mozdulat húzás dupla koppintás hosszú nyomás alsó rész vezérlők egész lejátszó</string>
 </resources>
