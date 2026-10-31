@@ -58,6 +58,23 @@ class SettingsPagesTest {
      */
     @Test fun everySettingsPageOpensInArabic() = walkIn("ar")
 
+    /**
+     * #208 (1.7.9.2): with "Slide between screens" on, pages slide in and Back slides them out: every page still
+     * opens, and Back still lands on the page before (a slide left half-way would leave the hub unreachable).
+     */
+    @Test fun pagesSlideInAndBackSlidesThemOut() {
+        Fixture.ready()
+        kotlinx.coroutines.runBlocking { Fixture.container.settings.setPageSlide(true) }
+        try {
+            Fixture.launch()
+            compose.openSettings()
+            walk(linkedMapOf("Customize Prism" to listOf("Color", "Player"), "Controls & gestures" to emptyList()))
+            compose.clickWhenFound(hasText("Downloads, storage & data") and hasClickAction(), 15_000)
+        } finally {
+            kotlinx.coroutines.runBlocking { Fixture.container.settings.setPageSlide(false) }
+        }
+    }
+
     private fun walkIn(tag: String) {
         val ctx = Fixture.context
         val config = android.content.res.Configuration(ctx.resources.configuration).apply { setLocale(java.util.Locale.forLanguageTag(tag)) }

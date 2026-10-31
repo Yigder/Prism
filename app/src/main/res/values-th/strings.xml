@@ -3889,4 +3889,8 @@
     <string name="its_bars_and_title_take_the_album_s_color">แถบและชื่อเพลงใช้สีของอัลบั้ม</string>
     <string name="on_album_playlist_and_artist_pages_the_playing_song">ในหน้าอัลบั้ม เพลย์ลิสต์ และศิลปิน เพลงที่กำลังเล่นจะแสดงแถบและชื่อเป็นสีของรูปในหน้าแทนแสงของคุณ ที่อื่นยังเหมือนเดิม</string>
     <string name="playing_indicator_bars_now_playing_album_color">ตัวบ่งชี้ กำลังเล่น แถบ อีควอไลเซอร์ อัลบั้ม เพลย์ลิสต์ ศิลปิน หน้า สี ปก</string>
+    <string name="slide_between_screens">เลื่อนระหว่างหน้าจอ</string>
+    <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">หน้าใหม่เลื่อนเข้ามาจากด้านข้าง กดกลับเพื่อเลื่อนออก</string>
+    <string name="slide_between_screens_keywords">เลื่อน แอนิเมชัน ท่าทางกลับ การเปลี่ยนหน้า</string>
+    <string name="progress_play_and_the_buttons_stay_smaller">แถบความคืบหน้า ปุ่มเล่น และปุ่มต่างๆ ยังอยู่ แต่เล็กลง: มีที่เลื่อนมากขึ้น</string>
 </resources>

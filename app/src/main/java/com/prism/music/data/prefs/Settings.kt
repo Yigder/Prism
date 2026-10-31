@@ -234,6 +234,8 @@ data class BehaviorPrefs(
     val screenFades: Boolean = true,
     /** #259 (1.7.9.2): the cover's swipes, double tap and long press work around the controls too. */
     val gesturesEverywhere: Boolean = false,
+    /** #208 (1.7.9.2): pages slide in from the side and Back slides them away, instead of only fading. */
+    val pageSlide: Boolean = false,
 )
 
 /** Picture-in-picture for a playing video (1.7.8, #167). */
@@ -326,6 +328,8 @@ enum class PanelPlayer(val label: String, val detail: String) {
     AUTO_HIDE(tr(R.string.hide_after_a_moment), tr(R.string.as_now_they_come_back_when)),
     ALWAYS(tr(R.string.always_shown), tr(R.string.the_controls_stay_under_the_lyrics)),
     HIDDEN(tr(R.string.full_screen), tr(R.string.lyrics_and_the_queue_get_the)),
+    /** #230 (1.7.9.2): the controls stay, smaller (progress, play and the buttons), so they're less in the way of scrolling. */
+    SMALL(tr(R.string.small), tr(R.string.progress_play_and_the_buttons_stay_smaller)),
 }
 
 /** Full-bleed artwork's fit (1.7.8, #175). */
@@ -1532,6 +1536,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val videoControlsHide = booleanPreferencesKey("video_controls_hide")
         val lockPortrait = booleanPreferencesKey("lock_portrait")
         val gesturesEverywhere = booleanPreferencesKey("player_gestures_everywhere")
+        val pageSlide = booleanPreferencesKey("page_slide")
         val pauseOnMute = booleanPreferencesKey("pause_on_mute")
         val pipMode = stringPreferencesKey("pip_mode")
         val panelSwipes = booleanPreferencesKey("panel_swipes")
@@ -1637,7 +1642,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 "session_buttons", "cover_swipe_left", "cover_swipe_right", "cover_swipe_up", "cover_double_tap", "cover_long_press",
                 "mini_swipe_left", "mini_swipe_right", "mini_swipe_down", "mini_swipe_up",
                 // 1.7.8 ([BehaviorPrefs]).
-                "lock_portrait", "pause_on_mute", "pip_mode", "panel_swipes", "recent_shows", "queue_locked", "scroll_shows_controls", "playlist_genres", "screen_fades", "player_gestures_everywhere",
+                "lock_portrait", "pause_on_mute", "pip_mode", "panel_swipes", "recent_shows", "queue_locked", "scroll_shows_controls", "playlist_genres", "screen_fades", "player_gestures_everywhere", "page_slide",
                 // 1.7.8 ([SoundPrefs]).
                 "crossfade_curve", "normalize_target", "normalize_albums", "music_speed", "music_pitch",
                 "skip_silence_episodes", "sleep_fade", "pause_fade",
@@ -1911,6 +1916,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 playlistGenres = p[K.playlistGenres] ?: d.behavior.playlistGenres,
                 screenFades = p[K.screenFades] ?: d.behavior.screenFades,
                 gesturesEverywhere = p[K.gesturesEverywhere] ?: d.behavior.gesturesEverywhere,
+                pageSlide = p[K.pageSlide] ?: d.behavior.pageSlide,
             ),
             uiDensity = p.enum(K.uiDensity, d.uiDensity),
             titleSize = p.enum(K.titleSize, d.titleSize),
@@ -2416,6 +2422,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     fun setVideoControlsHide(v: Boolean) = edit { it[K.videoControlsHide] = v }
     fun setLockPortrait(v: Boolean) = edit { it[K.lockPortrait] = v }
     fun setGesturesEverywhere(v: Boolean) = edit { it[K.gesturesEverywhere] = v }
+    fun setPageSlide(v: Boolean) = edit { it[K.pageSlide] = v }
     fun setPauseOnMute(v: Boolean) = edit { it[K.pauseOnMute] = v }
     fun setPipMode(v: PipMode) = edit { it[K.pipMode] = v.name }
     fun setPanelSwipes(v: Boolean) = edit { it[K.panelSwipes] = v }

@@ -3939,4 +3939,8 @@
     <string name="its_bars_and_title_take_the_album_s_color">A sávok és a cím az album színét kapják</string>
     <string name="on_album_playlist_and_artist_pages_the_playing_song">Album-, lejátszási lista- és előadóoldalakon a szóló dal sávjai és címe az oldal képének színében jelennek meg a fényed helyett. Máshol minden marad.</string>
     <string name="playing_indicator_bars_now_playing_album_color">jelző lejátszás sávok hangszínszabályzó album lista előadó oldal szín borító</string>
+    <string name="slide_between_screens">Csúszás a képernyők között</string>
+    <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">Az új oldal oldalról csúszik be; a Vissza kicsúsztatja</string>
+    <string name="slide_between_screens_keywords">csúszás animáció vissza mozdulat átmenet oldalak</string>
+    <string name="progress_play_and_the_buttons_stay_smaller">A haladás, a lejátszás és a gombok maradnak, kisebben: több hely a görgetéshez</string>
 </resources>

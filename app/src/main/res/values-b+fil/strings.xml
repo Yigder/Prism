@@ -3939,4 +3939,8 @@
     <string name="its_bars_and_title_take_the_album_s_color">Kinukuha ng mga bar at pamagat nito ang kulay ng album</string>
     <string name="on_album_playlist_and_artist_pages_the_playing_song">Sa mga page ng album, playlist at artist, ipinapakita ng kantang tumutugtog ang mga bar at pamagat nito sa kulay ng larawan ng page sa halip na sa iyong ilaw. Sa ibang lugar, walang nagbabago.</string>
     <string name="playing_indicator_bars_now_playing_album_color">indicator tumutugtog bar equalizer album playlist artist page kulay cover</string>
+    <string name="slide_between_screens">Mag-slide sa pagitan ng mga screen</string>
+    <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">Pumapasok mula sa gilid ang bagong page; inilalabas ito ng Back</string>
+    <string name="slide_between_screens_keywords">slide animation back gesture transition pages</string>
+    <string name="progress_play_and_the_buttons_stay_smaller">Nananatili ang progress, play at mga button, mas maliit: mas maraming puwang para mag-scroll</string>
 </resources>

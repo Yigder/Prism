@@ -4039,4 +4039,8 @@
     <string name="its_bars_and_title_take_the_album_s_color">Его полоски и название в цвете альбома</string>
     <string name="on_album_playlist_and_artist_pages_the_playing_song">На страницах альбомов, плейлистов и исполнителей играющий трек показывает полоски и название в цвете картинки страницы вместо вашего света. В остальном всё как было.</string>
     <string name="playing_indicator_bars_now_playing_album_color">индикатор играет полоски эквалайзер альбом плейлист исполнитель страница цвет обложка</string>
+    <string name="slide_between_screens">Сдвиг между экранами</string>
+    <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">Новая страница въезжает сбоку, «Назад» уводит её</string>
+    <string name="slide_between_screens_keywords">сдвиг анимация жест назад переход страницы</string>
+    <string name="progress_play_and_the_buttons_stay_smaller">Прогресс, воспроизведение и кнопки остаются, но меньше: больше места для прокрутки</string>
 </resources>

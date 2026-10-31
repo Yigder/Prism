@@ -3939,4 +3939,8 @@
     <string name="its_bars_and_title_take_the_album_s_color">نوارها و عنوانش رنگ آلبوم را می‌گیرند</string>
     <string name="on_album_playlist_and_artist_pages_the_playing_song">در صفحه‌های آلبوم، فهرست پخش و هنرمند، آهنگ در حال پخش نوارها و عنوانش را به رنگ تصویر صفحه نشان می‌دهد، نه نور شما. جاهای دیگر همان‌طور می‌ماند.</string>
     <string name="playing_indicator_bars_now_playing_album_color">نشانگر پخش نوارها اکولایزر آلبوم فهرست هنرمند صفحه رنگ کاور</string>
+    <string name="slide_between_screens">لغزیدن بین صفحه‌ها</string>
+    <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">صفحهٔ تازه از کنار می‌لغزد و بازگشت آن را بیرون می‌برد</string>
+    <string name="slide_between_screens_keywords">لغزیدن انیمیشن حرکت بازگشت انتقال صفحه‌ها</string>
+    <string name="progress_play_and_the_buttons_stay_smaller">پیشرفت، پخش و دکمه‌ها می‌مانند، کوچک‌تر: جای بیشتر برای پیمایش</string>
 </resources>

@@ -4139,4 +4139,8 @@
     <string name="its_bars_and_title_take_the_album_s_color">أشرطتها وعنوانها بلون الألبوم</string>
     <string name="on_album_playlist_and_artist_pages_the_playing_song">في صفحات الألبومات وقوائم التشغيل والفنانين، تظهر أشرطة الأغنية قيد التشغيل وعنوانها بلون صورة الصفحة بدلاً من ضوئك. وفي باقي التطبيق تبقى كما هي.</string>
     <string name="playing_indicator_bars_now_playing_album_color">مؤشر تشغيل أشرطة معادل ألبوم قائمة فنان صفحة لون غلاف</string>
+    <string name="slide_between_screens">انزلاق بين الشاشات</string>
+    <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">تنزلق صفحة جديدة من الجانب؛ ويُخرجها زر الرجوع منزلقة</string>
+    <string name="slide_between_screens_keywords">انزلاق حركة إيماءة رجوع انتقال صفحات</string>
+    <string name="progress_play_and_the_buttons_stay_smaller">يبقى التقدم والتشغيل والأزرار بحجم أصغر: مساحة أكبر للتمرير</string>
 </resources>

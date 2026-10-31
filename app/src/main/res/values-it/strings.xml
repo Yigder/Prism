@@ -3989,4 +3989,8 @@
     <string name="its_bars_and_title_take_the_album_s_color">Barre e titolo prendono il colore dell\'album</string>
     <string name="on_album_playlist_and_artist_pages_the_playing_song">Nelle pagine di album, playlist e artisti, il brano in riproduzione mostra barre e titolo nel colore dell\'immagine della pagina invece della tua luce. Altrove restano come sono.</string>
     <string name="playing_indicator_bars_now_playing_album_color">indicatore in riproduzione barre equalizzatore album playlist artista pagina colore copertina</string>
+    <string name="slide_between_screens">Scorri tra le schermate</string>
+    <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">Una nuova pagina entra di lato; Indietro la fa scorrere via</string>
+    <string name="slide_between_screens_keywords">scorrimento animazione gesto indietro transizione pagine</string>
+    <string name="progress_play_and_the_buttons_stay_smaller">Avanzamento, riproduci e i pulsanti restano, più piccoli: più spazio per scorrere</string>
 </resources>

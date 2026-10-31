@@ -3889,4 +3889,8 @@
     <string name="its_bars_and_title_take_the_album_s_color">它的跳動條和標題取專輯的顏色</string>
     <string name="on_album_playlist_and_artist_pages_the_playing_song">在專輯、播放清單和藝人頁面上，正在播放的歌曲以頁面圖片的顏色顯示跳動條和標題，而不是你的光。其他地方保持不變。</string>
     <string name="playing_indicator_bars_now_playing_album_color">正在播放 指示 跳動條 等化器 專輯 播放清單 藝人 頁面 顏色 封面</string>
+    <string name="slide_between_screens">頁面之間滑動切換</string>
+    <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">新頁面從側邊滑入，返回時滑出</string>
+    <string name="slide_between_screens_keywords">滑動 動畫 返回手勢 切換 頁面</string>
+    <string name="progress_play_and_the_buttons_stay_smaller">進度、播放和按鈕保留但變小：捲動空間更大</string>
 </resources>

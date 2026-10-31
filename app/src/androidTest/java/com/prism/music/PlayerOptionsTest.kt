@@ -5,6 +5,7 @@ import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.doubleClick
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -179,6 +180,29 @@ class PlayerOptionsTest {
         doubleTapBeside()
         compose.waitUntil(5_000) { player.isPlaying.value }
         instrumentation.runOnMainSync { player.setPlaying(false) }
+    }
+
+    /**
+     * #230 (1.7.9.2): "Lyrics and the queue: Small". With the queue open the controls stay, in less room: no volume
+     * bar, and a shorter deck than "Always shown" gives.
+     */
+    @Test fun theControlsCanStaySmallOverTheQueue() {
+        runBlocking {
+            Fixture.container.settings.setHideVolumeBar(false)
+            Fixture.container.settings.setPanelPlayer(com.prism.music.data.prefs.PanelPlayer.ALWAYS)
+        }
+        openPlayer()
+        compose.onAllNodes(androidx.compose.ui.test.hasContentDescription(tr(R.string.up_next))).onFirst().performClick()
+        compose.waitForIdle(); Thread.sleep(800)
+        val always = height("playerDeck")
+        assertTrue("always: the volume bar's there", compose.onAllNodes(hasTestTag("volumeBar")).fetchSemanticsNodes().isNotEmpty())
+
+        runBlocking { Fixture.container.settings.setPanelPlayer(com.prism.music.data.prefs.PanelPlayer.SMALL) }
+        compose.waitForIdle(); Thread.sleep(800)
+        assertTrue("small: no volume bar", compose.onAllNodes(hasTestTag("volumeBar")).fetchSemanticsNodes().isEmpty())
+        val small = height("playerDeck")
+        assertTrue("small ($small) is shorter than always ($always)", small < always * 0.8f)
+        runBlocking { Fixture.container.settings.setPanelPlayer(com.prism.music.data.prefs.PanelPlayer.AUTO_HIDE) }
     }
 
     private fun density() = Fixture.context.resources.displayMetrics.density

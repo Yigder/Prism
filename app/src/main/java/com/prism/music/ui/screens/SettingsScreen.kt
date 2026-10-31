@@ -855,6 +855,11 @@ private fun GlassSettings() {
                 Group(tr(R.string.motion)) {
                     Toggle(tr(R.string.reduce_motion), tr(R.string.calmer_quicker_animations), s.reduceMotion, info = tr(R.string.no_drifting_backgrounds_no_artwork_bounce)) { prefs.setReduceMotion(it) }
                     Toggle(tr(R.string.fades_between_screens), tr(R.string.pages_fade_into_each_other), s.behavior.screenFades, info = tr(R.string.off_a_page_changes_at_once)) { prefs.setScreenFades(it) }
+                    // #208 (1.7.9.2): with fades on, the pages can slide instead.
+                    if (s.behavior.screenFades) Toggle(
+                        tr(R.string.slide_between_screens), tr(R.string.a_new_page_slides_in_from_the_side_back_slides_it_away),
+                        s.behavior.pageSlide,
+                    ) { prefs.setPageSlide(it) }
                 }
             }
     }
@@ -1583,7 +1588,7 @@ private fun PlayerSettings() {
         }
         Group(tr(R.string.lyrics_and_the_queue), info = tr(R.string.the_player_s_controls_while_the)) {
             ChoiceCards(
-                com.prism.music.data.prefs.PanelPlayer.entries, s.view.panelPlayer, title = { it.label }, detail = { it.detail }, columns = 3,
+                com.prism.music.data.prefs.PanelPlayer.entries, s.view.panelPlayer, title = { it.label }, detail = { it.detail }, columns = 2,
                 onSelect = { prefs.setPanelPlayer(it) },
             ) { PanelPlayerSample(it) }
             if (s.view.panelPlayer == com.prism.music.data.prefs.PanelPlayer.AUTO_HIDE) Toggle(
@@ -1717,7 +1722,9 @@ private fun PanelPlayerSample(mode: com.prism.music.data.prefs.PanelPlayer) {
         val h = size.height
         drawRoundRect(ink.copy(alpha = 0.06f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(10.dp.toPx()))
         val controls = mode != com.prism.music.data.prefs.PanelPlayer.HIDDEN
-        val linesEnd = if (controls) h * 0.62f else h * 0.92f
+        // Small (#230): the controls take a slimmer band at the bottom, the list most of the room.
+        val small = mode == com.prism.music.data.prefs.PanelPlayer.SMALL
+        val linesEnd = if (small) h * 0.76f else if (controls) h * 0.62f else h * 0.92f
         var y = h * 0.12f
         var i = 0
         while (y < linesEnd) {
@@ -1727,7 +1734,12 @@ private fun PanelPlayerSample(mode: com.prism.music.data.prefs.PanelPlayer) {
             )
             y += h * 0.14f; i++
         }
-        if (controls) {
+        if (small) {
+            drawRect(ink.copy(alpha = 0.5f), androidx.compose.ui.geometry.Offset(w * 0.12f, h * 0.83f), androidx.compose.ui.geometry.Size(w * 0.76f, h * 0.02f))
+            listOf(0.4f, 0.5f, 0.6f).forEachIndexed { k, x ->
+                drawCircle(ink.copy(alpha = 0.85f), if (k == 1) h * 0.05f else h * 0.03f, androidx.compose.ui.geometry.Offset(w * x, h * 0.92f))
+            }
+        } else if (controls) {
             val a = if (mode == com.prism.music.data.prefs.PanelPlayer.AUTO_HIDE) 0.3f else 0.85f
             drawRect(ink.copy(alpha = a * 0.6f), androidx.compose.ui.geometry.Offset(w * 0.12f, h * 0.72f), androidx.compose.ui.geometry.Size(w * 0.76f, h * 0.025f))
             listOf(0.32f, 0.5f, 0.68f).forEachIndexed { k, x ->

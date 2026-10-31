@@ -20,6 +20,12 @@ What changed in each release. Older releases are described on the [Releases page
   the color of the page's picture instead of your light.
 - **Swipe a new release into the queue** (#248): on New from your artists' page, swipe a release right to play it
   next or left to add it to the end of the queue, as with songs.
+- **Slide between screens** (#208): Customize Prism → Glass & backgrounds → Motion has a new switch (off by default,
+  under "Fades between screens"). On, a new page slides in from the side and Back (and the back gesture) slides it
+  away, mirrored in right-to-left languages.
+- **A smaller player over the lyrics and the queue** (#230): Customize Prism → Player → Lyrics and the queue has a new
+  choice, Small: the progress bar, a smaller play row and the buttons stay, so the list keeps most of the screen
+  ("Full screen" already hides them, with a bar at the bottom to bring them back).
 - **Gestures anywhere on the player** (#259): Settings → Controls & gestures → Gestures has a new switch (off by
   default). On, your swipes, double tap and long press work below the title too, in the space around the buttons and
   bars (which keep their own taps).
@@ -36,6 +42,9 @@ What changed in each release. Older releases are described on the [Releases page
 - **"Between songs" didn't fade the light "From the cover"** (#254): with your light taking the cover's colors, the
   progress bar, Play's ring and the picked cards changed to the next song's colors at once, so Fade and Slow fade
   looked like a cut. The light now fades with the accent (at once with Reduce motion or Performance mode).
+- **Glass on Android 9 to 11 showed what was behind it sharp**: Liquid Glass needs Android 12's blur, so the tab bar
+  and mini player looked like Home's tiles were drawn over them. Below Android 12 the glass is frosted now, with a
+  wash thick enough to read through.
 - **"Play next" and "Add to queue" on an album or playlist said so in English** in every language: translated now.
 - **Search's chips were in English in every language** (Top results, Songs, Videos, Albums…): they're translated now.
 

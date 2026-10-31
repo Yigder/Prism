@@ -3939,4 +3939,8 @@
     <string name="its_bars_and_title_take_the_album_s_color">Çubukları ve adı albümün rengini alır</string>
     <string name="on_album_playlist_and_artist_pages_the_playing_song">Albüm, çalma listesi ve sanatçı sayfalarında çalan şarkı, çubuklarını ve adını ışığınız yerine sayfa görselinin renginde gösterir. Başka yerlerde değişmez.</string>
     <string name="playing_indicator_bars_now_playing_album_color">gösterge çalıyor çubuklar ekolayzer albüm çalma listesi sanatçı sayfa renk kapak</string>
+    <string name="slide_between_screens">Ekranlar arasında kaydır</string>
+    <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">Yeni sayfa yandan kayarak gelir; Geri onu kaydırıp götürür</string>
+    <string name="slide_between_screens_keywords">kaydırma animasyon geri hareketi geçiş sayfalar</string>
+    <string name="progress_play_and_the_buttons_stay_smaller">İlerleme, oynat ve düğmeler kalır, daha küçük: kaydırmak için daha çok yer</string>
 </resources>

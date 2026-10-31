@@ -3939,4 +3939,8 @@
     <string name="its_bars_and_title_take_the_album_s_color">এর বার আর শিরোনাম অ্যালবামের রং নেয়</string>
     <string name="on_album_playlist_and_artist_pages_the_playing_song">অ্যালবাম, প্লেলিস্ট আর শিল্পীর পেজে চলমান গান আপনার আলোর বদলে পেজের ছবির রঙে তার বার আর শিরোনাম দেখায়। অন্য কোথাও কিছু বদলায় না।</string>
     <string name="playing_indicator_bars_now_playing_album_color">নির্দেশক চলছে বার ইকুয়ালাইজার অ্যালবাম প্লেলিস্ট শিল্পী পেজ রং কভার</string>
+    <string name="slide_between_screens">স্ক্রিনের মধ্যে স্লাইড</string>
+    <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">নতুন পেজ পাশ থেকে ঢোকে; পিছনে গেলে সরে যায়</string>
+    <string name="slide_between_screens_keywords">স্লাইড অ্যানিমেশন পিছনে জেসচার ট্রানজিশন পেজ</string>
+    <string name="progress_play_and_the_buttons_stay_smaller">অগ্রগতি, প্লে আর বোতাম থাকে, ছোট হয়ে: স্ক্রলের জন্য বেশি জায়গা</string>
 </resources>

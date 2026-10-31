@@ -3939,4 +3939,8 @@
     <string name="its_bars_and_title_take_the_album_s_color">Balken und Titel in der Farbe des Albums</string>
     <string name="on_album_playlist_and_artist_pages_the_playing_song">Auf Album-, Playlist- und Künstlerseiten zeigt der laufende Song Balken und Titel in der Farbe des Seitenbilds statt in deinem Licht. Überall sonst bleibt es wie es ist.</string>
     <string name="playing_indicator_bars_now_playing_album_color">anzeige läuft balken equalizer album playlist künstler seite farbe cover</string>
+    <string name="slide_between_screens">Zwischen Bildschirmen gleiten</string>
+    <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">Eine neue Seite gleitet von der Seite herein; Zurück schiebt sie weg</string>
+    <string name="slide_between_screens_keywords">gleiten wischen animation zurück geste übergang seiten</string>
+    <string name="progress_play_and_the_buttons_stay_smaller">Fortschritt, Wiedergabe und die Tasten bleiben, kleiner: mehr Platz zum Scrollen</string>
 </resources>

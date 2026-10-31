@@ -29,6 +29,20 @@ import dev.chrisbanes.haze.glass.hazeGlass
 /** The backdrop that glass surfaces in the current subtree refract. */
 val LocalHazeState = compositionLocalOf<HazeState?> { null }
 
+internal enum class GlassPath { LIQUID, FROSTED, SOLID }
+
+/**
+ * How [GlassSurface] draws: Liquid Glass and Frosted need something behind to sample ([haze]); Liquid Glass also needs
+ * Android 12's blur, without which it fell back to a thin tint and Clear glass showed everything behind it sharp, so
+ * below it Liquid Glass is drawn frosted (1.7.9.2).
+ */
+internal fun glassPath(sdk: Int, liquid: Boolean, frosted: Boolean, haze: Boolean): GlassPath = when {
+    !haze -> GlassPath.SOLID
+    liquid && sdk >= 31 -> GlassPath.LIQUID
+    liquid || frosted -> GlassPath.FROSTED
+    else -> GlassPath.SOLID
+}
+
 /**
  * A surface that renders as refractive Liquid Glass when enabled in
  * Appearance settings, or as a soft translucent card otherwise.
@@ -66,7 +80,7 @@ fun GlassSurface(
                 ),
             content = content,
         )
-    } else if (settings.liquidGlass && haze != null) {
+    } else if (glassPath(android.os.Build.VERSION.SDK_INT, settings.liquidGlass, settings.frostedGlass, haze != null) == GlassPath.LIQUID) {
         val clear = onMedia || settings.glassKind == GlassKind.CLEAR
         val style = remember(shape, tint, clear, dark) {
             val baseStyle = if (clear) GlassStyle.clear else GlassStyle.regular
@@ -83,12 +97,15 @@ fun GlassSurface(
                 .clip(shape),
             content = content,
         )
-    } else if (settings.frostedGlass && haze != null) {
+    } else if (glassPath(android.os.Build.VERSION.SDK_INT, settings.liquidGlass, settings.frostedGlass, haze != null) == GlassPath.FROSTED) {
         val scheme = MaterialTheme.colorScheme
+        // Below Android 12 there's no blur (1.7.9's check: Clear glass showed Home's tiles sharp through the tab bar
+        // and mini player, as if drawn over them), so the wash carries it alone and is made thick enough to.
+        val noBlur = android.os.Build.VERSION.SDK_INT < 31
         val wash = when {
-            tint.isSpecified -> tint
-            onMedia -> Color.Black.copy(alpha = 0.28f)
-            else -> scheme.surfaceContainerHigh.copy(alpha = if (dark) 0.55f else 0.62f)
+            tint.isSpecified -> if (noBlur) tint.copy(alpha = tint.alpha.coerceAtLeast(0.88f)) else tint
+            onMedia -> Color.Black.copy(alpha = if (noBlur) 0.55f else 0.28f)
+            else -> scheme.surfaceContainerHigh.copy(alpha = if (noBlur) (if (dark) 0.9f else 0.92f) else if (dark) 0.55f else 0.62f)
         }
         val style = remember(wash) {
             HazeBlurStyle {

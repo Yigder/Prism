@@ -273,7 +273,8 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
     // Settings → Player → "Lyrics and the queue" (#193, #197): the controls hide after a moment (as before), always stay,
     // or start hidden so the lyrics and the queue get the whole screen (a tap or a swipe up brings them).
     val panelPlayer = settings.view.panelPlayer
-    val controlsStay = panelPlayer == com.prism.music.data.prefs.PanelPlayer.ALWAYS
+    // Small (#230): they stay too, in less room.
+    val controlsStay = panelPlayer == com.prism.music.data.prefs.PanelPlayer.ALWAYS || panelPlayer == com.prism.music.data.prefs.PanelPlayer.SMALL
     val controlsAtOpen = panelPlayer != com.prism.music.data.prefs.PanelPlayer.HIDDEN
     val openLyrics = { lyricsControlsOpen = controlsAtOpen; lyricsOpen = true; queueOpen = false; statsOpen = false }
     val closeLyrics = { lyricsControlsOpen = false; lyricsOpen = false }
@@ -1070,7 +1071,11 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                         } else {
                             // The parts in the listener's order (Settings → Player → Arrange, 1.7.4); what's switched off
                             // elsewhere stays off.
+                            // Small (#230): over the lyrics or the queue, only the progress, a smaller transport and the
+                            // buttons (they switch between lyrics and queue), so the list keeps most of the screen.
+                            val small = (lyricsOpen || queueOpen) && panelPlayer == com.prism.music.data.prefs.PanelPlayer.SMALL
                             val parts = settings.playerDeck.filter { it != com.prism.music.data.prefs.DeckPart.STRIP || (!lyricsOpen && settings.lyricsOnPlayer) }
+                                .filter { !small || it == com.prism.music.data.prefs.DeckPart.SCRUBBER || it == com.prism.music.data.prefs.DeckPart.TRANSPORT || it == com.prism.music.data.prefs.DeckPart.BUTTONS }
                             parts.forEachIndexed { i, part ->
                                 when (part) {
                                     com.prism.music.data.prefs.DeckPart.STRIP -> CurrentLyricStrip(lyricsState, isPlaying && !covered, openLyrics)
@@ -1080,7 +1085,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                                         if (!SingWord() && !BestPartChip() && settings.showQuality) QualityLabel(Modifier.align(Alignment.Center), selected = statsOpen) { toggleStats() }
                                     }
                                     com.prism.music.data.prefs.DeckPart.TRANSPORT ->
-                                        TransportRow(isPlaying, buffering, previousEnabled = hasPrevious || pastStart, nextEnabled = hasNext, episode = song.isEpisode)
+                                        TransportRow(isPlaying, buffering, previousEnabled = hasPrevious || pastStart, nextEnabled = hasNext, compact = small, episode = song.isEpisode)
                                     // A hidden volume bar keeps its room, so the transport sits where it always has (giving it
                                     // to a Large / Full width cover in 1.6.4 dropped the controls toward the bottom row).
                                     com.prism.music.data.prefs.DeckPart.VOLUME -> if (!settings.hideVolumeBar) VolumeRow(volume) else Spacer(Modifier.height(VOLUME_ROW_HEIGHT))
@@ -1093,20 +1098,22 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                                         onButton = onButton,
                                     )
                                 }
-                                // The gaps the deck always had after each part (none after the last).
-                                if (i < parts.lastIndex) Spacer(Modifier.height(DECK_GAP_AFTER[part] ?: 8.dp))
+                                // The gaps the deck always had after each part (none after the last); Small keeps them tight.
+                                if (i < parts.lastIndex) Spacer(Modifier.height(if (small) 2.dp else DECK_GAP_AFTER[part] ?: 8.dp))
                             }
-                            Spacer(Modifier.height(deckGap))
+                            Spacer(Modifier.height(if (small) 6.dp else deckGap))
                         }
+                        val smallDeck = (lyricsOpen || queueOpen) && panelPlayer == com.prism.music.data.prefs.PanelPlayer.SMALL
                         // The device line, with the sleep timer beside it while one is set (on its own when the line is hidden).
-                        if (settings.showOutputDevice) Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (smallDeck) SleepBadge()
+                        else if (settings.showOutputDevice) Row(verticalAlignment = Alignment.CenterVertically) {
                             OutputCaption()
                             SleepBadge(Modifier.padding(start = 8.dp))
                         } else {
                             SleepBadge()
                             if (!roomyCover) Spacer(Modifier.height(14.dp))
                         }
-                        Spacer(Modifier.height(deckGap))
+                        Spacer(Modifier.height(if (smallDeck) 6.dp else deckGap))
                     }
                 }
                 // The controls away over the lyrics or the queue: a swipe up from the bottom edge brings them back (a tap

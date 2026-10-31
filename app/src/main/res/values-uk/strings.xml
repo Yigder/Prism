@@ -4039,4 +4039,8 @@
     <string name="its_bars_and_title_take_the_album_s_color">Його смужки й назва в кольорі альбому</string>
     <string name="on_album_playlist_and_artist_pages_the_playing_song">На сторінках альбомів, плейлистів і виконавців трек, що грає, показує смужки й назву в кольорі зображення сторінки замість вашого світла. Деінде все як було.</string>
     <string name="playing_indicator_bars_now_playing_album_color">індикатор грає смужки еквалайзер альбом плейлист виконавець сторінка колір обкладинка</string>
+    <string name="slide_between_screens">Зсув між екранами</string>
+    <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">Нова сторінка в’їжджає збоку, «Назад» відсуває її</string>
+    <string name="slide_between_screens_keywords">зсув анімація жест назад перехід сторінки</string>
+    <string name="progress_play_and_the_buttons_stay_smaller">Прогрес, відтворення й кнопки лишаються, але менші: більше місця для прокручування</string>
 </resources>

@@ -150,9 +150,12 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
         val wanted = layoutNow.filter { it.visible && it.key.startsWith(HomeSections.YT_PREFIX) }.map { it.key }.toSet()
         // Quick picks and Speed dial too (#162): YouTube puts Quick picks anywhere from the first page to the fourth, and
         // stopping at three left the section out of a load now and then ("refresh until it comes back").
-        val picksOn = layoutNow.any { it.visible && it.key == HomeSections.QUICK_PICKS }
-        val dialWanted = layoutNow.any { it.visible && it.key == HomeSections.SPEED_DIAL }
+        // Signed in only: signed out, YouTube may send no Quick picks at all (es-MX) and has no Speed dial, and every
+        // load would then read all eight pages.
         val owner = c.settings.current.accountName
+        val signedIn = owner.isNotBlank()
+        val picksOn = signedIn && layoutNow.any { it.visible && it.key == HomeSections.QUICK_PICKS }
+        val dialWanted = signedIn && layoutNow.any { it.visible && it.key == HomeSections.SPEED_DIAL }
         val (fresh, pages) = c.ytm.fullHomePages(pages = 3, maxPages = 8) { got ->
             wanted.all { k -> got.any { shelfKey(it.title) == k } } && (!picksOn || got.quickPicks(owner) != null) && (!dialWanted || got.speedDial(owner) != null)
         }

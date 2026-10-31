@@ -25,7 +25,9 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -339,6 +341,19 @@ private fun navHeight(style: NavBarStyle, size: com.prism.music.data.prefs.NavBa
     NavBarStyle.MINIMAL -> size.minimal.dp
 }
 
+/**
+ * The pages' transitions with "Slide between screens" (#208): all null when it's off, and the fades apply. [rtl]
+ * mirrors them, so a page always comes in from where reading goes.
+ */
+internal class PageSlides(on: Boolean, rtl: Boolean) {
+    private val side = if (rtl) -1 else 1
+    private val ms = 360
+    val enter: EnterTransition? = if (!on) null else slideInHorizontally(tween(ms)) { it * side } + fadeIn(tween(ms / 2))
+    val exit: ExitTransition? = if (!on) null else slideOutHorizontally(tween(ms)) { -it * side / 4 } + fadeOut(tween(ms))
+    val popEnter: EnterTransition? = if (!on) null else slideInHorizontally(tween(ms)) { -it * side / 4 } + fadeIn(tween(ms))
+    val popExit: ExitTransition? = if (!on) null else slideOutHorizontally(tween(ms)) { it * side } + fadeOut(tween(ms / 2, delayMillis = ms / 2))
+}
+
 private fun miniHeight(style: MiniPlayerStyle): Dp = when (style) {
     MiniPlayerStyle.CARD -> 64.dp
     MiniPlayerStyle.SLIM -> 54.dp
@@ -577,14 +592,17 @@ private fun PrismRoot(deepLink: MutableStateFlow<Uri?>) {
                     // a predictive back (swipe from the edge) shrinks the page like a card instead.
                     // "Fades between screens" off (#227): pages swap at once, so a tap can't land on the one fading out.
                     val fadeMs = if (settings.behavior.screenFades) 700 else 0
+                    // "Slide between screens" (#208, 1.7.9.2): a new page comes in from the side and Back takes it
+                    // away the same way (from the left in right-to-left languages); the page underneath moves a little.
+                    val slides = PageSlides(settings.behavior.screenFades && settings.behavior.pageSlide, androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl)
                     NavHost(
                         navController, startDestination = start,
-                        enterTransition = { if (fadeMs == 0) EnterTransition.None else fadeIn(tween(fadeMs)) },
-                        exitTransition = { if (fadeMs == 0) ExitTransition.None else fadeOut(tween(fadeMs)) },
-                        popEnterTransition = { if (fadeMs == 0) EnterTransition.None else fadeIn(tween(fadeMs)) },
-                        popExitTransition = { if (fadeMs == 0) ExitTransition.None else fadeOut(tween(fadeMs)) },
-                        predictivePopEnterTransition = { if (fadeMs == 0) EnterTransition.None else fadeIn(tween(fadeMs)) },
-                        predictivePopExitTransition = { if (fadeMs == 0) ExitTransition.None else fadeOut(tween(fadeMs)) },
+                        enterTransition = { slides.enter ?: if (fadeMs == 0) EnterTransition.None else fadeIn(tween(fadeMs)) },
+                        exitTransition = { slides.exit ?: if (fadeMs == 0) ExitTransition.None else fadeOut(tween(fadeMs)) },
+                        popEnterTransition = { slides.popEnter ?: if (fadeMs == 0) EnterTransition.None else fadeIn(tween(fadeMs)) },
+                        popExitTransition = { slides.popExit ?: if (fadeMs == 0) ExitTransition.None else fadeOut(tween(fadeMs)) },
+                        predictivePopEnterTransition = { slides.popEnter ?: if (fadeMs == 0) EnterTransition.None else fadeIn(tween(fadeMs)) },
+                        predictivePopExitTransition = { slides.popExit ?: if (fadeMs == 0) ExitTransition.None else fadeOut(tween(fadeMs)) },
                     ) {
                         composable(Routes.WELCOME) {
                             WelcomeScreen(

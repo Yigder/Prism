@@ -3889,4 +3889,8 @@
     <string name="its_bars_and_title_take_the_album_s_color">Bar dan tajuknya mengikut warna album</string>
     <string name="on_album_playlist_and_artist_pages_the_playing_song">Di halaman album, senarai main dan artis, lagu yang dimainkan menunjukkan bar dan tajuknya dalam warna gambar halaman, bukan cahaya anda. Di tempat lain kekal seperti biasa.</string>
     <string name="playing_indicator_bars_now_playing_album_color">penunjuk dimainkan bar penyama album senarai main artis halaman warna kulit</string>
+    <string name="slide_between_screens">Gelongsor antara skrin</string>
+    <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">Halaman baharu masuk dari tepi; Kembali menggelongsornya keluar</string>
+    <string name="slide_between_screens_keywords">gelongsor animasi gerak isyarat kembali peralihan halaman</string>
+    <string name="progress_play_and_the_buttons_stay_smaller">Kemajuan, main dan butang kekal, lebih kecil: lebih banyak ruang untuk menatal</string>
 </resources>

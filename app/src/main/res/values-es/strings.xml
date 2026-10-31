@@ -3989,4 +3989,8 @@
     <string name="its_bars_and_title_take_the_album_s_color">Sus barras y su título toman el color del álbum</string>
     <string name="on_album_playlist_and_artist_pages_the_playing_song">En las páginas de álbumes, playlists y artistas, la canción que suena muestra sus barras y su título en el color de la imagen de la página en lugar de tu luz. En el resto de la app siguen igual.</string>
     <string name="playing_indicator_bars_now_playing_album_color">indicador reproduciendo barras ecualizador álbum playlist artista página color portada</string>
+    <string name="slide_between_screens">Deslizar entre pantallas</string>
+    <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">Una página nueva entra desde el lado; Atrás la desliza fuera</string>
+    <string name="slide_between_screens_keywords">deslizar animación gesto atrás transición páginas</string>
+    <string name="progress_play_and_the_buttons_stay_smaller">Progreso, reproducir y los botones se quedan, más pequeños: más espacio para desplazarte</string>
 </resources>

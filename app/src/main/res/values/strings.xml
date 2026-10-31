@@ -3962,4 +3962,8 @@
     <string name="its_bars_and_title_take_the_album_s_color">Its bars and title take the album\'s color</string>
     <string name="on_album_playlist_and_artist_pages_the_playing_song">On album, playlist and artist pages, the song that\'s playing shows its bars and title in the color of the page\'s picture instead of your light. Everywhere else they stay as they are.</string>
     <string name="playing_indicator_bars_now_playing_album_color">playing indicator bars now playing equalizer album playlist artist page color cover</string>
+    <string name="slide_between_screens">Slide between screens</string>
+    <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">A new page slides in from the side; Back slides it away</string>
+    <string name="slide_between_screens_keywords">slide sliding animation back gesture transition pages swipe</string>
+    <string name="progress_play_and_the_buttons_stay_smaller">Progress, play and the buttons stay, smaller: more room to scroll</string>
 </resources>

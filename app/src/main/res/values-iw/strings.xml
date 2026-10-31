@@ -3989,4 +3989,8 @@
     <string name="its_bars_and_title_take_the_album_s_color">הפסים והכותרת שלו מקבלים את צבע האלבום</string>
     <string name="on_album_playlist_and_artist_pages_the_playing_song">בדפי אלבומים, פלייליסטים ואמנים, השיר שמתנגן מציג את הפסים והכותרת שלו בצבע התמונה של הדף במקום האור שלך. בשאר המקומות הכול נשאר כפי שהוא.</string>
     <string name="playing_indicator_bars_now_playing_album_color">מחוון מתנגן פסים אקולייזר אלבום פלייליסט אמן דף צבע עטיפה</string>
+    <string name="slide_between_screens">החלקה בין מסכים</string>
+    <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">דף חדש מחליק מהצד; חזרה מחליקה אותו החוצה</string>
+    <string name="slide_between_screens_keywords">החלקה אנימציה מחוות חזרה מעבר דפים</string>
+    <string name="progress_play_and_the_buttons_stay_smaller">ההתקדמות, ההפעלה והכפתורים נשארים, קטנים יותר: יותר מקום לגלילה</string>
 </resources>
