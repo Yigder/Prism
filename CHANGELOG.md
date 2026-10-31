@@ -15,6 +15,9 @@ What changed in each release. Older releases are described on the [Releases page
 - **The mini player's progress, your way** (#231): Customize Prism → Tabs & mini player → Mini player has a progress
   bar color (your light as before, your accent, plain, or the cover's color) and, with Fill, how strong the fill is,
   up to nearly solid on frosted glass.
+- **The playing song in the album's color** (Reddit): Customize Prism → Color → Artist & album pages → "Playing song
+  in the page's color" (off by default). On album, playlist and artist pages, the playing song's bars and title take
+  the color of the page's picture instead of your light.
 - **Gestures anywhere on the player** (#259): Settings → Controls & gestures → Gestures has a new switch (off by
   default). On, your swipes, double tap and long press work below the title too, in the space around the buttons and
   bars (which keep their own taps).

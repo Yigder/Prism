@@ -3935,4 +3935,8 @@
     <string name="not_only_on_the_cover_around_the_controls_too">Nicht nur auf dem Cover: auch rund um die Bedienelemente</string>
     <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Deine Wischgesten, Doppeltippen und langes Drücken funktionieren auch unter dem Titel, im Bereich um die Tasten und Leisten. Tasten und Leisten behalten ihr eigenes Tippen.</string>
     <string name="gestures_everywhere_keywords">geste wischen doppeltippen lange drücken unten steuerung ganzer player</string>
+    <string name="playing_song_in_the_page_s_color">Laufender Song in der Farbe der Seite</string>
+    <string name="its_bars_and_title_take_the_album_s_color">Balken und Titel in der Farbe des Albums</string>
+    <string name="on_album_playlist_and_artist_pages_the_playing_song">Auf Album-, Playlist- und Künstlerseiten zeigt der laufende Song Balken und Titel in der Farbe des Seitenbilds statt in deinem Licht. Überall sonst bleibt es wie es ist.</string>
+    <string name="playing_indicator_bars_now_playing_album_color">anzeige läuft balken equalizer album playlist künstler seite farbe cover</string>
 </resources>

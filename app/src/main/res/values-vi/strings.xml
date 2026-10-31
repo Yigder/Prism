@@ -3885,4 +3885,8 @@
     <string name="not_only_on_the_cover_around_the_controls_too">Không chỉ trên ảnh bìa: quanh các nút điều khiển nữa</string>
     <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Thao tác vuốt, nhấn đúp và nhấn giữ của bạn cũng hoạt động bên dưới tiêu đề, trong khoảng quanh các nút và thanh. Các nút và thanh vẫn giữ thao tác chạm riêng.</string>
     <string name="gestures_everywhere_keywords">cử chỉ vuốt nhấn đúp nhấn giữ nửa dưới nút điều khiển cả trình phát</string>
+    <string name="playing_song_in_the_page_s_color">Bài đang phát theo màu của trang</string>
+    <string name="its_bars_and_title_take_the_album_s_color">Thanh và tên bài lấy màu của album</string>
+    <string name="on_album_playlist_and_artist_pages_the_playing_song">Ở trang album, danh sách phát và nghệ sĩ, bài đang phát hiện thanh và tên bài theo màu ảnh của trang thay vì ánh sáng của bạn. Ở chỗ khác giữ nguyên.</string>
+    <string name="playing_indicator_bars_now_playing_album_color">chỉ báo đang phát thanh bộ cân bằng album danh sách nghệ sĩ trang màu bìa</string>
 </resources>

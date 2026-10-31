@@ -166,7 +166,7 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
             "home",
             tr(R.string.pages_2, pages.size) + fresh.joinToString { s ->
                 s.title + " (" + listOfNotNull("rows".takeIf { s.rows }, "stacked".takeIf { s.stacked }, "${s.items.size}",
-                    s.strapline?.let { "strapline=" + if (it.equals(settings.accountName, true)) "your name" else it }).joinToString(" ") + ")"
+                    s.strapline?.let { "strapline=" + if (it.equals(settings.accountName, true)) "owner" else it }).joinToString(" ") + ")"
             } + tr(R.string.quick_picks_speed_dial, fresh.quickPicks(owner)?.title ?: "none", fresh.speedDial(owner)?.title ?: "none") +
                 if (kept.isNotEmpty()) tr(R.string.kept_from_before, kept.joinToString { it.title }) else "",
         )

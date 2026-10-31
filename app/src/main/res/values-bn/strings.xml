@@ -3935,4 +3935,8 @@
     <string name="not_only_on_the_cover_around_the_controls_too">শুধু কভারে নয়: কন্ট্রোলের চারপাশেও</string>
     <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">আপনার সোয়াইপ, ডাবল ট্যাপ আর লম্বা চাপ শিরোনামের নিচেও কাজ করে, বোতাম আর বারের চারপাশের জায়গায়। বোতাম আর বার নিজেদের ট্যাপ রাখে।</string>
     <string name="gestures_everywhere_keywords">জেসচার সোয়াইপ ডাবল ট্যাপ লম্বা চাপ নিচের অংশ কন্ট্রোল পুরো প্লেয়ার</string>
+    <string name="playing_song_in_the_page_s_color">চলমান গান পেজের রঙে</string>
+    <string name="its_bars_and_title_take_the_album_s_color">এর বার আর শিরোনাম অ্যালবামের রং নেয়</string>
+    <string name="on_album_playlist_and_artist_pages_the_playing_song">অ্যালবাম, প্লেলিস্ট আর শিল্পীর পেজে চলমান গান আপনার আলোর বদলে পেজের ছবির রঙে তার বার আর শিরোনাম দেখায়। অন্য কোথাও কিছু বদলায় না।</string>
+    <string name="playing_indicator_bars_now_playing_album_color">নির্দেশক চলছে বার ইকুয়ালাইজার অ্যালবাম প্লেলিস্ট শিল্পী পেজ রং কভার</string>
 </resources>

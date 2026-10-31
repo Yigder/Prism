@@ -3885,4 +3885,8 @@
     <string name="not_only_on_the_cover_around_the_controls_too">不只在封面上，控制按钮周围也可以</string>
     <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">你的滑动、双击和长按在标题下方、按钮和进度条周围的空白处也能用。按钮和进度条保留自己的点按。</string>
     <string name="gestures_everywhere_keywords">手势 滑动 双击 长按 下半部分 控制 整个播放器</string>
+    <string name="playing_song_in_the_page_s_color">正在播放的歌曲使用页面颜色</string>
+    <string name="its_bars_and_title_take_the_album_s_color">它的跳动条和标题取专辑的颜色</string>
+    <string name="on_album_playlist_and_artist_pages_the_playing_song">在专辑、播放列表和艺人页面上，正在播放的歌曲以页面图片的颜色显示跳动条和标题，而不是你的光。其他地方保持不变。</string>
+    <string name="playing_indicator_bars_now_playing_album_color">正在播放 指示 跳动条 均衡器 专辑 播放列表 艺人 页面 颜色 封面</string>
 </resources>

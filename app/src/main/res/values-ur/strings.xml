@@ -3935,4 +3935,8 @@
     <string name="not_only_on_the_cover_around_the_controls_too">صرف کور پر نہیں: کنٹرولز کے آس پاس بھی</string>
     <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">آپ کے سوائپ، ڈبل ٹیپ اور دیر تک دبانا عنوان کے نیچے بھی کام کرتے ہیں، بٹنوں اور بارز کے آس پاس کی جگہ میں۔ بٹن اور بار اپنے ٹیپ رکھتے ہیں۔</string>
     <string name="gestures_everywhere_keywords">اشارہ سوائپ ڈبل ٹیپ دیر تک دبانا نیچے کا حصہ کنٹرولز پورا پلیئر</string>
+    <string name="playing_song_in_the_page_s_color">چلتا گانا صفحے کے رنگ میں</string>
+    <string name="its_bars_and_title_take_the_album_s_color">اس کی بارز اور عنوان البم کا رنگ لیتے ہیں</string>
+    <string name="on_album_playlist_and_artist_pages_the_playing_song">البم، پلے لسٹ اور فنکار کے صفحات پر چلتا گانا اپنی بارز اور عنوان آپ کی روشنی کے بجائے صفحے کی تصویر کے رنگ میں دکھاتا ہے۔ باقی جگہ کچھ نہیں بدلتا۔</string>
+    <string name="playing_indicator_bars_now_playing_album_color">اشارہ چل رہا بارز ایکولائزر البم پلے لسٹ فنکار صفحہ رنگ کور</string>
 </resources>

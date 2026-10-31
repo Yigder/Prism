@@ -270,6 +270,8 @@ data class ViewLook(
     val miniFillStrength: Float = 0.22f,
     /** #231: the split-light ring around the player's play button. */
     val playRing: Boolean = true,
+    /** Reddit (1.7.9.2): on album, playlist and artist pages, the playing song's bars and title in the page's picture color. */
+    val playingInPageColor: Boolean = false,
 )
 
 /**
@@ -1267,7 +1269,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val colors: List<Preferences.Key<*>> by lazy {
             listOf(
                 colorSource, accent, lightStyle, accentExact, accentLight, spectrumPreset, spectrumStops, spectrumBands,
-                surfaceTint, surfaceTintStrength, surfaceColor, contrast, artworkSwatch, artworkVivid, artworkChange, pageColors,
+                surfaceTint, surfaceTintStrength, surfaceColor, contrast, artworkSwatch, artworkVivid, artworkChange, pageColors, playingInPageColor,
             )
         }
         val frostedGlass = booleanPreferencesKey("frosted_glass")
@@ -1427,6 +1429,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val miniProgressColor = stringPreferencesKey("mini_progress_color")
         val miniFillStrength = floatPreferencesKey("mini_fill_strength")
         val playRing = booleanPreferencesKey("play_ring")
+        val playingInPageColor = booleanPreferencesKey("playing_page_color")
         val playerBackground = stringPreferencesKey("player_background")
         val playerBackdropShow = floatPreferencesKey("player_backdrop_show")
         val playerArtCorners = intPreferencesKey("player_art_corners")
@@ -1557,7 +1560,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val look: List<Preferences.Key<*>> by lazy {
             listOf(
                 fontChoice, textScale, corners, uiDensity, titleSize, cardSize, reduceMotion, navStyle, navLabels, navHideOnScroll,
-                navTabs, startTab, miniPlayerStyle, miniSkipButtons, miniPrevButton, miniProgress, miniProgressColor, miniFillStrength, playRing, playerBackground, playerBackdropShow, playerArtCorners, transportStyle,
+                navTabs, startTab, miniPlayerStyle, miniSkipButtons, miniPrevButton, miniProgress, miniProgressColor, miniFillStrength, playRing, playingInPageColor, playerBackground, playerBackdropShow, playerArtCorners, transportStyle,
                 coverSize, scrubberStyle, artShrinkOnPause, showOutputDevice, lyricsAlign, libraryView, playlistHeroCover, frostedPages, replayThemeColors,
                 immersiveArt, immersiveLyrics, immersiveControls, playerShuffleRepeat, lightStyle,
                 playerLayout, vinylTonearm, playerDeck, playerButtons, scrubberColor, playerTitleAlign, playerTitleSize, playerTitleScroll,
@@ -1589,7 +1592,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 fontChoice to 's', appFontName to 's', lyricsFont to 's', textScale to 'f', corners to 's', uiDensity to 's', titleSize to 's', cardSize to 's',
                 navStyle to 's', navLabels to 's', navHideOnScroll to 'b', navTabs to 's', startTab to 's',
                 tabNames to 's', navBarSize to 's', navBarFill to 's', miniPlayerJoined to 'b',
-                miniPlayerStyle to 's', miniSkipButtons to 'b', miniPrevButton to 'b', miniProgress to 's', miniProgressColor to 's', miniFillStrength to 'f', playRing to 'b',
+                miniPlayerStyle to 's', miniSkipButtons to 'b', miniPrevButton to 'b', miniProgress to 's', miniProgressColor to 's', miniFillStrength to 'f', playRing to 'b', playingInPageColor to 'b',
                 playerBackground to 's', playerBackdropShow to 'f', playerArtCorners to 'i', transportStyle to 's', coverSize to 's',
                 scrubberStyle to 's', artShrinkOnPause to 'b', showOutputDevice to 'b', fullBleedArtwork to 'b', videoFullBleed to 'b', hideVolumeBar to 'b',
                 showPlayingFrom to 'b', playerShuffleRepeat to 'b', immersiveArt to 's', immersiveLyrics to 's', immersiveControls to 'b',
@@ -1884,6 +1887,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 miniProgressColor = p.enum(K.miniProgressColor, d.view.miniProgressColor),
                 miniFillStrength = (p[K.miniFillStrength] ?: d.view.miniFillStrength).coerceIn(0.1f, 0.9f),
                 playRing = p[K.playRing] ?: d.view.playRing,
+                playingInPageColor = p[K.playingInPageColor] ?: d.view.playingInPageColor,
             ),
             sound = SoundPrefs(
                 crossfadeCurve = p.enum(K.crossfadeCurve, d.sound.crossfadeCurve),
@@ -2349,6 +2353,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     fun setMiniProgressColor(v: ScrubberColor) = edit { it[K.miniProgressColor] = v.name }
     fun setMiniFillStrength(v: Float) = edit { it[K.miniFillStrength] = v }
     fun setPlayRing(v: Boolean) = edit { it[K.playRing] = v }
+    fun setPlayingInPageColor(v: Boolean) = edit { it[K.playingInPageColor] = v }
     fun setPlayerBackground(v: PlayerBackground) = edit { it[K.playerBackground] = v.name }
     fun setPlayerBackdropShow(v: Float) = edit { it[K.playerBackdropShow] = v }
     fun setPlayerArtCorners(v: Int) = edit { it[K.playerArtCorners] = v }

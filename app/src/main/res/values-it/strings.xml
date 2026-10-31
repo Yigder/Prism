@@ -3985,4 +3985,8 @@
     <string name="not_only_on_the_cover_around_the_controls_too">Non solo sulla copertina: anche intorno ai controlli</string>
     <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">I tuoi scorrimenti, doppio tocco e pressione prolungata funzionano anche sotto il titolo, nello spazio intorno a pulsanti e barre. Pulsanti e barre mantengono i propri tocchi.</string>
     <string name="gestures_everywhere_keywords">gesto scorrere doppio tocco pressione prolungata parte bassa controlli tutto il player</string>
+    <string name="playing_song_in_the_page_s_color">Brano in riproduzione nel colore della pagina</string>
+    <string name="its_bars_and_title_take_the_album_s_color">Barre e titolo prendono il colore dell\'album</string>
+    <string name="on_album_playlist_and_artist_pages_the_playing_song">Nelle pagine di album, playlist e artisti, il brano in riproduzione mostra barre e titolo nel colore dell\'immagine della pagina invece della tua luce. Altrove restano come sono.</string>
+    <string name="playing_indicator_bars_now_playing_album_color">indicatore in riproduzione barre equalizzatore album playlist artista pagina colore copertina</string>
 </resources>

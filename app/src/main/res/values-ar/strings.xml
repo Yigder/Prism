@@ -4135,4 +4135,8 @@
     <string name="not_only_on_the_cover_around_the_controls_too">ليس على الغلاف فقط: حول عناصر التحكم أيضاً</string>
     <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">تعمل السحبات والنقر المزدوج والضغط المطوّل أسفل العنوان أيضاً، في المساحة حول الأزرار والأشرطة. تحتفظ الأزرار والأشرطة بنقراتها الخاصة.</string>
     <string name="gestures_everywhere_keywords">إيماءة سحب نقر مزدوج ضغط مطول الجزء السفلي عناصر التحكم المشغل كله</string>
+    <string name="playing_song_in_the_page_s_color">الأغنية قيد التشغيل بلون الصفحة</string>
+    <string name="its_bars_and_title_take_the_album_s_color">أشرطتها وعنوانها بلون الألبوم</string>
+    <string name="on_album_playlist_and_artist_pages_the_playing_song">في صفحات الألبومات وقوائم التشغيل والفنانين، تظهر أشرطة الأغنية قيد التشغيل وعنوانها بلون صورة الصفحة بدلاً من ضوئك. وفي باقي التطبيق تبقى كما هي.</string>
+    <string name="playing_indicator_bars_now_playing_album_color">مؤشر تشغيل أشرطة معادل ألبوم قائمة فنان صفحة لون غلاف</string>
 </resources>

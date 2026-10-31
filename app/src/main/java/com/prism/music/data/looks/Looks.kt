@@ -225,7 +225,7 @@ object LookLabels {
         "spectrum_stops" to tr(R.string.your_light_s_colors), "spectrum_bands" to tr(R.string.spectrum_in_bands), "surface_tint" to tr(R.string.page_background),
         "surface_tint_strength" to tr(R.string.background_strength), "surface_color" to tr(R.string.background_color), "contrast_level" to tr(R.string.contrast),
         "artwork_swatch" to tr(R.string.cover_color), "artwork_vivid" to tr(R.string.always_colorful), "artwork_change" to tr(R.string.between_songs),
-        "page_picture_accent" to tr(R.string.pages_in_their_picture_s_color), "liquid_glass" to tr(R.string.liquid_glass), "glass_kind" to tr(R.string.glass_style),
+        "page_picture_accent" to tr(R.string.pages_in_their_picture_s_color), "playing_page_color" to tr(R.string.playing_song_in_the_page_s_color), "liquid_glass" to tr(R.string.liquid_glass), "glass_kind" to tr(R.string.glass_style),
         "frosted_glass" to tr(R.string.frosted_glass), "frosted_pages" to tr(R.string.frosted_pages), "backdrops" to tr(R.string.backgrounds), "backdrop_dim" to tr(R.string.background_softness),
         "backdrop_motion" to tr(R.string.gentle_motion), "reduce_motion" to tr(R.string.reduce_motion), "font_choice" to tr(R.string.font), "app_font_name" to tr(R.string.your_font_2),
         "lyrics_font" to tr(R.string.lyrics_font), "text_scale" to tr(R.string.text_size), "corners" to tr(R.string.corners), "ui_density" to tr(R.string.spacing), "title_size" to tr(R.string.page_titles),
@@ -387,7 +387,7 @@ object LookLabels {
         "theme" to setOf("theme_mode", "pure_black"),
         "colors" to setOf(
             "color_source", "accent", "light_style", "accent_exact", "accent_light", "spectrum_preset", "spectrum_stops", "spectrum_bands",
-            "surface_tint", "surface_tint_strength", "surface_color", "contrast_level", "artwork_swatch", "artwork_vivid", "artwork_change", "page_picture_accent",
+            "surface_tint", "surface_tint_strength", "surface_color", "contrast_level", "artwork_swatch", "artwork_vivid", "artwork_change", "page_picture_accent", "playing_page_color",
         ),
         "type" to setOf("font_choice", "app_font_name", "lyrics_font", "text_scale", "type_classic"),
         "backgrounds" to setOf("liquid_glass", "glass_kind", "frosted_glass", "frosted_pages", "backdrops", "backdrop_dim", "backdrop_motion", "reduce_motion"),

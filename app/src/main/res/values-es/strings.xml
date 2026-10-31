@@ -3985,4 +3985,8 @@
     <string name="not_only_on_the_cover_around_the_controls_too">No solo en la portada: también alrededor de los controles</string>
     <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Tus deslizamientos, doble toque y pulsación larga funcionan también debajo del título, en el espacio alrededor de los botones y las barras. Los botones y las barras conservan sus propios toques.</string>
     <string name="gestures_everywhere_keywords">gesto deslizar doble toque pulsación larga parte inferior controles todo el reproductor</string>
+    <string name="playing_song_in_the_page_s_color">Canción en reproducción en el color de la página</string>
+    <string name="its_bars_and_title_take_the_album_s_color">Sus barras y su título toman el color del álbum</string>
+    <string name="on_album_playlist_and_artist_pages_the_playing_song">En las páginas de álbumes, playlists y artistas, la canción que suena muestra sus barras y su título en el color de la imagen de la página en lugar de tu luz. En el resto de la app siguen igual.</string>
+    <string name="playing_indicator_bars_now_playing_album_color">indicador reproduciendo barras ecualizador álbum playlist artista página color portada</string>
 </resources>

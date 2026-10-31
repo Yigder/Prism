@@ -3985,4 +3985,8 @@
     <string name="not_only_on_the_cover_around_the_controls_too">Pas seulement sur la pochette : autour des commandes aussi</string>
     <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Vos balayages, double appui et appui long fonctionnent aussi sous le titre, dans l\'espace autour des boutons et des barres. Les boutons et les barres gardent leurs propres appuis.</string>
     <string name="gestures_everywhere_keywords">geste balayer double appui appui long bas commandes tout le lecteur</string>
+    <string name="playing_song_in_the_page_s_color">Titre en cours dans la couleur de la page</string>
+    <string name="its_bars_and_title_take_the_album_s_color">Ses barres et son titre prennent la couleur de l\'album</string>
+    <string name="on_album_playlist_and_artist_pages_the_playing_song">Sur les pages d\'album, de playlist et d\'artiste, le titre en cours affiche ses barres et son nom dans la couleur de l\'image de la page au lieu de votre lumière. Ailleurs, rien ne change.</string>
+    <string name="playing_indicator_bars_now_playing_album_color">indicateur lecture barres égaliseur album playlist artiste page couleur pochette</string>
 </resources>

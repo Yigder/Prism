@@ -3935,4 +3935,8 @@
     <string name="not_only_on_the_cover_around_the_controls_too">Inte bara på omslaget: runt kontrollerna också</string>
     <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Dina svep, dubbeltryck och långa tryck fungerar även under titeln, i utrymmet runt knapparna och fälten. Knapparna och fälten behåller sina egna tryck.</string>
     <string name="gestures_everywhere_keywords">gest svep dubbeltryck långt tryck nedre delen kontroller hela spelaren</string>
+    <string name="playing_song_in_the_page_s_color">Låten som spelas i sidans färg</string>
+    <string name="its_bars_and_title_take_the_album_s_color">Staplarna och titeln får albumets färg</string>
+    <string name="on_album_playlist_and_artist_pages_the_playing_song">På album-, spellista- och artistsidor visar låten som spelas sina staplar och sin titel i färgen från sidans bild i stället för ditt ljus. Överallt annars är det som vanligt.</string>
+    <string name="playing_indicator_bars_now_playing_album_color">indikator spelas staplar equalizer album spellista artist sida färg omslag</string>
 </resources>

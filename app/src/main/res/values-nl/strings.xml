@@ -3935,4 +3935,8 @@
     <string name="not_only_on_the_cover_around_the_controls_too">Niet alleen op de hoes: ook rond de bediening</string>
     <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Je vegen, dubbeltikken en lang drukken werken ook onder de titel, in de ruimte rond de knoppen en balken. Knoppen en balken houden hun eigen tikken.</string>
     <string name="gestures_everywhere_keywords">gebaar vegen dubbeltikken lang drukken onderkant bediening hele speler</string>
+    <string name="playing_song_in_the_page_s_color">Spelend nummer in de kleur van de pagina</string>
+    <string name="its_bars_and_title_take_the_album_s_color">De balkjes en titel nemen de kleur van het album aan</string>
+    <string name="on_album_playlist_and_artist_pages_the_playing_song">Op album-, playlist- en artiestpagina\'s toont het spelende nummer zijn balkjes en titel in de kleur van de afbeelding van de pagina in plaats van jouw licht. Elders blijft alles zoals het is.</string>
+    <string name="playing_indicator_bars_now_playing_album_color">indicator speelt balkjes equalizer album playlist artiest pagina kleur hoes</string>
 </resources>

@@ -551,7 +551,16 @@ fun ArtworkAccent(palette: ArtPalette?, override: Color? = null, content: @Compo
             scheme.copy(primary = accent, onPrimary = on, surfaceTint = accent)
         }
     }
-    MaterialTheme(colorScheme = themed, typography = MaterialTheme.typography, shapes = MaterialTheme.shapes, content = content)
+    // The page's own color, whether or not the page takes it as its accent: the playing song's mark can use it (Reddit,
+    // 1.7.9.2, Color → "Playing song in the page's color").
+    val pageColor = override?.let { com.prism.music.ui.theme.readableOn(it, scheme.background) }
+        ?: palette?.accent(dark)?.let { com.prism.music.ui.theme.readableOn(it, scheme.background) }
+    MaterialTheme(colorScheme = themed, typography = MaterialTheme.typography, shapes = MaterialTheme.shapes) {
+        androidx.compose.runtime.CompositionLocalProvider(LocalPageColor provides pageColor, content = content)
+    }
 }
+
+/** The color of the page's picture (an album's cover, an artist's photo), or null off such pages. See [ArtworkAccent]. */
+val LocalPageColor = androidx.compose.runtime.compositionLocalOf<Color?> { null }
 
 private fun Color.luminance(): Float = ColorUtils.calculateLuminance(toArgb()).toFloat()

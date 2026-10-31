@@ -62,6 +62,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -203,6 +204,7 @@ fun SongRowLayout(
     val scheme = MaterialTheme.colorScheme
     val ui = com.prism.music.ui.theme.LocalUi.current
     val art = ui.songArt
+    val pageMark = if (com.prism.music.ui.theme.LocalAppSettings.current.view.playingInPageColor) LocalPageColor.current else null
     Row(
         modifier
             .fillMaxWidth()
@@ -226,13 +228,17 @@ fun SongRowLayout(
         Artwork(song.thumbnail, Modifier.size(48.dp), art, size = 226)
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
-            // The playing song's title is written in split light (deeper on light backgrounds), beside the spectrum bars.
+            // The playing song's title is written in split light (deeper on light backgrounds), beside the spectrum bars;
+            // or, asked for (Reddit, 1.7.9.2), in the album's / playlist's / artist's own color on its page.
             val dark = com.prism.music.ui.theme.LocalIsDark.current
             Text(
                 song.title, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                style = if (playing) MaterialTheme.typography.bodyLarge.copy(brush = com.prism.music.ui.theme.PrismTokens.spectrum(dark), fontWeight = FontWeight.Medium)
-                    else MaterialTheme.typography.bodyLarge,
-                color = scheme.onSurface,
+                style = when {
+                    !playing -> MaterialTheme.typography.bodyLarge
+                    pageMark != null -> MaterialTheme.typography.bodyLarge.copy(color = pageMark, fontWeight = FontWeight.Medium)
+                    else -> MaterialTheme.typography.bodyLarge.copy(brush = com.prism.music.ui.theme.PrismTokens.spectrum(dark), fontWeight = FontWeight.Medium)
+                },
+                color = if (playing && pageMark != null) pageMark else scheme.onSurface,
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val mark = Modifier.size(13.dp).padding(end = 3.dp)
@@ -247,7 +253,10 @@ fun SongRowLayout(
                 )
             }
         }
-        if (playing) PlayingBars(Modifier.padding(start = 8.dp).size(13.dp, 14.dp), spectrum = true)
+        if (playing) PlayingBars(
+            Modifier.padding(start = 8.dp).size(13.dp, 14.dp).then(if (pageMark != null) Modifier.testTag("pageColorBars") else Modifier),
+            color = pageMark ?: Color.White, spectrum = pageMark == null,
+        )
         IconButton(onClick = onMore) { Icon(PrismIcons.More, tr(R.string.more), Modifier.size(20.dp), tint = scheme.ink3) }
     }
 }

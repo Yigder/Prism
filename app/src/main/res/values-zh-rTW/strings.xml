@@ -3885,4 +3885,8 @@
     <string name="not_only_on_the_cover_around_the_controls_too">不只在封面上，控制按鈕周圍也可以</string>
     <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">你的滑動、輕觸兩下和長按在標題下方、按鈕和進度列周圍的空白處也能用。按鈕和進度列保留自己的輕觸。</string>
     <string name="gestures_everywhere_keywords">手勢 滑動 輕觸兩下 長按 下半部 控制 整個播放器</string>
+    <string name="playing_song_in_the_page_s_color">正在播放的歌曲使用頁面顏色</string>
+    <string name="its_bars_and_title_take_the_album_s_color">它的跳動條和標題取專輯的顏色</string>
+    <string name="on_album_playlist_and_artist_pages_the_playing_song">在專輯、播放清單和藝人頁面上，正在播放的歌曲以頁面圖片的顏色顯示跳動條和標題，而不是你的光。其他地方保持不變。</string>
+    <string name="playing_indicator_bars_now_playing_album_color">正在播放 指示 跳動條 等化器 專輯 播放清單 藝人 頁面 顏色 封面</string>
 </resources>

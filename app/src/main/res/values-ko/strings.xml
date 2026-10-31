@@ -3885,4 +3885,8 @@
     <string name="not_only_on_the_cover_around_the_controls_too">커버뿐 아니라 컨트롤 주변에서도</string>
     <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">스와이프, 두 번 탭, 길게 누르기가 제목 아래, 버튼과 바 주변 공간에서도 작동합니다. 버튼과 바는 원래의 탭을 유지합니다.</string>
     <string name="gestures_everywhere_keywords">제스처 스와이프 두 번 탭 길게 누르기 아래쪽 컨트롤 플레이어 전체</string>
+    <string name="playing_song_in_the_page_s_color">재생 중인 곡을 페이지 색으로</string>
+    <string name="its_bars_and_title_take_the_album_s_color">막대와 제목이 앨범 색을 따릅니다</string>
+    <string name="on_album_playlist_and_artist_pages_the_playing_song">앨범, 재생목록, 아티스트 페이지에서 재생 중인 곡의 막대와 제목이 내 빛 대신 페이지 이미지의 색으로 표시됩니다. 다른 곳은 그대로입니다.</string>
+    <string name="playing_indicator_bars_now_playing_album_color">재생 중 표시 막대 이퀄라이저 앨범 재생목록 아티스트 페이지 색 커버</string>
 </resources>

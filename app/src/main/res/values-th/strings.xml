@@ -3885,4 +3885,8 @@
     <string name="not_only_on_the_cover_around_the_controls_too">ไม่ใช่แค่บนปก: รอบปุ่มควบคุมด้วย</string>
     <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">การปัด การแตะสองครั้ง และการกดค้าง ใช้ได้ใต้ชื่อเพลงด้วย ในพื้นที่รอบปุ่มและแถบ ปุ่มและแถบยังรับการแตะของตัวเอง</string>
     <string name="gestures_everywhere_keywords">ท่าทาง ปัด แตะสองครั้ง กดค้าง ครึ่งล่าง ปุ่มควบคุม ทั้งเพลเยอร์</string>
+    <string name="playing_song_in_the_page_s_color">เพลงที่กำลังเล่นเป็นสีของหน้า</string>
+    <string name="its_bars_and_title_take_the_album_s_color">แถบและชื่อเพลงใช้สีของอัลบั้ม</string>
+    <string name="on_album_playlist_and_artist_pages_the_playing_song">ในหน้าอัลบั้ม เพลย์ลิสต์ และศิลปิน เพลงที่กำลังเล่นจะแสดงแถบและชื่อเป็นสีของรูปในหน้าแทนแสงของคุณ ที่อื่นยังเหมือนเดิม</string>
+    <string name="playing_indicator_bars_now_playing_album_color">ตัวบ่งชี้ กำลังเล่น แถบ อีควอไลเซอร์ อัลบั้ม เพลย์ลิสต์ ศิลปิน หน้า สี ปก</string>
 </resources>

@@ -4035,4 +4035,8 @@
     <string name="not_only_on_the_cover_around_the_controls_too">Nie tylko na okładce: także wokół przycisków</string>
     <string name="your_swipes_double_tap_and_long_press_work_below_the_title_too">Twoje przesunięcia, dwukrotne kliknięcie i przytrzymanie działają też pod tytułem, w miejscu wokół przycisków i pasków. Przyciski i paski zachowują własne dotknięcia.</string>
     <string name="gestures_everywhere_keywords">gest przesunięcie dwukrotne kliknięcie przytrzymanie dół sterowanie cały odtwarzacz</string>
+    <string name="playing_song_in_the_page_s_color">Odtwarzany utwór w kolorze strony</string>
+    <string name="its_bars_and_title_take_the_album_s_color">Paski i tytuł w kolorze albumu</string>
+    <string name="on_album_playlist_and_artist_pages_the_playing_song">Na stronach albumów, playlist i wykonawców odtwarzany utwór pokazuje paski i tytuł w kolorze obrazu strony zamiast Twojego światła. Wszędzie indziej bez zmian.</string>
+    <string name="playing_indicator_bars_now_playing_album_color">wskaźnik odtwarzanie paski korektor album playlista wykonawca strona kolor okładka</string>
 </resources>

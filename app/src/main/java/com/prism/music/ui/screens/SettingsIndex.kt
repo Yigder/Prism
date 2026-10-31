@@ -134,6 +134,7 @@ object SettingsIndex {
             needs = Needs(tr(R.string.pick_accent_tint_or_your_color)) { it.surfaceTint == com.prism.music.data.prefs.SurfaceTint.ACCENT || it.surfaceTint == com.prism.music.data.prefs.SurfaceTint.CUSTOM }),
         SettingEntry(CO, tr(R.string.text_contrast), tr(R.string.text_contrast), tr(R.string.high_contrast_accessibility_readability_legible)),
         SettingEntry(CO, tr(R.string.artist_album_pages), tr(R.string.photo_s_color), tr(R.string.artist_album_playlist_page_color_color)),
+        SettingEntry(CO, tr(R.string.artist_album_pages), tr(R.string.playing_song_in_the_page_s_color), tr(R.string.playing_indicator_bars_now_playing_album_color)),
         SettingEntry(T, tr(R.string.text), tr(R.string.font), tr(R.string.typeface_custom_ttf_otf_outfit_prism)),
         SettingEntry(T, tr(R.string.type), tr(R.string.type), tr(R.string.classic_1_6_bold_headings_titles), shown = tr(R.string.classic_type)),
         SettingEntry(T, tr(R.string.weight_and_spacing), tr(R.string.weight_and_spacing), tr(R.string.bold_light_heavy_text_weight)),

@@ -386,6 +386,11 @@ private fun ColorSettings() {
                 },
                 onSelect = { prefs.setPageColors(it) },
             ) { on -> ColorSample(c, pageAccent = if (on) pictureAccent else null) }
+            // Reddit (1.7.9.2): the playing song's bars and title in the page's color, whichever accent the page has.
+            Toggle(
+                tr(R.string.playing_song_in_the_page_s_color), tr(R.string.its_bars_and_title_take_the_album_s_color),
+                s.view.playingInPageColor, info = tr(R.string.on_album_playlist_and_artist_pages_the_playing_song),
+            ) { prefs.setPlayingInPageColor(it) }
         }
         ResetColors()
     }
