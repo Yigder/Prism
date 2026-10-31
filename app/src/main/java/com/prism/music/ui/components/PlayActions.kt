@@ -62,6 +62,21 @@ sealed interface Playable {
     ) : Playable
 }
 
+/**
+ * [target]'s songs after the current one ([next]) or at the end of the queue, then a note saying so (the menu's Play
+ * next / Add to queue, and a release swiped on New from your artists, #248).
+ */
+fun queuePlayable(c: AppContainer, context: android.content.Context, target: Playable, title: String, next: Boolean) = c.scope.launch(Dispatchers.Main) {
+    val loaded = runCatching { withContext(Dispatchers.IO) { songsFor(c, target, shuffle = false, mix = false) } }.getOrNull()
+    if (loaded == null || loaded.first.isEmpty()) {
+        Toast.makeText(context, if (loaded == null) tr(R.string.couldn_t_load, title) else tr(R.string.nothing_to_play_in, title), Toast.LENGTH_SHORT).show()
+        return@launch
+    }
+    if (next) c.player.playNext(loaded.first, loaded.second) else c.player.addToQueue(loaded.first, loaded.second)
+    // (Was English in every language until 1.7.9.2.)
+    Toast.makeText(context, com.prism.music.data.model.songCount(loaded.first.size) + " · " + (if (next) tr(R.string.playing_next) else tr(R.string.added_to_queue)), Toast.LENGTH_SHORT).show()
+}
+
 /** Moods and genres are pages of shelves, not something to play. */
 fun BrowseItem.playable(): Playable? = if (this is MoodItem) null else Playable.Of(this)
 
@@ -118,15 +133,7 @@ fun PlayActionsSheet(target: Playable, extra: List<SheetItem> = emptyList(), ext
     }
 
     /** The whole list after the current song ([next]) or at the end of the queue. */
-    fun queue(next: Boolean) = c.scope.launch(Dispatchers.Main) {
-        val loaded = runCatching { withContext(Dispatchers.IO) { songsFor(c, target, shuffle = false, mix = false) } }.getOrNull()
-        if (loaded == null || loaded.first.isEmpty()) {
-            Toast.makeText(context, if (loaded == null) tr(R.string.couldn_t_load, title) else tr(R.string.nothing_to_play_in, title), Toast.LENGTH_SHORT).show()
-            return@launch
-        }
-        if (next) c.player.playNext(loaded.first, loaded.second) else c.player.addToQueue(loaded.first, loaded.second)
-        Toast.makeText(context, "${com.prism.music.data.model.songCount(loaded.first.size)} ${if (next) "playing next" else "added to the queue"}", Toast.LENGTH_SHORT).show()
-    }
+    fun queue(next: Boolean) = queuePlayable(c, context, target, title, next)
     val quick = if (item is ArtistItem) listOf(
         ActionItem(PrismIcons.Shuffle, tr(R.string.shuffle)) { play(shuffle = true) },
         ActionItem(PrismIcons.Radio, tr(R.string.mix_2)) { play(shuffle = false, mix = true) },

@@ -51,15 +51,8 @@ import kotlin.math.roundToInt
 fun SwipeToQueue(song: Song, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     val c = LocalContainer.current
     val context = LocalContext.current
-    val haptics = rememberHaptics()
     val together by c.together.state.collectAsState()
-    val density = LocalDensity.current
-    val mark = with(density) { 84.dp.toPx() }
-    val reach = with(density) { 150.dp.toPx() }
-    var offset by remember { mutableFloatStateOf(0f) }
-    val scheme = MaterialTheme.colorScheme
-
-    fun queue(next: Boolean) {
+    SwipeToQueue({ next ->
         val guest = (together as? com.prism.music.playback.together.TogetherState.Guest)?.takeIf { !song.isLocal }
         val text = if (guest != null) {
             c.together.suggest(song, next = next)
@@ -69,7 +62,28 @@ fun SwipeToQueue(song: Song, modifier: Modifier = Modifier, content: @Composable
             if (next) tr(R.string.playing_next) else tr(R.string.added_to_queue)
         }
         android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_SHORT).show()
-    }
+    }, modifier, content)
+}
+
+/** An album's or playlist's row swiped the same way: all its songs play next or go on the end of the queue (#248). */
+@Composable
+fun SwipeToQueue(item: com.prism.music.data.model.BrowseItem, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val c = LocalContainer.current
+    val context = LocalContext.current
+    val target = item.playable() ?: return content()
+    SwipeToQueue({ next -> queuePlayable(c, context, target, item.title, next) }, modifier, content)
+}
+
+/** The swipe itself: [onQueue] with true to the right (play next), false to the left (end of the queue). */
+@Composable
+fun SwipeToQueue(onQueue: (next: Boolean) -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val haptics = rememberHaptics()
+    val density = LocalDensity.current
+    val mark = with(density) { 84.dp.toPx() }
+    val reach = with(density) { 150.dp.toPx() }
+    var offset by remember { mutableFloatStateOf(0f) }
+    val scheme = MaterialTheme.colorScheme
+    fun queue(next: Boolean) = onQueue(next)
 
     Box(modifier.fillMaxWidth().clipToBounds()) {
         // What the swipe uncovers, in the gap it opens: tinted once letting go would do it.

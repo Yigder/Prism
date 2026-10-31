@@ -294,7 +294,7 @@ fun NewReleasesScreen(bottomPadding: Dp) {
         if (order != ReleaseOrder.NEWEST) {
             val sorted = if (order == ReleaseOrder.ARTIST) list.sortedWith(compareBy<ReleaseEntity> { it.artistName.lowercase() }.thenBy { age(it) })
                 else list.sortedBy { it.title.lowercase() }
-            items(sorted, key = { it.id }) { r -> ReleaseRow(r, today) { nav.go(Routes.album(r.id)) } }
+            items(sorted, key = { it.id }) { r -> com.prism.music.ui.components.SwipeToQueue(r.asItem()) { ReleaseRow(r, today) { nav.go(Routes.album(r.id)) } } }
             return@SubPage
         }
         if (all.isEmpty() && !running) item("empty") {
@@ -310,7 +310,7 @@ fun NewReleasesScreen(bottomPadding: Dp) {
             item("h:$title") {
                 Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 20.dp, top = 18.dp, bottom = 6.dp))
             }
-            items(part, key = { it.id }) { r -> ReleaseRow(r, today) { nav.go(Routes.album(r.id)) } }
+            items(part, key = { it.id }) { r -> com.prism.music.ui.components.SwipeToQueue(r.asItem()) { ReleaseRow(r, today) { nav.go(Routes.album(r.id)) } } }
         }
     }
 }

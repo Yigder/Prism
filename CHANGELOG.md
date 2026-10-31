@@ -18,6 +18,8 @@ What changed in each release. Older releases are described on the [Releases page
 - **The playing song in the album's color** (Reddit): Customize Prism → Color → Artist & album pages → "Playing song
   in the page's color" (off by default). On album, playlist and artist pages, the playing song's bars and title take
   the color of the page's picture instead of your light.
+- **Swipe a new release into the queue** (#248): on New from your artists' page, swipe a release right to play it
+  next or left to add it to the end of the queue, as with songs.
 - **Gestures anywhere on the player** (#259): Settings → Controls & gestures → Gestures has a new switch (off by
   default). On, your swipes, double tap and long press work below the title too, in the space around the buttons and
   bars (which keep their own taps).
@@ -34,6 +36,7 @@ What changed in each release. Older releases are described on the [Releases page
 - **"Between songs" didn't fade the light "From the cover"** (#254): with your light taking the cover's colors, the
   progress bar, Play's ring and the picked cards changed to the next song's colors at once, so Fade and Slow fade
   looked like a cut. The light now fades with the accent (at once with Reduce motion or Performance mode).
+- **"Play next" and "Add to queue" on an album or playlist said so in English** in every language: translated now.
 - **Search's chips were in English in every language** (Top results, Songs, Videos, Albums…): they're translated now.
 
 ## 1.7.9.1
