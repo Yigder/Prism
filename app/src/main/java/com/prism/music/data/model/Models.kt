@@ -150,17 +150,22 @@ data class Shelf(
  * Home's Quick picks. Its title is in the account's language ("Selección rápida", "Schnellauswahl"…), so after the
  * English title it's known by its shape: the first carousel of song rows. (Matched by title alone, Home showed your
  * recent plays in its place for anyone using YouTube in another language.) Shelves of your own recent plays ("Listen
- * again", "Speed dial", in any language) are never taken for it.
+ * again", "Speed dial", in any language: they carry your name, [owner]) are never taken for it.
  */
-fun List<Shelf>.quickPicks(): Shelf? = firstOrNull { it.title.equals("Quick picks", true) }
-    ?: firstOrNull { s -> s.rows && s.title.lowercase() !in RECENT_SHELVES && s.items.count { it is SongItem } * 2 > s.items.size }
+fun List<Shelf>.quickPicks(owner: String? = null): Shelf? = firstOrNull { it.title.equals("Quick picks", true) }
+    ?: firstOrNull { s -> s.rows && s.title.lowercase() !in RECENT_SHELVES && !s.yours(owner) && s.items.count { it is SongItem } * 2 > s.items.size }
 
 /**
  * YouTube's own Speed dial (or, where it isn't offered, "Listen again"): what Home's Speed dial section starts from.
- * In another language (#131: "Marcación rápida") it's known by its shape, cards stacked a few per column.
+ * In another language (#131: "Marcación rápida", #163: "Vuelve a escucharlo") it's the shelf headed with your name
+ * ([owner], the account's), as YouTube Music heads it in every language; else by its old shape, cards stacked a few
+ * per column (YouTube stopped stacking Listen again by 2026-10).
  */
-fun List<Shelf>.speedDial(): Shelf? = firstOrNull { it.title.equals("Speed dial", true) } ?: firstOrNull { it.title.equals("Listen again", true) }
-    ?: firstOrNull { it.stacked && !it.rows }
+fun List<Shelf>.speedDial(owner: String? = null): Shelf? = firstOrNull { it.title.equals("Speed dial", true) } ?: firstOrNull { it.title.equals("Listen again", true) }
+    ?: firstOrNull { it.yours(owner) && !it.rows } ?: firstOrNull { it.stacked && !it.rows }
+
+/** Headed with the account's own name: a shelf of your history (#163). */
+private fun Shelf.yours(owner: String?) = !owner.isNullOrBlank() && strapline?.trim().equals(owner.trim(), ignoreCase = true)
 
 /** Home shelves that are your own history, by their English titles. */
 private val RECENT_SHELVES = setOf("listen again", "speed dial", "recently played", "keep listening")

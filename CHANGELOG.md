@@ -22,6 +22,12 @@ What changed in each release. Older releases are described on the [Releases page
 
 ### Fixes
 
+- **Speed dial showed only your own plays in other languages** (#163): YouTube's own Speed dial ("Listen again") was
+  found by its English title or an old layout YouTube has dropped, so in Spanish it was never found and "Speed dial:
+  YouTube Music's only" did nothing. It's now the shelf headed with your name, in any language.
+- **Quick picks went missing now and then** (#162): Home stopped after three pages, and YouTube puts Quick picks
+  anywhere from the first to the fourth. Home now reads on until it has Quick picks and Speed dial (when they're on
+  Home), and a shelf of your own history is never taken for Quick picks.
 - **Search's chips were in English in every language** (Top results, Songs, Videos, Albums…): they're translated now.
 
 ## 1.7.9.1

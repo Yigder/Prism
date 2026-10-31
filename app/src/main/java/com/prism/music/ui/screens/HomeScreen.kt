@@ -148,7 +148,14 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
         // can land on a later page or drop out entirely. Page further for them, and keep the last
         // copy we saw rather than silently hiding a section the user turned on.
         val wanted = layoutNow.filter { it.visible && it.key.startsWith(HomeSections.YT_PREFIX) }.map { it.key }.toSet()
-        val (fresh, pages) = c.ytm.fullHomePages(pages = 3, maxPages = 8) { got -> wanted.all { k -> got.any { shelfKey(it.title) == k } } }
+        // Quick picks and Speed dial too (#162): YouTube puts Quick picks anywhere from the first page to the fourth, and
+        // stopping at three left the section out of a load now and then ("refresh until it comes back").
+        val picksOn = layoutNow.any { it.visible && it.key == HomeSections.QUICK_PICKS }
+        val dialWanted = layoutNow.any { it.visible && it.key == HomeSections.SPEED_DIAL }
+        val owner = c.settings.current.accountName
+        val (fresh, pages) = c.ytm.fullHomePages(pages = 3, maxPages = 8) { got ->
+            wanted.all { k -> got.any { shelfKey(it.title) == k } } && (!picksOn || got.quickPicks(owner) != null) && (!dialWanted || got.speedDial(owner) != null)
+        }
         // Kept for the next start, to show while this loads again (#126).
         c.scope.launch { c.homeCache.write(pages) }
         val freshKeys = fresh.map { shelfKey(it.title) }.toSet()
@@ -158,8 +165,9 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
         com.prism.music.playback.AudioDiagnostics.log(
             "home",
             tr(R.string.pages_2, pages.size) + fresh.joinToString { s ->
-                s.title + " (" + listOfNotNull("rows".takeIf { s.rows }, "stacked".takeIf { s.stacked }, "${s.items.size}").joinToString(" ") + ")"
-            } + tr(R.string.quick_picks_speed_dial, fresh.quickPicks()?.title ?: "none", fresh.speedDial()?.title ?: "none") +
+                s.title + " (" + listOfNotNull("rows".takeIf { s.rows }, "stacked".takeIf { s.stacked }, "${s.items.size}",
+                    s.strapline?.let { "strapline=" + if (it.equals(settings.accountName, true)) "your name" else it }).joinToString(" ") + ")"
+            } + tr(R.string.quick_picks_speed_dial, fresh.quickPicks(owner)?.title ?: "none", fresh.speedDial(owner)?.title ?: "none") +
                 if (kept.isNotEmpty()) tr(R.string.kept_from_before, kept.joinToString { it.title }) else "",
         )
         (fresh + kept).also { homeShelfCache.value = it }
@@ -174,10 +182,10 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
 
     val shelves = (home.state as? Load.Ok)?.value ?: lastHome ?: emptyList()
     // A reload whose feed has no Quick picks keeps the last ones, rather than the section vanishing or swapping.
-    val picks = remember(shelves) { shelves.quickPicks()?.also { lastQuickPicks.value = it } ?: lastQuickPicks.value }
+    val picks = remember(shelves, settings.accountName) { shelves.quickPicks(settings.accountName)?.also { lastQuickPicks.value = it } ?: lastQuickPicks.value }
     val dialOn = settings.homeLayout.any { it.key == HomeSections.SPEED_DIAL && it.visible }
     // The Speed dial section shows YouTube's own, so it isn't added again as a shelf of its own.
-    val dial = shelves.speedDial()?.takeIf { dialOn }
+    val dial = shelves.speedDial(settings.accountName)?.takeIf { dialOn }
     val layout = remember(settings.homeLayout, shelves, settings.autoAddSections, picks, settings.homeHideKinds) {
         val known = settings.homeLayout.map { it.key }.toSet()
         val extra = if (settings.autoAddSections) shelves
