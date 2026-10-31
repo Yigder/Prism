@@ -2,7 +2,7 @@
 
 What changed in each release. Older releases are described on the [Releases page](https://github.com/Yigder/Prism/releases).
 
-## 1.7.9.2 (unreleased)
+## 1.7.9.2
 
 ### Requests
 

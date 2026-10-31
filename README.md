@@ -15,7 +15,7 @@ A free, open-source YouTube Music client for Android, with word-by-word lyrics, 
 
 ### [⬇ Download Prism.apk](../../releases/latest/download/Prism.apk)
 
-[What's new in 1.7.9.1](../../releases/tag/v1.7.9.1) · [Changelog](CHANGELOG.md) · [Watch the film](../../releases/download/v1.7.0/Prism-1.7-film.mp4)
+[What's new in 1.7.9.2](../../releases/tag/v1.7.9.2) · [Changelog](CHANGELOG.md) · [Watch the film](../../releases/download/v1.7.0/Prism-1.7-film.mp4)
 
 <a href="../../releases/download/v1.7.0/Prism-1.7-film.mp4"><img src="docs/screenshots/preview.gif" width="720" alt="Prism 1.7: word-by-word lyrics on the player. Click to watch the full film."></a>
 
