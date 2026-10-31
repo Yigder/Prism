@@ -3920,4 +3920,15 @@
     <string name="under_each_line_in_your_translation_language">Her satırın altında, çeviri dilinizde</string>
     <string name="lyrics_file_words_keywords">karaoke kelime kelime gelişmiş lrc dosya etiket zamanlama</string>
     <string name="lyrics_file_translation_keywords">çeviri çevir dosya etiket ikinci dil iki dilli</string>
+    <string name="top_results">En iyi sonuçlar</string>
+    <string name="videos">Videolar</string>
+    <string name="featured_playlists">Öne çıkan çalma listeleri</string>
+    <string name="community_playlists">Topluluk çalma listeleri</string>
+    <string name="search_chips">Filtreler</string>
+    <string name="search_opens_on_the_first_one">Arama ilkinde açılır. Taşımak için birini basılı tutun.</string>
+    <string name="fill_strength">Dolgu gücü</string>
+    <string name="ring_on_the_play_button">Oynat düğmesinde halka</string>
+    <string name="the_split_light_around_play_and_pause">Oynat ve duraklat çevresindeki ayrışmış ışık</string>
+    <string name="mini_player_progress_color">Mini oynatıcının ilerleme rengi</string>
+    <string name="mini_player_fill_strength">Mini oynatıcının dolgu gücü</string>
 </resources>

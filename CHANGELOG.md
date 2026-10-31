@@ -10,6 +10,16 @@ What changed in each release. Older releases are described on the [Releases page
   Sing → Your music files has two new switches, both off. "Keep word timings" saves karaoke lyrics as enhanced LRC
   (Poweramp and other karaoke players light them word by word); "Include the translation" puts each line's
   translation under it, in your translation language.
+- **Search's chips in your order** (#224): Search → Arrange Search → Chips. Hold one to move it; Search opens on the
+  first, so "On this phone" (or Songs, or any other) can be where it starts.
+- **The mini player's progress, your way** (#231): Customize Prism → Tabs & mini player → Mini player has a progress
+  bar color (your light as before, your accent, plain, or the cover's color) and, with Fill, how strong the fill is,
+  up to nearly solid on frosted glass.
+- **The ring around the player's play button can go** (#231): Customize Prism → Player → "Ring on the play button".
+
+### Fixes
+
+- **Search's chips were in English in every language** (Top results, Songs, Videos, Albums…): they're translated now.
 
 ## 1.7.9.1
 

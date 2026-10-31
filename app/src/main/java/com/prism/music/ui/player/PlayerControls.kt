@@ -600,13 +600,13 @@ private fun PlayDisc(isPlaying: Boolean, isLoading: Boolean, filled: Boolean, si
     val haptics = rememberHaptics()
     val pressed = remember { MutableInteractionSource() }
     Box(
-        Modifier.size(size + 14.dp).clickable(pressed, indication = null) { haptics.click(); onClick() },
+        Modifier.size(size + 14.dp).testTag("playDisc").clickable(pressed, indication = null) { haptics.click(); onClick() },
         contentAlignment = Alignment.Center,
     ) {
         Box(
             Modifier.size(size).clip(CircleShape)
                 .background(if (filled) Color.White else Color.White.copy(alpha = 0.10f))
-                .border(2.dp, com.prism.music.ui.theme.PrismTokens.spectrumRing(), CircleShape),
+                .then(if (com.prism.music.ui.theme.LocalAppSettings.current.view.playRing) Modifier.border(2.dp, com.prism.music.ui.theme.PrismTokens.spectrumRing(), CircleShape) else Modifier),
             contentAlignment = Alignment.Center,
         ) {
             val tint = if (filled) Color.Black else Color.White

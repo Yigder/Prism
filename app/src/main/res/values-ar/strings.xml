@@ -4120,4 +4120,15 @@
     <string name="under_each_line_in_your_translation_language">تحت كل سطر، بلغة الترجمة لديك</string>
     <string name="lyrics_file_words_keywords">كاريوكي كلمة بكلمة lrc محسن ملف وسم توقيت</string>
     <string name="lyrics_file_translation_keywords">ترجمة ترجم ملف وسم لغة ثانية ثنائي اللغة</string>
+    <string name="top_results">أهم النتائج</string>
+    <string name="videos">الفيديوهات</string>
+    <string name="featured_playlists">قوائم تشغيل مميزة</string>
+    <string name="community_playlists">قوائم تشغيل المجتمع</string>
+    <string name="search_chips">عوامل التصفية</string>
+    <string name="search_opens_on_the_first_one">يُفتح البحث على أولها. اضغط مطولاً على أحدها لنقله.</string>
+    <string name="fill_strength">قوة التعبئة</string>
+    <string name="ring_on_the_play_button">حلقة حول زر التشغيل</string>
+    <string name="the_split_light_around_play_and_pause">الضوء المنكسر حول التشغيل والإيقاف المؤقت</string>
+    <string name="mini_player_progress_color">لون تقدم المشغّل المصغّر</string>
+    <string name="mini_player_fill_strength">قوة تعبئة المشغّل المصغّر</string>
 </resources>

@@ -4020,4 +4020,15 @@
     <string name="under_each_line_in_your_translation_language">Pod každým řádkem, ve vašem jazyce překladu</string>
     <string name="lyrics_file_words_keywords">karaoke slovo po slově rozšířené lrc soubor štítek čas</string>
     <string name="lyrics_file_translation_keywords">překlad přeložit soubor štítek druhý jazyk dvojjazyčný</string>
+    <string name="top_results">Nejlepší výsledky</string>
+    <string name="videos">Videa</string>
+    <string name="featured_playlists">Doporučené playlisty</string>
+    <string name="community_playlists">Playlisty komunity</string>
+    <string name="search_chips">Filtry</string>
+    <string name="search_opens_on_the_first_one">Hledání se otevře na prvním. Podržením filtr přesunete.</string>
+    <string name="fill_strength">Síla výplně</string>
+    <string name="ring_on_the_play_button">Kroužek na tlačítku přehrávání</string>
+    <string name="the_split_light_around_play_and_pause">Rozložené světlo kolem přehrát a pozastavit</string>
+    <string name="mini_player_progress_color">Barva průběhu mini přehrávače</string>
+    <string name="mini_player_fill_strength">Síla výplně mini přehrávače</string>
 </resources>

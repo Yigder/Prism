@@ -4020,4 +4020,15 @@
     <string name="under_each_line_in_your_translation_language">Pod każdym wierszem, w Twoim języku tłumaczenia</string>
     <string name="lyrics_file_words_keywords">karaoke słowo po słowie rozszerzony lrc plik tag czas</string>
     <string name="lyrics_file_translation_keywords">tłumaczenie tłumaczyć plik tag drugi język dwujęzyczny</string>
+    <string name="top_results">Najlepsze wyniki</string>
+    <string name="videos">Filmy</string>
+    <string name="featured_playlists">Polecane playlisty</string>
+    <string name="community_playlists">Playlisty społeczności</string>
+    <string name="search_chips">Filtry</string>
+    <string name="search_opens_on_the_first_one">Wyszukiwanie otwiera się na pierwszym. Przytrzymaj jeden, aby go przenieść.</string>
+    <string name="fill_strength">Siła wypełnienia</string>
+    <string name="ring_on_the_play_button">Pierścień na przycisku odtwarzania</string>
+    <string name="the_split_light_around_play_and_pause">Rozszczepione światło wokół odtwarzania i pauzy</string>
+    <string name="mini_player_progress_color">Kolor postępu w miniodtwarzaczu</string>
+    <string name="mini_player_fill_strength">Siła wypełnienia miniodtwarzacza</string>
 </resources>

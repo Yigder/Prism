@@ -3970,4 +3970,15 @@
     <string name="under_each_line_in_your_translation_language">Debajo de cada línea, en tu idioma de traducción</string>
     <string name="lyrics_file_words_keywords">karaoke palabra por palabra lrc mejorado archivo etiqueta tiempo</string>
     <string name="lyrics_file_translation_keywords">traducción traducir archivo etiqueta segundo idioma bilingüe</string>
+    <string name="top_results">Mejores resultados</string>
+    <string name="videos">Videos</string>
+    <string name="featured_playlists">Playlists destacadas</string>
+    <string name="community_playlists">Playlists de la comunidad</string>
+    <string name="search_chips">Filtros</string>
+    <string name="search_opens_on_the_first_one">La búsqueda se abre en el primero. Mantén uno pulsado para moverlo.</string>
+    <string name="fill_strength">Intensidad del relleno</string>
+    <string name="ring_on_the_play_button">Anillo en el botón de reproducir</string>
+    <string name="the_split_light_around_play_and_pause">La luz dividida alrededor de reproducir y pausar</string>
+    <string name="mini_player_progress_color">Color del progreso del minirreproductor</string>
+    <string name="mini_player_fill_strength">Intensidad del relleno del minirreproductor</string>
 </resources>

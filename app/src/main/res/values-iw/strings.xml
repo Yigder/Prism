@@ -3970,4 +3970,15 @@
     <string name="under_each_line_in_your_translation_language">מתחת לכל שורה, בשפת התרגום שלך</string>
     <string name="lyrics_file_words_keywords">קריוקי מילה אחר מילה lrc מורחב קובץ תג תזמון</string>
     <string name="lyrics_file_translation_keywords">תרגום לתרגם קובץ תג שפה שנייה דו-לשוני</string>
+    <string name="top_results">התוצאות המובילות</string>
+    <string name="videos">סרטונים</string>
+    <string name="featured_playlists">פלייליסטים מומלצים</string>
+    <string name="community_playlists">פלייליסטים של הקהילה</string>
+    <string name="search_chips">מסננים</string>
+    <string name="search_opens_on_the_first_one">החיפוש נפתח על הראשון. לחיצה ארוכה על אחד כדי להזיז אותו.</string>
+    <string name="fill_strength">עוצמת המילוי</string>
+    <string name="ring_on_the_play_button">טבעת על כפתור ההפעלה</string>
+    <string name="the_split_light_around_play_and_pause">האור המפוצל סביב הפעלה והשהיה</string>
+    <string name="mini_player_progress_color">צבע ההתקדמות של הנגן המוקטן</string>
+    <string name="mini_player_fill_strength">עוצמת המילוי של הנגן המוקטן</string>
 </resources>

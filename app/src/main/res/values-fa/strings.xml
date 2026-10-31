@@ -3920,4 +3920,15 @@
     <string name="under_each_line_in_your_translation_language">زیر هر خط، به زبان ترجمهٔ شما</string>
     <string name="lyrics_file_words_keywords">کارائوکه واژه به واژه lrc پیشرفته فایل برچسب زمان</string>
     <string name="lyrics_file_translation_keywords">ترجمه ترجمه کردن فایل برچسب زبان دوم دوزبانه</string>
+    <string name="top_results">برترین نتایج</string>
+    <string name="videos">ویدیوها</string>
+    <string name="featured_playlists">فهرست‌های پخش برگزیده</string>
+    <string name="community_playlists">فهرست‌های پخش کاربران</string>
+    <string name="search_chips">فیلترها</string>
+    <string name="search_opens_on_the_first_one">جستجو روی اولی باز می‌شود. برای جابه‌جایی، یکی را نگه دارید.</string>
+    <string name="fill_strength">شدت پرشدگی</string>
+    <string name="ring_on_the_play_button">حلقه دور دکمهٔ پخش</string>
+    <string name="the_split_light_around_play_and_pause">نور شکسته دور پخش و مکث</string>
+    <string name="mini_player_progress_color">رنگ پیشرفت پخش‌کنندهٔ کوچک</string>
+    <string name="mini_player_fill_strength">شدت پرشدگی پخش‌کنندهٔ کوچک</string>
 </resources>

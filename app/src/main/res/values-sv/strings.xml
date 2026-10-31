@@ -3920,4 +3920,15 @@
     <string name="under_each_line_in_your_translation_language">Under varje rad, på ditt översättningsspråk</string>
     <string name="lyrics_file_words_keywords">karaoke ord för ord utökad lrc fil tagg tid</string>
     <string name="lyrics_file_translation_keywords">översättning översätta fil tagg andra språk tvåspråkig</string>
+    <string name="top_results">Toppresultat</string>
+    <string name="videos">Videor</string>
+    <string name="featured_playlists">Utvalda spellistor</string>
+    <string name="community_playlists">Spellistor från communityn</string>
+    <string name="search_chips">Filter</string>
+    <string name="search_opens_on_the_first_one">Sökningen öppnas på det första. Håll ned ett för att flytta det.</string>
+    <string name="fill_strength">Fyllningens styrka</string>
+    <string name="ring_on_the_play_button">Ring runt uppspelningsknappen</string>
+    <string name="the_split_light_around_play_and_pause">Det brutna ljuset runt spela och pausa</string>
+    <string name="mini_player_progress_color">Miniplayerns förloppsfärg</string>
+    <string name="mini_player_fill_strength">Miniplayerns fyllningsstyrka</string>
 </resources>

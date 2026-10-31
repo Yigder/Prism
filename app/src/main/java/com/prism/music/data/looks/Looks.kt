@@ -232,7 +232,7 @@ object LookLabels {
         "card_size" to tr(R.string.cards), "nav_style" to tr(R.string.tab_bar), "nav_labels" to tr(R.string.tab_labels), "nav_hide_on_scroll" to tr(R.string.shrink_while_scrolling),
         "nav_tabs" to tr(R.string.tabs), "tab_names" to tr(R.string.tab_names), "nav_bar_size" to tr(R.string.tab_bar_height), "nav_bar_fill" to tr(R.string.tab_bar_background),
         "mini_player_joined" to tr(R.string.mini_player_joined_to_the_tab), "start_tab" to tr(R.string.start_tab_2), "mini_player_style" to tr(R.string.mini_player), "mini_skip_buttons" to tr(R.string.mini_player_s_next),
-        "mini_prev_button" to tr(R.string.mini_player_s_previous), "mini_progress" to tr(R.string.mini_player_progress), "player_background" to tr(R.string.player_background),
+        "mini_prev_button" to tr(R.string.mini_player_s_previous), "mini_progress" to tr(R.string.mini_player_progress), "mini_progress_color" to tr(R.string.mini_player_progress_color), "mini_fill_strength" to tr(R.string.mini_player_fill_strength), "play_ring" to tr(R.string.ring_on_the_play_button), "player_background" to tr(R.string.player_background),
         "player_backdrop_show" to tr(R.string.player_background_showing), "player_art_corners" to tr(R.string.cover_corners), "transport_style" to tr(R.string.controls),
         "cover_size" to tr(R.string.cover_size), "scrubber_style" to tr(R.string.progress_bar), "art_shrink_on_pause" to tr(R.string.cover_shrinks_on_pause),
         "show_output_device" to tr(R.string.output_device), "full_bleed_artwork" to tr(R.string.edge_to_edge_cover), "video_full_bleed" to tr(R.string.edge_to_edge_video),"hide_volume_bar" to tr(R.string.hide_volume_bar),
@@ -310,6 +310,7 @@ object LookLabels {
             "start_tab" to e(com.prism.music.data.prefs.NavTab.entries) { it.label },
             "mini_player_style" to e(com.prism.music.data.prefs.MiniPlayerStyle.entries) { it.label },
             "mini_progress" to e(com.prism.music.data.prefs.MiniProgress.entries) { it.label },
+            "mini_progress_color" to e(com.prism.music.data.prefs.ScrubberColor.entries) { it.label },
             "player_background" to e(com.prism.music.data.prefs.PlayerBackground.entries) { it.label },
             "transport_style" to e(com.prism.music.data.prefs.TransportStyle.entries) { it.label },
             "cover_size" to e(com.prism.music.data.prefs.CoverSize.entries) { it.label },
@@ -349,7 +350,7 @@ object LookLabels {
 
     private val percent = setOf(
         "text_scale", "lyrics_scale", "backdrop_dim", "player_backdrop_show", "surface_tint_strength", "mesh_speed", "mesh_intensity", "player_blur",
-        "scrubber_thickness", "lyrics_blur_amount", "lyrics_spacing", "lyrics_others_alpha", "lyrics_backing_size", "lyrics_extra_size",
+        "scrubber_thickness", "mini_fill_strength", "lyrics_blur_amount", "lyrics_spacing", "lyrics_others_alpha", "lyrics_backing_size", "lyrics_extra_size",
         "corner_scale",
     )
     private val colors = setOf("accent", "accent_light", "surface_color", "lyrics_sung_custom", "lyrics_other_custom", "lyrics_bg_color", "lyrics_bg_color2")
@@ -392,7 +393,7 @@ object LookLabels {
         "backgrounds" to setOf("liquid_glass", "glass_kind", "frosted_glass", "frosted_pages", "backdrops", "backdrop_dim", "backdrop_motion", "reduce_motion"),
         "layout" to setOf(
             "corners", "ui_density", "title_size", "card_size", "nav_style", "nav_labels", "nav_hide_on_scroll", "nav_tabs", "start_tab",
-            "mini_player_style", "mini_skip_buttons", "mini_prev_button", "mini_progress", "library_view", "library_views", "library_columns", "library_subtitles", "home_header", "home_header_height", "playlist_hero_cover", "replay_theme_colors", "replay_card",
+            "mini_player_style", "mini_skip_buttons", "mini_prev_button", "mini_progress", "mini_progress_color", "mini_fill_strength", "library_view", "library_views", "library_columns", "library_subtitles", "home_header", "home_header_height", "playlist_hero_cover", "replay_theme_colors", "replay_card",
             "hide_status_bar", "hide_status_bar_player", "tab_names", "nav_bar_size", "nav_bar_fill", "mini_player_joined", "controls_classic",
         ),
         "player" to setOf(
@@ -400,7 +401,7 @@ object LookLabels {
             "show_output_device", "full_bleed_artwork", "video_full_bleed", "hide_volume_bar", "show_playing_from", "player_shuffle_repeat", "immersive_art", "immersive_lyrics", "immersive_controls",
             "player_layout", "vinyl_tonearm", "player_deck", "player_buttons", "scrubber_color", "player_title_align", "player_title_size",
             "player_title_weight", "player_title_scroll", "player_times", "mesh_speed", "mesh_intensity", "player_blur", "canvas_fills_background",
-            "scrubber_thickness", "scrubber_thumb", "volume_matches_progress", "player_handle", "player_nav_band", "visualizer", "visualizer_color",
+            "scrubber_thickness", "scrubber_thumb", "volume_matches_progress", "player_handle", "player_nav_band", "play_ring", "visualizer", "visualizer_color",
             "panel_player", "queue_headings", "cast_mark", "immersive_video", "bleed_fit", "cover_flight", "video_controls_hide", "crossfade_mark", "blend_covers", "player_buttons_pill",
         ),
         "lyrics" to setOf(

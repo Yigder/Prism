@@ -182,13 +182,13 @@ enum class SettingsSection(val key: String, val title: String, val icon: ImageVe
         GLASS -> listOf("liquid_glass", "glass_kind", "frosted_glass", "frosted_pages", "backdrops", "backdrop_dim", "backdrop_motion", "reduce_motion")
         INTERFACE -> listOf(
             "nav_style", "nav_labels", "nav_hide_on_scroll", "nav_tabs", "start_tab", "mini_player_style", "mini_skip_buttons",
-            "mini_prev_button", "mini_progress", "ui_density", "title_size", "card_size", "hide_status_bar", "hide_status_bar_player",
+            "mini_prev_button", "mini_progress", "mini_progress_color", "mini_fill_strength", "ui_density", "title_size", "card_size", "hide_status_bar", "hide_status_bar_player",
             "tab_names", "nav_bar_size", "nav_bar_fill", "mini_player_joined",
         )
         PLAYER -> listOf(
             "player_background", "player_backdrop_show", "transport_style", "scrubber_style", "cover_size", "player_art_corners",
             "full_bleed_artwork", "video_full_bleed", "art_shrink_on_pause", "show_playing_from", "player_shuffle_repeat", "hide_volume_bar",
-            "show_output_device", "immersive_art", "immersive_lyrics", "immersive_controls", "player_handle", "player_nav_band",
+            "show_output_device", "immersive_art", "immersive_lyrics", "immersive_controls", "player_handle", "player_nav_band", "play_ring",
         )
         LYRICS_LOOK -> listOf(
             "lyrics_align", "lyrics_scale", "lyrics_blur", "lyrics_progress_line", "lyrics_source_button", "lyrics_style", "lyrics_blur_amount", "lyrics_spacing",
@@ -1352,6 +1352,14 @@ private fun MiniPlayerGroup() {
         Toggle(tr(R.string.next_button), tr(R.string.swiping_left_skips_too), s.miniSkipButtons) { prefs.setMiniSkipButtons(it) }
         Label(tr(R.string.progress))
         Chips(MiniProgress.entries, s.miniProgress, { it.label }) { prefs.setMiniProgress(it) }
+        // #231 (1.7.9.2): its color, and how strongly Fill tints the card.
+        if (s.miniProgress != MiniProgress.NONE) {
+            Label(tr(R.string.progress_bar_color))
+            Chips(com.prism.music.data.prefs.ScrubberColor.entries, s.view.miniProgressColor, { if (it == com.prism.music.data.prefs.ScrubberColor.WHITE) tr(R.string.plain) else it.label }) { prefs.setMiniProgressColor(it) }
+        }
+        if (s.miniProgress == MiniProgress.FILL) SliderSetting(
+            tr(R.string.fill_strength), s.view.miniFillStrength, 0.1f..0.9f, { "${(it * 100).roundToInt()}%" },
+        ) { prefs.setMiniFillStrength(it) }
     }
 }
 
@@ -1686,6 +1694,8 @@ private fun PlayerLookGroup() {
         PlayerBackgroundTuning()
         Label(tr(R.string.controls))
         Chips(TransportStyle.entries, s.transportStyle, { it.label }) { prefs.setTransportStyle(it) }
+        // #231 (1.7.9.2): the split-light ring around play, which some find too much.
+        Toggle(tr(R.string.ring_on_the_play_button), tr(R.string.the_split_light_around_play_and_pause), s.view.playRing) { prefs.setPlayRing(it) }
         Label(
             tr(R.string.progress_bar),
             info = when (s.scrubberStyle) {

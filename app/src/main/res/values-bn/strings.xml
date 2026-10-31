@@ -3920,4 +3920,15 @@
     <string name="under_each_line_in_your_translation_language">প্রতিটি লাইনের নিচে, আপনার অনুবাদের ভাষায়</string>
     <string name="lyrics_file_words_keywords">কারাওকে শব্দে শব্দে এনহ্যান্সড lrc ফাইল ট্যাগ সময়</string>
     <string name="lyrics_file_translation_keywords">অনুবাদ অনুবাদ করুন ফাইল ট্যাগ দ্বিতীয় ভাষা দ্বিভাষিক</string>
+    <string name="top_results">সেরা ফলাফল</string>
+    <string name="videos">ভিডিও</string>
+    <string name="featured_playlists">বাছাই করা প্লেলিস্ট</string>
+    <string name="community_playlists">কমিউনিটির প্লেলিস্ট</string>
+    <string name="search_chips">ফিল্টার</string>
+    <string name="search_opens_on_the_first_one">সার্চ প্রথমটিতে খোলে। সরাতে একটিকে চেপে ধরে রাখুন।</string>
+    <string name="fill_strength">ফিলের তীব্রতা</string>
+    <string name="ring_on_the_play_button">প্লে বোতামে রিং</string>
+    <string name="the_split_light_around_play_and_pause">প্লে আর পজের চারপাশে ভাঙা আলো</string>
+    <string name="mini_player_progress_color">মিনি প্লেয়ারের অগ্রগতির রং</string>
+    <string name="mini_player_fill_strength">মিনি প্লেয়ারের ফিলের তীব্রতা</string>
 </resources>

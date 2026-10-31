@@ -1,5 +1,6 @@
 package com.prism.music.ui.screens
 
+import com.prism.music.ui.theme.LocalAppSettings
 import com.prism.music.R
 import com.prism.music.tr
 import com.prism.music.ui.theme.PrismIcons
@@ -112,9 +113,12 @@ fun SearchScreen(bottomPadding: Dp) {
     var query by rememberSaveable { mutableStateOf("") }
     // What the results are for: follows the typing, a moment after it pauses.
     var live by rememberSaveable { mutableStateOf("") }
-    var filter by rememberSaveable { mutableStateOf(SearchFilter.TOP) }
+    val settings = LocalAppSettings.current
+    // Search opens on the listener's first chip (#224).
+    val firstChip = remember { chipOrder(settings.searchChips).first() }
+    var filter by rememberSaveable { mutableStateOf(firstChip ?: SearchFilter.TOP) }
     // Where to look (#46): YouTube Music, or the music on this phone (your files and downloads). Offline, the phone.
-    var onPhone by rememberSaveable { mutableStateOf(!c.network.isOnline()) }
+    var onPhone by rememberSaveable { mutableStateOf(firstChip == null || !c.network.isOnline()) }
     var focused by remember { mutableStateOf(false) }
     val suggestions = remember { mutableStateListOf<String>() }
     // Beside the completions while typing (1.7.6): the artists, songs and albums YouTube Music offers, with pictures.
@@ -310,7 +314,7 @@ fun SearchScreen(bottomPadding: Dp) {
 
         // One row of chips: YouTube Music's kinds, and the music on this phone last (it was a row of its own).
         com.prism.music.ui.components.ChipRow(
-            SearchFilter.entries + null, { if (it == null) onPhone else !onPhone && it == filter }, { it?.label ?: tr(R.string.on_this_phone) },
+            chipOrder(settings.searchChips), { if (it == null) onPhone else !onPhone && it == filter }, { it?.label ?: tr(R.string.on_this_phone) },
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 4.dp),
         ) { if (it == null) onPhone = true else { onPhone = false; filter = it } }
         Box(Modifier.fillMaxWidth().height(3.dp).padding(horizontal = 16.dp)) {
@@ -622,3 +626,18 @@ fun ResultRow(item: BrowseItem, onLongClick: (() -> Unit)? = null, onClick: () -
         }
     }
 }
+
+/**
+ * Search's chips in the listener's order (#224): [saved] holds SearchFilter names and "PHONE" (null here, "On this
+ * phone"); names it doesn't know are dropped and chips it doesn't name follow in Prism's order, so new ones still show.
+ */
+internal fun chipOrder(saved: List<String>): List<SearchFilter?> {
+    val all: List<SearchFilter?> = SearchFilter.entries + null
+    fun named(n: String) = if (n == PHONE_CHIP) null else SearchFilter.entries.firstOrNull { it.name == n }
+    val picked = saved.filter { n -> n == PHONE_CHIP || SearchFilter.entries.any { it.name == n } }.distinct().map(::named)
+    return picked + all.filter { it !in picked }
+}
+
+internal const val PHONE_CHIP = "PHONE"
+
+internal fun chipName(f: SearchFilter?) = f?.name ?: PHONE_CHIP

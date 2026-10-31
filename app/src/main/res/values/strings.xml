@@ -3943,4 +3943,15 @@
     <string name="under_each_line_in_your_translation_language">Under each line, in your translation language</string>
     <string name="lyrics_file_words_keywords">karaoke word by word enhanced lrc file tag timing</string>
     <string name="lyrics_file_translation_keywords">translation translate file tag second language bilingual</string>
+    <string name="top_results">Top results</string>
+    <string name="videos">Videos</string>
+    <string name="featured_playlists">Featured playlists</string>
+    <string name="community_playlists">Community playlists</string>
+    <string name="search_chips">Chips</string>
+    <string name="search_opens_on_the_first_one">Search opens on the first one. Hold one to move it.</string>
+    <string name="fill_strength">Fill strength</string>
+    <string name="ring_on_the_play_button">Ring on the play button</string>
+    <string name="the_split_light_around_play_and_pause">The split light around play and pause</string>
+    <string name="mini_player_progress_color">Mini player\'s progress color</string>
+    <string name="mini_player_fill_strength">Mini player\'s fill strength</string>
 </resources>

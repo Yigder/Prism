@@ -3920,4 +3920,15 @@
     <string name="under_each_line_in_your_translation_language">Minden sor alatt, a fordítás nyelvén</string>
     <string name="lyrics_file_words_keywords">karaoke szavanként bővített lrc fájl címke időzítés</string>
     <string name="lyrics_file_translation_keywords">fordítás fordít fájl címke második nyelv kétnyelvű</string>
+    <string name="top_results">Legjobb találatok</string>
+    <string name="videos">Videók</string>
+    <string name="featured_playlists">Kiemelt lejátszási listák</string>
+    <string name="community_playlists">Közösségi lejátszási listák</string>
+    <string name="search_chips">Szűrők</string>
+    <string name="search_opens_on_the_first_one">A keresés az elsőn nyílik meg. Tarts lenyomva egyet az áthelyezéséhez.</string>
+    <string name="fill_strength">Kitöltés erőssége</string>
+    <string name="ring_on_the_play_button">Gyűrű a lejátszás gombon</string>
+    <string name="the_split_light_around_play_and_pause">A felbontott fény a lejátszás és szünet körül</string>
+    <string name="mini_player_progress_color">A minilejátszó haladásának színe</string>
+    <string name="mini_player_fill_strength">A minilejátszó kitöltésének erőssége</string>
 </resources>

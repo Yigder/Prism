@@ -3920,4 +3920,15 @@
     <string name="under_each_line_in_your_translation_language">Κάτω από κάθε γραμμή, στη γλώσσα μετάφρασής σας</string>
     <string name="lyrics_file_words_keywords">karaoke λέξη προς λέξη εμπλουτισμένο lrc αρχείο ετικέτα χρόνος</string>
     <string name="lyrics_file_translation_keywords">μετάφραση μεταφράζω αρχείο ετικέτα δεύτερη γλώσσα δίγλωσσο</string>
+    <string name="top_results">Κορυφαία αποτελέσματα</string>
+    <string name="videos">Βίντεο</string>
+    <string name="featured_playlists">Προτεινόμενες λίστες</string>
+    <string name="community_playlists">Λίστες της κοινότητας</string>
+    <string name="search_chips">Φίλτρα</string>
+    <string name="search_opens_on_the_first_one">Η αναζήτηση ανοίγει στο πρώτο. Πατήστε παρατεταμένα ένα για να το μετακινήσετε.</string>
+    <string name="fill_strength">Ένταση γεμίσματος</string>
+    <string name="ring_on_the_play_button">Δαχτυλίδι στο κουμπί αναπαραγωγής</string>
+    <string name="the_split_light_around_play_and_pause">Το διασπασμένο φως γύρω από την αναπαραγωγή και την παύση</string>
+    <string name="mini_player_progress_color">Χρώμα προόδου του mini player</string>
+    <string name="mini_player_fill_strength">Ένταση γεμίσματος του mini player</string>
 </resources>

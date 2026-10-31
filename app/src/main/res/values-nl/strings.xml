@@ -3920,4 +3920,15 @@
     <string name="under_each_line_in_your_translation_language">Onder elke regel, in je vertaaltaal</string>
     <string name="lyrics_file_words_keywords">karaoke woord voor woord uitgebreide lrc bestand tag tijd</string>
     <string name="lyrics_file_translation_keywords">vertaling vertalen bestand tag tweede taal tweetalig</string>
+    <string name="top_results">Topresultaten</string>
+    <string name="videos">Video\'s</string>
+    <string name="featured_playlists">Uitgelichte playlists</string>
+    <string name="community_playlists">Communityplaylists</string>
+    <string name="search_chips">Filters</string>
+    <string name="search_opens_on_the_first_one">Zoeken opent op de eerste. Houd er een vast om hem te verplaatsen.</string>
+    <string name="fill_strength">Sterkte van de vulling</string>
+    <string name="ring_on_the_play_button">Ring om de afspeelknop</string>
+    <string name="the_split_light_around_play_and_pause">Het gebroken licht rond afspelen en pauzeren</string>
+    <string name="mini_player_progress_color">Voortgangskleur van de minispeler</string>
+    <string name="mini_player_fill_strength">Vulsterkte van de minispeler</string>
 </resources>

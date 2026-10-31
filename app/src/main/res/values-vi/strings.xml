@@ -3870,4 +3870,15 @@
     <string name="under_each_line_in_your_translation_language">Dưới mỗi dòng, bằng ngôn ngữ dịch của bạn</string>
     <string name="lyrics_file_words_keywords">karaoke từng từ lrc nâng cao tệp thẻ thời gian</string>
     <string name="lyrics_file_translation_keywords">bản dịch dịch tệp thẻ ngôn ngữ thứ hai song ngữ</string>
+    <string name="top_results">Kết quả hàng đầu</string>
+    <string name="videos">Video</string>
+    <string name="featured_playlists">Danh sách phát nổi bật</string>
+    <string name="community_playlists">Danh sách phát của cộng đồng</string>
+    <string name="search_chips">Bộ lọc</string>
+    <string name="search_opens_on_the_first_one">Tìm kiếm mở ở bộ lọc đầu tiên. Giữ một bộ lọc để di chuyển.</string>
+    <string name="fill_strength">Độ đậm của phần tô</string>
+    <string name="ring_on_the_play_button">Vòng quanh nút phát</string>
+    <string name="the_split_light_around_play_and_pause">Ánh sáng tách màu quanh nút phát và tạm dừng</string>
+    <string name="mini_player_progress_color">Màu tiến trình của trình phát mini</string>
+    <string name="mini_player_fill_strength">Độ đậm phần tô của trình phát mini</string>
 </resources>

@@ -1,5 +1,7 @@
 package com.prism.music.data.innertube
 
+import com.prism.music.R
+import com.prism.music.tr
 import com.prism.music.data.model.AccountInfo
 import com.prism.music.data.model.ArtistItem
 import com.prism.music.data.model.ArtistPage
@@ -27,19 +29,19 @@ import kotlinx.serialization.json.addJsonObject
 
 enum class SearchFilter(val label: String, val params: String?) {
     /** Everything, ranked by Prism (see [YouTubeMusic.searchTop]). */
-    TOP("Top results", null),
-    SONGS("Songs", "EgWKAQIIAWoMEA4QChADEAQQCRAF"),
-    VIDEOS("Videos", "EgWKAQIQAWoMEA4QChADEAQQCRAF"),
-    ALBUMS("Albums", "EgWKAQIYAWoMEA4QChADEAQQCRAF"),
-    ARTISTS("Artists", "EgWKAQIgAWoMEA4QChADEAQQCRAF"),
+    TOP(tr(R.string.top_results), null),
+    SONGS(tr(R.string.songs), "EgWKAQIIAWoMEA4QChADEAQQCRAF"),
+    VIDEOS(tr(R.string.videos), "EgWKAQIQAWoMEA4QChADEAQQCRAF"),
+    ALBUMS(tr(R.string.albums), "EgWKAQIYAWoMEA4QChADEAQQCRAF"),
+    ARTISTS(tr(R.string.artists), "EgWKAQIgAWoMEA4QChADEAQQCRAF"),
     /** Playlists made by YouTube Music itself (#130). */
-    FEATURED_PLAYLISTS("Featured playlists", "EgeKAQQoADgBagwQDhAKEAMQBBAJEAU%3D"),
+    FEATURED_PLAYLISTS(tr(R.string.featured_playlists), "EgeKAQQoADgBagwQDhAKEAMQBBAJEAU%3D"),
     /** Playlists made by people. */
-    PLAYLISTS("Community playlists", "EgeKAQQoAEABagwQDhAKEAMQBBAJEAU%3D"),
-    PODCASTS("Podcasts", "EgWKAQJQAWoMEA4QChADEAQQCRAF"),
-    EPISODES("Episodes", "EgWKAQJIAWoMEA4QChADEAQQCRAF"),
+    PLAYLISTS(tr(R.string.community_playlists), "EgeKAQQoAEABagwQDhAKEAMQBBAJEAU%3D"),
+    PODCASTS(tr(R.string.podcasts), "EgWKAQJQAWoMEA4QChADEAQQCRAF"),
+    EPISODES(tr(R.string.episodes), "EgWKAQJIAWoMEA4QChADEAQQCRAF"),
     /** Streams on air now (lofi radios and the like), from youtube.com's search: YouTube Music has no such filter. */
-    LIVE("Live", null),
+    LIVE(tr(R.string.live), null),
 }
 
 /** High-level YouTube Music operations built on [InnerTube]. */

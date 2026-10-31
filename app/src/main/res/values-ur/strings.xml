@@ -3920,4 +3920,15 @@
     <string name="under_each_line_in_your_translation_language">ہر سطر کے نیچے، آپ کی ترجمے کی زبان میں</string>
     <string name="lyrics_file_words_keywords">کراؤکے لفظ بہ لفظ اینہانسڈ lrc فائل ٹیگ وقت</string>
     <string name="lyrics_file_translation_keywords">ترجمہ ترجمہ کریں فائل ٹیگ دوسری زبان دو لسانی</string>
+    <string name="top_results">سرفہرست نتائج</string>
+    <string name="videos">ویڈیوز</string>
+    <string name="featured_playlists">منتخب پلے لسٹس</string>
+    <string name="community_playlists">کمیونٹی کی پلے لسٹس</string>
+    <string name="search_chips">فلٹرز</string>
+    <string name="search_opens_on_the_first_one">تلاش پہلے والے پر کھلتی ہے۔ ہٹانے کے لیے کسی کو دبا کر رکھیں۔</string>
+    <string name="fill_strength">بھراؤ کی شدت</string>
+    <string name="ring_on_the_play_button">پلے بٹن پر رنگ</string>
+    <string name="the_split_light_around_play_and_pause">پلے اور توقف کے گرد بکھری روشنی</string>
+    <string name="mini_player_progress_color">منی پلیئر کی پیش رفت کا رنگ</string>
+    <string name="mini_player_fill_strength">منی پلیئر کے بھراؤ کی شدت</string>
 </resources>

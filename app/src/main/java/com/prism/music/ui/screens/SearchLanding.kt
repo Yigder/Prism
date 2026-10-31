@@ -36,7 +36,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -277,7 +280,7 @@ private fun ArrangeSearchSheet(onDismiss: () -> Unit) {
     val shown = settings.searchSections
     androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss) {
         Text(tr(R.string.arrange_search), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 24.dp))
-        Column(Modifier.padding(top = 8.dp, bottom = 28.dp)) {
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(top = 8.dp, bottom = 28.dp)) {
             com.prism.music.ui.components.ReorderList(shown, { it }, { c.settings.setSearchSections(it) }) { s, _, _, mod ->
                 Row(mod.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     PrismCheck(true, enabled = shown.size > 1, label = s.label) { c.settings.setSearchSections(shown - s) }
@@ -289,6 +292,18 @@ private fun ArrangeSearchSheet(onDismiss: () -> Unit) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     PrismCheck(false, label = s.label) { c.settings.setSearchSections(shown + s) }
                     Text(s.label, Modifier.weight(1f).padding(start = 8.dp), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            // The chips over the results, in your order (#224); Search opens on the first.
+            Text(tr(R.string.search_chips), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 20.dp))
+            Text(tr(R.string.search_opens_on_the_first_one), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 2.dp))
+            val chips = chipOrder(settings.searchChips)
+            com.prism.music.ui.components.ReorderList(chips, ::chipName, { c.settings.setSearchChips(it.map(::chipName)) }) { f, _, _, mod ->
+                val name = f?.label ?: tr(R.string.on_this_phone)
+                Row(mod.fillMaxWidth().testTag("chip:" + chipName(f)).padding(start = 24.dp, end = 12.dp, top = 10.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                    com.prism.music.ui.components.DragGrip(Modifier.dragHandle(), tr(R.string.drag, name))
                 }
             }
         }

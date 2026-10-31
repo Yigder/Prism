@@ -3870,4 +3870,15 @@
     <string name="under_each_line_in_your_translation_language">在每行下方，使用你的翻译语言</string>
     <string name="lyrics_file_words_keywords">卡拉ok 逐词 增强 lrc 文件 标签 时间</string>
     <string name="lyrics_file_translation_keywords">翻译 文件 标签 第二语言 双语</string>
+    <string name="top_results">最佳结果</string>
+    <string name="videos">视频</string>
+    <string name="featured_playlists">精选播放列表</string>
+    <string name="community_playlists">社区播放列表</string>
+    <string name="search_chips">筛选</string>
+    <string name="search_opens_on_the_first_one">搜索会打开第一个。长按可移动。</string>
+    <string name="fill_strength">填充强度</string>
+    <string name="ring_on_the_play_button">播放按钮的光环</string>
+    <string name="the_split_light_around_play_and_pause">播放和暂停周围的分光</string>
+    <string name="mini_player_progress_color">迷你播放器的进度颜色</string>
+    <string name="mini_player_fill_strength">迷你播放器的填充强度</string>
 </resources>

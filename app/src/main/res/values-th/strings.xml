@@ -3870,4 +3870,15 @@
     <string name="under_each_line_in_your_translation_language">ใต้แต่ละบรรทัด ในภาษาที่คุณแปล</string>
     <string name="lyrics_file_words_keywords">คาราโอเกะ ทีละคำ lrc แบบขยาย ไฟล์ แท็ก เวลา</string>
     <string name="lyrics_file_translation_keywords">คำแปล แปล ไฟล์ แท็ก ภาษาที่สอง สองภาษา</string>
+    <string name="top_results">ผลการค้นหายอดนิยม</string>
+    <string name="videos">วิดีโอ</string>
+    <string name="featured_playlists">เพลย์ลิสต์แนะนำ</string>
+    <string name="community_playlists">เพลย์ลิสต์จากชุมชน</string>
+    <string name="search_chips">ตัวกรอง</string>
+    <string name="search_opens_on_the_first_one">การค้นหาจะเปิดที่ตัวแรก กดค้างไว้เพื่อย้าย</string>
+    <string name="fill_strength">ความเข้มของการเติมสี</string>
+    <string name="ring_on_the_play_button">วงแหวนบนปุ่มเล่น</string>
+    <string name="the_split_light_around_play_and_pause">แสงแยกสีรอบปุ่มเล่นและหยุดชั่วคราว</string>
+    <string name="mini_player_progress_color">สีความคืบหน้าของมินิเพลเยอร์</string>
+    <string name="mini_player_fill_strength">ความเข้มการเติมสีของมินิเพลเยอร์</string>
 </resources>

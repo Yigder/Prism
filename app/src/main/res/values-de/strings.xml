@@ -3920,4 +3920,15 @@
     <string name="under_each_line_in_your_translation_language">Unter jeder Zeile, in deiner Übersetzungssprache</string>
     <string name="lyrics_file_words_keywords">karaoke wort für wort erweitertes lrc datei tag zeit</string>
     <string name="lyrics_file_translation_keywords">übersetzung übersetzen datei tag zweite sprache zweisprachig</string>
+    <string name="top_results">Top-Ergebnisse</string>
+    <string name="videos">Videos</string>
+    <string name="featured_playlists">Empfohlene Playlists</string>
+    <string name="community_playlists">Community-Playlists</string>
+    <string name="search_chips">Filter</string>
+    <string name="search_opens_on_the_first_one">Die Suche öffnet sich beim ersten. Halte einen gedrückt, um ihn zu verschieben.</string>
+    <string name="fill_strength">Stärke der Füllung</string>
+    <string name="ring_on_the_play_button">Ring um die Wiedergabetaste</string>
+    <string name="the_split_light_around_play_and_pause">Das zerlegte Licht um Wiedergabe und Pause</string>
+    <string name="mini_player_progress_color">Fortschrittsfarbe des Mini-Players</string>
+    <string name="mini_player_fill_strength">Füllstärke des Mini-Players</string>
 </resources>

@@ -4020,4 +4020,15 @@
     <string name="under_each_line_in_your_translation_language">Под каждой строкой, на вашем языке перевода</string>
     <string name="lyrics_file_words_keywords">караоке по словам расширенный lrc файл тег время</string>
     <string name="lyrics_file_translation_keywords">перевод перевести файл тег второй язык двуязычный</string>
+    <string name="top_results">Лучшие результаты</string>
+    <string name="videos">Видео</string>
+    <string name="featured_playlists">Избранные плейлисты</string>
+    <string name="community_playlists">Плейлисты сообщества</string>
+    <string name="search_chips">Фильтры</string>
+    <string name="search_opens_on_the_first_one">Поиск открывается на первом. Удерживайте фильтр, чтобы переместить его.</string>
+    <string name="fill_strength">Сила заливки</string>
+    <string name="ring_on_the_play_button">Кольцо на кнопке воспроизведения</string>
+    <string name="the_split_light_around_play_and_pause">Разложенный свет вокруг воспроизведения и паузы</string>
+    <string name="mini_player_progress_color">Цвет прогресса мини-плеера</string>
+    <string name="mini_player_fill_strength">Сила заливки мини-плеера</string>
 </resources>

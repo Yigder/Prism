@@ -262,6 +262,12 @@ data class ViewLook(
     val blendCovers: Boolean = false,
     /** The player's bottom row in one glass capsule (1.7), or as separate buttons as in 1.6 (#155). */
     val buttonsPill: Boolean = true,
+    /** #231 (1.7.9.2): the mini player's progress in the split light (as before), your accent, ink or the cover's color. */
+    val miniProgressColor: ScrubberColor = ScrubberColor.SPECTRUM,
+    /** #231: how strongly Fill tints the card (0.22 = Prism's, up to nearly solid). */
+    val miniFillStrength: Float = 0.22f,
+    /** #231: the split-light ring around the player's play button. */
+    val playRing: Boolean = true,
 )
 
 /**
@@ -975,6 +981,8 @@ data class AppSettings(
     val autoAddSections: Boolean = true,
     /** Search's page before you type (1.7.6): its sections, in order. */
     val searchSections: List<SearchSection> = SearchSection.entries.toList(),
+    /** Search's chips in the listener's order (#224, 1.7.9.2): SearchFilter names and "PHONE"; the first is where Search opens. Empty: Prism's order. */
+    val searchChips: List<String> = emptyList(),
     val homeHeader: HomeHeader = HomeHeader.GREETING,
     val homeHeaderHeight: HomeHeaderHeight = HomeHeaderHeight.MEDIUM,
     /** The picture behind a PICTURE header: a background design's name, or "PHOTO|<file>" (as backgrounds keep theirs). */
@@ -1357,6 +1365,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val autoAddSections = booleanPreferencesKey("auto_add_sections")
         val homeHideKinds = stringPreferencesKey("home_hide_kinds")
         val searchSections = stringPreferencesKey("search_sections")
+        val searchChips = stringPreferencesKey("search_chips")
         val homeHeader = stringPreferencesKey("home_header")
         val homeHeaderHeight = stringPreferencesKey("home_header_height")
         val homeHeaderPicture = stringPreferencesKey("home_header_picture")
@@ -1413,6 +1422,9 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val miniSkipButtons = booleanPreferencesKey("mini_skip_buttons")
         val miniPrevButton = booleanPreferencesKey("mini_prev_button")
         val miniProgress = stringPreferencesKey("mini_progress")
+        val miniProgressColor = stringPreferencesKey("mini_progress_color")
+        val miniFillStrength = floatPreferencesKey("mini_fill_strength")
+        val playRing = booleanPreferencesKey("play_ring")
         val playerBackground = stringPreferencesKey("player_background")
         val playerBackdropShow = floatPreferencesKey("player_backdrop_show")
         val playerArtCorners = intPreferencesKey("player_art_corners")
@@ -1542,7 +1554,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val look: List<Preferences.Key<*>> by lazy {
             listOf(
                 fontChoice, textScale, corners, uiDensity, titleSize, cardSize, reduceMotion, navStyle, navLabels, navHideOnScroll,
-                navTabs, startTab, miniPlayerStyle, miniSkipButtons, miniPrevButton, miniProgress, playerBackground, playerBackdropShow, playerArtCorners, transportStyle,
+                navTabs, startTab, miniPlayerStyle, miniSkipButtons, miniPrevButton, miniProgress, miniProgressColor, miniFillStrength, playRing, playerBackground, playerBackdropShow, playerArtCorners, transportStyle,
                 coverSize, scrubberStyle, artShrinkOnPause, showOutputDevice, lyricsAlign, libraryView, playlistHeroCover, frostedPages, replayThemeColors,
                 immersiveArt, immersiveLyrics, immersiveControls, playerShuffleRepeat, lightStyle,
                 playerLayout, vinylTonearm, playerDeck, playerButtons, scrubberColor, playerTitleAlign, playerTitleSize, playerTitleScroll,
@@ -1574,7 +1586,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 fontChoice to 's', appFontName to 's', lyricsFont to 's', textScale to 'f', corners to 's', uiDensity to 's', titleSize to 's', cardSize to 's',
                 navStyle to 's', navLabels to 's', navHideOnScroll to 'b', navTabs to 's', startTab to 's',
                 tabNames to 's', navBarSize to 's', navBarFill to 's', miniPlayerJoined to 'b',
-                miniPlayerStyle to 's', miniSkipButtons to 'b', miniPrevButton to 'b', miniProgress to 's',
+                miniPlayerStyle to 's', miniSkipButtons to 'b', miniPrevButton to 'b', miniProgress to 's', miniProgressColor to 's', miniFillStrength to 'f', playRing to 'b',
                 playerBackground to 's', playerBackdropShow to 'f', playerArtCorners to 'i', transportStyle to 's', coverSize to 's',
                 scrubberStyle to 's', artShrinkOnPause to 'b', showOutputDevice to 'b', fullBleedArtwork to 'b', videoFullBleed to 'b', hideVolumeBar to 'b',
                 showPlayingFrom to 'b', playerShuffleRepeat to 'b', immersiveArt to 's', immersiveLyrics to 's', immersiveControls to 'b',
@@ -1611,7 +1623,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 "video_continues", "lossless", "lossless_local", "normalize", "skip_silence", "mix", "mix_seconds", "mix_auto",
                 "mix_beat_match", "mix_tempo_cellular", "content_country", "video_max_height", "cache_size_mb", "download_wifi_only",
                 "download_likes", "smart_downloads", "smart_download_gb", "offline_gb", "smart_downloads_cellular", "eq",
-                "home_layout", "auto_add_sections", "home_hide_kinds", "home_header_picture", "search_sections", "replay_hours", "greeting_text", "greeting_show_name", "home_shortcuts",
+                "home_layout", "auto_add_sections", "home_hide_kinds", "home_header_picture", "search_sections", "search_chips", "replay_hours", "greeting_text", "greeting_show_name", "home_shortcuts",
                 "home_recent_tiles", "home_playlists", "home_customize_button", "home_continue", "quick_picks_radio",
                 "home_customize_top_button", "home_podcasts_button", "font_stamp", "lyrics_font_name", "local_sections", "local_sort",
                 "library_start_tab", "library_tiles", "library_playlists_first",
@@ -1812,6 +1824,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             autoAddSections = p[K.autoAddSections] ?: d.autoAddSections,
             homeHideKinds = p[K.homeHideKinds]?.split(',')?.filter { it.isNotBlank() }?.toSet() ?: d.homeHideKinds,
             searchSections = p[K.searchSections]?.let { SearchSection.parse(it) } ?: d.searchSections,
+            searchChips = p[K.searchChips]?.split(',')?.filter { it.isNotBlank() } ?: d.searchChips,
             homeHeader = p.enum(K.homeHeader, d.homeHeader),
             homeHeaderHeight = p.enum(K.homeHeaderHeight, d.homeHeaderHeight),
             homeHeaderPicture = p[K.homeHeaderPicture] ?: d.homeHeaderPicture,
@@ -1865,6 +1878,9 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 crossfadeMark = p[K.crossfadeMark] ?: d.view.crossfadeMark,
                 blendCovers = p[K.blendCovers] ?: d.view.blendCovers,
                 buttonsPill = p[K.buttonsPill] ?: d.view.buttonsPill,
+                miniProgressColor = p.enum(K.miniProgressColor, d.view.miniProgressColor),
+                miniFillStrength = (p[K.miniFillStrength] ?: d.view.miniFillStrength).coerceIn(0.1f, 0.9f),
+                playRing = p[K.playRing] ?: d.view.playRing,
             ),
             sound = SoundPrefs(
                 crossfadeCurve = p.enum(K.crossfadeCurve, d.sound.crossfadeCurve),
@@ -2257,6 +2273,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     }
     fun setAutoAddSections(v: Boolean) = edit { it[K.autoAddSections] = v }
     fun setSearchSections(v: List<SearchSection>) = edit { it[K.searchSections] = v.joinToString(",") { s -> s.name } }
+    fun setSearchChips(v: List<String>) = edit { it[K.searchChips] = v.joinToString(",") }
     fun setHomeHeader(v: HomeHeader) = edit { it[K.homeHeader] = v.name }
     fun setHomeHeaderHeight(v: HomeHeaderHeight) = edit { it[K.homeHeaderHeight] = v.name }
     fun setHomeHeaderPicture(v: String) = edit { it[K.homeHeaderPicture] = v }
@@ -2325,6 +2342,9 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     fun setMiniSkipButtons(v: Boolean) = edit { it[K.miniSkipButtons] = v }
     fun setMiniPrevButton(v: Boolean) = edit { it[K.miniPrevButton] = v }
     fun setMiniProgress(v: MiniProgress) = edit { it[K.miniProgress] = v.name }
+    fun setMiniProgressColor(v: ScrubberColor) = edit { it[K.miniProgressColor] = v.name }
+    fun setMiniFillStrength(v: Float) = edit { it[K.miniFillStrength] = v }
+    fun setPlayRing(v: Boolean) = edit { it[K.playRing] = v }
     fun setPlayerBackground(v: PlayerBackground) = edit { it[K.playerBackground] = v.name }
     fun setPlayerBackdropShow(v: Float) = edit { it[K.playerBackdropShow] = v }
     fun setPlayerArtCorners(v: Int) = edit { it[K.playerArtCorners] = v }

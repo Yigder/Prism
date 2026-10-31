@@ -41,6 +41,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -122,6 +123,8 @@ fun MiniPlayer(
     val artShape = if (style == MiniPlayerStyle.PILL) CircleShape else if (bar) ui.smallArt else ui.shape(9.dp)
     fun fraction() = (position.value.toFloat() / pc.duration.coerceAtLeast(1)).coerceIn(0f, 1f)
     val dark = com.prism.music.ui.theme.LocalIsDark.current
+    // #231 (1.7.9.2): the progress in your accent, plain ink or the cover's color instead of the split light.
+    val progressBrush = miniProgressBrush(settings.view.miniProgressColor, s.thumbnail)
     // The same piece of glass as the tab bar under it, with the tab bar's own Background (see-through, solid…): Card used
     // to turn into a solid bar with the progress along its top whenever Frosted Glass was off (owner, 1.7.6).
     val tint = com.prism.music.navFill(settings.navBarFill)
@@ -134,6 +137,7 @@ fun MiniPlayer(
         modifier
             .fillMaxWidth()
             .height(height)
+            .testTag("miniPlayer")
             .offset { IntOffset(drag.value.roundToInt(), pull.value.roundToInt()) }
             .graphicsLayer { alpha = 1f - (pull.value / (height.toPx() * 1.6f)).coerceIn(0f, 0.85f) }
             .pointerInput(Unit) {
@@ -217,8 +221,9 @@ fun MiniPlayer(
             Modifier.matchParentSize().drawBehind {
                 val f = fraction()
                 if (f > 0f) drawRect(
-                    com.prism.music.ui.theme.PrismTokens.spectrum(dark, 0f, size.width),
-                    size = androidx.compose.ui.geometry.Size(size.width * f, size.height), alpha = if (dark) 0.22f else 0.18f,
+                    progressBrush ?: com.prism.music.ui.theme.PrismTokens.spectrum(dark, 0f, size.width),
+                    size = androidx.compose.ui.geometry.Size(size.width * f, size.height),
+                    alpha = settings.view.miniFillStrength * (if (dark) 1f else 0.82f),
                 )
             },
         )
@@ -267,9 +272,24 @@ fun MiniPlayer(
                 // Progress in split light (deeper on light glass).
                 val f = fraction()
                 if (f > 0f) drawLine(
-                    com.prism.music.ui.theme.PrismTokens.spectrum(dark, 0f, size.width), Offset(0f, 0f), Offset(size.width * f, 0f), 2.5.dp.toPx(), StrokeCap.Round,
+                    progressBrush ?: com.prism.music.ui.theme.PrismTokens.spectrum(dark, 0f, size.width), Offset(0f, 0f), Offset(size.width * f, 0f), 2.5.dp.toPx(), StrokeCap.Round,
                 )
             }
+        }
+    }
+}
+
+/** The mini player's progress in [color] (#231); null keeps the split light. Unlike the player it can sit on light glass. */
+@Composable
+private fun miniProgressBrush(color: com.prism.music.data.prefs.ScrubberColor, cover: String?):androidx.compose.ui.graphics.Brush? {
+    val scheme = MaterialTheme.colorScheme
+    return when (color) {
+        com.prism.music.data.prefs.ScrubberColor.SPECTRUM -> null
+        com.prism.music.data.prefs.ScrubberColor.WHITE -> androidx.compose.ui.graphics.SolidColor(scheme.onSurface)
+        com.prism.music.data.prefs.ScrubberColor.ACCENT -> androidx.compose.ui.graphics.SolidColor(scheme.primary)
+        com.prism.music.data.prefs.ScrubberColor.COVER -> {
+            val palette = com.prism.music.ui.components.rememberArtPalette(cover)
+            androidx.compose.ui.graphics.SolidColor(palette?.vibrant ?: scheme.primary)
         }
     }
 }
