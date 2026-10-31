@@ -28,6 +28,9 @@ What changed in each release. Older releases are described on the [Releases page
 - **Quick picks went missing now and then** (#162): Home stopped after three pages, and YouTube puts Quick picks
   anywhere from the first to the fourth. Home now reads on until it has Quick picks and Speed dial (when they're on
   Home), and a shelf of your own history is never taken for Quick picks.
+- **"Between songs" didn't fade the light "From the cover"** (#254): with your light taking the cover's colors, the
+  progress bar, Play's ring and the picked cards changed to the next song's colors at once, so Fade and Slow fade
+  looked like a cut. The light now fades with the accent (at once with Reduce motion or Performance mode).
 - **Search's chips were in English in every language** (Top results, Songs, Videos, Albums…): they're translated now.
 
 ## 1.7.9.1

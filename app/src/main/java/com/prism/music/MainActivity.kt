@@ -371,7 +371,20 @@ private fun rememberArtworkColor(song: Song?, settings: com.prism.music.data.pre
             }.getOrNull()
         } ?: return@LaunchedEffect
         made.first?.let { color = it }
-        com.prism.music.ui.theme.SpectrumPresets.coverStops = made.second
+        // The cover light fades as the accent does (#254), unless motion is reduced (Performance mode too) or "At once".
+        val stops = com.prism.music.ui.theme.SpectrumPresets
+        val old = stops.coverStops
+        val ms = if (settings.reduceMotion) 0 else settings.artworkChange.ms
+        if (ms <= 0 || old.size < 2 || settings.spectrumPreset != stops.COVER) { stops.coverStops = made.second; return@LaunchedEffect }
+        val start = androidx.compose.runtime.withFrameMillis { it }
+        while (true) {
+            val t = ((androidx.compose.runtime.withFrameMillis { it } - start) / ms.toFloat()).coerceIn(0f, 1f)
+            stops.coverStops = stops.fadeStops(old, made.second, androidx.compose.animation.core.FastOutSlowInEasing.transform(t))
+            if (t >= 1f) break
+            // About 25 a second, not every frame: everything drawn in the light redraws with each step.
+            kotlinx.coroutines.delay(40)
+        }
+        stops.coverStops = made.second
     }
     return color
 }

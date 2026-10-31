@@ -236,6 +236,22 @@ object SpectrumPresets {
         return SILVER
     }
 
+    /**
+     * The cover light [t] of the way (0..1) from [from] to [to] (#254, 1.7.9.2: it used to change at once, so with "From
+     * the cover" the progress, Play's ring and the picked cards cut to the next song's colors whatever "Between songs"
+     * said). Both are read as runs and sampled at the longer one's count, so a 3-color light can become a 5-color one.
+     */
+    fun fadeStops(from: List<Int>, to: List<Int>, t: Float): List<Int> {
+        if (from.size < 2 || to.size < 2) return to
+        val n = maxOf(from.size, to.size)
+        fun at(list: List<Int>, i: Int): Color {
+            val p = i / (n - 1).toFloat() * (list.size - 1)
+            val lo = p.toInt().coerceAtMost(list.size - 2)
+            return androidx.compose.ui.graphics.lerp(Color(list[lo]), Color(list[lo + 1]), p - lo)
+        }
+        return (0 until n).map { i -> androidx.compose.ui.graphics.lerp(at(from, i), at(to, i), t.coerceIn(0f, 1f)).toArgb() }
+    }
+
     /** The light of a cover with no color in it. */
     val SILVER: List<Int> = listOf(0xFF8E949C.toInt(), 0xFFC9CDD2.toInt(), 0xFFF4F5F7.toInt())
 
