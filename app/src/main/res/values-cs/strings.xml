@@ -4043,4 +4043,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">Nová stránka přijede ze strany; Zpět ji odsune</string>
     <string name="slide_between_screens_keywords">posouvání animace gesto zpět přechod stránky</string>
     <string name="progress_play_and_the_buttons_stay_smaller">Průběh, přehrávání a tlačítka zůstanou, menší: víc místa na posouvání</string>
+    <string name="tour_1792_search_chips">Filtry hledání ve vašem pořadí, otevírá se na prvním</string>
+    <string name="tour_1792_small_player">Menší přehrávač nad textem a frontou</string>
+    <string name="tour_1792_slide">Stránky, které přijíždějí a odjíždějí</string>
+    <string name="tour_1792_gestures">Gesta přehrávače i kolem ovládání</string>
+    <string name="tour_1792_colors">Průběh mini přehrávače ve vaší barvě, hrající skladba v barvě alba</string>
 </resources>

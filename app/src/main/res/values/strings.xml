@@ -3966,4 +3966,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">A new page slides in from the side; Back slides it away</string>
     <string name="slide_between_screens_keywords">slide sliding animation back gesture transition pages swipe</string>
     <string name="progress_play_and_the_buttons_stay_smaller">Progress, play and the buttons stay, smaller: more room to scroll</string>
+    <string name="tour_1792_search_chips">Search\'s chips in your order, opening on your first</string>
+    <string name="tour_1792_small_player">A smaller player over the lyrics and the queue</string>
+    <string name="tour_1792_slide">Pages that slide in and out</string>
+    <string name="tour_1792_gestures">The player\'s gestures around its controls too</string>
+    <string name="tour_1792_colors">The mini player\'s progress in your accent, the playing song in the album\'s color</string>
 </resources>

@@ -3893,4 +3893,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">新しいページが横から入り、戻るで横へ消えます</string>
     <string name="slide_between_screens_keywords">スライド アニメーション 戻る ジェスチャー 切り替え ページ</string>
     <string name="progress_play_and_the_buttons_stay_smaller">進行バー、再生、ボタンは小さく残ります。スクロールできる場所が広がります</string>
+    <string name="tour_1792_search_chips">検索のフィルタを好きな順に。先頭のフィルタで開きます</string>
+    <string name="tour_1792_small_player">歌詞とキューの上に小さめのプレーヤー</string>
+    <string name="tour_1792_slide">スライドして出入りするページ</string>
+    <string name="tour_1792_gestures">操作ボタンのまわりでもプレーヤーのジェスチャー</string>
+    <string name="tour_1792_colors">ミニプレーヤーの進行をアクセントカラーで、再生中の曲をアルバムの色で</string>
 </resources>

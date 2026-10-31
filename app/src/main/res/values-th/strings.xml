@@ -3893,4 +3893,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">หน้าใหม่เลื่อนเข้ามาจากด้านข้าง กดกลับเพื่อเลื่อนออก</string>
     <string name="slide_between_screens_keywords">เลื่อน แอนิเมชัน ท่าทางกลับ การเปลี่ยนหน้า</string>
     <string name="progress_play_and_the_buttons_stay_smaller">แถบความคืบหน้า ปุ่มเล่น และปุ่มต่างๆ ยังอยู่ แต่เล็กลง: มีที่เลื่อนมากขึ้น</string>
+    <string name="tour_1792_search_chips">ตัวกรองการค้นหาตามลำดับของคุณ เปิดที่ตัวแรก</string>
+    <string name="tour_1792_small_player">เพลเยอร์ที่เล็กลงเหนือเนื้อเพลงและคิว</string>
+    <string name="tour_1792_slide">หน้าที่เลื่อนเข้าและออก</string>
+    <string name="tour_1792_gestures">ท่าทางของเพลเยอร์รอบปุ่มควบคุมด้วย</string>
+    <string name="tour_1792_colors">ความคืบหน้าของมินิเพลเยอร์เป็นสีหลักของคุณ เพลงที่กำลังเล่นเป็นสีของอัลบั้ม</string>
 </resources>

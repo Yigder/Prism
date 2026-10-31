@@ -3993,4 +3993,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">Una nuova pagina entra di lato; Indietro la fa scorrere via</string>
     <string name="slide_between_screens_keywords">scorrimento animazione gesto indietro transizione pagine</string>
     <string name="progress_play_and_the_buttons_stay_smaller">Avanzamento, riproduci e i pulsanti restano, più piccoli: più spazio per scorrere</string>
+    <string name="tour_1792_search_chips">I filtri di Cerca nel tuo ordine, aprendo sul primo</string>
+    <string name="tour_1792_small_player">Un player più piccolo sopra il testo e la coda</string>
+    <string name="tour_1792_slide">Pagine che entrano ed escono scorrendo</string>
+    <string name="tour_1792_gestures">I gesti del player anche intorno ai controlli</string>
+    <string name="tour_1792_colors">L\'avanzamento del mini player nel tuo colore d\'accento, il brano in riproduzione nel colore dell\'album</string>
 </resources>

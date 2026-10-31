@@ -3943,4 +3943,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">نیا صفحہ کنارے سے اندر آتا ہے؛ واپس اسے باہر لے جاتا ہے</string>
     <string name="slide_between_screens_keywords">سلائیڈ اینیمیشن واپس اشارہ ٹرانزیشن صفحات</string>
     <string name="progress_play_and_the_buttons_stay_smaller">پیش رفت، پلے اور بٹن رہتے ہیں، چھوٹے: اسکرول کے لیے زیادہ جگہ</string>
+    <string name="tour_1792_search_chips">تلاش کے فلٹر آپ کی ترتیب میں، پہلے والے پر کھلتی ہے</string>
+    <string name="tour_1792_small_player">بول اور قطار کے اوپر چھوٹا پلیئر</string>
+    <string name="tour_1792_slide">صفحات جو سرک کر آتے جاتے ہیں</string>
+    <string name="tour_1792_gestures">پلیئر کے اشارے کنٹرولز کے آس پاس بھی</string>
+    <string name="tour_1792_colors">منی پلیئر کی پیش رفت آپ کے رنگ میں، چلتا گانا البم کے رنگ میں</string>
 </resources>

@@ -3943,4 +3943,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">নতুন পেজ পাশ থেকে ঢোকে; পিছনে গেলে সরে যায়</string>
     <string name="slide_between_screens_keywords">স্লাইড অ্যানিমেশন পিছনে জেসচার ট্রানজিশন পেজ</string>
     <string name="progress_play_and_the_buttons_stay_smaller">অগ্রগতি, প্লে আর বোতাম থাকে, ছোট হয়ে: স্ক্রলের জন্য বেশি জায়গা</string>
+    <string name="tour_1792_search_chips">সার্চের ফিল্টার আপনার ক্রমে, প্রথমটিতে খোলে</string>
+    <string name="tour_1792_small_player">লিরিক্স আর সারির উপরে ছোট প্লেয়ার</string>
+    <string name="tour_1792_slide">পেজ যা স্লাইড করে আসে-যায়</string>
+    <string name="tour_1792_gestures">প্লেয়ারের জেসচার কন্ট্রোলের চারপাশেও</string>
+    <string name="tour_1792_colors">মিনি প্লেয়ারের অগ্রগতি আপনার রঙে, চলমান গান অ্যালবামের রঙে</string>
 </resources>

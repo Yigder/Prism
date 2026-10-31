@@ -4143,4 +4143,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">تنزلق صفحة جديدة من الجانب؛ ويُخرجها زر الرجوع منزلقة</string>
     <string name="slide_between_screens_keywords">انزلاق حركة إيماءة رجوع انتقال صفحات</string>
     <string name="progress_play_and_the_buttons_stay_smaller">يبقى التقدم والتشغيل والأزرار بحجم أصغر: مساحة أكبر للتمرير</string>
+    <string name="tour_1792_search_chips">عوامل تصفية البحث بترتيبك، ويُفتح على أولها</string>
+    <string name="tour_1792_small_player">مشغّل أصغر فوق الكلمات وقائمة الانتظار</string>
+    <string name="tour_1792_slide">صفحات تنزلق دخولاً وخروجاً</string>
+    <string name="tour_1792_gestures">إيماءات المشغّل حول عناصر التحكم أيضاً</string>
+    <string name="tour_1792_colors">تقدّم المشغّل المصغّر بلون تمييزك، والأغنية قيد التشغيل بلون الألبوم</string>
 </resources>

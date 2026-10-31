@@ -3993,4 +3993,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">דף חדש מחליק מהצד; חזרה מחליקה אותו החוצה</string>
     <string name="slide_between_screens_keywords">החלקה אנימציה מחוות חזרה מעבר דפים</string>
     <string name="progress_play_and_the_buttons_stay_smaller">ההתקדמות, ההפעלה והכפתורים נשארים, קטנים יותר: יותר מקום לגלילה</string>
+    <string name="tour_1792_search_chips">מסנני החיפוש בסדר שלך, נפתח על הראשון</string>
+    <string name="tour_1792_small_player">נגן קטן יותר מעל המילים והתור</string>
+    <string name="tour_1792_slide">דפים שמחליקים פנימה והחוצה</string>
+    <string name="tour_1792_gestures">מחוות הנגן גם סביב הפקדים</string>
+    <string name="tour_1792_colors">התקדמות הנגן המוקטן בצבע ההדגשה שלך, השיר שמתנגן בצבע האלבום</string>
 </resources>

@@ -4043,4 +4043,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">Новая страница въезжает сбоку, «Назад» уводит её</string>
     <string name="slide_between_screens_keywords">сдвиг анимация жест назад переход страницы</string>
     <string name="progress_play_and_the_buttons_stay_smaller">Прогресс, воспроизведение и кнопки остаются, но меньше: больше места для прокрутки</string>
+    <string name="tour_1792_search_chips">Фильтры поиска в вашем порядке, открывается на первом</string>
+    <string name="tour_1792_small_player">Плеер поменьше поверх текста и очереди</string>
+    <string name="tour_1792_slide">Страницы, которые въезжают и уезжают</string>
+    <string name="tour_1792_gestures">Жесты плеера и вокруг кнопок</string>
+    <string name="tour_1792_colors">Прогресс мини-плеера в вашем акценте, играющий трек в цвете альбома</string>
 </resources>

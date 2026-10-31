@@ -4043,4 +4043,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">Nowa strona wsuwa się z boku; Wstecz ją wysuwa</string>
     <string name="slide_between_screens_keywords">przesuwanie animacja gest wstecz przejście strony</string>
     <string name="progress_play_and_the_buttons_stay_smaller">Postęp, odtwarzanie i przyciski zostają, mniejsze: więcej miejsca na przewijanie</string>
+    <string name="tour_1792_search_chips">Filtry wyszukiwania w Twojej kolejności, otwierające się na pierwszym</string>
+    <string name="tour_1792_small_player">Mniejszy odtwarzacz nad tekstem i kolejką</string>
+    <string name="tour_1792_slide">Strony, które wsuwają się i wysuwają</string>
+    <string name="tour_1792_gestures">Gesty odtwarzacza także wokół przycisków</string>
+    <string name="tour_1792_colors">Postęp miniodtwarzacza w Twoim akcencie, odtwarzany utwór w kolorze albumu</string>
 </resources>

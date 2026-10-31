@@ -49,6 +49,8 @@ object Tour {
     private const val V1_7_8 = 48
     /** Prism 1.7.9 (build 49): Prism in 31 languages; your requests. */
     private const val V1_7_9 = 49
+/** Prism 1.7.9.2 (build 51): your requests, each an option. */
+private const val V1_7_9_2 = 51
 
     /** Every step, in the order they're shown. */
     val steps: List<TourStep> = listOf(
@@ -392,6 +394,18 @@ object Tour {
                 tr(R.string.tour_179_widget),
             ),
             listOf(PrismIcons.Lyrics, PrismIcons.Palette),
+        ),
+        TourStep(
+            V1_7_9_2, PrismIcons.QueueMusic, tr(R.string.also_new),
+            tr(R.string.from_your_requests),
+            listOf(
+                tr(R.string.tour_1792_search_chips),
+                tr(R.string.tour_1792_small_player),
+                tr(R.string.tour_1792_slide),
+                tr(R.string.tour_1792_gestures),
+                tr(R.string.tour_1792_colors),
+            ),
+            listOf(PrismIcons.Search, PrismIcons.Palette),
         ),
         TourStep(
             V1_7, PrismIcons.Update, tr(R.string.stay_in_the_loop),

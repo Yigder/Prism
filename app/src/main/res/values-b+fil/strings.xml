@@ -3943,4 +3943,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">Pumapasok mula sa gilid ang bagong page; inilalabas ito ng Back</string>
     <string name="slide_between_screens_keywords">slide animation back gesture transition pages</string>
     <string name="progress_play_and_the_buttons_stay_smaller">Nananatili ang progress, play at mga button, mas maliit: mas maraming puwang para mag-scroll</string>
+    <string name="tour_1792_search_chips">Ang mga filter ng Search sa ayos mo, bumubukas sa una</string>
+    <string name="tour_1792_small_player">Mas maliit na player sa ibabaw ng lyrics at queue</string>
+    <string name="tour_1792_slide">Mga page na pumapasok at lumalabas nang pa-slide</string>
+    <string name="tour_1792_gestures">Ang mga gesture ng player pati sa paligid ng mga kontrol</string>
+    <string name="tour_1792_colors">Ang progress ng mini player sa accent mo, ang tumutugtog na kanta sa kulay ng album</string>
 </resources>

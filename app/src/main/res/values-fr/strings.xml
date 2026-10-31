@@ -3993,4 +3993,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">Une nouvelle page glisse depuis le côté ; Retour la fait repartir</string>
     <string name="slide_between_screens_keywords">glisser animation geste retour transition pages</string>
     <string name="progress_play_and_the_buttons_stay_smaller">La progression, lecture et les boutons restent, en plus petit : plus de place pour faire défiler</string>
+    <string name="tour_1792_search_chips">Les filtres de Recherche dans votre ordre, en s\'ouvrant sur le premier</string>
+    <string name="tour_1792_small_player">Un lecteur plus petit au-dessus des paroles et de la file</string>
+    <string name="tour_1792_slide">Des pages qui glissent</string>
+    <string name="tour_1792_gestures">Les gestes du lecteur aussi autour des commandes</string>
+    <string name="tour_1792_colors">La progression du mini-lecteur dans votre accent, le titre en cours dans la couleur de l\'album</string>
 </resources>

@@ -3893,4 +3893,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">Halaman baharu masuk dari tepi; Kembali menggelongsornya keluar</string>
     <string name="slide_between_screens_keywords">gelongsor animasi gerak isyarat kembali peralihan halaman</string>
     <string name="progress_play_and_the_buttons_stay_smaller">Kemajuan, main dan butang kekal, lebih kecil: lebih banyak ruang untuk menatal</string>
+    <string name="tour_1792_search_chips">Penapis Carian mengikut susunan anda, dibuka pada yang pertama</string>
+    <string name="tour_1792_small_player">Pemain lebih kecil di atas lirik dan baris gilir</string>
+    <string name="tour_1792_slide">Halaman yang menggelongsor masuk dan keluar</string>
+    <string name="tour_1792_gestures">Gerak isyarat pemain juga di sekeliling kawalan</string>
+    <string name="tour_1792_colors">Kemajuan pemain mini dalam warna aksen anda, lagu yang dimainkan dalam warna album</string>
 </resources>

@@ -10,7 +10,7 @@ What changed in each release. Older releases are described on the [Releases page
   Sing → Your music files has two new switches, both off. "Keep word timings" saves karaoke lyrics as enhanced LRC
   (Poweramp and other karaoke players light them word by word); "Include the translation" puts each line's
   translation under it, in your translation language.
-- **Search's chips in your order** (#224): Search → Arrange Search → Chips. Hold one to move it; Search opens on the
+- **Search's chips in your order** (#224): Search → Arrange Search (at the bottom) → Chips. Hold one to move it; Search opens on the
   first, so "On this phone" (or Songs, or any other) can be where it starts.
 - **The mini player's progress, your way** (#231): Customize Prism → Tabs & mini player → Mini player has a progress
   bar color (your light as before, your accent, plain, or the cover's color) and, with Fill, how strong the fill is,
@@ -29,7 +29,7 @@ What changed in each release. Older releases are described on the [Releases page
 - **Gestures anywhere on the player** (#259): Settings → Controls & gestures → Gestures has a new switch (off by
   default). On, your swipes, double tap and long press work below the title too, in the space around the buttons and
   bars (which keep their own taps).
-- **The ring around the player's play button can go** (#231): Customize Prism → Player → "Ring on the play button".
+- **The ring around the player's play button can go** (#231): Customize Prism → Player → Look → "Ring on the play button".
 
 ### Fixes
 

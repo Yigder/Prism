@@ -3943,4 +3943,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">नया पेज किनारे से अंदर आता है; वापस उसे बाहर ले जाता है</string>
     <string name="slide_between_screens_keywords">स्लाइड एनिमेशन वापस जेस्चर ट्रांज़िशन पेज</string>
     <string name="progress_play_and_the_buttons_stay_smaller">प्रगति, प्ले और बटन रहते हैं, छोटे: स्क्रॉल के लिए ज़्यादा जगह</string>
+    <string name="tour_1792_search_chips">खोज के फ़िल्टर आपके क्रम में, पहले वाले पर खुलती है</string>
+    <string name="tour_1792_small_player">बोल और कतार के ऊपर छोटा प्लेयर</string>
+    <string name="tour_1792_slide">पेज जो खिसककर आते-जाते हैं</string>
+    <string name="tour_1792_gestures">प्लेयर के जेस्चर कंट्रोल के आसपास भी</string>
+    <string name="tour_1792_colors">मिनी प्लेयर की प्रगति आपके रंग में, चल रहा गाना एल्बम के रंग में</string>
 </resources>

@@ -3993,4 +3993,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">O pagină nouă intră din lateral; Înapoi o glisează afară</string>
     <string name="slide_between_screens_keywords">glisare animație gest înapoi tranziție pagini</string>
     <string name="progress_play_and_the_buttons_stay_smaller">Progresul, redarea și butoanele rămân, mai mici: mai mult loc de derulat</string>
+    <string name="tour_1792_search_chips">Filtrele Căutării în ordinea ta, deschizând pe primul</string>
+    <string name="tour_1792_small_player">Un player mai mic peste versuri și coadă</string>
+    <string name="tour_1792_slide">Pagini care intră și ies glisând</string>
+    <string name="tour_1792_gestures">Gesturile playerului și în jurul comenzilor</string>
+    <string name="tour_1792_colors">Progresul mini playerului în accentul tău, melodia redată în culoarea albumului</string>
 </resources>

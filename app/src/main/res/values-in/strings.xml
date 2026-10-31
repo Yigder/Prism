@@ -3893,4 +3893,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">Halaman baru masuk dari samping; Kembali menggesernya keluar</string>
     <string name="slide_between_screens_keywords">geser animasi gestur kembali transisi halaman</string>
     <string name="progress_play_and_the_buttons_stay_smaller">Progres, putar, dan tombol tetap ada, lebih kecil: lebih banyak ruang untuk menggulir</string>
+    <string name="tour_1792_search_chips">Filter Penelusuran sesuai urutan Anda, terbuka di yang pertama</string>
+    <string name="tour_1792_small_player">Pemutar lebih kecil di atas lirik dan antrean</string>
+    <string name="tour_1792_slide">Halaman yang bergeser masuk dan keluar</string>
+    <string name="tour_1792_gestures">Gestur pemutar juga di sekitar kontrol</string>
+    <string name="tour_1792_colors">Progres pemutar mini dalam warna aksen Anda, lagu yang diputar dalam warna album</string>
 </resources>

@@ -3943,4 +3943,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">Eine neue Seite gleitet von der Seite herein; Zurück schiebt sie weg</string>
     <string name="slide_between_screens_keywords">gleiten wischen animation zurück geste übergang seiten</string>
     <string name="progress_play_and_the_buttons_stay_smaller">Fortschritt, Wiedergabe und die Tasten bleiben, kleiner: mehr Platz zum Scrollen</string>
+    <string name="tour_1792_search_chips">Die Suchfilter in deiner Reihenfolge, die Suche öffnet beim ersten</string>
+    <string name="tour_1792_small_player">Ein kleinerer Player über Songtext und Warteschlange</string>
+    <string name="tour_1792_slide">Seiten, die herein- und hinausgleiten</string>
+    <string name="tour_1792_gestures">Die Gesten des Players auch rund um die Bedienelemente</string>
+    <string name="tour_1792_colors">Der Fortschritt des Mini-Players in deiner Akzentfarbe, der laufende Song in der Farbe des Albums</string>
 </resources>

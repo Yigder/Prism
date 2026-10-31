@@ -3893,4 +3893,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">Trang mới trượt vào từ bên cạnh; Quay lại trượt nó đi</string>
     <string name="slide_between_screens_keywords">trượt hoạt ảnh cử chỉ quay lại chuyển cảnh trang</string>
     <string name="progress_play_and_the_buttons_stay_smaller">Tiến trình, nút phát và các nút vẫn ở lại, nhỏ hơn: thêm chỗ để cuộn</string>
+    <string name="tour_1792_search_chips">Bộ lọc Tìm kiếm theo thứ tự của bạn, mở ở bộ lọc đầu tiên</string>
+    <string name="tour_1792_small_player">Trình phát nhỏ hơn trên lời bài hát và hàng đợi</string>
+    <string name="tour_1792_slide">Trang trượt vào và trượt ra</string>
+    <string name="tour_1792_gestures">Cử chỉ của trình phát cả quanh các nút điều khiển</string>
+    <string name="tour_1792_colors">Tiến trình trình phát mini theo màu nhấn của bạn, bài đang phát theo màu album</string>
 </resources>

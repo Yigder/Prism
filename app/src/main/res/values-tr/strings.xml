@@ -3943,4 +3943,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">Yeni sayfa yandan kayarak gelir; Geri onu kaydırıp götürür</string>
     <string name="slide_between_screens_keywords">kaydırma animasyon geri hareketi geçiş sayfalar</string>
     <string name="progress_play_and_the_buttons_stay_smaller">İlerleme, oynat ve düğmeler kalır, daha küçük: kaydırmak için daha çok yer</string>
+    <string name="tour_1792_search_chips">Arama filtreleri sizin sıranızda, ilkinde açılır</string>
+    <string name="tour_1792_small_player">Şarkı sözleri ve sıranın üstünde daha küçük bir oynatıcı</string>
+    <string name="tour_1792_slide">Kayarak gelip giden sayfalar</string>
+    <string name="tour_1792_gestures">Oynatıcının hareketleri kontrollerin çevresinde de</string>
+    <string name="tour_1792_colors">Mini oynatıcının ilerlemesi vurgu renginizde, çalan şarkı albümün renginde</string>
 </resources>

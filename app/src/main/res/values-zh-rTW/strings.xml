@@ -3893,4 +3893,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">新頁面從側邊滑入，返回時滑出</string>
     <string name="slide_between_screens_keywords">滑動 動畫 返回手勢 切換 頁面</string>
     <string name="progress_play_and_the_buttons_stay_smaller">進度、播放和按鈕保留但變小：捲動空間更大</string>
+    <string name="tour_1792_search_chips">搜尋篩選按你的順序排列，並開在第一個</string>
+    <string name="tour_1792_small_player">歌詞和佇列上方更小的播放器</string>
+    <string name="tour_1792_slide">滑入滑出的頁面</string>
+    <string name="tour_1792_gestures">控制按鈕周圍也能用的播放器手勢</string>
+    <string name="tour_1792_colors">迷你播放器進度使用你的強調色，正在播放的歌曲使用專輯顏色</string>
 </resources>

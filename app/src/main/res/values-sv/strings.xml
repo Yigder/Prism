@@ -3943,4 +3943,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">En ny sida glider in från sidan; Tillbaka glider bort den</string>
     <string name="slide_between_screens_keywords">glida animation tillbaka gest övergång sidor</string>
     <string name="progress_play_and_the_buttons_stay_smaller">Förlopp, spela och knapparna stannar, mindre: mer plats att skrolla</string>
+    <string name="tour_1792_search_chips">Sökfiltren i din ordning, öppnar på det första</string>
+    <string name="tour_1792_small_player">En mindre spelare över låttexten och kön</string>
+    <string name="tour_1792_slide">Sidor som glider in och ut</string>
+    <string name="tour_1792_gestures">Spelarens gester även runt kontrollerna</string>
+    <string name="tour_1792_colors">Miniplayerns förlopp i din accentfärg, låten som spelas i albumets färg</string>
 </resources>

@@ -3943,4 +3943,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">Een nieuwe pagina schuift van opzij in; Terug schuift hem weg</string>
     <string name="slide_between_screens_keywords">schuiven animatie terug gebaar overgang pagina\'s</string>
     <string name="progress_play_and_the_buttons_stay_smaller">Voortgang, afspelen en de knoppen blijven, kleiner: meer ruimte om te scrollen</string>
+    <string name="tour_1792_search_chips">De zoekfilters in jouw volgorde, opent op de eerste</string>
+    <string name="tour_1792_small_player">Een kleinere speler boven de songtekst en de wachtrij</string>
+    <string name="tour_1792_slide">Pagina\'s die in- en uitschuiven</string>
+    <string name="tour_1792_gestures">De gebaren van de speler ook rond de bediening</string>
+    <string name="tour_1792_colors">De voortgang van de minispeler in je accentkleur, het spelende nummer in de kleur van het album</string>
 </resources>

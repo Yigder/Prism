@@ -3993,4 +3993,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">Uma página nova entra pelo lado; Voltar desliza-a para fora</string>
     <string name="slide_between_screens_keywords">deslizar animação gesto voltar transição páginas</string>
     <string name="progress_play_and_the_buttons_stay_smaller">Progresso, reproduzir e os botões ficam, mais pequenos: mais espaço para deslocar</string>
+    <string name="tour_1792_search_chips">Os filtros da Pesquisa pela sua ordem, a abrir no primeiro</string>
+    <string name="tour_1792_small_player">Um leitor mais pequeno sobre a letra e a fila</string>
+    <string name="tour_1792_slide">Páginas que entram e saem a deslizar</string>
+    <string name="tour_1792_gestures">Os gestos do leitor também à volta dos controlos</string>
+    <string name="tour_1792_colors">O progresso do minileitor no seu destaque, a música a tocar na cor do álbum</string>
 </resources>

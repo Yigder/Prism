@@ -3893,4 +3893,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">새 페이지가 옆에서 들어오고 뒤로 가면 밀려 나갑니다</string>
     <string name="slide_between_screens_keywords">슬라이드 애니메이션 뒤로 제스처 전환 페이지</string>
     <string name="progress_play_and_the_buttons_stay_smaller">진행 바, 재생, 버튼이 작게 남아 스크롤할 공간이 넓어집니다</string>
+    <string name="tour_1792_search_chips">검색 필터를 원하는 순서로, 첫 번째 필터로 열기</string>
+    <string name="tour_1792_small_player">가사와 대기열 위의 더 작은 플레이어</string>
+    <string name="tour_1792_slide">밀려 들어오고 나가는 페이지</string>
+    <string name="tour_1792_gestures">컨트롤 주변에서도 플레이어 제스처</string>
+    <string name="tour_1792_colors">미니 플레이어 진행 바를 강조 색으로, 재생 중인 곡을 앨범 색으로</string>
 </resources>

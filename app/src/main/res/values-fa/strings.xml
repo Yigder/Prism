@@ -3943,4 +3943,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">صفحهٔ تازه از کنار می‌لغزد و بازگشت آن را بیرون می‌برد</string>
     <string name="slide_between_screens_keywords">لغزیدن انیمیشن حرکت بازگشت انتقال صفحه‌ها</string>
     <string name="progress_play_and_the_buttons_stay_smaller">پیشرفت، پخش و دکمه‌ها می‌مانند، کوچک‌تر: جای بیشتر برای پیمایش</string>
+    <string name="tour_1792_search_chips">فیلترهای جستجو به ترتیب شما، باز شدن روی اولی</string>
+    <string name="tour_1792_small_player">پخش‌کنندهٔ کوچک‌تر روی متن آهنگ و صف</string>
+    <string name="tour_1792_slide">صفحه‌هایی که می‌لغزند و می‌روند</string>
+    <string name="tour_1792_gestures">حرکت‌های پخش‌کننده دور کنترل‌ها هم</string>
+    <string name="tour_1792_colors">پیشرفت پخش‌کنندهٔ کوچک به رنگ تأکید شما، آهنگ در حال پخش به رنگ آلبوم</string>
 </resources>

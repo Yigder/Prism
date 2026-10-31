@@ -3893,4 +3893,9 @@
     <string name="a_new_page_slides_in_from_the_side_back_slides_it_away">新页面从侧边滑入，返回时滑出</string>
     <string name="slide_between_screens_keywords">滑动 动画 返回手势 切换 页面</string>
     <string name="progress_play_and_the_buttons_stay_smaller">进度、播放和按钮保留但变小：滚动空间更大</string>
+    <string name="tour_1792_search_chips">搜索筛选按你的顺序排列，并打开第一个</string>
+    <string name="tour_1792_small_player">歌词和队列上方更小的播放器</string>
+    <string name="tour_1792_slide">滑入滑出的页面</string>
+    <string name="tour_1792_gestures">控制按钮周围也能用的播放器手势</string>
+    <string name="tour_1792_colors">迷你播放器进度使用你的强调色，正在播放的歌曲使用专辑颜色</string>
 </resources>
