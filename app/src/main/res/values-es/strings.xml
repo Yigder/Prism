@@ -3963,4 +3963,11 @@
     <string name="an_album_playing_through_never_blends">Un álbum que suena completo nunca se funde. Esto también mantiene enteras dos de sus canciones cuando una lista o el aleatorio las pone juntas.</string>
     <string name="keep_albums_keywords">álbum sin pausas continuo transición fundido apagado</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">Conservar el tiempo de cada palabra</string>
+    <string name="karaoke_lyrics_light_word_by_word">La letra karaoke se ilumina palabra por palabra también en otros reproductores</string>
+    <string name="saved_as_enhanced_lrc_players">Se guarda como LRC mejorado, que leen Poweramp y otros reproductores con karaoke. Los que no lo leen muestran los tiempos de las palabras como texto.</string>
+    <string name="include_the_translation">Incluir la traducción</string>
+    <string name="under_each_line_in_your_translation_language">Debajo de cada línea, en tu idioma de traducción</string>
+    <string name="lyrics_file_words_keywords">karaoke palabra por palabra lrc mejorado archivo etiqueta tiempo</string>
+    <string name="lyrics_file_translation_keywords">traducción traducir archivo etiqueta segundo idioma bilingüe</string>
 </resources>

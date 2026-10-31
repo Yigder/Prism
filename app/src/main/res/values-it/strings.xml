@@ -3963,4 +3963,11 @@
     <string name="an_album_playing_through_never_blends">Un album riprodotto per intero non si fonde mai. Questo lascia intere anche due sue canzoni quando una playlist o la riproduzione casuale le mette vicine.</string>
     <string name="keep_albums_keywords">album senza pause continuo transizione dissolvenza disattivata</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">Mantieni il tempo di ogni parola</string>
+    <string name="karaoke_lyrics_light_word_by_word">I testi karaoke si accendono parola per parola anche in altri lettori</string>
+    <string name="saved_as_enhanced_lrc_players">Salvati come LRC avanzato, che leggono Poweramp e altri lettori con karaoke. Quelli che non lo leggono mostrano i tempi delle parole come testo.</string>
+    <string name="include_the_translation">Includi la traduzione</string>
+    <string name="under_each_line_in_your_translation_language">Sotto ogni riga, nella tua lingua di traduzione</string>
+    <string name="lyrics_file_words_keywords">karaoke parola per parola lrc avanzato file tag tempo</string>
+    <string name="lyrics_file_translation_keywords">traduzione tradurre file tag seconda lingua bilingue</string>
 </resources>

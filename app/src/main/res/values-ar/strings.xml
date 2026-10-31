@@ -4113,4 +4113,11 @@
     <string name="an_album_playing_through_never_blends">الألبوم الذي يُشغَّل كاملاً لا يتداخل أبداً. وهذا يُبقي أيضاً أغنيتين منه كاملتين حين تضعهما قائمة تشغيل أو الترتيب العشوائي متجاورتين.</string>
     <string name="keep_albums_keywords">ألبوم بلا فواصل متصل انتقال تداخل متوقف</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">الاحتفاظ بتوقيت كل كلمة</string>
+    <string name="karaoke_lyrics_light_word_by_word">تضيء كلمات الكاريوكي كلمةً كلمة في المشغّلات الأخرى أيضاً</string>
+    <string name="saved_as_enhanced_lrc_players">تُحفظ بصيغة LRC المحسّنة التي يقرؤها Poweramp وغيره من المشغّلات التي تدعم الكاريوكي. أما التي لا تقرؤها فتعرض توقيتات الكلمات كنص.</string>
+    <string name="include_the_translation">تضمين الترجمة</string>
+    <string name="under_each_line_in_your_translation_language">تحت كل سطر، بلغة الترجمة لديك</string>
+    <string name="lyrics_file_words_keywords">كاريوكي كلمة بكلمة lrc محسن ملف وسم توقيت</string>
+    <string name="lyrics_file_translation_keywords">ترجمة ترجم ملف وسم لغة ثانية ثنائي اللغة</string>
 </resources>

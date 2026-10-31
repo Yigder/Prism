@@ -3913,4 +3913,11 @@
     <string name="an_album_playing_through_never_blends">Ένα άλμπουμ που παίζει ολόκληρο δεν συγχωνεύεται ποτέ. Αυτό κρατά ολόκληρα και δύο τραγούδια του όταν μια λίστα ή η τυχαία σειρά τα βάζει δίπλα δίπλα.</string>
     <string name="keep_albums_keywords">άλμπουμ χωρίς κενά συνεχές μετάβαση crossfade κλειστό</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">Διατήρηση του χρόνου κάθε λέξης</string>
+    <string name="karaoke_lyrics_light_word_by_word">Οι στίχοι karaoke φωτίζονται λέξη προς λέξη και σε άλλες εφαρμογές</string>
+    <string name="saved_as_enhanced_lrc_players">Αποθηκεύονται ως εμπλουτισμένο LRC, που διαβάζουν το Poweramp και άλλες εφαρμογές με karaoke. Όσες δεν το διαβάζουν δείχνουν τους χρόνους ως κείμενο.</string>
+    <string name="include_the_translation">Συμπερίληψη της μετάφρασης</string>
+    <string name="under_each_line_in_your_translation_language">Κάτω από κάθε γραμμή, στη γλώσσα μετάφρασής σας</string>
+    <string name="lyrics_file_words_keywords">karaoke λέξη προς λέξη εμπλουτισμένο lrc αρχείο ετικέτα χρόνος</string>
+    <string name="lyrics_file_translation_keywords">μετάφραση μεταφράζω αρχείο ετικέτα δεύτερη γλώσσα δίγλωσσο</string>
 </resources>

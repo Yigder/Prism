@@ -3863,4 +3863,11 @@
     <string name="an_album_playing_through_never_blends">完整播放的專輯從不交叉淡入淡出。此選項還會在播放清單或隨機播放把它的兩首歌放在一起時保持完整。</string>
     <string name="keep_albums_keywords">專輯 無縫 連續 轉場 交叉淡入淡出 關閉</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">保留每個詞的時間</string>
+    <string name="karaoke_lyrics_light_word_by_word">卡拉OK歌詞在其他播放器中也會逐詞亮起</string>
+    <string name="saved_as_enhanced_lrc_players">以增強型 LRC 儲存，Poweramp 等支援卡拉OK的播放器可讀取。不支援的播放器會把詞的時間顯示為文字。</string>
+    <string name="include_the_translation">包含翻譯</string>
+    <string name="under_each_line_in_your_translation_language">在每行下方，使用你的翻譯語言</string>
+    <string name="lyrics_file_words_keywords">卡拉ok 逐詞 增強 lrc 檔案 標籤 時間</string>
+    <string name="lyrics_file_translation_keywords">翻譯 檔案 標籤 第二語言 雙語</string>
 </resources>

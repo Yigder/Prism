@@ -3963,4 +3963,11 @@
     <string name="an_album_playing_through_never_blends">אלבום שמתנגן ברצף אף פעם לא מתמזג. זה גם משאיר שלמים שניים משיריו כשפלייליסט או ערבוב שמים אותם זה לצד זה.</string>
     <string name="keep_albums_keywords">אלבום ללא הפסקות רציף מעבר הדרגתי כבוי</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">לשמור את התזמון של כל מילה</string>
+    <string name="karaoke_lyrics_light_word_by_word">מילות קריוקי נדלקות מילה אחר מילה גם בנגנים אחרים</string>
+    <string name="saved_as_enhanced_lrc_players">נשמר כ-LRC מורחב, ש-Poweramp ונגנים אחרים עם קריוקי קוראים. נגנים שלא קוראים אותו מציגים את זמני המילים כטקסט.</string>
+    <string name="include_the_translation">לכלול את התרגום</string>
+    <string name="under_each_line_in_your_translation_language">מתחת לכל שורה, בשפת התרגום שלך</string>
+    <string name="lyrics_file_words_keywords">קריוקי מילה אחר מילה lrc מורחב קובץ תג תזמון</string>
+    <string name="lyrics_file_translation_keywords">תרגום לתרגם קובץ תג שפה שנייה דו-לשוני</string>
 </resources>

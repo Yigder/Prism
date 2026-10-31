@@ -3863,4 +3863,11 @@
     <string name="an_album_playing_through_never_blends">อัลบั้มที่เล่นต่อเนื่องจะไม่เฟดข้ามเลย ตัวเลือกนี้ยังทำให้สองเพลงของอัลบั้มเล่นเต็มเมื่อเพลย์ลิสต์หรือการสุ่มวางไว้ติดกัน</string>
     <string name="keep_albums_keywords">อัลบั้ม ไม่มีช่วงเงียบ ต่อเนื่อง การเปลี่ยนเพลง เฟดข้าม ปิด</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">เก็บเวลาของแต่ละคำ</string>
+    <string name="karaoke_lyrics_light_word_by_word">เนื้อเพลงคาราโอเกะสว่างทีละคำในเครื่องเล่นอื่นด้วย</string>
+    <string name="saved_as_enhanced_lrc_players">บันทึกเป็น LRC แบบขยาย ซึ่ง Poweramp และเครื่องเล่นที่รองรับคาราโอเกะอ่านได้ เครื่องเล่นที่อ่านไม่ได้จะแสดงเวลาของคำเป็นข้อความ</string>
+    <string name="include_the_translation">รวมคำแปล</string>
+    <string name="under_each_line_in_your_translation_language">ใต้แต่ละบรรทัด ในภาษาที่คุณแปล</string>
+    <string name="lyrics_file_words_keywords">คาราโอเกะ ทีละคำ lrc แบบขยาย ไฟล์ แท็ก เวลา</string>
+    <string name="lyrics_file_translation_keywords">คำแปล แปล ไฟล์ แท็ก ภาษาที่สอง สองภาษา</string>
 </resources>

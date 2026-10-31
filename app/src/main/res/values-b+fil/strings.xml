@@ -3913,4 +3913,11 @@
     <string name="an_album_playing_through_never_blends">Ang album na tumutugtog nang buo ay hindi naghahalo. Pinapanatili rin nitong buo ang dalawa sa mga kanta nito kapag pinagtabi ng playlist o shuffle.</string>
     <string name="keep_albums_keywords">album walang patlang tuloy-tuloy transition crossfade off</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">Panatilihin ang timing ng bawat salita</string>
+    <string name="karaoke_lyrics_light_word_by_word">Umiilaw ang karaoke lyrics nang salita kada salita sa ibang player din</string>
+    <string name="saved_as_enhanced_lrc_players">Naka-save bilang enhanced LRC, na binabasa ng Poweramp at iba pang player na may karaoke. Ang mga hindi bumabasa nito ay nagpapakita ng oras ng salita bilang text.</string>
+    <string name="include_the_translation">Isama ang salin</string>
+    <string name="under_each_line_in_your_translation_language">Sa ilalim ng bawat linya, sa wika ng iyong salin</string>
+    <string name="lyrics_file_words_keywords">karaoke salita kada salita enhanced lrc file tag timing</string>
+    <string name="lyrics_file_translation_keywords">salin isalin file tag pangalawang wika bilingual</string>
 </resources>

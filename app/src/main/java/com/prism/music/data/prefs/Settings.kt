@@ -833,6 +833,10 @@ data class AppSettings(
     val lyricsTranslate: Boolean = false,
     /** Language code to translate lyrics into; blank means the phone's language. */
     val lyricsTranslateTo: String = "",
+    /** Lyrics saved into music files keep each word's timing, as enhanced LRC (Reddit, 1.7.9.2; off: lines, as before). */
+    val lyricsFileWords: Boolean = false,
+    /** Lyrics saved into music files carry the translation under each line (Reddit, 1.7.9.2). */
+    val lyricsFileTranslation: Boolean = false,
     /** Romanized lyrics (Lyrics → Display). */
     val romanize: RomanizeMode = RomanizeMode.UNDER,
     /** Also scripts of the phone's own language (off: a Korean phone isn't shown Korean in Latin letters). */
@@ -1286,6 +1290,8 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val skipCensored = booleanPreferencesKey("skip_censored")
         val lyricsTranslate = booleanPreferencesKey("lyrics_translate")
         val lyricsTranslateTo = stringPreferencesKey("lyrics_translate_to")
+        val lyricsFileWords = booleanPreferencesKey("lyrics_file_words")
+        val lyricsFileTranslation = booleanPreferencesKey("lyrics_file_translation")
         val romanize = stringPreferencesKey("romanize_lyrics")
         val romanizeAll = booleanPreferencesKey("romanize_all")
         val singOnCellular = booleanPreferencesKey("sing_cellular")
@@ -1590,6 +1596,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val notLook: Set<String> by lazy {
             setOf(
                 "performance_mode", "performance_offered", "share_youtube_links", "mix_keep_albums",
+                "lyrics_file_words", "lyrics_file_translation",
                 "merge_liked_videos", "volume_control", "app_volume", "speed_dial_youtube_only", "swipe_tabs",
                 "onboarded", "cookie", "visitor_data", "data_sync_id", "auth_user", "discord_presence", "account_name", "account_email",
                 "account_avatar", "haptics", "immersive_player", "preload", "preload_cellular", "canvas_enabled", "canvas_on_cellular",
@@ -1728,6 +1735,8 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             skipCensored = p[K.skipCensored] ?: d.skipCensored,
             lyricsTranslate = p[K.lyricsTranslate] ?: d.lyricsTranslate,
             lyricsTranslateTo = p[K.lyricsTranslateTo] ?: d.lyricsTranslateTo,
+            lyricsFileWords = p[K.lyricsFileWords] ?: d.lyricsFileWords,
+            lyricsFileTranslation = p[K.lyricsFileTranslation] ?: d.lyricsFileTranslation,
             romanize = p.enum(K.romanize, d.romanize),
             romanizeAll = p[K.romanizeAll] ?: d.romanizeAll,
             singOnCellular = p[K.singOnCellular] ?: d.singOnCellular,
@@ -2180,6 +2189,8 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     fun setSkipCensored(v: Boolean) = edit { it[K.skipCensored] = v }
     fun setLyricsTranslate(v: Boolean) = edit { it[K.lyricsTranslate] = v }
     fun setLyricsTranslateTo(v: String) = edit { it[K.lyricsTranslateTo] = v }
+    fun setLyricsFileWords(v: Boolean) = edit { it[K.lyricsFileWords] = v }
+    fun setLyricsFileTranslation(v: Boolean) = edit { it[K.lyricsFileTranslation] = v }
     fun setRomanize(v: RomanizeMode) = edit { it[K.romanize] = v.name }
     fun setRomanizeAll(v: Boolean) = edit { it[K.romanizeAll] = v }
     fun setSingOnCellular(v: Boolean) = edit { it[K.singOnCellular] = v }

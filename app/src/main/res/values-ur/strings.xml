@@ -3913,4 +3913,11 @@
     <string name="an_album_playing_through_never_blends">پورا چلتا البم کبھی نہیں ملتا۔ یہ اس کے دو گانوں کو بھی پورا رکھتا ہے جب کوئی پلے لسٹ یا شفل انہیں ساتھ رکھ دے۔</string>
     <string name="keep_albums_keywords">البم بغیر وقفہ مسلسل منتقلی کراس فیڈ بند</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">ہر لفظ کا وقت رکھیں</string>
+    <string name="karaoke_lyrics_light_word_by_word">کراؤکے بول دوسرے پلیئرز میں بھی لفظ بہ لفظ روشن ہوتے ہیں</string>
+    <string name="saved_as_enhanced_lrc_players">اینہانسڈ LRC کے طور پر محفوظ ہوتے ہیں، جسے Poweramp اور کراؤکے والے دوسرے پلیئر پڑھتے ہیں۔ جو نہیں پڑھتے وہ لفظوں کے وقت کو متن کی طرح دکھاتے ہیں۔</string>
+    <string name="include_the_translation">ترجمہ شامل کریں</string>
+    <string name="under_each_line_in_your_translation_language">ہر سطر کے نیچے، آپ کی ترجمے کی زبان میں</string>
+    <string name="lyrics_file_words_keywords">کراؤکے لفظ بہ لفظ اینہانسڈ lrc فائل ٹیگ وقت</string>
+    <string name="lyrics_file_translation_keywords">ترجمہ ترجمہ کریں فائل ٹیگ دوسری زبان دو لسانی</string>
 </resources>

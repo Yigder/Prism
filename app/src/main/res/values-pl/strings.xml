@@ -4013,4 +4013,11 @@
     <string name="an_album_playing_through_never_blends">Album odtwarzany w całości nigdy się nie przenika. To utrzymuje też w całości dwa jego utwory, gdy playlista lub losowanie postawi je obok siebie.</string>
     <string name="keep_albums_keywords">album bez przerw ciągły przejście przenikanie wyłączone</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">Zachowaj czas każdego słowa</string>
+    <string name="karaoke_lyrics_light_word_by_word">Teksty karaoke podświetlają się słowo po słowie także w innych odtwarzaczach</string>
+    <string name="saved_as_enhanced_lrc_players">Zapisywane jako rozszerzony LRC, który czytają Poweramp i inne odtwarzacze z karaoke. Te, które go nie czytają, pokazują czasy słów jako tekst.</string>
+    <string name="include_the_translation">Dołącz tłumaczenie</string>
+    <string name="under_each_line_in_your_translation_language">Pod każdym wierszem, w Twoim języku tłumaczenia</string>
+    <string name="lyrics_file_words_keywords">karaoke słowo po słowie rozszerzony lrc plik tag czas</string>
+    <string name="lyrics_file_translation_keywords">tłumaczenie tłumaczyć plik tag drugi język dwujęzyczny</string>
 </resources>

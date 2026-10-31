@@ -3913,4 +3913,11 @@
     <string name="an_album_playing_through_never_blends">Een album dat doorspeelt, loopt nooit over. Dit laat ook twee van zijn nummers heel als een playlist of shuffle ze naast elkaar zet.</string>
     <string name="keep_albums_keywords">album zonder pauze naadloos overgang crossfade uit</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">Tijd per woord bewaren</string>
+    <string name="karaoke_lyrics_light_word_by_word">Karaoketeksten lichten ook in andere spelers woord voor woord op</string>
+    <string name="saved_as_enhanced_lrc_players">Opgeslagen als uitgebreide LRC, die Poweramp en andere karaokespelers lezen. Spelers die het niet lezen tonen de woordtijden als tekst.</string>
+    <string name="include_the_translation">Vertaling meenemen</string>
+    <string name="under_each_line_in_your_translation_language">Onder elke regel, in je vertaaltaal</string>
+    <string name="lyrics_file_words_keywords">karaoke woord voor woord uitgebreide lrc bestand tag tijd</string>
+    <string name="lyrics_file_translation_keywords">vertaling vertalen bestand tag tweede taal tweetalig</string>
 </resources>

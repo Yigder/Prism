@@ -3936,4 +3936,11 @@
     <string name="an_album_playing_through_never_blends">An album playing through never blends. This also keeps two of its songs whole when a playlist or shuffle puts them side by side.</string>
     <string name="keep_albums_keywords">album gapless seamless transition crossfade off</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">Keep word timings</string>
+    <string name="karaoke_lyrics_light_word_by_word">Karaoke lyrics light up word by word in other players too</string>
+    <string name="saved_as_enhanced_lrc_players">Saved as enhanced LRC, which Poweramp and other karaoke-capable players read. Players that don\'t read it show the word times as text.</string>
+    <string name="include_the_translation">Include the translation</string>
+    <string name="under_each_line_in_your_translation_language">Under each line, in your translation language</string>
+    <string name="lyrics_file_words_keywords">karaoke word by word enhanced lrc file tag timing</string>
+    <string name="lyrics_file_translation_keywords">translation translate file tag second language bilingual</string>
 </resources>

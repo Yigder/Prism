@@ -2,6 +2,15 @@
 
 What changed in each release. Older releases are described on the [Releases page](https://github.com/Yigder/Prism/releases).
 
+## 1.7.9.2 (unreleased)
+
+### Requests
+
+- **Lyrics saved into your music files can keep their word timings and the translation** (Reddit): Settings → Lyrics &
+  Sing → Your music files has two new switches, both off. "Keep word timings" saves karaoke lyrics as enhanced LRC
+  (Poweramp and other karaoke players light them word by word); "Include the translation" puts each line's
+  translation under it, in your translation language.
+
 ## 1.7.9.1
 
 ### Fixes

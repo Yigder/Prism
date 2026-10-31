@@ -3863,4 +3863,11 @@
     <string name="an_album_playing_through_never_blends">Album phát trọn vẹn không bao giờ chồng tiếng. Tùy chọn này cũng giữ nguyên hai bài của nó khi danh sách phát hoặc phát ngẫu nhiên đặt chúng cạnh nhau.</string>
     <string name="keep_albums_keywords">album không ngắt liền mạch chuyển tiếp chồng tắt</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">Giữ thời gian của từng từ</string>
+    <string name="karaoke_lyrics_light_word_by_word">Lời karaoke sáng lên từng từ ở cả trình phát khác</string>
+    <string name="saved_as_enhanced_lrc_players">Được lưu dưới dạng LRC nâng cao, mà Poweramp và các trình phát hỗ trợ karaoke đọc được. Trình phát không đọc được sẽ hiện thời gian của từ dưới dạng chữ.</string>
+    <string name="include_the_translation">Kèm bản dịch</string>
+    <string name="under_each_line_in_your_translation_language">Dưới mỗi dòng, bằng ngôn ngữ dịch của bạn</string>
+    <string name="lyrics_file_words_keywords">karaoke từng từ lrc nâng cao tệp thẻ thời gian</string>
+    <string name="lyrics_file_translation_keywords">bản dịch dịch tệp thẻ ngôn ngữ thứ hai song ngữ</string>
 </resources>

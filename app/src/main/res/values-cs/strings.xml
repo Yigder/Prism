@@ -4013,4 +4013,11 @@
     <string name="an_album_playing_through_never_blends">Album přehrávané celé se nikdy neprolíná. Nechá také celé dvě jeho skladby, když je seznam nebo náhodné přehrávání postaví vedle sebe.</string>
     <string name="keep_albums_keywords">album bez mezer plynulý přechod prolínání vypnuto</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">Zachovat čas každého slova</string>
+    <string name="karaoke_lyrics_light_word_by_word">Karaoke texty se i v jiných přehrávačích rozsvěcují slovo po slově</string>
+    <string name="saved_as_enhanced_lrc_players">Uloženo jako rozšířené LRC, které čte Poweramp a další přehrávače s karaoke. Ty, které ho nečtou, zobrazí časy slov jako text.</string>
+    <string name="include_the_translation">Zahrnout překlad</string>
+    <string name="under_each_line_in_your_translation_language">Pod každým řádkem, ve vašem jazyce překladu</string>
+    <string name="lyrics_file_words_keywords">karaoke slovo po slově rozšířené lrc soubor štítek čas</string>
+    <string name="lyrics_file_translation_keywords">překlad přeložit soubor štítek druhý jazyk dvojjazyčný</string>
 </resources>

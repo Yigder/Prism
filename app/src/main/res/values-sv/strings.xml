@@ -3913,4 +3913,11 @@
     <string name="an_album_playing_through_never_blends">Ett album som spelas igenom tonas aldrig över. Det här håller också två av dess låtar hela när en spellista eller blandning lägger dem bredvid varandra.</string>
     <string name="keep_albums_keywords">album utan paus sömlös övergång övertoning av</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">Behåll tiden för varje ord</string>
+    <string name="karaoke_lyrics_light_word_by_word">Karaoketexter tänds ord för ord även i andra spelare</string>
+    <string name="saved_as_enhanced_lrc_players">Sparas som utökad LRC, som Poweramp och andra karaokespelare läser. Spelare som inte läser den visar ordtiderna som text.</string>
+    <string name="include_the_translation">Ta med översättningen</string>
+    <string name="under_each_line_in_your_translation_language">Under varje rad, på ditt översättningsspråk</string>
+    <string name="lyrics_file_words_keywords">karaoke ord för ord utökad lrc fil tagg tid</string>
+    <string name="lyrics_file_translation_keywords">översättning översätta fil tagg andra språk tvåspråkig</string>
 </resources>

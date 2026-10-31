@@ -3913,4 +3913,11 @@
     <string name="an_album_playing_through_never_blends">Ein Album, das durchläuft, blendet nie über. Das lässt auch zwei seiner Songs ganz, wenn eine Playlist oder Zufallswiedergabe sie nebeneinanderstellt.</string>
     <string name="keep_albums_keywords">album lückenlos nahtlos übergang crossfade aus</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">Zeiten der einzelnen Wörter behalten</string>
+    <string name="karaoke_lyrics_light_word_by_word">Karaoke-Songtexte leuchten auch in anderen Playern Wort für Wort auf</string>
+    <string name="saved_as_enhanced_lrc_players">Als erweitertes LRC gespeichert, das Poweramp und andere karaokefähige Player lesen. Player ohne Unterstützung zeigen die Wortzeiten als Text.</string>
+    <string name="include_the_translation">Übersetzung einschließen</string>
+    <string name="under_each_line_in_your_translation_language">Unter jeder Zeile, in deiner Übersetzungssprache</string>
+    <string name="lyrics_file_words_keywords">karaoke wort für wort erweitertes lrc datei tag zeit</string>
+    <string name="lyrics_file_translation_keywords">übersetzung übersetzen datei tag zweite sprache zweisprachig</string>
 </resources>

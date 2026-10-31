@@ -2,6 +2,7 @@ package com.prism.music
 
 import com.prism.music.data.local.LyricsTags
 import com.prism.music.data.lyrics.LyricLine
+import com.prism.music.data.lyrics.LyricWord
 import com.prism.music.data.lyrics.Lyrics
 import com.prism.music.data.prefs.LyricsSource
 import org.junit.Assert.assertArrayEquals
@@ -55,6 +56,25 @@ class LyricsTagsTest {
     @Test
     fun lrcText() {
         assertEquals("[00:01.23]Hello\n[01:05.40]\n[01:10.01]Wörld", LyricsTags.text(lyrics))
+    }
+
+    /** 1.7.9.2 (Reddit): word timings as enhanced LRC, and the translation under each line, only when asked for. */
+    @Test
+    fun wordTimingsAndTranslation() {
+        val worded = Lyrics(LyricsSource.LRCLIB, true, listOf(
+            LyricLine(1_000, "Hi there", words = listOf(LyricWord(1_000, 1_400, "Hi "), LyricWord(1_500, 2_000, "there"))),
+            LyricLine(65_400, "", isGap = true),
+            LyricLine(70_010, "Bye"),
+        ))
+        assertEquals("[00:01.00]Hi there\n[01:05.40]\n[01:10.01]Bye", LyricsTags.text(worded))
+        assertEquals("[00:01.00]<00:01.00>Hi <00:01.50>there\n[01:05.40]\n[01:10.01]Bye", LyricsTags.text(worded, words = true))
+        // A blank or unchanged translation adds nothing; the gap stays a single line.
+        assertEquals(
+            "[00:01.00]Hi there\n[00:01.00]Hola\n[01:05.40]\n[01:10.01]Bye",
+            LyricsTags.text(worded, translations = listOf("Hola", "", "Bye")),
+        )
+        val plain = Lyrics(LyricsSource.LRCLIB, false, listOf(LyricLine(-1, "One"), LyricLine(-1, "Two")))
+        assertEquals("One\nUno\nTwo", LyricsTags.text(plain, translations = listOf("Uno", null)))
     }
 
     @Test

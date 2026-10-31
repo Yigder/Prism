@@ -3913,4 +3913,11 @@
     <string name="an_album_playing_through_never_blends">A végigjátszott album sosem tűnik át. Ez egy album két dalát is egészben hagyja, ha egy lejátszási lista vagy a keverés egymás mellé teszi őket.</string>
     <string name="keep_albums_keywords">album szünet nélküli folyamatos átmenet áttűnés ki</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">Szavankénti időzítés megtartása</string>
+    <string name="karaoke_lyrics_light_word_by_word">A karaoke dalszöveg más lejátszókban is szavanként világít</string>
+    <string name="saved_as_enhanced_lrc_players">Bővített LRC-ként mentve, amit a Poweramp és más karaoke-képes lejátszók olvasnak. Amelyik nem olvassa, szövegként mutatja a szavak idejét.</string>
+    <string name="include_the_translation">Fordítás hozzáadása</string>
+    <string name="under_each_line_in_your_translation_language">Minden sor alatt, a fordítás nyelvén</string>
+    <string name="lyrics_file_words_keywords">karaoke szavanként bővített lrc fájl címke időzítés</string>
+    <string name="lyrics_file_translation_keywords">fordítás fordít fájl címke második nyelv kétnyelvű</string>
 </resources>

@@ -3863,4 +3863,11 @@
     <string name="an_album_playing_through_never_blends">Album yang diputar penuh tidak pernah berbaur. Ini juga menjaga dua lagunya tetap utuh saat playlist atau acak menaruhnya berdampingan.</string>
     <string name="keep_albums_keywords">album tanpa jeda mulus transisi crossfade mati</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">Pertahankan waktu tiap kata</string>
+    <string name="karaoke_lyrics_light_word_by_word">Lirik karaoke menyala kata demi kata di pemutar lain juga</string>
+    <string name="saved_as_enhanced_lrc_players">Disimpan sebagai LRC tersempurnakan, yang dibaca Poweramp dan pemutar karaoke lain. Pemutar yang tidak membacanya menampilkan waktu kata sebagai teks.</string>
+    <string name="include_the_translation">Sertakan terjemahan</string>
+    <string name="under_each_line_in_your_translation_language">Di bawah tiap baris, dalam bahasa terjemahan Anda</string>
+    <string name="lyrics_file_words_keywords">karaoke kata demi kata lrc tersempurnakan file tag waktu</string>
+    <string name="lyrics_file_translation_keywords">terjemahan terjemahkan file tag bahasa kedua dwibahasa</string>
 </resources>

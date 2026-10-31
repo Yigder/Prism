@@ -3913,4 +3913,11 @@
     <string name="an_album_playing_through_never_blends">पूरा बजता एल्बम कभी नहीं मिलता। यह उसके दो गानों को भी पूरा रखता है जब कोई प्लेलिस्ट या शफ़ल उन्हें साथ रख दे।</string>
     <string name="keep_albums_keywords">एल्बम बिना रुकावट लगातार ट्रांज़िशन क्रॉसफ़ेड बंद</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">हर शब्द का समय रखें</string>
+    <string name="karaoke_lyrics_light_word_by_word">कराओके बोल दूसरे प्लेयर में भी शब्द-दर-शब्द चमकते हैं</string>
+    <string name="saved_as_enhanced_lrc_players">एन्हांस्ड LRC के रूप में सहेजा जाता है, जिसे Poweramp और कराओके वाले दूसरे प्लेयर पढ़ते हैं। जो इसे नहीं पढ़ते, वे शब्दों के समय को टेक्स्ट की तरह दिखाते हैं।</string>
+    <string name="include_the_translation">अनुवाद शामिल करें</string>
+    <string name="under_each_line_in_your_translation_language">हर पंक्ति के नीचे, आपकी अनुवाद भाषा में</string>
+    <string name="lyrics_file_words_keywords">कराओके शब्द दर शब्द एन्हांस्ड lrc फ़ाइल टैग समय</string>
+    <string name="lyrics_file_translation_keywords">अनुवाद अनुवाद करें फ़ाइल टैग दूसरी भाषा द्विभाषी</string>
 </resources>

@@ -3963,4 +3963,11 @@
     <string name="an_album_playing_through_never_blends">Un album ascultat cap-coadă nu se îmbină niciodată. Asta păstrează întregi și două dintre piesele lui când un playlist sau amestecarea le pune una lângă alta.</string>
     <string name="keep_albums_keywords">album fără pauze continuu tranziție crossfade oprit</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">Păstrează timpul fiecărui cuvânt</string>
+    <string name="karaoke_lyrics_light_word_by_word">Versurile karaoke se aprind cuvânt cu cuvânt și în alte playere</string>
+    <string name="saved_as_enhanced_lrc_players">Salvate ca LRC îmbunătățit, pe care îl citesc Poweramp și alte playere cu karaoke. Cele care nu îl citesc arată timpii cuvintelor ca text.</string>
+    <string name="include_the_translation">Include traducerea</string>
+    <string name="under_each_line_in_your_translation_language">Sub fiecare rând, în limba ta de traducere</string>
+    <string name="lyrics_file_words_keywords">karaoke cuvânt cu cuvânt lrc îmbunătățit fișier etichetă timp</string>
+    <string name="lyrics_file_translation_keywords">traducere traduce fișier etichetă a doua limbă bilingv</string>
 </resources>

@@ -38,13 +38,24 @@ object LyricsTags {
         return tail(a).contentEquals(tail(b))
     }
 
-    /** The lyrics as LRC (one "[mm:ss.xx]line" per line, an empty one for each instrumental break), or plain text. */
-    fun text(l: Lyrics): String {
-        if (!l.synced) return l.lines.joinToString("\n") { it.text }.trim()
-        return l.lines.filter { it.timeMs >= 0 }.joinToString("\n") { line ->
-            val cs = line.timeMs / 10
-            // Western digits whatever the phone's language: players read LRC times as those.
-            "[%02d:%02d.%02d]%s".format(java.util.Locale.ROOT, cs / 6000, cs / 100 % 60, cs % 100, if (line.isGap) "" else line.text)
+    /**
+     * The lyrics as LRC (one "[mm:ss.xx]line" per line, an empty one for each instrumental break), or plain text.
+     * [words] (1.7.9.2, Reddit): a word-timed line keeps each word's start, as enhanced LRC ("[00:12.00]<00:12.00>Word
+     * <00:12.48>by"), which karaoke-capable players (Poweramp and others) light word by word. [translations] (one per
+     * line, null where a line has none): each goes under its line, with the same time, as two-language LRC does.
+     */
+    fun text(l: Lyrics, words: Boolean = false, translations: List<String?>? = null): String {
+        fun under(i: Int) = translations?.getOrNull(i)?.takeIf { it.isNotBlank() && it != l.lines[i].text }
+        if (!l.synced) return l.lines.withIndex().joinToString("\n") { (i, line) -> listOfNotNull(line.text, under(i)).joinToString("\n") }.trim()
+        // Western digits whatever the phone's language: players read LRC times as those.
+        fun stamp(ms: Long): String { val cs = ms / 10; return "%02d:%02d.%02d".format(java.util.Locale.ROOT, cs / 6000, cs / 100 % 60, cs % 100) }
+        return l.lines.withIndex().filter { it.value.timeMs >= 0 }.joinToString("\n") { (i, line) ->
+            val text = when {
+                line.isGap -> ""
+                words && line.words.isNotEmpty() -> line.words.joinToString("") { "<${stamp(it.startMs)}>${it.text}" }
+                else -> line.text
+            }
+            "[${stamp(line.timeMs)}]$text" + (under(i)?.let { "\n[${stamp(line.timeMs)}]$it" } ?: "")
         }
     }
 

@@ -348,6 +348,8 @@ object SettingsIndex {
         SettingEntry(D, tr(R.string.mobile_data), tr(R.string.lyrics_on_mobile_data), tr(R.string.cellular_data_saver_metered_load_lyrics)),
         SettingEntry(Y, tr(R.string.sources), tr(R.string.order), tr(R.string.lyrics_providers_sources_priority)),
         SettingEntry(Y, tr(R.string.your_music_files), tr(R.string.save_lyrics_into_your_music_files), tr(R.string.flac_mp3_tags_embed)),
+        SettingEntry(Y, tr(R.string.your_music_files), tr(R.string.keep_word_timings), tr(R.string.lyrics_file_words_keywords)),
+        SettingEntry(Y, tr(R.string.your_music_files), tr(R.string.include_the_translation), tr(R.string.lyrics_file_translation_keywords)),
         SettingEntry(DV, tr(R.string.android_auto), tr(R.string.lyrics_in_the_car), tr(R.string.android_auto_2)),
         SettingEntry(DV, tr(R.string.android_auto), tr(R.string.style), tr(R.string.android_auto_car), needs = carLyrics),
         SettingEntry(DV, tr(R.string.android_auto), tr(R.string.keep_the_song_title), tr(R.string.android_auto_car), needs = carLyrics),

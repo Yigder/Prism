@@ -3963,4 +3963,11 @@
     <string name="an_album_playing_through_never_blends">Un album lu en entier ne se fond jamais. Cela garde aussi entiers deux de ses titres quand une playlist ou la lecture aléatoire les met côte à côte.</string>
     <string name="keep_albums_keywords">album sans blanc continu transition fondu désactivé</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">Garder le minutage de chaque mot</string>
+    <string name="karaoke_lyrics_light_word_by_word">Les paroles karaoké s\'allument mot par mot dans d\'autres lecteurs aussi</string>
+    <string name="saved_as_enhanced_lrc_players">Enregistrées en LRC enrichi, que lisent Poweramp et d\'autres lecteurs karaoké. Ceux qui ne le lisent pas affichent les temps des mots comme du texte.</string>
+    <string name="include_the_translation">Inclure la traduction</string>
+    <string name="under_each_line_in_your_translation_language">Sous chaque ligne, dans votre langue de traduction</string>
+    <string name="lyrics_file_words_keywords">karaoké mot par mot lrc enrichi fichier tag minutage</string>
+    <string name="lyrics_file_translation_keywords">traduction traduire fichier tag deuxième langue bilingue</string>
 </resources>

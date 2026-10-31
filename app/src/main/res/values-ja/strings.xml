@@ -3863,4 +3863,11 @@
     <string name="an_album_playing_through_never_blends">アルバムを通して再生するときはクロスフェードしません。この設定では、プレイリストやシャッフルで同じアルバムの2曲が並んだときもそのまま再生します。</string>
     <string name="keep_albums_keywords">アルバム ギャップレス シームレス 切り替え クロスフェード オフ</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">単語ごとのタイミングを残す</string>
+    <string name="karaoke_lyrics_light_word_by_word">カラオケ歌詞がほかのプレーヤーでも単語ごとに光ります</string>
+    <string name="saved_as_enhanced_lrc_players">拡張LRCとして保存され、Poweramp などカラオケ対応のプレーヤーが読み込みます。対応していないプレーヤーでは単語のタイミングが文字として表示されます。</string>
+    <string name="include_the_translation">翻訳を含める</string>
+    <string name="under_each_line_in_your_translation_language">各行の下に、翻訳先の言語で</string>
+    <string name="lyrics_file_words_keywords">カラオケ 単語ごと 拡張lrc ファイル タグ タイミング</string>
+    <string name="lyrics_file_translation_keywords">翻訳 訳す ファイル タグ 第二言語 2か国語</string>
 </resources>

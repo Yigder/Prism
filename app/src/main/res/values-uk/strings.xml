@@ -4013,4 +4013,11 @@
     <string name="an_album_playing_through_never_blends">Альбом, що грає повністю, ніколи не змішується. Це також лишає цілими дві його пісні, коли плейлист або перемішування ставить їх поруч.</string>
     <string name="keep_albums_keywords">альбом без пауз безперервний перехід кросфейд вимкнено</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">Зберігати час кожного слова</string>
+    <string name="karaoke_lyrics_light_word_by_word">Караоке-текст підсвічується по словах і в інших плеєрах</string>
+    <string name="saved_as_enhanced_lrc_players">Зберігається як розширений LRC, який читають Poweramp та інші плеєри з караоке. Ті, що його не читають, покажуть час слів як текст.</string>
+    <string name="include_the_translation">Додати переклад</string>
+    <string name="under_each_line_in_your_translation_language">Під кожним рядком, вашою мовою перекладу</string>
+    <string name="lyrics_file_words_keywords">караоке по словах розширений lrc файл тег час</string>
+    <string name="lyrics_file_translation_keywords">переклад перекласти файл тег друга мова двомовний</string>
 </resources>

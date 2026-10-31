@@ -3863,4 +3863,11 @@
     <string name="an_album_playing_through_never_blends">앨범을 처음부터 끝까지 재생할 때는 크로스페이드하지 않습니다. 이 설정은 재생목록이나 셔플이 같은 앨범의 두 곡을 나란히 놓을 때도 그대로 재생합니다.</string>
     <string name="keep_albums_keywords">앨범 갭리스 끊김없는 전환 크로스페이드 끄기</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">단어별 타이밍 유지</string>
+    <string name="karaoke_lyrics_light_word_by_word">다른 플레이어에서도 노래방 가사가 단어별로 켜집니다</string>
+    <string name="saved_as_enhanced_lrc_players">확장 LRC로 저장되며, Poweramp 등 노래방 기능이 있는 플레이어가 읽습니다. 읽지 못하는 플레이어는 단어 시간을 글자로 표시합니다.</string>
+    <string name="include_the_translation">번역 포함</string>
+    <string name="under_each_line_in_your_translation_language">각 줄 아래에, 번역 언어로</string>
+    <string name="lyrics_file_words_keywords">노래방 단어별 확장 lrc 파일 태그 타이밍</string>
+    <string name="lyrics_file_translation_keywords">번역 번역하기 파일 태그 두 번째 언어 2개 국어</string>
 </resources>

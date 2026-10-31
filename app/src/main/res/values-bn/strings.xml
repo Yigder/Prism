@@ -3913,4 +3913,11 @@
     <string name="an_album_playing_through_never_blends">পুরো বাজতে থাকা অ্যালবাম কখনো মেশে না। প্লেলিস্ট বা শাফল তার দুটি গান পাশাপাশি রাখলেও এটি সেগুলো পুরো রাখে।</string>
     <string name="keep_albums_keywords">অ্যালবাম বিরতিহীন নিরবচ্ছিন্ন ট্রানজিশন ক্রসফেড বন্ধ</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">প্রতিটি শব্দের সময় রাখুন</string>
+    <string name="karaoke_lyrics_light_word_by_word">কারাওকে লিরিক্স অন্য প্লেয়ারেও শব্দে শব্দে জ্বলে ওঠে</string>
+    <string name="saved_as_enhanced_lrc_players">এনহ্যান্সড LRC হিসেবে সংরক্ষিত হয়, যা Poweramp ও কারাওকে-সক্ষম অন্য প্লেয়ার পড়ে। যারা পড়ে না, তারা শব্দের সময় লেখা হিসেবে দেখায়।</string>
+    <string name="include_the_translation">অনুবাদ যোগ করুন</string>
+    <string name="under_each_line_in_your_translation_language">প্রতিটি লাইনের নিচে, আপনার অনুবাদের ভাষায়</string>
+    <string name="lyrics_file_words_keywords">কারাওকে শব্দে শব্দে এনহ্যান্সড lrc ফাইল ট্যাগ সময়</string>
+    <string name="lyrics_file_translation_keywords">অনুবাদ অনুবাদ করুন ফাইল ট্যাগ দ্বিতীয় ভাষা দ্বিভাষিক</string>
 </resources>

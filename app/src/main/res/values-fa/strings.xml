@@ -3913,4 +3913,11 @@
     <string name="an_album_playing_through_never_blends">آلبومی که کامل پخش می‌شود هرگز محو متقابل نمی‌شود. این گزینه دو آهنگ آن را هم وقتی فهرست پخش یا پخش تصادفی کنار هم می‌گذارد کامل نگه می‌دارد.</string>
     <string name="keep_albums_keywords">آلبوم بی‌وقفه پیوسته گذار محو متقابل خاموش</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">حفظ زمان هر واژه</string>
+    <string name="karaoke_lyrics_light_word_by_word">متن کارائوکه در پخش‌کننده‌های دیگر هم واژه به واژه روشن می‌شود</string>
+    <string name="saved_as_enhanced_lrc_players">به‌صورت LRC پیشرفته ذخیره می‌شود که Poweramp و دیگر پخش‌کننده‌های کارائوکه آن را می‌خوانند. آن‌هایی که نمی‌خوانند زمان واژه‌ها را به‌صورت متن نشان می‌دهند.</string>
+    <string name="include_the_translation">افزودن ترجمه</string>
+    <string name="under_each_line_in_your_translation_language">زیر هر خط، به زبان ترجمهٔ شما</string>
+    <string name="lyrics_file_words_keywords">کارائوکه واژه به واژه lrc پیشرفته فایل برچسب زمان</string>
+    <string name="lyrics_file_translation_keywords">ترجمه ترجمه کردن فایل برچسب زبان دوم دوزبانه</string>
 </resources>

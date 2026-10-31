@@ -3913,4 +3913,11 @@
     <string name="an_album_playing_through_never_blends">Baştan sona çalan bir albüm asla birbirine geçmez. Bu, bir çalma listesi veya karıştırma iki şarkısını yan yana koyduğunda da onları bütün tutar.</string>
     <string name="keep_albums_keywords">albüm boşluksuz kesintisiz geçiş efekti kapalı</string>
     <string name="grid_3x3">3 × 3</string>
+    <string name="keep_word_timings">Her kelimenin zamanlamasını koru</string>
+    <string name="karaoke_lyrics_light_word_by_word">Karaoke sözleri diğer oynatıcılarda da kelime kelime yanar</string>
+    <string name="saved_as_enhanced_lrc_players">Poweramp ve karaoke destekli diğer oynatıcıların okuduğu gelişmiş LRC olarak kaydedilir. Okumayanlar kelime zamanlarını metin olarak gösterir.</string>
+    <string name="include_the_translation">Çeviriyi ekle</string>
+    <string name="under_each_line_in_your_translation_language">Her satırın altında, çeviri dilinizde</string>
+    <string name="lyrics_file_words_keywords">karaoke kelime kelime gelişmiş lrc dosya etiket zamanlama</string>
+    <string name="lyrics_file_translation_keywords">çeviri çevir dosya etiket ikinci dil iki dilli</string>
 </resources>

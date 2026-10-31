@@ -2080,6 +2080,14 @@ private fun LyricsSettings() {
                 info = tr(R.string.synced_lyrics_go_into_your_flac),
                 onClick = { c.lyricsToFiles.request(null) },
             )
+            // Reddit, 1.7.9.2: what goes in with them.
+            Toggle(
+                tr(R.string.keep_word_timings), tr(R.string.karaoke_lyrics_light_word_by_word), s.lyricsFileWords,
+                info = tr(R.string.saved_as_enhanced_lrc_players),
+            ) { prefs.setLyricsFileWords(it) }
+            Toggle(
+                tr(R.string.include_the_translation), tr(R.string.under_each_line_in_your_translation_language), s.lyricsFileTranslation,
+            ) { prefs.setLyricsFileTranslation(it) }
         }
     }
 }
