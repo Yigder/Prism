@@ -23,7 +23,9 @@ android {
 
     defaultConfig {
         applicationId = "com.prism.music"
-        minSdk = 26
+        // Android 7.1 (Fire OS 6, Fire TV / Fire tablets from 2017). AndroidX's own libraries now assume 24+;
+        // the one exception (JavaScriptEngine, 26+) is overridden in AndroidManifest.xml and checked at runtime.
+        minSdk = 25
         targetSdk = 36
         versionCode = 54
         versionName = "1.8.0"

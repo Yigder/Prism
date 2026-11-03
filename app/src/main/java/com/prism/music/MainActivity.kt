@@ -225,6 +225,8 @@ open class MainActivity : ComponentActivity() {
     /** Settings → Controls & gestures → Picture-in-picture: "Only with its button" (#167) never floats the video by itself. */
     private val pipOnLeave: Boolean get() = container.settings.current.behavior.pip == com.prism.music.data.prefs.PipMode.AUTO
 
+    /** Android 8+ takes the window's shape; Android 7.1 (Fire OS 6 TVs) only has the no-argument call. */
+    @androidx.annotation.RequiresApi(26)
     private fun pipParams(): android.app.PictureInPictureParams = android.app.PictureInPictureParams.Builder()
         .setAspectRatio(pipAspect)
         .apply { if (Build.VERSION.SDK_INT >= 31) { setAutoEnterEnabled(pipEligible && pipOnLeave); setSeamlessResizeEnabled(true) } }
@@ -243,11 +245,25 @@ open class MainActivity : ComponentActivity() {
             }
         }
         // Android 12+ floats the video by itself when the listener goes Home.
-        runCatching { setPictureInPictureParams(pipParams()) }
+        if (Build.VERSION.SDK_INT >= 26) runCatching { setPictureInPictureParams(pipParams()) }
     }
 
     /** Floats the music video now (the player's PiP button). False if Android or the listener's settings won't allow it. */
-    fun enterPip(): Boolean = pipSupported && runCatching { enterPictureInPictureMode(pipParams()) }.getOrDefault(false)
+    @Suppress("DEPRECATION")
+    fun enterPip(): Boolean {
+        if (!pipSupported) return false
+        return try {
+            if (Build.VERSION.SDK_INT >= 26) {
+                enterPictureInPictureMode(pipParams())
+            } else {
+                // Android 7.1's version has no result: it either floats the video or throws.
+                enterPictureInPictureMode()
+                true
+            }
+        } catch (_: Throwable) {
+            false
+        }
+    }
 
     /** A touch or key: the listener is here (desk mode's ambient screen waits, or goes). */
     override fun onUserInteraction() {
@@ -261,6 +277,14 @@ open class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT < 31 && pipEligible && pipOnLeave) enterPip()
     }
 
+    /** Android 7.1 (Fire OS 6): the framework calls this older callback; Android 8.0+ calls the one below. */
+    @Suppress("DEPRECATION")
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode)
+        inPip.value = isInPictureInPictureMode
+    }
+
+    @androidx.annotation.RequiresApi(26)
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: android.content.res.Configuration) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
         inPip.value = isInPictureInPictureMode

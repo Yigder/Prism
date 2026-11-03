@@ -1,2 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@drawable/ic_launcher_bg_wave" /><foreground android:drawable="@drawable/ic_launcher_fg_wave" /><monochrome android:drawable="@drawable/ic_launcher_fg_wave" /></adaptive-icon>
+<!-- Legacy (pre-Android 8 / Fire OS 6) icon: the adaptive icon's layers composed. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/ic_launcher_bg_wave" />
+    <item>
+        <scale android:scaleWidth="150%" android:scaleHeight="150%" android:pivotX="50%" android:pivotY="50%" android:drawable="@drawable/ic_launcher_fg_wave" />
+    </item>
+</layer-list>

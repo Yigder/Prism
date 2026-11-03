@@ -140,7 +140,10 @@ object AudioDiagnostics {
         runCatching { writer.submit {}.get(2, TimeUnit.SECONDS) }
         val logcat = runCatching {
             val p = ProcessBuilder("logcat", "-d", "-v", "time", "-t", "4000", "--pid=${android.os.Process.myPid()}").redirectErrorStream(true).start()
-            p.inputStream.bufferedReader().use { it.readText() }.also { p.waitFor(5, TimeUnit.SECONDS) }
+            val text = p.inputStream.bufferedReader().use { it.readText() }
+            // Process.waitFor(timeout) is Android 8; on 7.1 logcat -d has already finished writing and exits by itself.
+            if (Build.VERSION.SDK_INT >= 26) p.waitFor(5, TimeUnit.SECONDS) else p.waitFor()
+            text
         }.getOrElse { "(couldn't read logcat: $it)" }
         out.writeText(
             buildString {

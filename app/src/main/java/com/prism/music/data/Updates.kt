@@ -128,11 +128,13 @@ class UpdateChecker(private val context: Context, private val http: OkHttpClient
     }
 
     /** Whether Android lets Prism hand APKs to its installer ("Install unknown apps" for Prism). */
-    fun canInstall(): Boolean = context.packageManager.canRequestPackageInstalls()
+    fun canInstall(): Boolean = Build.VERSION.SDK_INT < 26 || context.packageManager.canRequestPackageInstalls()
 
     /** The system page where the listener allows Prism to install updates. */
     fun permissionIntent(): Intent =
-        Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}"))
+        if (Build.VERSION.SDK_INT >= 26) Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}"))
+        // Android 7.x has no per-app switch: installing is allowed or not in Security settings.
+        else Intent(Settings.ACTION_SECURITY_SETTINGS)
 
     /**
      * Downloads [update] and starts installing it. Asks for the install permission first if it's
