@@ -1,5 +1,7 @@
 package com.prism.music.data.looks
 
+import com.prism.music.R
+import com.prism.music.tr
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -62,9 +64,9 @@ class LookGallery(private val http: OkHttpClient, private val dir: File, private
 
     private fun getBytes(url: String, max: Long): ByteArray =
         http.newCall(Request.Builder().url(url).build()).execute().use { resp ->
-            if (!resp.isSuccessful) throw IOException("GitHub answered HTTP ${resp.code}")
+            if (!resp.isSuccessful) throw IOException(tr(R.string.github_answered_http, resp.code))
             val body = resp.body
-            if (body.contentLength() > max) throw IOException("That's too big for a Look")
+            if (body.contentLength() > max) throw IOException(tr(R.string.that_s_too_big_for_a))
             val out = java.io.ByteArrayOutputStream()
             body.byteStream().use { input ->
                 val buf = ByteArray(8192)
@@ -72,7 +74,7 @@ class LookGallery(private val http: OkHttpClient, private val dir: File, private
                     val n = input.read(buf)
                     if (n < 0) break
                     out.write(buf, 0, n)
-                    if (out.size() > max) throw IOException("That's too big for a Look")
+                    if (out.size() > max) throw IOException(tr(R.string.that_s_too_big_for_a))
                 }
             }
             out.toByteArray()
@@ -94,7 +96,7 @@ class LookGallery(private val http: OkHttpClient, private val dir: File, private
          */
         fun parse(text: String, kinds: Map<String, Char>): List<GalleryLook> {
             val index = json.decodeFromString(GalleryIndex.serializer(), text)
-            if (index.format > 1) throw IOException("The gallery needs a newer Prism")
+            if (index.format > 1) throw IOException(tr(R.string.the_gallery_needs_a_newer_prism))
             val seen = HashSet<String>()
             return index.looks.mapNotNull { e ->
                 if (!ID.matches(e.id) || !seen.add(e.id)) return@mapNotNull null
@@ -106,7 +108,7 @@ class LookGallery(private val http: OkHttpClient, private val dir: File, private
                     e.copy(by = by, note = note),
                     look.copy(
                         id = "gallery-${e.id}", name = e.name.filter { !it.isISOControl() }.trim().take(Look.MAX_NAME).ifBlank { look.name },
-                        note = listOfNotNull(by.takeIf { it.isNotBlank() }?.let { "by $it" }, note.takeIf { it.isNotBlank() }).joinToString(" · "),
+                        note = listOfNotNull(by.takeIf { it.isNotBlank() }?.let { tr(R.string.by_2, it) }, note.takeIf { it.isNotBlank() }).joinToString(" · "),
                     ),
                 )
             }

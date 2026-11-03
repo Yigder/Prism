@@ -1,5 +1,7 @@
 package com.prism.music.data
 
+import com.prism.music.R
+import com.prism.music.tr
 import android.content.Context
 import com.prism.music.AppContainer
 import kotlinx.coroutines.Dispatchers
@@ -51,8 +53,8 @@ class LikedPlaylist(private val c: AppContainer) {
             runCatching {
                 val ids = likedOldestFirst()
                 // Made with the first few, then filled in batches: one huge create request can be refused.
-                val id = c.ytm.createPlaylist(name, ids.take(50), "Every song liked in Prism, kept up to date.", privacy)
-                    ?: throw java.io.IOException("YouTube Music didn't make the playlist")
+                val id = c.ytm.createPlaylist(name, ids.take(50), tr(R.string.every_song_liked_in_prism_kept), privacy)
+                    ?: throw java.io.IOException(tr(R.string.youtube_music_didn_t_make_the))
                 if (ids.size > 50) c.ytm.addAllToPlaylist(id, ids.drop(50))
                 save(id, name, ids.toSet())
                 c.library.refreshCollections()
@@ -115,7 +117,7 @@ class LikedPlaylist(private val c: AppContainer) {
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                lastError.value = e.friendlyMessage("Couldn't update the playlist")
+                lastError.value = e.friendlyMessage(tr(R.string.couldn_t_update_the_playlist))
             } finally {
                 syncing.value = false
             }

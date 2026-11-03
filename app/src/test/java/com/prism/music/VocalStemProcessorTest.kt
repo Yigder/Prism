@@ -126,4 +126,83 @@ class VocalStemProcessorTest {
         assertTrue("voice left $voiceLeft", voiceLeft < 0.01)
         root.deleteRecursively()
     }
+
+    private fun writeStem(store: StemStore, id: String, frames: Int, complete: Boolean, sample: (Int) -> Float) {
+        store.writeMeta(id, StemStore.Meta(rate, frames.toLong(), complete = complete))
+        store.pcm(id).outputStream().buffered().use { out ->
+            for (i in 0 until frames * 2) {
+                val s = (sample(i) * 32767f).toInt().coerceIn(-32768, 32767)
+                out.write(s and 0xff); out.write((s shr 8) and 0xff)
+            }
+        }
+    }
+
+    /**
+     * 1.8.x, the owner's TV ("once in the Sing menu it just doesn't do anything"): the quick way's stand-in, done in
+     * seconds, is taken out at once; when the song's own vocals reach the playing place, they take over there, from the
+     * same frame: every buffer comes back as long as it went in, nothing is repeated or skipped, and the change glides.
+     */
+    @Test
+    fun theQuickStandInThenTheSongsOwnVocalsFromTheSamePlace() {
+        val seconds = 16
+        val n = rate * seconds
+        val rnd = Random(5)
+        val backing = FloatArray(n * 2) { i -> val t = (i / 2).toDouble() / rate; ((rnd.nextFloat() - 0.5f) * 0.12f + 0.15 * sin(2 * PI * 55 * t) + 0.08 * sin(2 * PI * 330 * t)).toFloat() }
+        val voice = FloatArray(n * 2) { i -> val t = (i / 2).toDouble() / rate; (0.25 * sin(2 * PI * (440 + 6 * sin(2 * PI * 5 * t)) * t) * (0.6 + 0.4 * sin(2 * PI * 0.3 * t))).toFloat() }
+        val music = FloatArray(n * 2) { backing[it] + voice[it] }
+        val root = kotlin.io.path.createTempDirectory("sing").toFile()
+        val store = StemStore(root)
+        // The stand-in: half the voice (the quick way leaves some in). The song's own: nothing yet.
+        writeStem(store.quick!!, "song1", n, complete = true) { voice[it] * 0.5f }
+        writeStem(store, "song1", 0, complete = false) { 0f }
+        val source = object : VocalStemProcessor.Source {
+            override val onNow = true
+            override val levelNow = 0f
+            override val store = store
+        }
+        val p = VocalStemProcessor(source)
+        p.configure(AudioProcessor.AudioFormat(rate, 2, C.ENCODING_PCM_FLOAT))
+        p.flush(AudioProcessor.StreamMetadata.Builder().setTimeline(OneSong("song1", seconds * 1_000_000L)).setPeriodUid("song1").setPositionOffsetUs(0).build())
+        val out = FloatArray(n * 2)
+        var at = 0
+        val block = 1024
+        val handover = rate * 9
+        while (at < n) {
+            val frames = minOf(block, n - at)
+            val buf = ByteBuffer.allocateDirect(frames * 8).order(ByteOrder.nativeOrder())
+            for (i in 0 until frames * 2) buf.putFloat(music[at * 2 + i])
+            buf.flip()
+            p.queueInput(buf)
+            val fb = p.output.order(ByteOrder.nativeOrder()).asFloatBuffer()
+            assertTrue("a buffer came back as long as it went in", fb.remaining() == frames * 2)
+            fb.get(out, at * 2, frames * 2)
+            at += frames
+            if (at >= rate * 5 && at < rate * 5 + block) {
+                val until = System.currentTimeMillis() + 5_000
+                while (p.alignment.first == null && System.currentTimeMillis() < until) Thread.sleep(50)
+            }
+            // 9 s in, the song's own separation has caught up (written whole, as a fast device would have it).
+            if (at >= handover && at < handover + block) {
+                writeStem(store, "song1", n, complete = true) { voice[it] }
+                Thread.sleep(300)
+            }
+        }
+        fun rms(a: FloatArray, from: Int, to: Int) = sqrt((from * 2 until to * 2).sumOf { (a[it] * a[it]).toDouble() } / ((to - from) * 2))
+        val left = FloatArray(n * 2) { out[it] - backing[it] }
+        // The stand-in at work, at its place: half the voice left, sample for sample.
+        val quickErr = rms(FloatArray(n * 2) { left[it] - 0.5f * voice[it] }, rate * 6, rate * 8) / rms(voice, rate * 6, rate * 8)
+        // The song's own vocals from a moment after they reached the place: the voice gone.
+        val ownLeft = rms(left, rate * 11, rate * 15) / rms(voice, rate * 11, rate * 15)
+        // The change: no jump bigger than the voice's own steps.
+        var jump = 0f; var step = 0f
+        for (i in handover * 2 until (handover + rate) * 2 - 2) {
+            jump = maxOf(jump, kotlin.math.abs(left[i + 2] - left[i]))
+            step = maxOf(step, kotlin.math.abs(voice[i + 2] - voice[i]))
+        }
+        println("[sing] stand-in error ${"%.4f".format(quickErr)}, own vocals left ${"%.4f".format(ownLeft)}, largest step at the change $jump (the voice's own $step)")
+        assertTrue("the stand-in leaves half the voice, in place: $quickErr", quickErr < 0.02)
+        assertTrue("the song's own vocals take it out: $ownLeft", ownLeft < 0.01)
+        assertTrue("no click at the change: $jump vs $step", jump <= step)
+        root.deleteRecursively()
+    }
 }

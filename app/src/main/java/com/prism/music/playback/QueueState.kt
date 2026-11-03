@@ -12,6 +12,8 @@ data class QueueSource(
     val seedId: String? = null,
     /** The album, playlist or artist the queue was started from, so a play button for it can show pause. */
     val originId: String? = null,
+    /** The album or playlist itself, as a card that opens it: Home's Recently played can list it (#196). */
+    val page: com.prism.music.data.model.BrowseItem? = null,
 ) {
     /** A radio started from one song: it keeps going with similar music, Autoplay or not. */
     val isSongRadio: Boolean get() = kind == QueueKind.RADIO && seedId != null

@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.prism.music.ui.theme.LocalAppSettings
 import com.prism.music.ui.theme.LocalIsDark
 import com.prism.music.ui.theme.LocalUi
@@ -91,7 +92,7 @@ fun ActionSheet(
                     // Never the whole screen tall: a menu that reached the top (the player's, with an animated cover's two
                     // extra rows) didn't follow the finger when pulled down, and stuck. Longer menus scroll inside.
                     val maxHeight = LocalConfiguration.current.screenHeightDp.dp * 0.86f
-                    Column(Modifier.fillMaxWidth().heightIn(max = maxHeight).verticalScroll(rememberScrollState())) {
+                    Column(Modifier.fillMaxWidth().heightIn(max = maxHeight).nestedScroll(KeepUpwardScroll).verticalScroll(rememberScrollState())) {
                         Box(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 14.dp), contentAlignment = Alignment.Center) {
                             Box(Modifier.size(36.dp, 4.dp).clip(CircleShape).background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)))
                         }
@@ -102,6 +103,19 @@ fun ActionSheet(
             }
         }
     }
+}
+
+/**
+ * What's left of an upward scroll or fling once the menu has reached its end stays with the menu (#147): handed to the
+ * sheet, a fast fling pushed the whole sheet up past its top, under the status bar, and it bounced back down. Downward
+ * leftovers still go to the sheet, so pulling it down closes it as before.
+ */
+private val KeepUpwardScroll = object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+    override fun onPostScroll(consumed: androidx.compose.ui.geometry.Offset, available: androidx.compose.ui.geometry.Offset, source: androidx.compose.ui.input.nestedscroll.NestedScrollSource) =
+        if (available.y < 0f) androidx.compose.ui.geometry.Offset(0f, available.y) else androidx.compose.ui.geometry.Offset.Zero
+
+    override suspend fun onPostFling(consumed: androidx.compose.ui.unit.Velocity, available: androidx.compose.ui.unit.Velocity) =
+        if (available.y < 0f) androidx.compose.ui.unit.Velocity(0f, available.y) else androidx.compose.ui.unit.Velocity.Zero
 }
 
 /** Runs [a]: straight away when it keeps the sheet open, else once the sheet has slid away. */

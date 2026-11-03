@@ -9,6 +9,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** DJ mode's status says only what's so; the quick scan hears three stretches of a song. */
+// Robolectric: the status line's words come from strings.xml (1.7.9).
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+@org.robolectric.annotation.Config(sdk = [34], application = android.app.Application::class)
 class DjStatusTest {
     @Test
     fun readingThenInOrder() {

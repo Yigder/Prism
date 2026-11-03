@@ -53,6 +53,10 @@ import com.prism.music.ui.theme.PrismTokens
 
 private val ButtonPadding = PaddingValues(horizontal = 22.dp, vertical = 10.dp)
 
+/** Classic controls (1.7.8, #155): Material's own drawing, in the accent, as Prism 1.6 had them. */
+@Composable
+private fun classic(): Boolean = com.prism.music.ui.theme.LocalUi.current.classicControls
+
 /** The page's glass: a see-through fill and a light top edge (frosted on any background). */
 @Composable
 internal fun glassFill(strength: Float = 1f): Color = frostFill(strength)
@@ -73,6 +77,7 @@ fun PrismButton(
     contentPadding: PaddingValues = ButtonPadding,
     content: @Composable RowScope.() -> Unit,
 ) {
+    if (classic()) { Button(onClick, modifier, enabled, contentPadding = contentPadding, content = content); return }
     val s = MaterialTheme.colorScheme
     Button(
         onClick, modifier.heightIn(min = 46.dp), enabled, shape,
@@ -94,6 +99,7 @@ fun PrismOutlinedButton(
     contentPadding: PaddingValues = ButtonPadding,
     content: @Composable RowScope.() -> Unit,
 ) {
+    if (classic()) { OutlinedButton(onClick, modifier, enabled, contentPadding = contentPadding, content = content); return }
     val s = MaterialTheme.colorScheme
     OutlinedButton(
         onClick, modifier.heightIn(min = 46.dp), enabled, shape,
@@ -113,6 +119,7 @@ fun PrismFilledTonalButton(
     contentPadding: PaddingValues = ButtonPadding,
     content: @Composable RowScope.() -> Unit,
 ) {
+    if (classic()) { FilledTonalButton(onClick, modifier, enabled, contentPadding = contentPadding, content = content); return }
     val s = MaterialTheme.colorScheme
     FilledTonalButton(
         onClick, modifier.heightIn(min = 46.dp), enabled, shape,
@@ -134,6 +141,7 @@ fun PrismTextButton(
     contentPadding: PaddingValues = ButtonDefaults.TextButtonContentPadding,
     content: @Composable RowScope.() -> Unit,
 ) {
+    if (classic()) { TextButton(onClick, modifier, enabled, contentPadding = contentPadding, content = content); return }
     val s = MaterialTheme.colorScheme
     TextButton(
         onClick, modifier, enabled, shape,
@@ -192,6 +200,7 @@ fun PrismSwitch(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
+    if (classic()) { androidx.compose.material3.Switch(checked, onCheckedChange, modifier, enabled = enabled); return }
     val s = MaterialTheme.colorScheme
     val dim = if (enabled) 1f else 0.4f
     val lit by animateFloatAsState(if (checked) 1f else 0f, tween(PrismTokens.Motion.STANDARD), label = "lit")
@@ -238,6 +247,10 @@ fun PrismSlider(
     steps: Int = 0,
     onValueChangeFinished: (() -> Unit)? = null,
 ) {
+    if (classic()) {
+        Slider(value, onValueChange, modifier, enabled, valueRange = valueRange, steps = steps, onValueChangeFinished = onValueChangeFinished)
+        return
+    }
     val s = MaterialTheme.colorScheme
     val dark = LocalIsDark.current
     val track = s.onSurface.copy(alpha = 0.14f)

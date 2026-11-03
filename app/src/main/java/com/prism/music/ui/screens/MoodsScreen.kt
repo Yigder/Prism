@@ -1,5 +1,7 @@
 package com.prism.music.ui.screens
 
+import com.prism.music.R
+import com.prism.music.tr
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,12 +30,12 @@ fun MoodsScreen(bottomPadding: Dp) {
     val c = LocalContainer.current
     val nav = LocalNavigator.current
     val moods = rememberLoad("moods") { c.taste.rank(c.ytm.moodsAndGenres()) }
-    SubPage("Moods & genres", bottomPadding, subtitle = "Best fits for you first") {
+    SubPage(tr(R.string.moods_genres), bottomPadding, subtitle = tr(R.string.best_fits_for_you_first)) {
         when (val s = moods.state) {
             Load.Loading -> item { LoadingState() }
             is Load.Err -> item { ErrorState(s.message) { moods.reload(false) } }
             is Load.Ok -> {
-                val groups = listOf("Picked for you" to s.value.picks.take(12)) + s.value.sections
+                val groups = listOf(tr(R.string.picked_for_you) to s.value.picks.take(12)) + s.value.sections
                 groups.forEach { (title, tiles) ->
                     if (tiles.isEmpty()) return@forEach
                     item(key = "h:$title") {

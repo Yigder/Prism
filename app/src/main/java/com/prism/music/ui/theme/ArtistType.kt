@@ -1,5 +1,7 @@
 package com.prism.music.ui.theme
 
+import com.prism.music.R
+import com.prism.music.tr
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -50,7 +52,7 @@ object ArtistTypography {
     /** Tall, tightly packed black capitals (Roboto Flex at its narrowest). */
     val condensed by lazy {
         ArtistType(
-            "condensed", "Condensed",
+            "condensed", tr(R.string.condensed),
             family(FontFamily.SansSerif, *flex, weight = FontWeight.Black, axes = FontVariation.Settings(
                 FontVariation.weight(1000), FontVariation.width(25f), FontVariation.Setting("opsz", 144f),
             )),
@@ -61,7 +63,7 @@ object ArtistTypography {
     /** Wide, heavy capitals (Roboto Flex at its widest). */
     val extended by lazy {
         ArtistType(
-            "extended", "Extended",
+            "extended", tr(R.string.extended),
             family(FontFamily.SansSerif, *flex, weight = FontWeight.Black, axes = FontVariation.Settings(
                 FontVariation.weight(1000), FontVariation.width(151f), FontVariation.Setting("opsz", 144f),
             )),
@@ -72,7 +74,7 @@ object ArtistTypography {
     /** Industrial poster capitals. */
     private val shoulders by lazy {
         ArtistType(
-            "poster", "Poster",
+            "poster", tr(R.string.poster),
             family(FontFamily.SansSerif, "/product/fonts/BigShouldersText-ExtraBold.ttf", "/system/fonts/BigShouldersText-ExtraBold.ttf", weight = FontWeight.ExtraBold),
             FontWeight.ExtraBold, caps = true, tracking = 0.01f, size = 56f, lineHeight = 0.92f,
         )
@@ -81,7 +83,7 @@ object ArtistTypography {
     /** A soft, characterful display serif. */
     val serif by lazy {
         ArtistType(
-            "serif", "Display serif",
+            "serif", tr(R.string.display_serif),
             family(FontFamily.Serif, "/product/fonts/Fraunces-SemiBold.ttf", "/system/fonts/Fraunces-SemiBold.ttf", weight = FontWeight.SemiBold),
             FontWeight.SemiBold, tracking = -0.02f, size = 46f,
         )
@@ -90,7 +92,7 @@ object ArtistTypography {
     /** Refined, airy serif capitals. */
     private val elegant by lazy {
         ArtistType(
-            "elegant", "Elegant",
+            "elegant", tr(R.string.elegant),
             family(FontFamily.Serif, "/product/fonts/Lustria-Regular.ttf", "/system/fonts/Lustria-Regular.ttf"),
             FontWeight.Normal, caps = true, tracking = 0.08f, size = 34f, lineHeight = 1.05f,
         )
@@ -99,7 +101,7 @@ object ArtistTypography {
     /** Bold italic serif. */
     private val italicSerif by lazy {
         ArtistType(
-            "italic", "Italic serif",
+            "italic", tr(R.string.italic_serif),
             family(FontFamily.Serif, "/system/fonts/NotoSerif-BoldItalic.ttf", weight = FontWeight.Bold, style = FontStyle.Italic),
             FontWeight.Bold, italic = true, tracking = -0.02f, size = 44f,
         )
@@ -108,7 +110,7 @@ object ArtistTypography {
     /** Friendly, fully rounded heavy sans. */
     private val rounded by lazy {
         ArtistType(
-            "rounded", "Rounded",
+            "rounded", tr(R.string.rounded),
             family(FontFamily.SansSerif, *sansFlex, weight = FontWeight.ExtraBold, axes = FontVariation.Settings(
                 FontVariation.weight(850), FontVariation.Setting("ROND", 100f),
             )),
@@ -119,7 +121,7 @@ object ArtistTypography {
     /** Sturdy slab serif. */
     private val slab by lazy {
         ArtistType(
-            "slab", "Slab",
+            "slab", tr(R.string.slab),
             family(FontFamily.Serif, "/product/fonts/ZillaSlab-SemiBold.ttf", "/system/fonts/ZillaSlab-SemiBold.ttf", weight = FontWeight.SemiBold),
             FontWeight.SemiBold, tracking = -0.01f, size = 48f,
         )
@@ -128,7 +130,7 @@ object ArtistTypography {
     /** Small capitals, slightly spaced. */
     private val smallCaps by lazy {
         ArtistType(
-            "smallcaps", "Small caps",
+            "smallcaps", tr(R.string.small_caps),
             family(FontFamily.SansSerif, "/system/fonts/CarroisGothicSC-Regular.ttf"),
             FontWeight.Normal, tracking = 0.04f, size = 44f,
         )
@@ -136,13 +138,13 @@ object ArtistTypography {
 
     /** A handwritten autograph: Android's own script face (Dancing Script). */
     private val autograph by lazy {
-        ArtistType("autograph", "Autograph", FontFamily.Cursive, FontWeight.Bold, tracking = 0f, size = 60f, lineHeight = 1.05f)
+        ArtistType("autograph", tr(R.string.autograph), FontFamily.Cursive, FontWeight.Bold, tracking = 0f, size = 60f, lineHeight = 1.05f)
     }
 
     /** Typed on a typewriter. */
     private val typewriter by lazy {
         ArtistType(
-            "typewriter", "Typewriter",
+            "typewriter", tr(R.string.typewriter),
             family(FontFamily.Monospace, "/system/fonts/CutiveMono.ttf"),
             FontWeight.Normal, tracking = -0.03f, size = 40f,
         )
@@ -160,7 +162,7 @@ object ArtistTypography {
     /** The everyday headline: Apple's standard heavy sans. */
     val standard by lazy {
         ArtistType(
-            "standard", "Standard",
+            "standard", tr(R.string.standard),
             family(FontFamily.SansSerif, *sansFlex, weight = FontWeight.Bold, axes = FontVariation.Settings(FontVariation.weight(760))),
             FontWeight.Bold, tracking = -0.02f, size = 38f,
         )

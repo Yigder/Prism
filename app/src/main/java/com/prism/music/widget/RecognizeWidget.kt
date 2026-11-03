@@ -56,8 +56,8 @@ object RecognizeWidgets {
 
     /** The card's two lines for the newest recognition (or none yet). */
     fun lines(context: Context, r: RecognitionEntity?): Pair<String, String> = when {
-        r == null -> context.getString(R.string.widget_recognize_empty) to context.getString(R.string.widget_recognize_empty_hint)
-        r.status == "pending" -> context.getString(R.string.widget_recognize_empty) to context.getString(R.string.widget_recognize_waiting)
+        r == null -> com.prism.music.tr(R.string.widget_recognize_empty) to com.prism.music.tr(R.string.widget_recognize_empty_hint)
+        r.status == "pending" -> com.prism.music.tr(R.string.widget_recognize_empty) to com.prism.music.tr(R.string.widget_recognize_waiting)
         else -> (r.title ?: "") to (r.artist ?: "")
     }
 

@@ -1,5 +1,6 @@
 package com.prism.music.ui.screens
 
+import com.prism.music.tr
 import android.content.Context
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -105,7 +106,7 @@ private fun DrawScope.drawCover(d: CoverDesign, text: TextMeasurer) {
     // A little shade under the white name, so a pale top color or pattern doesn't wash it out.
     drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.3f)), startY = size.height * 0.5f, endY = size.height), topLeft = Offset(0f, size.height * 0.5f), size = Size(w, size.height * 0.5f))
     // The name, bottom left, as large as it fits in three lines.
-    val name = d.title.trim().ifEmpty { "Playlist" }
+    val name = d.title.trim().ifEmpty { tr(R.string.playlist) }
     val pad = w * 0.075f
     val px = when { name.length <= 10 -> 0.13f; name.length <= 22 -> 0.10f; else -> 0.08f } * w
     val style = TextStyle(color = Color.White, fontFamily = coverFont, fontWeight = FontWeight.Medium, fontSize = (px / density).sp, lineHeight = (px * 1.05f / density).sp)
@@ -145,29 +146,29 @@ fun CoverMakerSheet(key: String, title: String, onDismiss: () -> Unit) {
     val measurer = rememberTextMeasurer()
     androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 28.dp)) {
-            Text("Make a cover", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 24.dp))
+            Text(tr(R.string.make_a_cover), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 24.dp))
             Box(Modifier.fillMaxWidth().padding(vertical = 14.dp), contentAlignment = Alignment.Center) {
                 Canvas(Modifier.size(220.dp).clip(RoundedCornerShape(10.dp))) { drawCover(design, measurer) }
             }
             com.prism.music.ui.components.PrismTextField(
                 design.title, { design = design.copy(title = it.take(60)) }, Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                singleLine = true, label = { Text("Name on the cover") },
+                singleLine = true, label = { Text(tr(R.string.name_on_the_cover)) },
             )
-            Text("Colors", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 24.dp, top = 14.dp))
+            Text(tr(R.string.colors), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 24.dp, top = 14.dp))
             Row(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                Swatch("Top", design.top) { picking = 1 }
-                Swatch("Bottom", design.bottom) { picking = 2 }
+                Swatch(tr(R.string.top), design.top) { picking = 1 }
+                Swatch(tr(R.string.bottom), design.bottom) { picking = 2 }
             }
-            Text("Pattern", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 24.dp, top = 8.dp))
+            Text(tr(R.string.pattern), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 24.dp, top = 8.dp))
             FlowRow(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                PrismChip(design.pattern == null, { design = design.copy(pattern = null) }, "None")
+                PrismChip(design.pattern == null, { design = design.copy(pattern = null) }, tr(R.string.none))
                 COVER_PATTERNS.forEach { k ->
                     PrismChip(design.pattern == k, { design = design.copy(pattern = k) }, k.name.lowercase().replaceFirstChar { it.uppercase() })
                 }
             }
-            Toggle("Split light around it", null, design.edge) { design = design.copy(edge = it) }
+            Toggle(tr(R.string.split_light_around_it), null, design.edge) { design = design.copy(edge = it) }
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.End) {
-                PrismTextButton(onClick = onDismiss) { Text("Cancel") }
+                PrismTextButton(onClick = onDismiss) { Text(tr(R.string.cancel)) }
                 PrismTextButton(onClick = {
                     val made = design
                     scope.launch {
@@ -175,13 +176,13 @@ fun CoverMakerSheet(key: String, title: String, onDismiss: () -> Unit) {
                         c.covers.useBitmap(key, bmp)
                         onDismiss()
                     }
-                }) { Text("Use this cover") }
+                }) { Text(tr(R.string.use_this_cover)) }
             }
         }
     }
     picking?.let { which ->
         com.prism.music.ui.components.ColorPickerSheet(
-            if (which == 1) "Top color" else "Bottom color", if (which == 1) design.top else design.bottom, { picking = null },
+            if (which == 1) tr(R.string.top_color) else tr(R.string.bottom_color), if (which == 1) design.top else design.bottom, { picking = null },
         ) { picked -> design = if (which == 1) design.copy(top = picked) else design.copy(bottom = picked); picking = null }
     }
 }
@@ -189,7 +190,7 @@ fun CoverMakerSheet(key: String, title: String, onDismiss: () -> Unit) {
 @Composable
 private fun Swatch(label: String, color: Int, onClick: () -> Unit) {
     Row(
-        Modifier.clip(CircleShape).clickable(onClickLabel = "Change the $label color", onClick = onClick).padding(end = 10.dp),
+        Modifier.clip(CircleShape).clickable(onClickLabel = tr(R.string.change_the_color, label), onClick = onClick).padding(end = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(34.dp).clip(CircleShape).background(Color(color)).border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape))

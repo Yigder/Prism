@@ -44,6 +44,15 @@ If you change a screen background, run `BackdropRenderTest` and look at the cont
 - Don't enable R8/minification. NewPipe Extractor and Rhino rely on reflection.
 - New libraries need a license compatible with GPL-3.0, and an entry in `ui/screens/LicensesPage.kt` (plus its license text in `app/src/main/assets/licenses/` if it isn't one already there).
 
+## Translations
+
+Prism's text lives in `app/src/main/res/values/strings.xml` (English) and one `values-xx/strings.xml` per language. The translations were made by Claude, an AI, so some words will read oddly. Corrections are very welcome:
+
+- Edit that language's `strings.xml` and open a pull request. Change only the text between the tags, never the `name="…"`.
+- Keep every placeholder (`%1$s`, `%2$s`, `%s`, `%%`) in the translation. You can move them around in the sentence. Write an apostrophe as `\'`.
+- `TranslationsTest` checks each language against the English (nothing missing, the same placeholders). Run it with `./gradlew :app:testDebugUnitTest --tests '*TranslationsTest*'`. It's also run before your pull request is merged.
+- To ask for a new language, open an issue.
+
 ## Ground rules
 
 - **Privacy.** Prism has no server and no telemetry, and that's not going to change. Listening history, Replay and settings stay on the phone. Pull requests that add analytics, crash reporting services or tracking won't be merged.

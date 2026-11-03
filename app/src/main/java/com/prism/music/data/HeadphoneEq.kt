@@ -1,5 +1,7 @@
 package com.prism.music.data
 
+import com.prism.music.R
+import com.prism.music.tr
 import android.content.Context
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
@@ -40,7 +42,7 @@ class HeadphoneEq(
 ) {
     /** One headphone in AutoEq's index: its name, who measured it (and on what), and its folder. */
     data class Entry(val name: String, val source: String, val rig: String?, val path: List<String>) {
-        val by: String get() = if (rig != null) "$source on $rig" else source
+        val by: String get() = if (rig != null) tr(R.string.on_4, source, rig) else source
     }
 
     /** Where the music is going, as far as correction is concerned. */
@@ -159,12 +161,12 @@ class HeadphoneEq(
             .apply { e.path.forEach { addPathSegment(it) } }
             .addPathSegment("${e.name} ParametricEQ.txt")
             .build()
-        EqProfile.parse(e.name, get(url.toString()), e.by) ?: throw IOException("AutoEq's file for ${e.name} had no filters in it")
+        EqProfile.parse(e.name, get(url.toString()), e.by) ?: throw IOException(tr(R.string.autoeq_s_file_for_had_no, e.name))
     }
 
     private fun get(url: String): String {
         http.newCall(Request.Builder().url(url).build()).execute().use { resp ->
-            if (!resp.isSuccessful) throw IOException("GitHub answered HTTP ${resp.code}")
+            if (!resp.isSuccessful) throw IOException(tr(R.string.github_answered_http, resp.code))
             return resp.body.string()
         }
     }
@@ -203,9 +205,9 @@ class HeadphoneEq(
         }
 
         fun nameOf(d: AudioDeviceInfo): String = when (d.type) {
-            AudioDeviceInfo.TYPE_WIRED_HEADPHONES, AudioDeviceInfo.TYPE_WIRED_HEADSET -> "Wired headphones"
-            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> "Phone speaker"
-            else -> d.productName?.toString()?.takeIf { it.isNotBlank() && it != android.os.Build.MODEL } ?: "Headphones"
+            AudioDeviceInfo.TYPE_WIRED_HEADPHONES, AudioDeviceInfo.TYPE_WIRED_HEADSET -> tr(R.string.wired_headphones)
+            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> tr(R.string.phone_speaker)
+            else -> d.productName?.toString()?.takeIf { it.isNotBlank() && it != android.os.Build.MODEL } ?: tr(R.string.headphones)
         }
     }
 }

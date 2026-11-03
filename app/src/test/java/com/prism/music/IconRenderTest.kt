@@ -68,7 +68,7 @@ class IconRenderTest {
         val now = com.prism.music.ui.theme.IconStyle.weight.scale
 
         run {
-            val cellW = 300; val cellH = 118; val cols = 6
+            val cellW = 390; val cellH = 118; val cols = 5
             val rows = (named.size + cols - 1) / cols
             val bmp = Bitmap.createBitmap(cols * cellW, rows * cellH + 40, Bitmap.Config.ARGB_8888)
             CanvasDrawScope().draw(Density(1f), LayoutDirection.Ltr, Canvas(bmp.asImageBitmap()), Size(bmp.width.toFloat(), bmp.height.toFloat())) {
@@ -114,17 +114,17 @@ class IconRenderTest {
     @Test
     fun generatedPacks() {
         val names = com.prism.music.ui.theme.PrismIconData.names.toList()
-        val packs = listOf(com.prism.music.ui.theme.IconPack.PRISM, com.prism.music.ui.theme.IconPack.FACET, com.prism.music.ui.theme.IconPack.DOTS)
+        val packs = listOf(com.prism.music.ui.theme.IconPack.PRISM, com.prism.music.ui.theme.IconPack.FACET, com.prism.music.ui.theme.IconPack.DOTS, com.prism.music.ui.theme.IconPack.CLASSIC)
         val measurer = androidx.compose.ui.text.TextMeasurer(
             androidx.compose.ui.text.font.createFontFamilyResolver(org.robolectric.RuntimeEnvironment.getApplication()), Density(1f), LayoutDirection.Ltr,
         )
         val label = androidx.compose.ui.text.TextStyle(fontSize = androidx.compose.ui.unit.TextUnit(15f, androidx.compose.ui.unit.TextUnitType.Sp))
-        val cellW = 300; val cellH = 118; val cols = 6
+        val cellW = 390; val cellH = 118; val cols = 5
         val rows = (names.size + cols - 1) / cols
         val bmp = Bitmap.createBitmap(cols * cellW, rows * cellH + 40, Bitmap.Config.ARGB_8888)
         CanvasDrawScope().draw(Density(1f), LayoutDirection.Ltr, Canvas(bmp.asImageBitmap()), Size(bmp.width.toFloat(), bmp.height.toFloat())) {
             drawRect(Color(0xFF060609))
-            drawText(measurer.measure("Prism · Facet · Dots at 24 dp (×3)", label), Color(0x99EEEEF5), Offset(16f, 10f))
+            drawText(measurer.measure("Prism · Facet · Dots · Classic at 24 dp (×3)", label), Color(0x99EEEEF5), Offset(16f, 10f))
             names.forEachIndexed { i, name ->
                 val x = (i % cols) * cellW + 16f
                 val y = (i / cols) * cellH + 40f

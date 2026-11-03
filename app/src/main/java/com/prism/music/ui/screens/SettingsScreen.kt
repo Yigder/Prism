@@ -1,5 +1,8 @@
 package com.prism.music.ui.screens
 
+import com.prism.music.R
+import com.prism.music.tr
+import com.prism.music.trp
 import com.prism.music.ui.components.tabTint
 import com.prism.music.ui.components.PrismOutlinedButton
 import com.prism.music.ui.components.PrismSlider
@@ -102,6 +105,7 @@ import com.prism.music.ui.theme.AppFonts
 import com.prism.music.ui.theme.LocalAppSettings
 import com.prism.music.ui.theme.LocalContainer
 import com.prism.music.ui.theme.LocalUi
+import androidx.compose.runtime.CompositionLocalProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -113,56 +117,60 @@ import kotlin.math.roundToInt
  * lists the look pages. Keys stay as they were, so links to a page (the tour, the player's ⋯, prism:// links) still work.
  */
 enum class SettingsSection(val key: String, val title: String, val icon: ImageVector) {
-    APPEARANCE("appearance", "Customize Prism", PrismIcons.Palette),
-    SOUND("sound", "Playback & sound", PrismIcons.Equalizer),
-    LYRICS("lyrics", "Lyrics & Sing", PrismIcons.Lyrics),
-    CONTROLS("controls", "Controls & gestures", PrismIcons.Touch),
-    LIBRARY("library", "Recommendations & Replay", PrismIcons.Library),
-    DOWNLOADS("downloads", "Downloads, storage & data", PrismIcons.DownloadCircle),
-    DEVICES("devices", "Car & devices", PrismIcons.Car),
-    ABOUT("about", "Backup & about", PrismIcons.Info),
-    /** Not on the hub: Car & devices' own pages. */
-    CONNECT("connect", "Speakers, TVs & browser", PrismIcons.Cast),
-    DISCORD("discord", "Discord", PrismIcons.Groups),
+    APPEARANCE("appearance", tr(R.string.customize_prism), PrismIcons.Palette),
+    SOUND("sound", tr(R.string.playback_sound), PrismIcons.Equalizer),
+    LYRICS("lyrics", tr(R.string.lyrics_sing), PrismIcons.Lyrics),
+    CONTROLS("controls", tr(R.string.controls_gestures), PrismIcons.Touch),
+    LIBRARY("library", tr(R.string.recommendations_replay), PrismIcons.Library),
+    DOWNLOADS("downloads", tr(R.string.downloads_storage_data), PrismIcons.DownloadCircle),
+    DEVICES("devices", tr(R.string.devices_connections), PrismIcons.Car),
+    LANGUAGE("language", tr(R.string.language), PrismIcons.Globe),
+    ABOUT("about", tr(R.string.backup_about), PrismIcons.Info),
+    /** Not on the hub: Devices & connections' own pages. */
+    CONNECT("connect", tr(R.string.speakers_tvs_browser), PrismIcons.Cast),
+    DISCORD("discord", tr(R.string.discord), PrismIcons.Groups),
+    LASTFM("lastfm", "Last.fm", PrismIcons.Replay),
     /** Not on the hub: opened from About. */
-    LICENSES("licenses", "Open-source licenses", PrismIcons.Info),
+    LICENSES("licenses", tr(R.string.open_source_licenses), PrismIcons.Info),
     /** Not on the hub: Customize Prism's pages. */
-    LOOKS("looks", "Looks", PrismIcons.Looks),
-    COLOR("color", "Color", PrismIcons.Palette),
-    TEXT("text", "Text", PrismIcons.Signature),
-    ICONS("icons", "Icons & shapes", PrismIcons.Category),
-    GLASS("glass", "Glass & backgrounds", PrismIcons.Photo),
-    INTERFACE("interface", "Tabs & mini player", PrismIcons.Customize),
-    HOME("home", "Home & Library", PrismIcons.Home),
-    PLAYER("player", "Player", PrismIcons.PlayCircle),
-    LYRICS_LOOK("lyrics_look", "Lyrics", PrismIcons.Lyrics);
+    LOOKS("looks", tr(R.string.looks), PrismIcons.Looks),
+    COLOR("color", tr(R.string.color_2), PrismIcons.Palette),
+    TEXT("text", tr(R.string.text), PrismIcons.Signature),
+    ICONS("icons", tr(R.string.icons_shapes), PrismIcons.Category),
+    GLASS("glass", tr(R.string.glass_backgrounds), PrismIcons.Photo),
+    INTERFACE("interface", tr(R.string.tabs_mini_player), PrismIcons.Customize),
+    HOME("home", tr(R.string.home_library), PrismIcons.Home),
+    PLAYER("player", tr(R.string.player), PrismIcons.PlayCircle),
+    LYRICS_LOOK("lyrics_look", tr(R.string.lyrics), PrismIcons.Lyrics);
 
     fun summary(s: AppSettings, dark: Boolean = true): String = when (this) {
-        APPEARANCE -> "Looks, colors, fonts, the player and lyrics, tabs, Home"
-        INTERFACE -> listOf(s.navStyle.label + " bar", "${s.navTabs.size} tabs", s.miniPlayerStyle.label + " mini player").joinToString(" · ")
-        PLAYER -> listOfNotNull(s.playerLayout.label + " layout", s.playerBackground.label, if (s.canvasEnabled) "Animated covers" else null).joinToString(" · ")
-        SOUND -> listOfNotNull(if (s.lossless) "Lossless" else s.audioQuality.label + " quality", if (s.mix) "Crossfade" else null, if (s.normalize) "Normalized" else null, if (s.spatial) "Prism Spatial" else null, if (s.eq.enabled) "EQ ${s.eq.preset}" else null).joinToString(" · ")
-        LYRICS -> listOfNotNull("${s.lyricsSources.first().label} first", if (s.lyricsTranslate) "Translated" else null, "Sing").joinToString(" · ")
-        LYRICS_LOOK -> "${s.lyricsStyle.label} style · ${s.lyricsPosition.label}"
-        CONTROLS -> "Swipes and taps on the player, buttons in the notification and car"
-        DOWNLOADS -> listOfNotNull("Smart Downloads ${formatGb(s.offlineGb)}", if (s.downloadWifiOnly) "Wi-Fi only" else "Any network", if (s.dataSaver) "Data saver" else null).joinToString(" · ")
-        DEVICES -> listOfNotNull("Android Auto", "speakers & TVs", if (s.discordPresence) "Discord" else null).joinToString(" · ")
-        CONNECT -> listOfNotNull("Speakers & TVs", if (s.webRemote) "Browser remote on" else null, if (s.handoffAvailable) "Available for handoff" else null).joinToString(" · ")
-        HOME -> "Home's sections and top, Library's views"
-        LIBRARY -> listOfNotNull("Your artists, new releases", if (s.contentCountry.isNotBlank()) countryName(s.contentCountry) else null, "Replay").joinToString(" · ")
-        DISCORD -> if (s.discordPresence) "Showing what you play on your profile" else "Show what you're playing on your profile"
-        ABOUT -> "Prism ${com.prism.music.BuildConfig.VERSION_NAME} · backup, updates, diagnostics"
-        LICENSES -> "GPL-3.0-or-later"
+        APPEARANCE -> tr(R.string.looks_colors_fonts_the_player_and)
+        INTERFACE -> listOf(tr(R.string.nav_bar_x, s.navStyle.label), com.prism.music.trp(R.plurals.n_tabs, s.navTabs.size), tr(R.string.mini_player_x, s.miniPlayerStyle.label)).joinToString(" · ")
+        PLAYER -> listOfNotNull(tr(R.string.player_layout_x, s.playerLayout.label), s.playerBackground.label, if (s.canvasEnabled) tr(R.string.animated_covers) else null).joinToString(" · ")
+        SOUND -> listOfNotNull(if (s.lossless) tr(R.string.lossless) else tr(R.string.audio_quality_x, s.audioQuality.label), if (s.mix) tr(R.string.crossfade) else null, if (s.normalize) tr(R.string.normalized) else null, if (s.spatial) tr(R.string.prism_spatial) else null, if (s.eq.enabled) "EQ ${com.prism.music.playback.EqPresets.label(s.eq.preset)}" else null).joinToString(" · ")
+        LYRICS -> listOfNotNull(tr(R.string.first, s.lyricsSources.first().label), if (s.lyricsTranslate) tr(R.string.translated) else null, tr(R.string.sing)).joinToString(" · ")
+        LYRICS_LOOK -> tr(R.string.style_2, s.lyricsStyle.label, s.lyricsPosition.label)
+        CONTROLS -> tr(R.string.swipes_and_taps_on_the_player)
+        DOWNLOADS -> listOfNotNull(tr(R.string.smart_downloads_2, formatGb(s.offlineGb)), if (s.downloadWifiOnly) tr(R.string.wi_fi_only) else tr(R.string.any_network), if (s.dataSaver) tr(R.string.data_saver) else null).joinToString(" · ")
+        DEVICES -> tr(R.string.android_auto_speakers_tvs_discord_last)
+        CONNECT -> listOfNotNull(tr(R.string.speakers_tvs), if (s.webRemote) tr(R.string.browser_remote_on) else null, if (s.handoffAvailable) tr(R.string.available_for_handoff) else null).joinToString(" · ")
+        HOME -> tr(R.string.home_s_sections_and_top_library)
+        LIBRARY -> listOfNotNull(tr(R.string.your_artists_new_releases), if (s.contentCountry.isNotBlank()) countryName(s.contentCountry) else null, tr(R.string.replay_2)).joinToString(" · ")
+        DISCORD -> if (s.discordPresence) tr(R.string.showing_what_you_play_on_your) else tr(R.string.show_what_you_re_playing_on)
+        LASTFM -> tr(R.string.scrobble_what_you_play_to_your)
+        LANGUAGE -> java.util.Locale.getDefault().let { it.getDisplayName(it) }.replaceFirstChar { it.titlecase() }
+        ABOUT -> tr(R.string.prism_backup_updates_diagnostics, com.prism.music.BuildConfig.VERSION_NAME)
+        LICENSES -> tr(R.string.gpl_3_0_or_later)
         COLOR -> listOfNotNull(
             // The light's name (White shows as Black in light mode).
-            if (s.lightStyle == com.prism.music.data.prefs.LightStyle.WHITE) whiteName(dark) + " light"
-            else com.prism.music.ui.theme.SpectrumPresets.label(s.spectrumPreset).let { if (it == com.prism.music.ui.theme.SpectrumPresets.COVER_LABEL) "Light from the cover" else "$it light" },
-            when (s.colorSource) { ColorSource.CUSTOM -> com.prism.music.ui.theme.ColorMath.toHex(s.accent) + " accent"; ColorSource.ARTWORK -> "Accent from the cover"; ColorSource.DYNAMIC -> "Accent from the wallpaper" },
+            if (s.lightStyle == com.prism.music.data.prefs.LightStyle.WHITE) tr(R.string.light_2, whiteName(dark))
+            else com.prism.music.ui.theme.SpectrumPresets.label(s.spectrumPreset).let { if (it == com.prism.music.ui.theme.SpectrumPresets.COVER_LABEL) tr(R.string.light_from_the_cover) else tr(R.string.light_2, it) },
+            when (s.colorSource) { ColorSource.CUSTOM -> tr(R.string.accent_x, com.prism.music.ui.theme.ColorMath.toHex(s.accent)); ColorSource.ARTWORK -> tr(R.string.accent_from_the_cover); ColorSource.DYNAMIC -> tr(R.string.accent_from_the_wallpaper) },
         ).joinToString(" · ")
-        TEXT -> listOfNotNull(s.fontChoice.label + " font", if (s.textScale != 1f) "${(s.textScale * 100).roundToInt()}% size" else null).joinToString(" · ")
-        ICONS -> "Icon pack and weight, app icon, corners"
-        GLASS -> listOfNotNull(when { s.liquidGlass -> "Liquid Glass"; s.frostedGlass -> "Frosted Glass"; else -> "Solid bars" }, if (s.backdrops.screensOnly.isEmpty()) null else "Backgrounds", if (s.reduceMotion) "Reduced motion" else null).joinToString(" · ")
-        LOOKS -> "Save, switch and share whole looks; day and night"
+        TEXT -> listOfNotNull(tr(R.string.font_x, s.fontChoice.label), if (s.textScale != 1f) tr(R.string.size_2, (s.textScale * 100).roundToInt()) else null).joinToString(" · ")
+        ICONS -> tr(R.string.icon_pack_and_weight_app_icon)
+        GLASS -> listOfNotNull(when { s.liquidGlass -> tr(R.string.liquid_glass); s.frostedGlass -> tr(R.string.frosted_glass); else -> tr(R.string.solid_bars) }, if (s.backdrops.screensOnly.isEmpty()) null else tr(R.string.backgrounds), if (s.reduceMotion) tr(R.string.reduced_motion) else null).joinToString(" · ")
+        LOOKS -> tr(R.string.save_switch_and_share_whole_looks)
     }
 
     /** The look settings on this page, for its "Reset this page" (empty: the page has none, or its own reset). */
@@ -170,25 +178,34 @@ enum class SettingsSection(val key: String, val title: String, val icon: ImageVe
         TEXT -> listOf("font_choice", "lyrics_font", "text_scale", "type_weight", "type_spacing", "title_font")
         ICONS -> listOf(
             "corners", "corner_scale", "cover_shape_songs", "cover_shape_albums", "cover_shape_artists", "cover_shape_player",
-            "button_shape", "play_outlined", "tab_icon_tint",
+            "button_shape", "play_outlined",
         )
-        GLASS -> listOf("liquid_glass", "glass_kind", "frosted_glass", "frosted_pages", "backdrops", "backdrop_dim", "backdrop_motion", "reduce_motion")
+        // 1.8.0: Reduce motion is on the Customize Prism page now (MotionGroup), so this page's reset leaves it.
+        GLASS -> listOf("liquid_glass", "glass_kind", "frosted_glass", "frosted_pages", "backdrops", "backdrop_dim", "backdrop_motion")
         INTERFACE -> listOf(
+            // 1.8.0: the tab you're on's tint is with the tab bar now (from Icons & shapes).
+            "tab_icon_tint",
             "nav_style", "nav_labels", "nav_hide_on_scroll", "nav_tabs", "start_tab", "mini_player_style", "mini_skip_buttons",
-            "mini_prev_button", "mini_progress", "ui_density", "title_size", "card_size", "hide_status_bar",
+            "mini_prev_button", "mini_progress", "mini_progress_color", "mini_fill_strength", "ui_density", "title_size", "card_size", "hide_status_bar", "hide_status_bar_player",
             "tab_names", "nav_bar_size", "nav_bar_fill", "mini_player_joined",
         )
         PLAYER -> listOf(
             "player_background", "player_backdrop_show", "transport_style", "scrubber_style", "cover_size", "player_art_corners",
             "full_bleed_artwork", "video_full_bleed", "art_shrink_on_pause", "show_playing_from", "player_shuffle_repeat", "hide_volume_bar",
-            "show_output_device", "immersive_art", "immersive_lyrics", "immersive_controls",
+            "show_output_device", "immersive_art", "immersive_lyrics", "immersive_controls", "player_handle", "player_nav_band", "play_ring",
+            // 1.8.0: what the page now holds (What's on the player, the progress bar, the crossfade's marks from Sound).
+            "player_hidden_parts", "player_buttons", "player_buttons_pill", "player_times", "scrubber_color", "scrubber_thickness",
+            "scrubber_thumb", "cover_flight", "crossfade_mark", "blend_covers", "video_controls_hide", "mesh_speed", "mesh_intensity",
+            "player_blur",
         )
         LYRICS_LOOK -> listOf(
             "lyrics_align", "lyrics_scale", "lyrics_blur", "lyrics_progress_line", "lyrics_style", "lyrics_blur_amount", "lyrics_spacing",
             "lyrics_others_alpha", "lyrics_sung_color", "lyrics_sung_custom", "lyrics_other_color", "lyrics_other_custom", "lyrics_weight",
             "lyrics_backing_size", "lyrics_shadow", "lyrics_uppercase", "lyrics_ahead", "lyrics_position", "lyrics_extra_size", "lyrics_extra_color",
             "lyrics_extra_italic", "lyrics_extra_place", "lyrics_background", "immersive_background", "lyrics_bg_color", "lyrics_bg_color2", "lyrics_everywhere",
-            "lyrics_strip_align", "lyrics_strip_two_lines",
+            "lyrics_strip_align", "lyrics_strip_two_lines", "lyrics_gap_mark",
+            // 1.8.0 lyrics look
+            "lyrics_motion", "lyrics_word_by_word", "lyrics_card", "lyrics_halo", "lyrics_bold_lines",
         )
         else -> emptyList()
     }
@@ -203,11 +220,11 @@ enum class SettingsSection(val key: String, val title: String, val icon: ImageVe
 }
 
 private val hubGroups = listOf(
-    "Make it yours" to listOf(SettingsSection.APPEARANCE),
-    "Listening" to listOf(SettingsSection.SOUND, SettingsSection.LYRICS, SettingsSection.CONTROLS),
-    "Your music" to listOf(SettingsSection.LIBRARY, SettingsSection.DOWNLOADS),
-    "Devices" to listOf(SettingsSection.DEVICES),
-    "" to listOf(SettingsSection.ABOUT),
+    tr(R.string.make_it_yours) to listOf(SettingsSection.APPEARANCE),
+    tr(R.string.listening) to listOf(SettingsSection.SOUND, SettingsSection.LYRICS, SettingsSection.CONTROLS),
+    tr(R.string.your_music) to listOf(SettingsSection.LIBRARY, SettingsSection.DOWNLOADS),
+    tr(R.string.devices) to listOf(SettingsSection.DEVICES),
+    "" to listOf(SettingsSection.LANGUAGE, SettingsSection.ABOUT),
 )
 
 /** Customize Prism's pages, as its page lists them: the look as a whole, then each part of Prism. */
@@ -277,7 +294,7 @@ private fun SettingsPage(
 
     androidx.compose.runtime.CompositionLocalProvider(LocalSettingsFind provides (find ?: foundHere)) {
     SubPage(
-        title = section?.title ?: "Settings",
+        title = section?.title ?: tr(R.string.settings),
         bottomPadding = bottomPadding,
         horizontalPadding = 16.dp,
         spacing = 22.dp,
@@ -291,12 +308,12 @@ private fun SettingsPage(
         when (section) {
             null -> {
                 item(key = "find") {
-                    com.prism.music.ui.components.SearchField(query, "Search settings", { query = it; foundHere = null })
+                    com.prism.music.ui.components.SearchField(query, tr(R.string.search_settings), { query = it; foundHere = null })
                 }
                 if (query.isNotBlank()) {
                     item(key = "results") {
                         if (results.isEmpty()) Text(
-                            "No settings match \"${query.trim()}\"",
+                            tr(R.string.no_settings_match, query.trim()),
                             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 8.dp),
                         ) else Group("") {
@@ -305,7 +322,7 @@ private fun SettingsPage(
                                 val hidden = e.needs?.takeIf { !it.on(s) }
                                 NavRow(
                                     e.section?.icon ?: PrismIcons.Settings, e.shown,
-                                    listOf(e.section?.title ?: "Settings", e.group).filter { it != e.title }.joinToString(" › "),
+                                    listOf(e.section?.title ?: tr(R.string.settings), e.group).filter { it != e.title }.joinToString(" › "),
                                     hint = hidden?.hint,
                                 ) {
                                     if (e.section == null) { query = ""; foundHere = e.group }
@@ -357,24 +374,28 @@ private fun SettingsPage(
             SettingsSection.HOME -> item { HomeLibraryLook() }
             SettingsSection.LIBRARY -> item { RecommendationsPage() }
             SettingsSection.DISCORD -> item { DiscordGroup() }
+            SettingsSection.LASTFM -> item { LastFmGroup() }
+            // 1.8.0: Region (the country Prism Music is asked as) beside the language, from Recommendations & Replay.
+            SettingsSection.LANGUAGE -> item { Column(verticalArrangement = Arrangement.spacedBy(22.dp)) { LanguageSettings(); ContentCountrySetting() } }
             SettingsSection.ABOUT -> item {
                 Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
                 BackupGroup()
-                Group("About") {
+                Group(tr(R.string.about_3)) {
                     val uri = androidx.compose.ui.platform.LocalUriHandler.current
-                    Item("Prism ${com.prism.music.BuildConfig.VERSION_NAME}", "Unofficial · not affiliated with Google or YouTube", onClick = { runCatching { uri.openUri(SOURCE_URL) } }) {
-                        Icon(PrismIcons.OpenInNew, "Open on GitHub", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Item(tr(R.string.prism, com.prism.music.BuildConfig.VERSION_NAME), tr(R.string.unofficial_not_affiliated_with_google_or), onClick = { runCatching { uri.openUri(SOURCE_URL) } }) {
+                        Icon(PrismIcons.OpenInNew, tr(R.string.open_on_github), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    Item("Your data stays here", "Prism has no server", info = "Your history, Replay and settings live only on this phone.", onClick = {})
+                    Item(tr(R.string.your_data_stays_here), tr(R.string.prism_has_no_server), info = tr(R.string.your_history_replay_and_settings_live), onClick = {})
                     CheckForUpdates()
-                    Item("Take the tour", "A minute's walk through Prism", onClick = { c.tourRequests.tryEmit(Unit) }) { Chevron() }
-                    Item("Open-source licenses", "GPL-3.0-or-later, and what it's built with", onClick = { nav.go(Routes.settings(SettingsSection.LICENSES.key)) }) { Chevron() }
+                    Item(tr(R.string.take_the_tour), tr(R.string.a_minute_s_walk_through_prism), onClick = { c.tourRequests.tryEmit(Unit) }) { Chevron() }
+                    Item(tr(R.string.open_source_licenses), tr(R.string.gpl_3_0_or_later_and), onClick = { nav.go(Routes.settings(SettingsSection.LICENSES.key)) }) { Chevron() }
                     // Debug builds only, so it's left out of Settings search (named title: SettingsIndexTest skips it).
                     if (com.prism.music.BuildConfig.DEBUG) Item(
-                        title = "Design gallery", subtitle = "Every component of the redesign, in each state", onClick = { nav.go(Routes.DESIGN_GALLERY) },
+                        title = tr(R.string.design_gallery), subtitle = tr(R.string.every_component_of_the_redesign_in), onClick = { nav.go(Routes.DESIGN_GALLERY) },
                     ) { Chevron() }
                 }
-                DiagnosticsGroup()
+                // 1.8.0: only for sending a bug report, so folded away.
+                MoreOptions(listOf(tr(R.string.diagnostics))) { DiagnosticsGroup() }
                 }
             }
             SettingsSection.LICENSES -> item { LicensesPage() }
@@ -384,9 +405,8 @@ private fun SettingsPage(
 }
 
 /** What Performance mode pauses, in plain words (its ⓘ and the pages' notice). */
-internal const val PERFORMANCE_PAUSES =
-    "Blur and frosted glass, the frost behind pages, moving and illustrated backgrounds, animated covers, the visualizer, " +
-        "a drifting player background, focus blur and glow in the lyrics, the picture at the top of Home, and animations"
+internal val PERFORMANCE_PAUSES =
+    tr(R.string.blur_and_frosted_glass_the_frost_all)
 
 /**
  * Performance mode (1.7.6): one switch for slower phones, Prism drawn about as lightly as 1.6 was. Nothing is removed and
@@ -396,11 +416,11 @@ internal const val PERFORMANCE_PAUSES =
 private fun PerformanceGroup() {
     val c = LocalContainer.current
     val s = LocalAppSettings.current
-    Group("Performance") {
+    Group(tr(R.string.performance)) {
         Toggle(
-            "Performance mode", if (s.performanceMode) "On: Prism is drawn lightly" else "For slower phones: lighter, fewer effects",
+            tr(R.string.performance_mode), if (s.performanceMode) tr(R.string.on_prism_is_drawn_lightly) else tr(R.string.for_slower_phones_lighter_fewer_effects),
             s.performanceMode, icon = PrismIcons.Speed,
-            info = "Pauses: ${PERFORMANCE_PAUSES.lowercase()}. Every feature still works, and your own choices come back as they were when you turn it off.",
+            info = tr(R.string.pauses_every_feature_still_works_and, PERFORMANCE_PAUSES.lowercase()),
         ) { c.settings.setPerformanceMode(it) }
     }
 }
@@ -411,10 +431,10 @@ private fun PerformancePaused() {
     val c = LocalContainer.current
     Group("") {
         Item(
-            "Performance mode is on", "Some of these effects are paused for now",
-            info = "Paused: ${PERFORMANCE_PAUSES.lowercase()}. You can still change them; they show once Performance mode is off.",
+            tr(R.string.performance_mode_is_on), tr(R.string.some_of_these_effects_are_paused),
+            info = tr(R.string.paused_you_can_still_change_them, PERFORMANCE_PAUSES.lowercase()),
             icon = PrismIcons.Speed, onClick = { c.settings.setPerformanceMode(false) },
-        ) { PrismTextButton(onClick = { c.settings.setPerformanceMode(false) }) { Text("Turn off") } }
+        ) { PrismTextButton(onClick = { c.settings.setPerformanceMode(false) }) { Text(tr(R.string.turn_off)) } }
     }
 }
 
@@ -431,11 +451,11 @@ private fun ContentCountrySetting() {
     val s = LocalAppSettings.current
     var picking by remember { mutableStateOf(false) }
     val phone = java.util.Locale.getDefault().country
-    Group("Region") {
+    Group(tr(R.string.region)) {
         Item(
-            "Content country",
-            if (s.contentCountry.isBlank()) "Automatic (${if (phone.isBlank()) "United States" else countryName(phone)})" else countryName(s.contentCountry),
-            info = "Home, charts and search follow this country. If Prism Music isn't available where you live, pick a country where it is. Restart Prism for playback to follow too. Songs a label blocks in your country still won't play: that's decided by your connection, not this setting.",
+            tr(R.string.content_country),
+            if (s.contentCountry.isBlank()) tr(R.string.automatic_3, if (phone.isBlank()) tr(R.string.united_states) else countryName(phone)) else countryName(s.contentCountry),
+            info = tr(R.string.home_charts_and_search_follow_this),
             onClick = { picking = true },
         ) { Chevron() }
     }
@@ -446,18 +466,18 @@ private fun ContentCountrySetting() {
         val pick: (String) -> Unit = { code -> c.settings.setContentCountry(code); picking = false }
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { picking = false },
-            title = { Text("Content country") },
+            title = { Text(tr(R.string.content_country)) },
             text = {
                 androidx.compose.foundation.lazy.LazyColumn(Modifier.height(420.dp)) {
-                    item { CountryRow("Automatic (follow the phone)", s.contentCountry.isBlank()) { pick("") } }
-                    item { CountryRow("United States", s.contentCountry == "US") { pick("US") } }
+                    item { CountryRow(tr(R.string.automatic_follow_the_phone), s.contentCountry.isBlank()) { pick("") } }
+                    item { CountryRow(tr(R.string.united_states), s.contentCountry == "US") { pick("US") } }
                     items(countries.size) { i ->
                         val (code, name) = countries[i]
                         CountryRow(name, s.contentCountry == code) { pick(code) }
                     }
                 }
             },
-            confirmButton = { PrismTextButton(onClick = { picking = false }) { Text("Cancel") } },
+            confirmButton = { PrismTextButton(onClick = { picking = false }) { Text(tr(R.string.cancel)) } },
         )
     }
 }
@@ -480,10 +500,10 @@ private fun DiagnosticsGroup() {
     val s = LocalAppSettings.current
     val context = androidx.compose.ui.platform.LocalContext.current
     val scope = rememberCoroutineScope()
-    Group("Diagnostics") {
+    Group(tr(R.string.diagnostics)) {
         Toggle(
-            "Playback diagnostics", "A log for tracking down stutters", s.audioDiagnostics,
-            info = "Keeps a log on this phone of what the audio does. Nothing is sent anywhere unless you share it. When you hear a stutter, tap \"Mark a stutter\" in the player's ⋯ menu, then share the log here.",
+            tr(R.string.playback_diagnostics), tr(R.string.a_log_for_tracking_down_stutters), s.audioDiagnostics,
+            info = tr(R.string.keeps_a_log_on_this_phone),
         ) { c.settings.setAudioDiagnostics(it) }
         fun share() {
             scope.launch {
@@ -491,27 +511,27 @@ private fun DiagnosticsGroup() {
                 val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.share", file)
                 val send = android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
                     .putExtra(android.content.Intent.EXTRA_STREAM, uri)
-                    .putExtra(android.content.Intent.EXTRA_SUBJECT, "Prism playback diagnostics")
+                    .putExtra(android.content.Intent.EXTRA_SUBJECT, tr(R.string.prism_playback_diagnostics))
                     .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 send.clipData = android.content.ClipData.newRawUri(null, uri)
-                context.startActivity(android.content.Intent.createChooser(send, "Share diagnostics"))
+                context.startActivity(android.content.Intent.createChooser(send, tr(R.string.share_diagnostics)))
             }
         }
         // A crash kept on the phone (CrashLog): there to share whether or not diagnostics are on.
         var crashAt by remember { mutableStateOf(com.prism.music.CrashLog.lastAt(context)) }
         crashAt?.let { at ->
             Item(
-                "Last crash", "${java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT).format(java.util.Date(at))} · tap to share its details",
+                tr(R.string.last_crash), tr(R.string.tap_to_share_its_details, java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT).format(java.util.Date(at))),
                 onClick = { share() },
-                info = "Prism closed unexpectedly. What went wrong is kept on this phone (only the last few crashes). Sharing it, through GitHub for example, helps fix it. Nothing is sent anywhere unless you share it.",
+                info = tr(R.string.prism_closed_unexpectedly_what_went_wrong),
             ) { Chevron() }
-            Item("Forget crashes", null, onClick = { com.prism.music.CrashLog.clear(context); crashAt = null })
+            Item(tr(R.string.forget_crashes), null, onClick = { com.prism.music.CrashLog.clear(context); crashAt = null })
         }
         if (s.audioDiagnostics) {
-            Item("Share diagnostics", "The log and audio settings, as text", onClick = { share() })
-            Item("Clear diagnostics", "Starts the log again", onClick = {
+            Item(tr(R.string.share_diagnostics), tr(R.string.the_log_and_audio_settings_as), onClick = { share() })
+            Item(tr(R.string.clear_diagnostics), tr(R.string.starts_the_log_again), onClick = {
                 scope.launch(Dispatchers.IO) { com.prism.music.playback.AudioDiagnostics.clear { com.prism.music.playback.AudioDiagnostics.about(c) } }
-                android.widget.Toast.makeText(context, "Diagnostics cleared", android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(context, tr(R.string.diagnostics_cleared), android.widget.Toast.LENGTH_SHORT).show()
             })
         }
     }
@@ -525,18 +545,18 @@ private fun CheckForUpdates() {
     var checking by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<String?>(null) }
     Item(
-        "Check for updates",
+        tr(R.string.check_for_updates),
         when {
-            checking -> "Asking GitHub…"
+            checking -> tr(R.string.asking_github)
             result != null -> result
-            else -> "Prism also checks on its own"
+            else -> tr(R.string.prism_also_checks_on_its_own)
         },
         onClick = {
             if (!checking) scope.launch {
                 checking = true
                 result = runCatching { c.updates.checkNow() }.fold(
-                    { v -> if (v != null) "Prism $v is out · install it from the banner on Home" else "You're up to date" },
-                    { "Couldn't reach GitHub · try again in a moment" },
+                    { v -> if (v != null) tr(R.string.prism_is_out_tap_below_to, v) else tr(R.string.you_re_up_to_date) },
+                    { tr(R.string.couldn_t_reach_github_try_again) },
                 )
                 checking = false
             }
@@ -544,6 +564,8 @@ private fun CheckForUpdates() {
     ) {
         if (checking) com.prism.music.ui.components.PrismSpinner(Modifier.size(20.dp), stroke = 2.dp)
     }
+    // The update itself, installed from here (#201): the same card as Home's, which needs Home to be a tab.
+    UpdateBanner(inSettings = true)
 }
 
 @Composable
@@ -575,8 +597,8 @@ private fun AccountCard() {
     // With a Prism Account, signing out can keep the YouTube Music library in Prism first.
     if (confirmSignOut) androidx.compose.material3.AlertDialog(
         onDismissRequest = { confirmSignOut = false },
-        title = { Text("Sign out of YouTube Music?") },
-        text = { Text("Keep a copy of its playlists, saved albums and artists in your Prism Account first? Liked songs, downloads and Replay stay either way.") },
+        title = { Text(tr(R.string.sign_out_of_youtube_music)) },
+        text = { Text(tr(R.string.keep_a_copy_of_its_playlists)) },
         confirmButton = {
             PrismTextButton({
                 confirmSignOut = false
@@ -584,12 +606,12 @@ private fun AccountCard() {
                     val r = runCatching { c.account.bringOver() }.getOrNull()
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                         signOut()
-                        android.widget.Toast.makeText(context, if (r != null) "Signed out. ${r.playlists} playlists and ${r.albums} albums kept in Prism" else "Signed out", android.widget.Toast.LENGTH_LONG).show()
+                        android.widget.Toast.makeText(context, if (r != null) tr(R.string.signed_out_playlists_and_albums_kept, trp(R.plurals.n_playlists, r.playlists), trp(R.plurals.n_albums, r.albums)) else tr(R.string.signed_out), android.widget.Toast.LENGTH_LONG).show()
                     }
                 }
-            }) { Text("Keep a copy") }
+            }) { Text(tr(R.string.keep_a_copy)) }
         },
-        dismissButton = { PrismTextButton({ confirmSignOut = false; signOut() }) { Text("Just sign out") } },
+        dismissButton = { PrismTextButton({ confirmSignOut = false; signOut() }) { Text(tr(R.string.just_sign_out)) } },
     )
     Column(Modifier.fillMaxWidth().featurePane(ui.card)) {
     // The Prism Account: who the listener is in Prism, on this phone.
@@ -604,12 +626,12 @@ private fun AccountCard() {
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                profile?.name ?: "Make a Prism Account",
+                profile?.name ?: tr(R.string.make_a_prism_account),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Medium), color = ink,
                 maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
             Text(
-                if (profile != null) "Prism Account · on this phone" else "Your name and picture, kept on this phone. Nothing you have changes",
+                if (profile != null) tr(R.string.prism_account_on_this_phone) else tr(R.string.your_name_and_picture_kept_on),
                 style = MaterialTheme.typography.bodySmall, color = ink.copy(alpha = 0.75f),
                 maxLines = 2, overflow = TextOverflow.Ellipsis,
             )
@@ -630,26 +652,26 @@ private fun AccountCard() {
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                if (s.isLoggedIn) "YouTube Music · " + s.accountName.ifBlank { "signed in" } else "Sign in to YouTube Music",
+                if (s.isLoggedIn) tr(R.string.youtube_music, s.accountName.ifBlank { tr(R.string.signed_in) }) else tr(R.string.sign_in_to_youtube_music),
                 style = MaterialTheme.typography.bodyMedium, color = ink, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
             Text(
-                if (s.isLoggedIn) s.accountEmail.ifBlank { "Signed in" } else "Optional: your library, history and recommendations",
+                if (s.isLoggedIn) s.accountEmail.ifBlank { tr(R.string.signed_in_2) } else tr(R.string.optional_your_library_history_and_recommendation),
                 style = MaterialTheme.typography.bodySmall, color = ink.copy(alpha = 0.75f), maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
         }
         if (s.isLoggedIn) PrismOutlinedButton(onClick = { if (profile != null) confirmSignOut = true else signOut() }) {
-            Icon(PrismIcons.Logout, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Sign out")
+            Icon(PrismIcons.Logout, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(tr(R.string.sign_out))
         }
         else Icon(PrismIcons.ChevronRight, null, tint = ink)
     }
     // Another channel of the same Google account (brand accounts), or another Google account altogether.
     if (s.isLoggedIn) Row(Modifier.fillMaxWidth().padding(start = 10.dp, end = 10.dp, bottom = 8.dp)) {
         PrismTextButton(onClick = { switching = true }) {
-            Icon(PrismIcons.Person, null, Modifier.size(18.dp), tint = ink); Spacer(Modifier.width(6.dp)); Text("Switch account", color = ink)
+            Icon(PrismIcons.Person, null, Modifier.size(18.dp), tint = ink); Spacer(Modifier.width(6.dp)); Text(tr(R.string.switch_account), color = ink)
         }
         PrismTextButton(onClick = { nav.go(Routes.LOGIN_ADD) }) {
-            Icon(PrismIcons.Add, null, Modifier.size(18.dp), tint = ink); Spacer(Modifier.width(6.dp)); Text("Add a Google account", color = ink)
+            Icon(PrismIcons.Add, null, Modifier.size(18.dp), tint = ink); Spacer(Modifier.width(6.dp)); Text(tr(R.string.add_a_google_account), color = ink)
         }
     }
     }
@@ -666,27 +688,27 @@ private fun DiscordGroup() {
     val nav = LocalNavigator.current
     val state by c.discord.state.collectAsState()
     val user by c.discord.userName.collectAsState()
-    Group("Discord") {
+    Group(tr(R.string.discord)) {
         Toggle(
-            "Show what you're playing",
+            tr(R.string.show_what_you_re_playing),
             when {
-                !c.discord.signedIn -> "\"Listening to Prism\" on your profile"
-                state == com.prism.music.playback.DiscordPresence.State.CONNECTED -> "On as ${user ?: "you"}"
-                state == com.prism.music.playback.DiscordPresence.State.CONNECTING -> "Connecting to Discord…"
-                else -> "On Discord as ${user ?: "you"}"
+                !c.discord.signedIn -> tr(R.string.listening_to_prism_on_your_profile)
+                state == com.prism.music.playback.DiscordPresence.State.CONNECTED -> (user?.let { tr(R.string.on_as, it) } ?: tr(R.string.on_2))
+                state == com.prism.music.playback.DiscordPresence.State.CONNECTING -> tr(R.string.connecting_to_discord)
+                else -> (user?.let { tr(R.string.on_discord_as, it) } ?: tr(R.string.on_discord))
             },
             s.discordPresence && c.discord.signedIn,
-            info = "Your profile shows the song and how far in. You sign in on Discord's own page, and the sign-in stays on this phone. While it's on, song names and artists go to Discord as you listen.",
+            info = tr(R.string.your_profile_shows_the_song_and),
         ) { on ->
             if (on && !c.discord.signedIn) nav.go(Routes.DISCORD_LOGIN) else c.settings.setDiscordPresence(on)
         }
-        if (c.discord.signedIn) Item("Sign out of Discord", "Forgets the sign-in on this phone", onClick = {
+        if (c.discord.signedIn) Item(tr(R.string.sign_out_of_discord), tr(R.string.forgets_the_sign_in_on_this), onClick = {
             c.settings.setDiscordPresence(false)
             c.discord.signOut()
         })
         Item(
-            "About this", "A small risk to your Discord account",
-            info = "Discord has no way for Android apps to do this officially, so Prism uses your Discord sign-in the way other Android music players do. Discord doesn't allow that for third-party apps, so there's a small risk to your account. Prism only ever changes your status.",
+            tr(R.string.about_this), tr(R.string.a_small_risk_to_your_discord),
+            info = tr(R.string.discord_has_no_way_for_android),
             onClick = {},
         )
     }
@@ -706,14 +728,14 @@ private fun AccountSwitcher(onDismiss: () -> Unit) {
     }
     com.prism.music.ui.components.ActionSheet(s.accountAvatar.ifBlank { null }, onDismiss) { close ->
         Text(
-            "Accounts and channels", Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 4.dp),
+            tr(R.string.accounts_and_channels), Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 4.dp),
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium),
         )
         val list = accounts
         when {
             list == null -> Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { com.prism.music.ui.components.PrismSpinner(Modifier.size(30.dp)) }
             list.isEmpty() -> Text(
-                "YouTube didn't list any other channels. Sign out and in again if you've just made one.",
+                tr(R.string.youtube_didn_t_list_any_other),
                 Modifier.padding(24.dp), style = MaterialTheme.typography.bodyMedium,
             )
             else -> list.groupBy { it.email }.forEach { (email, channels) ->
@@ -729,7 +751,7 @@ private fun AccountSwitcher(onDismiss: () -> Unit) {
                                 c.scope.launch {
                                     c.library.switchAccount(a)
                                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                        android.widget.Toast.makeText(context, "Switched to ${a.name}", android.widget.Toast.LENGTH_SHORT).show()
+                                        android.widget.Toast.makeText(context, tr(R.string.switched_to, a.name), android.widget.Toast.LENGTH_SHORT).show()
                                     }
                                 }
                             }
@@ -744,7 +766,7 @@ private fun AccountSwitcher(onDismiss: () -> Unit) {
                             Text(a.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             a.byline?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1) }
                         }
-                        if (current) Icon(PrismIcons.Check, "In use", tint = MaterialTheme.colorScheme.primary)
+                        if (current) Icon(PrismIcons.Check, tr(R.string.in_use), tint = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
@@ -763,11 +785,11 @@ private fun androidx.compose.foundation.lazy.LazyListScope.appearance() {
             Box {
                 val s = LocalAppSettings.current
                 val prefs = LocalContainer.current.settings
-                Group("Theme") {
+                Group(tr(R.string.theme)) {
                     Chips(ThemeMode.entries, s.themeMode, { it.label }) { prefs.setThemeMode(it) }
                     Toggle(
-                        "Pure black", "AMOLED-friendly dark theme", s.pureBlack,
-                        info = "In dark mode, pages sit on true black, whichever background you picked: its colors and patterns stay, quieter, over black.",
+                        tr(R.string.pure_black), tr(R.string.amoled_friendly_dark_theme), s.pureBlack,
+                        info = tr(R.string.in_dark_mode_pages_sit_on),
                     ) { prefs.setPureBlack(it) }
                 }
             }
@@ -776,7 +798,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.appearance() {
                 val s = LocalAppSettings.current
                 val nav = LocalNavigator.current
                 val dark = com.prism.music.ui.theme.LocalIsDark.current
-                Group("The whole look") {
+                Group(tr(R.string.the_whole_look)) {
                     lookWholes.forEach { sec -> NavRow(sec.icon, sec.title, sec.summary(s, dark)) { nav.go(Routes.settings(sec.key)) } }
                 }
             }
@@ -784,22 +806,23 @@ private fun androidx.compose.foundation.lazy.LazyListScope.appearance() {
                 val s = LocalAppSettings.current
                 val nav = LocalNavigator.current
                 val dark = com.prism.music.ui.theme.LocalIsDark.current
-                Group("Each part") {
+                Group(tr(R.string.each_part)) {
                     lookParts.forEach { sec -> NavRow(sec.icon, sec.title, sec.summary(s, dark)) { nav.go(Routes.settings(sec.key)) } }
                 }
             }
+            Box { MotionGroup() }
             // "Customize this" (1.7.3): tap the mini player, tab bar, player or a Home section to change it there.
             Box {
                 val c = LocalContainer.current
                 val on by c.customizing.collectAsState()
                 val context = androidx.compose.ui.platform.LocalContext.current
-                Group("Customize this") {
+                Group(tr(R.string.customize_this)) {
                     Toggle(
-                        "Customize by tapping", "Tap the mini player, tab bar, player or a Home section", on,
-                        info = "While it's on, those parts of Prism are outlined, and tapping one opens just its settings. Done, at the top of the screen, turns it off. Holding the Settings tab (when it's in the tab bar) turns it on and off too.",
+                        tr(R.string.customize_by_tapping), tr(R.string.tap_the_mini_player_tab_bar), on,
+                        info = tr(R.string.while_it_s_on_those_parts),
                     ) {
                         c.customizing.value = it
-                        if (it) android.widget.Toast.makeText(context, "Tap anything outlined to change it", android.widget.Toast.LENGTH_SHORT).show()
+                        if (it) android.widget.Toast.makeText(context, tr(R.string.tap_anything_outlined_to_change_it), android.widget.Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -815,13 +838,13 @@ private fun GlassSettings() {
             Box {
                 val s = LocalAppSettings.current
                 val nav = LocalNavigator.current
-                Group("Backgrounds") {
+                Group(tr(R.string.backgrounds)) {
                     val screens = s.backdrops.screensOnly
                     val count = screens.size
                     Item(
-                        "Screen backgrounds",
-                        if (count == 0) "Designs or your own photo"
-                        else screens.values.map { com.prism.music.ui.theme.Backdrop.parse(it).first.label }.distinct().joinToString(" · ") + " on $count ${if (count == 1) "screen" else "screens"}",
+                        tr(R.string.screen_backgrounds),
+                        if (count == 0) tr(R.string.designs_or_your_own_photo)
+                        else screens.values.map { com.prism.music.ui.theme.Backdrop.parse(it).first.label }.distinct().joinToString(" · ") + com.prism.music.trp(R.plurals.on_n_screens, count),
                         onClick = { nav.go(Routes.BACKGROUNDS) },
                     ) { Chevron() }
                 }
@@ -829,23 +852,29 @@ private fun GlassSettings() {
             Box {
                 val s = LocalAppSettings.current
                 val prefs = LocalContainer.current.settings
-                Group("Glass") {
-                    Toggle("Liquid Glass", "Refractive bars and controls", s.liquidGlass) { prefs.setLiquidGlass(it) }
-                    if (s.liquidGlass) {
-                        Label("Glass style")
-                        Chips(GlassKind.entries, s.glassKind, { it.label }) { prefs.setGlassKind(it) }
-                    }
-                    Toggle("Frosted Glass", "Soft blur, no refraction", s.frostedGlass) { prefs.setFrostedGlass(it) }
-                    Toggle("Frosted pages", "Pages frosted with their picture", s.frostedPages, info = "Artist, album and playlist pages sit on frosted glass made from their picture; Home, Library, Search and Settings sit on frost from what's playing. Whether pages take their picture's color is under Color.") { prefs.setFrostedPages(it) }
+                Group(tr(R.string.glass)) {
+                    // 1.8.0: one choice over liquidGlass + glassKind + frostedGlass (LookChoices).
+                    Label(tr(R.string.glass), info = tr(R.string.glass_choice_info))
+                    Chips(GlassChoice.entries, LookChoices.glass(s), { it.label }) { LookChoices.setGlass(prefs, it) }
+                    Toggle(tr(R.string.frosted_pages), tr(R.string.pages_frosted_with_their_picture), s.frostedPages, info = tr(R.string.artist_album_and_playlist_pages_sit)) { prefs.setFrostedPages(it) }
                 }
             }
-            Box {
-                val s = LocalAppSettings.current
-                val prefs = LocalContainer.current.settings
-                Group("Motion") {
-                    Toggle("Reduce motion", "Calmer, quicker animations", s.reduceMotion, info = "No drifting backgrounds, no artwork bounce, quicker transitions.") { prefs.setReduceMotion(it) }
-                }
-            }
+            // Reduce motion and how screens change are on the Customize Prism page itself (1.8.0: MotionGroup).
+    }
+}
+
+/**
+ * Motion (1.8.0, on the Customize Prism page: it changes the whole app, and Reduce motion is an accessibility choice):
+ * Reduce motion, and how screens change (fades + #208's slide as one choice).
+ */
+@Composable
+private fun MotionGroup() {
+    val s = LocalAppSettings.current
+    val prefs = LocalContainer.current.settings
+    Group(tr(R.string.motion)) {
+        Toggle(tr(R.string.reduce_motion), tr(R.string.calmer_quicker_animations), s.reduceMotion, info = tr(R.string.no_drifting_backgrounds_no_artwork_bounce)) { prefs.setReduceMotion(it) }
+        Label(tr(R.string.changing_screens), info = tr(R.string.changing_screens_info))
+        Chips(ScreenChange.entries, LookChoices.screenChange(s), { it.label }) { LookChoices.setScreenChange(prefs, it) }
     }
 }
 
@@ -860,7 +889,7 @@ private fun TypeSettings() {
     fun importer(slot: AppFonts.FontSlot, done: (String) -> Unit) = { uri: android.net.Uri? ->
         if (uri != null) scope.launch {
             val r = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { AppFonts.import(context, uri, slot) } }
-            r.onSuccess { error = null; done(it) }.onFailure { error = it.message ?: "That font couldn't be used" }
+            r.onSuccess { error = null; done(it) }.onFailure { error = it.message ?: tr(R.string.that_font_couldn_t_be_used) }
         }
         Unit
     }
@@ -871,41 +900,41 @@ private fun TypeSettings() {
         importer(AppFonts.FontSlot.LYRICS) { name -> prefs.setLyricsFontFile(name); prefs.setLyricsFont(FontChoice.CUSTOM.name) })
     val hasAppFont = remember(s.fontStamp) { AppFonts.customFile(AppFonts.FontSlot.APP) != null }
     val hasLyricsFont = remember(s.fontStamp) { AppFonts.customFile(AppFonts.FontSlot.LYRICS) != null }
-    Group("Text") {
-        Label("Font")
+    Group(tr(R.string.text)) {
+        Label(tr(R.string.font))
         FontPicker(s.fontChoice, customName = s.appFontName.takeIf { hasAppFont }, stamp = s.fontStamp) { f ->
             if (f == FontChoice.CUSTOM && !hasAppFont) pickApp.launch(fontTypes) else prefs.setFontChoice(f)
         }
         Item(
-            if (hasAppFont) "Your font: ${s.appFontName}" else "Use a font from your phone",
-            if (hasAppFont) "Tap to pick a different .ttf or .otf file" else "Pick a .ttf or .otf file (Inter, SF Pro…). Prism keeps its own copy",
+            if (hasAppFont) tr(R.string.your_font, s.appFontName) else tr(R.string.use_a_font_from_your_phone),
+            if (hasAppFont) tr(R.string.tap_to_pick_a_different_ttf) else tr(R.string.pick_a_ttf_or_otf_file),
             onClick = { pickApp.launch(fontTypes) },
         ) { Chevron() }
-        if (hasAppFont) Item("Remove your font", "Back to a built-in font", onClick = {
+        if (hasAppFont) Item(tr(R.string.remove_your_font), tr(R.string.back_to_a_built_in_font), onClick = {
             AppFonts.remove(AppFonts.FontSlot.APP)
             if (s.fontChoice == FontChoice.CUSTOM) prefs.setFontChoice(FontChoice.PRISM)
             prefs.setAppFont("")
         })
-        Label("Lyrics font")
+        Label(tr(R.string.lyrics_font))
         // "App font" keeps each lyric view's own face (the app's); the rest are the same fonts as above, or a file just for lyrics.
         val lyricOptions = listOf("") + FontChoice.entries.filter { it != FontChoice.CUSTOM && AppFonts.available(it) }.map { it.name } + FontChoice.CUSTOM.name
         Chips(lyricOptions, s.lyricsFont, { v ->
             when (v) {
-                "" -> "App font"
-                FontChoice.CUSTOM.name -> if (hasLyricsFont) s.lyricsFontName.ifBlank { "Your font" } else "From a file…"
+                "" -> tr(R.string.app_font)
+                FontChoice.CUSTOM.name -> if (hasLyricsFont) s.lyricsFontName.ifBlank { tr(R.string.your_font_2) } else tr(R.string.from_a_file)
                 else -> FontChoice.valueOf(v).label
             }
         }) { v -> if (v == FontChoice.CUSTOM.name && !hasLyricsFont) pickLyrics.launch(fontTypes) else prefs.setLyricsFont(v) }
         if (hasLyricsFont) {
-            Item("Lyrics font file: ${s.lyricsFontName}", "Tap to pick a different file", onClick = { pickLyrics.launch(fontTypes) }) { Chevron() }
-            Item("Remove the lyrics font file", null, onClick = {
+            Item(tr(R.string.lyrics_font_file_2, s.lyricsFontName), tr(R.string.tap_to_pick_a_different_file), onClick = { pickLyrics.launch(fontTypes) }) { Chevron() }
+            Item(tr(R.string.remove_the_lyrics_font_file), null, onClick = {
                 AppFonts.remove(AppFonts.FontSlot.LYRICS)
                 if (s.lyricsFont == FontChoice.CUSTOM.name) prefs.setLyricsFont("")
                 prefs.setLyricsFontFile("")
             })
         }
         error?.let { Note(it) }
-        SliderSetting("Text size", s.textScale, 0.85f..1.25f, { "${(it * 100).roundToInt()}%" }, steps = 7, info = "On top of your phone's own text size.") { prefs.setTextScale(it) }
+        SliderSetting(tr(R.string.text_size), s.textScale, 0.85f..1.25f, { "${(it * 100).roundToInt()}%" }, steps = 7, info = tr(R.string.on_top_of_your_phone_s)) { prefs.setTextScale(it) }
     }
     TypeFeelGroup()
 }
@@ -920,22 +949,28 @@ private fun TypeFeelGroup() {
     fun Sample(t: com.prism.music.data.prefs.TypeLook) {
         val type = remember(s.fontChoice, s.fontStamp, t) { com.prism.music.ui.theme.appTypography(s.copy(type = t)) }
         Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp)) {
-            Text("Songs", style = type.headlineSmall, color = scheme.onSurface, maxLines = 1)
-            Text("Played today", style = type.bodySmall, color = scheme.onSurfaceVariant, maxLines = 1)
+            Text(tr(R.string.songs), style = type.headlineSmall, color = scheme.onSurface, maxLines = 1)
+            Text(tr(R.string.played_today), style = type.bodySmall, color = scheme.onSurfaceVariant, maxLines = 1)
         }
     }
-    Group("Weight and spacing", info = "How heavy all of Prism's text is, and how far apart its letters sit, on top of the font's own design.") {
+    // Classic type (1.7.8, #155): Prism 1.6's bold headings, or today's light ones.
+    Group(tr(R.string.type), info = tr(R.string.prism_1_7_writes_big_titles)) {
+        ChoiceCards(listOf(false, true), s.type.classic, title = { if (it) tr(R.string.classic) else tr(R.string.app_name) }, detail = { if (it) tr(R.string.bold_headings_as_in_1_6) else tr(R.string.light_titles_as_now) }, onSelect = { prefs.setTypeClassic(it) }) {
+            Sample(s.type.copy(classic = it))
+        }
+    }
+    Group(tr(R.string.weight_and_spacing), info = tr(R.string.how_heavy_all_of_prism_s)) {
         ChoiceCards(com.prism.music.data.prefs.TypeWeight.entries, s.type.weight, title = { it.label }, detail = { null }, columns = 3, onSelect = { prefs.setTypeWeight(it) }) {
             Sample(s.type.copy(weight = it))
         }
-        Label("Letter spacing")
+        Label(tr(R.string.letter_spacing))
         ChoiceCards(com.prism.music.data.prefs.TypeSpacing.entries, s.type.spacing, title = { it.label }, detail = { null }, columns = 3, onSelect = { prefs.setTypeSpacing(it) }) {
             Sample(s.type.copy(spacing = it))
         }
     }
-    Group("Titles", info = "Page, section and album titles can have a font of their own: big titles in Editorial and the rest in Prism, for example.") {
+    Group(tr(R.string.titles), info = tr(R.string.page_section_and_album_titles_can)) {
         val options: List<FontChoice?> = listOf(null) + FontChoice.entries.filter { it != FontChoice.CUSTOM && it != s.fontChoice }
-        ChoiceCards(options, s.type.titleFont, title = { it?.label ?: "Same as the text" }, detail = { it?.face }, columns = 2, onSelect = { prefs.setTitleFont(it) }) {
+        ChoiceCards(options, s.type.titleFont, title = { it?.label ?: tr(R.string.same_as_the_text) }, detail = { it?.face }, columns = 2, onSelect = { prefs.setTitleFont(it) }) {
             Sample(s.type.copy(titleFont = it))
         }
     }
@@ -961,7 +996,7 @@ private fun IconSettings() {
     var fill by remember { mutableStateOf(com.prism.music.ui.theme.IconStyle.savedFill(context)) }
     val s = LocalAppSettings.current
     val prefs = LocalContainer.current.settings
-    Group("Icons") {
+    Group(tr(R.string.icons)) {
         // Fill (1.7.7): each style drawn on four of Prism's icons, as they'd look.
         ChoiceCards(
             com.prism.music.ui.theme.IconFill.entries, fill, title = { it.label }, detail = { it.detail }, columns = 3,
@@ -972,25 +1007,16 @@ private fun IconSettings() {
             },
         ) { f ->
             // Three: a fourth was squeezed to a dot in a third of a phone's width.
+            // The drawings' own names (design/icons), never words on the screen: translated, "Inicio" had no drawing and
+            // the page closed Prism in every language but English (#255).
             val icons = remember(f) { listOf("Home", "Library", "Heart").map { com.prism.music.ui.theme.PrismIcons.preview(it, f) } }
             Row(Modifier.fillMaxWidth().padding(10.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
                 icons.forEach { Icon(it, null, Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onSurface) }
             }
         }
-        Label("The tab you're on")
-        ChoiceCards(
-            com.prism.music.data.prefs.TabTint.entries, s.shapes.tabTint, title = { it.label }, detail = { null }, columns = 3,
-            onSelect = { prefs.setTabTint(it) },
-        ) { t ->
-            Box(Modifier.fillMaxWidth().padding(10.dp), contentAlignment = Alignment.Center) {
-                Icon(
-                    com.prism.music.ui.theme.PrismIcons.HomeFilled, null,
-                    Modifier.size(26.dp).tabTint(t),
-                )
-            }
-        }
+        // "The tab you're on" is with the tab bar now (1.8.0: NavBarGroup).
         // Packs (1.7.7 adds Facet and Dots): each card draws the same four icons in its pack.
-        Label("Pack")
+        Label(tr(R.string.pack))
         ChoiceCards(
             com.prism.music.ui.theme.IconPack.entries, pack, title = { it.label }, detail = { it.detail },
             onSelect = {
@@ -1002,23 +1028,24 @@ private fun IconSettings() {
             // Cupertino is drawn by hand for its own icons; the others come from the drawings.
             val icons = remember(p) {
                 if (p == com.prism.music.ui.theme.IconPack.CUPERTINO) com.prism.music.ui.theme.PrismIcons.cupertinoPreview()
+                // The drawings' own names, never translated words (#255).
                 else listOf("Home", "Search", "Heart", "Play").map { com.prism.music.ui.theme.PrismIcons.preview(it, com.prism.music.ui.theme.IconFill.OUTLINE, p) }
             }
             Row(Modifier.fillMaxWidth().padding(10.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
                 icons.forEach { Icon(it, null, Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onSurface) }
             }
         }
-        Label("Weight")
+        Label(tr(R.string.weight))
         Chips(com.prism.music.ui.theme.IconWeight.entries, saved.first, { it.label }) { save(it to saved.second) }
-        Toggle("Rounded", "Round ends and softer corners", saved.second) { save(saved.first to it) }
-        Toggle("Likes as stars", "A star instead of a heart for likes", likeStar) {
+        Toggle(tr(R.string.rounded), tr(R.string.round_ends_and_softer_corners), saved.second) { save(saved.first to it) }
+        Toggle(tr(R.string.likes_as_stars), tr(R.string.a_star_instead_of_a_heart), likeStar) {
             likeStar = it
             com.prism.music.ui.theme.IconStyle.saveLikeStar(context, it)
             looks.iconsChanged()
         }
         if (saved != drawn || pack != com.prism.music.ui.theme.IconStyle.pack || likeStar != com.prism.music.ui.theme.IconStyle.likeStar ||
             fill != com.prism.music.ui.theme.IconStyle.fill) {
-            Item("Restart Prism to see them", "Playback stops for a moment", onClick = {
+            Item(tr(R.string.restart_prism_to_see_them), tr(R.string.playback_stops_for_a_moment), onClick = {
                 val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)
                 if (launch != null) {
                     context.startActivity(android.content.Intent.makeRestartActivityTask(launch.component).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -1030,32 +1057,43 @@ private fun IconSettings() {
 }
 
 /** The launcher icon (#20), each shown as its own two layers in a rounded square. */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AppIconSettings() {
     val context = androidx.compose.ui.platform.LocalContext.current
     val scheme = MaterialTheme.colorScheme
     var current by remember { mutableStateOf(com.prism.music.ui.theme.AppIcons.current(context)) }
-    Group("App icon", info = "Your launcher may take a moment to update.") {
-        FlowRow(Modifier.padding(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            com.prism.music.ui.theme.AppIcon.entries.forEach { icon ->
-                val on = icon == current
-                Column(
-                    Modifier.width(72.dp).clip(RoundedCornerShape(14.dp)).clickable {
-                        if (!on) { com.prism.music.ui.theme.AppIcons.set(context, icon); current = icon }
-                    }.padding(4.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Box(
-                        Modifier.size(60.dp).then(if (on) Modifier.border(2.dp, com.prism.music.ui.theme.PrismTokens.spectrum, RoundedCornerShape(18.dp)) else Modifier)
-                            .padding(if (on) 4.dp else 0.dp).clip(RoundedCornerShape(15.dp)),
-                    ) {
-                        // An adaptive icon's layers are 108 units with the visible 72 in the middle: draw them 1.5× and crop.
-                        androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(icon.background), null, Modifier.fillMaxSize().scale(1.5f))
-                        androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(icon.foreground), null, Modifier.fillMaxSize().scale(1.5f))
+    Group(tr(R.string.app_icon), info = tr(R.string.your_launcher_may_take_a_moment)) {
+        // An even grid across the page (#194: fixed 72 dp cells left an empty column at the side with larger text, and
+        // cut "Spectrum" short): as many columns as fit, names made smaller rather than cut.
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
+            val cell = 76.dp * androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceAtLeast(1f)
+            val columns = ((maxWidth + 8.dp) / (cell + 8.dp)).toInt().coerceIn(3, 6)
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                com.prism.music.ui.theme.AppIcon.entries.chunked(columns).forEach { row ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        row.forEach { icon ->
+                            val on = icon == current
+                            Column(
+                                Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).clickable {
+                                    if (!on) { com.prism.music.ui.theme.AppIcons.set(context, icon); current = icon }
+                                }.padding(4.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Box(
+                                    Modifier.size(60.dp).then(if (on) Modifier.border(2.dp, com.prism.music.ui.theme.PrismTokens.spectrum, RoundedCornerShape(18.dp)) else Modifier)
+                                        .padding(if (on) 4.dp else 0.dp).clip(RoundedCornerShape(15.dp)),
+                                ) {
+                                    // An adaptive icon's layers are 108 units with the visible 72 in the middle: draw them 1.5× and crop.
+                                    androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(icon.background), null, Modifier.fillMaxSize().scale(1.5f))
+                                    androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(icon.foreground), null, Modifier.fillMaxSize().scale(1.5f))
+                                }
+                                Spacer(Modifier.height(4.dp))
+                                WholeWords(icon.label, MaterialTheme.typography.labelMedium, if (on) scheme.onSurface else scheme.onSurfaceVariant, maxLines = 1)
+                            }
+                        }
+                        // The last row keeps the others' column widths.
+                        repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
                     }
-                    Spacer(Modifier.height(4.dp))
-                    Text(icon.label, style = MaterialTheme.typography.labelMedium, color = if (on) scheme.onSurface else scheme.onSurfaceVariant, maxLines = 1)
                 }
             }
         }
@@ -1069,10 +1107,10 @@ private fun AppIconSettings() {
  * not measured ahead (BoxWithConstraints can't sit in the font cards' row, which is sized by its contents).
  */
 @Composable
-private fun WholeWords(text: String, style: TextStyle, color: Color, maxLines: Int = 2) {
+internal fun WholeWords(text: String, style: TextStyle, color: Color, maxLines: Int = 2, modifier: Modifier = Modifier) {
     var fitted by remember(text, style) { mutableStateOf(style) }
     Text(
-        text, style = fitted, color = color, maxLines = maxLines, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+        text, modifier, style = fitted, color = color, maxLines = maxLines, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
         onTextLayout = { l ->
             val whole = !l.hasVisualOverflow && (0 until l.lineCount - 1).all { i -> text.getOrNull(l.getLineEnd(i) - 1).let { it == ' ' || it == '-' } }
             if (!whole && fitted.fontSize.value > style.fontSize.value * 0.5f) fitted = fitted.copy(fontSize = fitted.fontSize * 0.9f)
@@ -1107,11 +1145,11 @@ private fun FontPicker(current: FontChoice, customName: String?, stamp: Long, on
                                 .then(if (usable) Modifier else Modifier.alpha(0.38f))
                                 .padding(10.dp),
                         ) {
-                            Text("Aa", style = TextStyle(fontFamily = AppFonts.family(f), fontWeight = FontWeight.Medium, fontSize = MaterialTheme.typography.headlineSmall.fontSize), color = scheme.onSurface)
+                            Text(tr(R.string.aa), style = TextStyle(fontFamily = AppFonts.family(f), fontWeight = FontWeight.Medium, fontSize = MaterialTheme.typography.headlineSmall.fontSize), color = scheme.onSurface)
                             // "Dyslexia-friendly" in OpenDyslexic's wide letters: "friendly" alone is wider than the card,
                             // so Android split the word. The name gets smaller until no word is split.
                             WholeWords(
-                                if (f == FontChoice.CUSTOM) customName ?: "Your font…" else f.label,
+                                if (f == FontChoice.CUSTOM) customName ?: tr(R.string.your_font_3) else f.label,
                                 MaterialTheme.typography.labelMedium.copy(fontFamily = AppFonts.family(f)),
                                 if (on) scheme.onSurface else scheme.onSurfaceVariant,
                             )
@@ -1133,11 +1171,11 @@ private fun ShapeSettings() {
     val s = LocalAppSettings.current
     val prefs = LocalContainer.current.settings
     val scheme = MaterialTheme.colorScheme
-    Group("Shape") {
+    Group(tr(R.string.shape)) {
         // Corners as a slider (1.7.7): the old four steps are its marks, and a Look that names a step still works.
         val corner = s.shapes.cornerScale ?: s.corners.scale
         SliderSetting(
-            "Corners", corner, 0f..2f,
+            tr(R.string.corners), corner, 0f..2f,
             { v -> Corners.entries.minByOrNull { kotlin.math.abs(it.scale - v) }!!.let { if (kotlin.math.abs(it.scale - v) < 0.08f) it.label else "${(v * 100).roundToInt()}%" } },
         ) { v ->
             // Close to a step: that step, so it reads by name.
@@ -1161,9 +1199,9 @@ private fun CoverShapeGroup() {
     val s = LocalAppSettings.current
     val prefs = LocalContainer.current.settings
     var which by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("songs") }
-    val kinds = listOf("songs" to "Songs", "albums" to "Albums", "artists" to "Artists", "player" to "Player")
+    val kinds = listOf("songs" to tr(R.string.songs), "albums" to tr(R.string.albums), "artists" to tr(R.string.artists), "player" to tr(R.string.player))
     val now = when (which) { "albums" -> s.shapes.albums; "artists" -> s.shapes.artists; "player" -> s.shapes.player; else -> s.shapes.songs }
-    Group("Covers' shapes", info = "Each kind of picture can have its own shape: songs in lists, albums and playlists, artists, and the cover in the player. A music video keeps its rounded corners.") {
+    Group(tr(R.string.covers_shapes), info = tr(R.string.each_kind_of_picture_can_have)) {
         com.prism.music.ui.components.Segmented(
             kinds.map { it.first }, which, { k -> kinds.first { it.first == k }.second }, Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
         ) { which = it }
@@ -1171,6 +1209,11 @@ private fun CoverShapeGroup() {
             com.prism.music.data.prefs.CoverShape.entries, now, title = { it.label }, detail = { null }, columns = 4,
             onSelect = { prefs.setCoverShape(which, it) },
         ) { shape -> CoverShapeSample(shape, round = which == "artists") }
+        // 1.8.0 (from Player → Cover): it squares video pictures everywhere, not only on the player (#92).
+        Toggle(
+            tr(R.string.square_video_covers), tr(R.string.no_black_bars_when_a_video), s.squareVideoCovers,
+            info = tr(R.string.youtube_s_video_pictures_are_wide),
+        ) { prefs.setSquareVideoCovers(it) }
     }
 }
 
@@ -1194,7 +1237,7 @@ private fun ButtonShapeGroup() {
     val s = LocalAppSettings.current
     val prefs = LocalContainer.current.settings
     val scheme = MaterialTheme.colorScheme
-    Group("Buttons") {
+    Group(tr(R.string.buttons)) {
         ChoiceCards(
             com.prism.music.data.prefs.ButtonShape.entries, s.shapes.button, title = { it.label }, detail = { null }, columns = 3,
             onSelect = { prefs.setButtonShape(it) },
@@ -1202,14 +1245,14 @@ private fun ButtonShapeGroup() {
             val shape = LocalUi.current.copy(buttonShape = b).button
             Box(Modifier.fillMaxWidth().padding(10.dp), contentAlignment = Alignment.Center) {
                 Box(Modifier.fillMaxWidth().height(30.dp).clip(shape).background(scheme.onSurface), contentAlignment = Alignment.Center) {
-                    Text("Play", style = MaterialTheme.typography.labelMedium, color = scheme.surface)
+                    Text(tr(R.string.widget_play), style = MaterialTheme.typography.labelMedium, color = scheme.surface)
                 }
             }
         }
-        Label("Play on album and playlist pages")
+        Label(tr(R.string.play_on_album_and_playlist_pages))
         ChoiceCards(
-            listOf(false, true), s.shapes.playOutlined, title = { if (it) "Outlined" else "Filled" },
-            detail = { if (it) "Just its outline" else "Solid, with a glow" },
+            listOf(false, true), s.shapes.playOutlined, title = { if (it) tr(R.string.outlined) else tr(R.string.filled) },
+            detail = { if (it) tr(R.string.just_its_outline) else tr(R.string.solid_with_a_glow) },
             onSelect = { prefs.setPlayOutlined(it) },
         ) { outlined ->
             val shape = LocalUi.current.button
@@ -1221,7 +1264,18 @@ private fun ButtonShapeGroup() {
                 ) {
                     Icon(PrismIcons.Play, null, Modifier.size(16.dp), tint = if (outlined) scheme.onSurface else scheme.surface)
                     Spacer(Modifier.width(4.dp))
-                    Text("Play", style = MaterialTheme.typography.labelMedium, color = if (outlined) scheme.onSurface else scheme.surface)
+                    Text(tr(R.string.widget_play), style = MaterialTheme.typography.labelMedium, color = if (outlined) scheme.onSurface else scheme.surface)
+                }
+            }
+        }
+        // Classic controls (1.7.8, #155): each card draws a switch and a slider its way.
+        Label(tr(R.string.switches_sliders_and_buttons), info = tr(R.string.prism_s_own_lit_with_your))
+        ChoiceCards(listOf(false, true), s.shapes.classicControls, title = { if (it) tr(R.string.classic) else tr(R.string.app_name) }, detail = { if (it) tr(R.string.as_in_1_6) else tr(R.string.lit_with_your_light_as_now) }, onSelect = { prefs.setControlsClassic(it) }) { classic ->
+            CompositionLocalProvider(LocalUi provides LocalUi.current.copy(classicControls = classic)) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    com.prism.music.ui.components.PrismSlider(0.6f, {}, Modifier.weight(1f))
+                    Spacer(Modifier.width(8.dp))
+                    com.prism.music.ui.components.PrismSwitch(true, null)
                 }
             }
         }
@@ -1233,14 +1287,14 @@ private fun ResetLook() {
     val prefs = LocalContainer.current.settings
     var ask by remember { mutableStateOf(false) }
     PrismTextButton(onClick = { ask = true }, Modifier.fillMaxWidth()) {
-        Icon(PrismIcons.Refresh, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Reset look & layout to defaults")
+        Icon(PrismIcons.Refresh, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text(tr(R.string.reset_look_layout_to_defaults))
     }
     if (ask) androidx.compose.material3.AlertDialog(
         onDismissRequest = { ask = false },
-        title = { Text("Reset look & layout?") },
-        text = { Text("Font, text size, corners, spacing, navigation bar, tabs, mini player and player style go back to how Prism ships. Your colors, backgrounds and everything else stay as they are.") },
-        confirmButton = { PrismTextButton(onClick = { prefs.resetLook(); ask = false }) { Text("Reset") } },
-        dismissButton = { PrismTextButton(onClick = { ask = false }) { Text("Cancel") } },
+        title = { Text(tr(R.string.reset_look_layout)) },
+        text = { Text(tr(R.string.font_text_size_corners_spacing_navigation)) },
+        confirmButton = { PrismTextButton(onClick = { prefs.resetLook(); ask = false }) { Text(tr(R.string.reset)) } },
+        dismissButton = { PrismTextButton(onClick = { ask = false }) { Text(tr(R.string.cancel)) } },
     )
 }
 
@@ -1256,11 +1310,15 @@ private fun androidx.compose.foundation.lazy.LazyListScope.layoutAndNavigation()
             Box {
                 val s = LocalAppSettings.current
                 val prefs = LocalContainer.current.settings
-                Group("Screen") {
+                Group(tr(R.string.screen)) {
                     Toggle(
-                        "Hide the status bar", "More room; swipe down from the top to see it", s.hideStatusBar,
-                        info = "The clock, battery and notification icons at the top stay hidden while Prism is open. Swipe down from the top edge and they show for a moment. Immersive mode and full-screen video hide the other bars too, as before.",
+                        tr(R.string.hide_the_status_bar), tr(R.string.more_room_swipe_down_from_the), s.hideStatusBar,
+                        info = tr(R.string.the_clock_battery_and_notification_icons),
                     ) { prefs.setHideStatusBar(it) }
+                    // Reddit, 1.7.9.1: only while the player is up (the rest of Prism keeps it). Moot with it hidden everywhere.
+                    if (!s.hideStatusBar) Toggle(
+                        tr(R.string.hide_status_bar_on_the_player), tr(R.string.only_while_the_player_its_lyrics), s.hideStatusBarPlayer,
+                    ) { prefs.setHideStatusBarPlayer(it) }
                 }
             }
             ResetPage(SettingsSection.INTERFACE)
@@ -1272,22 +1330,37 @@ private fun androidx.compose.foundation.lazy.LazyListScope.layoutAndNavigation()
 private fun NavBarGroup() {
     val s = LocalAppSettings.current
     val prefs = LocalContainer.current.settings
-    Group("Navigation bar") {
-        Label("Style")
+    Group(tr(R.string.navigation_bar)) {
+        Label(tr(R.string.style))
         Chips(NavBarStyle.entries, s.navStyle, { it.label }) { prefs.setNavStyle(it) }
         // The Minimal bar has no labels to show.
         if (s.navStyle != NavBarStyle.MINIMAL) {
-            Label("Labels", info = "Never shows only the icons; Words only shows only the names.")
+            Label(tr(R.string.labels), info = tr(R.string.never_shows_only_the_icons_words))
             Chips(NavLabels.entries, s.navLabels, { it.label }) { prefs.setNavLabels(it) }
         }
-        Label("Height")
+        Label(tr(R.string.height))
         Chips(com.prism.music.data.prefs.NavBarSize.entries, s.navBarSize, { it.label }) { prefs.setNavBarSize(it) }
-        Label("Background", info = "See-through lets the page show through the bar; Solid hides it. The blur itself comes from Glass (Customize Prism → Glass & backgrounds).")
+        Label(tr(R.string.background), info = tr(R.string.see_through_lets_the_page_show))
         Chips(com.prism.music.data.prefs.NavBarFill.entries, s.navBarFill, { it.label }) { prefs.setNavBarFill(it) }
-        Toggle("Shrink while scrolling", "Slims down as you scroll", s.navHideOnScroll) { prefs.setNavHideOnScroll(it) }
+        // #264 (1.8.0): only where it means something, a tablet or wide window (phones: always the bottom).
+        if (com.prism.music.ui.theme.LocalWindowLayout.current.rail) {
+            Label(tr(R.string.tabs_on_a_tablet), info = tr(R.string.tabs_on_a_tablet_info))
+            Chips(com.prism.music.data.prefs.TabBarPosition.entries, s.behavior.tabBarPosition, { it.label }) { prefs.setTabBarPosition(it) }
+        }
+        // 1.8.0: from Icons & shapes (it's how the tab bar marks where you are).
+        Label(tr(R.string.the_tab_you_re_on))
+        ChoiceCards(
+            com.prism.music.data.prefs.TabTint.entries, s.shapes.tabTint, title = { it.label }, detail = { null }, columns = 3,
+            onSelect = { prefs.setTabTint(it) },
+        ) { t ->
+            Box(Modifier.fillMaxWidth().padding(10.dp), contentAlignment = Alignment.Center) {
+                Icon(com.prism.music.ui.theme.PrismIcons.HomeFilled, null, Modifier.size(26.dp).tabTint(t))
+            }
+        }
+        Toggle(tr(R.string.shrink_while_scrolling), tr(R.string.slims_down_as_you_scroll), s.navHideOnScroll) { prefs.setNavHideOnScroll(it) }
         Toggle(
-            "Swipe between tabs", "Swipe sideways on a tab's page", s.swipeTabs,
-            info = "A sideways swipe on a tab's own page goes to the tab beside it. Rows that scroll sideways (and Library's own pages) keep their swipes.",
+            tr(R.string.swipe_between_tabs), tr(R.string.swipe_sideways_on_a_tab_s), s.swipeTabs,
+            info = tr(R.string.a_sideways_swipe_on_a_tab),
         ) { prefs.setSwipeTabs(it) }
     }
 }
@@ -1296,16 +1369,24 @@ private fun NavBarGroup() {
 private fun MiniPlayerGroup() {
     val s = LocalAppSettings.current
     val prefs = LocalContainer.current.settings
-    Group("Mini player") {
+    Group(tr(R.string.mini_player)) {
         Chips(MiniPlayerStyle.entries, s.miniPlayerStyle, { it.label }) { prefs.setMiniPlayerStyle(it) }
         if (s.navStyle == NavBarStyle.FLOATING) Toggle(
-            "Joined to the tab bar", "One piece of glass with the tabs", s.miniPlayerJoined,
-            info = "The mini player sits on top of the tabs in the same floating bar, instead of floating above it.",
+            tr(R.string.joined_to_the_tab_bar), tr(R.string.one_piece_of_glass_with_the), s.miniPlayerJoined,
+            info = tr(R.string.the_mini_player_sits_on_top),
         ) { prefs.setMiniPlayerJoined(it) }
-        Toggle("Previous button", "Swiping right goes back too", s.miniPrevButton) { prefs.setMiniPrevButton(it) }
-        Toggle("Next button", "Swiping left skips too", s.miniSkipButtons) { prefs.setMiniSkipButtons(it) }
-        Label("Progress")
+        Toggle(tr(R.string.previous_button), tr(R.string.swiping_right_goes_back_too), s.miniPrevButton) { prefs.setMiniPrevButton(it) }
+        Toggle(tr(R.string.next_button), tr(R.string.swiping_left_skips_too), s.miniSkipButtons) { prefs.setMiniSkipButtons(it) }
+        Label(tr(R.string.progress))
         Chips(MiniProgress.entries, s.miniProgress, { it.label }) { prefs.setMiniProgress(it) }
+        // #231 (1.7.9.2): its color, and how strongly Fill tints the card.
+        if (s.miniProgress != MiniProgress.NONE) {
+            Label(tr(R.string.progress_bar_color))
+            Chips(com.prism.music.data.prefs.ScrubberColor.entries, s.view.miniProgressColor, { if (it == com.prism.music.data.prefs.ScrubberColor.WHITE) tr(R.string.plain) else it.label }) { prefs.setMiniProgressColor(it) }
+        }
+        if (s.miniProgress == MiniProgress.FILL) SliderSetting(
+            tr(R.string.fill_strength), s.view.miniFillStrength, 0.1f..0.9f, { "${(it * 100).roundToInt()}%" },
+        ) { prefs.setMiniFillStrength(it) }
     }
 }
 
@@ -1313,12 +1394,12 @@ private fun MiniPlayerGroup() {
 private fun PagesGroup() {
     val s = LocalAppSettings.current
     val prefs = LocalContainer.current.settings
-    Group("Pages") {
-        Label("Spacing")
+    Group(tr(R.string.pages)) {
+        Label(tr(R.string.spacing))
         Chips(UiDensity.entries, s.uiDensity, { it.label }) { prefs.setUiDensity(it) }
-        Label("Page titles")
+        Label(tr(R.string.page_titles))
         Chips(TitleSize.entries, s.titleSize, { it.label }) { prefs.setTitleSize(it) }
-        Label("Album & playlist cards")
+        Label(tr(R.string.album_playlist_cards))
         Chips(CardSize.entries, s.cardSize, { it.label }) { prefs.setCardSize(it) }
         Spacer(Modifier.height(6.dp))
     }
@@ -1331,12 +1412,12 @@ private fun ResetPage(section: SettingsSection) {
     val context = androidx.compose.ui.platform.LocalContext.current
     var ask by remember { mutableStateOf(false) }
     PrismTextButton(onClick = { ask = true }, Modifier.fillMaxWidth()) {
-        Icon(PrismIcons.Refresh, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Reset this page")
+        Icon(PrismIcons.Refresh, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text(tr(R.string.reset_this_page))
     }
     if (ask) androidx.compose.material3.AlertDialog(
         onDismissRequest = { ask = false },
-        title = { Text("Reset ${section.title}?") },
-        text = { Text("This page's look goes back to how Prism comes. Everything else stays, and Undo brings it back.") },
+        title = { Text(tr(R.string.reset_2, section.title)) },
+        text = { Text(tr(R.string.this_page_s_look_goes_back)) },
         confirmButton = {
             PrismTextButton(onClick = {
                 ask = false
@@ -1349,9 +1430,9 @@ private fun ResetPage(section: SettingsSection) {
                     com.prism.music.ui.theme.IconStyle.saveFill(context, com.prism.music.ui.theme.IconFill.OUTLINE)
                     c.looks.iconsChanged()
                 }
-            }) { Text("Reset") }
+            }) { Text(tr(R.string.reset)) }
         },
-        dismissButton = { PrismTextButton(onClick = { ask = false }) { Text("Cancel") } },
+        dismissButton = { PrismTextButton(onClick = { ask = false }) { Text(tr(R.string.cancel)) } },
     )
 }
 
@@ -1384,14 +1465,14 @@ private fun CustomizeSheetContent(target: com.prism.music.ui.components.Customiz
             when (target) {
                 com.prism.music.ui.components.CustomizeTarget.MINI_PLAYER -> MiniPlayerGroup()
                 com.prism.music.ui.components.CustomizeTarget.TAB_BAR -> NavBarGroup()
-                com.prism.music.ui.components.CustomizeTarget.PLAYER -> { PlayerLayoutGroup(); PlayerLookGroup(); PlayerCoverGroup(); PlayerButtonsGroup(); PlayerVisualizerGroup(); LyricsStyleGroup(); LyricsLookGroup("Lyrics") }
+                com.prism.music.ui.components.CustomizeTarget.PLAYER -> { PlayerLayoutGroup(); PlayerLookGroup(); PlayerCoverGroup(); PlayerButtonsGroup(); PlayerVisualizerGroup(); LyricsStyleGroup(); LyricsLookGroup(tr(R.string.lyrics)) }
                 com.prism.music.ui.components.CustomizeTarget.HOME_SECTION -> {
-                    if (section != null) Group("This section") {
-                        Label("Style")
+                    if (section != null) Group(tr(R.string.this_section)) {
+                        Label(tr(R.string.style))
                         Chips(com.prism.music.data.prefs.SectionStyle.entries, section.style, { it.label }) { st ->
                             c.settings.setHomeLayout(s.homeLayout.map { if (it.key == section.key) it.copy(style = st) else it })
                         }
-                        Item("Hide this section", "Bring it back from Customize Home", onClick = {
+                        Item(tr(R.string.hide_this_section), tr(R.string.bring_it_back_from_customize_home), onClick = {
                             c.settings.setHomeLayout(s.homeLayout.map { if (it.key == section.key) it.copy(visible = false) else it })
                             close {}
                         })
@@ -1406,11 +1487,11 @@ private fun CustomizeSheetContent(target: com.prism.music.ui.components.Customiz
             steps.firstOrNull()?.takeIf { it.at >= openedAt }?.let { step ->
                 PrismTextButton({ c.looks.undo() }, Modifier.fillMaxWidth()) {
                     Icon(PrismIcons.Undo, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp))
-                    Text("Undo: ${step.label}", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(tr(R.string.undo_2, step.label), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
             PrismTextButton({ close { onLeave(); nav.go(Routes.settings(page.key)) } }, Modifier.fillMaxWidth()) {
-                Text("All ${page.title} settings"); Spacer(Modifier.width(6.dp)); Chevron()
+                Text(tr(R.string.all_settings, page.title)); Spacer(Modifier.width(6.dp)); Chevron()
             }
         }
     }
@@ -1424,7 +1505,7 @@ private fun TabsEditor() {
     val tabs = s.navTabs
     var renaming by remember { mutableStateOf<NavTab?>(null) }
     renaming?.let { t -> RenameTabDialog(t, s.tabNames[t] ?: t.label, { renaming = null }) { prefs.setTabName(t, it); renaming = null } }
-    Group("Tabs", info = "Tick up to ${NavTab.MAX} tabs and hold one to move it; tap a tab's name to rename it. Keep Home, Library or Settings, so Settings can always be reached.") {
+    Group(tr(R.string.tabs), info = tr(R.string.tick_up_to_tabs_and_hold, NavTab.MAX)) {
         // Settings opens from Home and Library, or is a tab itself: one of them always stays.
         fun allowed(next: List<NavTab>) = next.size in 2..NavTab.MAX && next.any { it == NavTab.HOME || it == NavTab.LIBRARY || it == NavTab.SETTINGS }
         @Composable
@@ -1439,20 +1520,20 @@ private fun TabsEditor() {
                         if (!v && s.startTab == t) prefs.setStartTab(next.first())
                     }
                 }
-                Column(Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).clickable(onClickLabel = "Rename ${t.label}") { renaming = t }.padding(vertical = 6.dp)) {
+                Column(Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).clickable(onClickLabel = tr(R.string.rename_2, t.label)) { renaming = t }.padding(vertical = 6.dp)) {
                     Text(name ?: t.label, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = if (on) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
                     if (name != null) Text(t.label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (on && !held) {
-                    IconButton(onClick = { prefs.setNavTabs(tabs.toMutableList().apply { add(i - 1, removeAt(i)) }) }, enabled = i > 0) { Icon(PrismIcons.ChevronUp, "Move ${t.label} up") }
-                    IconButton(onClick = { prefs.setNavTabs(tabs.toMutableList().apply { add(i + 1, removeAt(i)) }) }, enabled = i < tabs.lastIndex) { Icon(PrismIcons.ChevronDown, "Move ${t.label} down") }
+                    IconButton(onClick = { prefs.setNavTabs(tabs.toMutableList().apply { add(i - 1, removeAt(i)) }) }, enabled = i > 0) { Icon(PrismIcons.ChevronUp, tr(R.string.move_up_2, t.label)) }
+                    IconButton(onClick = { prefs.setNavTabs(tabs.toMutableList().apply { add(i + 1, removeAt(i)) }) }, enabled = i < tabs.lastIndex) { Icon(PrismIcons.ChevronDown, tr(R.string.move_down_2, t.label)) }
                 }
-                if (grip != null) com.prism.music.ui.components.DragGrip(grip.padding(horizontal = 4.dp), "Drag ${t.label}")
+                if (grip != null) com.prism.music.ui.components.DragGrip(grip.padding(horizontal = 4.dp), tr(R.string.drag, t.label))
             }
         }
         com.prism.music.ui.components.ReorderList(tabs, { it }, { prefs.setNavTabs(it) }) { t, i, held, mod -> TabRow(t, i, mod, Modifier.dragHandle(), held) }
         NavTab.entries.filter { it !in tabs }.forEach { t -> TabRow(t, -1, Modifier, null, false) }
-        Label("Open Prism on", info = "From Prism's next start.")
+        Label(tr(R.string.open_prism_on), info = tr(R.string.from_prism_s_next_start))
         Chips(tabs, if (s.startTab in tabs) s.startTab else tabs.first(), { s.tabNames[it] ?: it.label }) { prefs.setStartTab(it) }
         Spacer(Modifier.height(4.dp))
     }
@@ -1464,18 +1545,18 @@ private fun RenameTabDialog(tab: NavTab, current: String, onDismiss: () -> Unit,
     var text by remember { mutableStateOf(current) }
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Rename ${tab.label}") },
+        title = { Text(tr(R.string.rename_2, tab.label)) },
         text = {
             com.prism.music.ui.components.PrismTextField(
                 text, { text = com.prism.music.data.prefs.cleanTabName(it) }, Modifier.fillMaxWidth(), singleLine = true,
                 placeholder = { Text(tab.label) },
             )
         },
-        confirmButton = { PrismTextButton(onClick = { onSave(text) }) { Text("Save") } },
+        confirmButton = { PrismTextButton(onClick = { onSave(text) }) { Text(tr(R.string.save)) } },
         dismissButton = {
             Row {
-                if (current != tab.label) PrismTextButton(onClick = { onSave("") }) { Text("Use \"${tab.label}\"") }
-                PrismTextButton(onClick = onDismiss) { Text("Cancel") }
+                if (current != tab.label) PrismTextButton(onClick = { onSave("") }) { Text(tr(R.string.use_2, tab.label)) }
+                PrismTextButton(onClick = onDismiss) { Text(tr(R.string.cancel)) }
             }
         },
     )
@@ -1490,35 +1571,31 @@ private fun PlayerSettings() {
     val prefs = container.settings
     Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
         // How the player looks (1.7.6: what it does on a touch is in Controls & gestures, what it keeps on the phone in
-        // Downloads, storage & data). Its layout first, then its look, cover and buttons (PlayerYourWay.kt).
+        // Downloads, storage & data). 1.8.0: its layout, then what's on it (one editor with the player drawn, replacing
+        // "Show on the player", "Under the title" and the buttons; PlayerYourWay.kt), its look and its cover.
+        // "Song length" went (tapping the time switches it, and it's remembered); the cast mark is no longer a choice.
         PlayerLayoutGroup()
+        PlayerPartsGroup()
         PlayerLookGroup()
         PlayerCoverGroup()
-        PlayerButtonsGroup()
-        // Tick what else you want there (the current lyric and volume are in "Under the title").
-        Group("Show on the player") {
-            ShowChips(
-                listOf(
-                    ShowOption("From the album", s.showPlayingFrom) { prefs.setShowPlayingFrom(it) },
-                    ShowOption("Best part", s.bestPartButton) { prefs.setBestPartButton(it) },
-                    ShowOption("Stream quality", s.showQuality) { prefs.setShowQuality(it) },
-                    ShowOption("Shuffle & repeat", s.playerShuffleRepeat) { prefs.setPlayerShuffleRepeat(it) },
-                    ShowOption("Song / Video", s.showVideoSwitch) {
-                        prefs.setShowVideoSwitch(it)
-                        if (!it) container.player.setVideoMode(false)
-                    },
-                    ShowOption("Output device", s.showOutputDevice) { prefs.setShowOutputDevice(it) },
-                )
-            )
+        Group(tr(R.string.lyrics_and_the_queue), info = tr(R.string.the_player_s_controls_while_the)) {
+            ChoiceCards(
+                com.prism.music.data.prefs.PanelPlayer.entries, s.view.panelPlayer, title = { it.label }, detail = { it.detail }, columns = 2,
+                onSelect = { prefs.setPanelPlayer(it) },
+            ) { PanelPlayerSample(it) }
+            if (s.view.panelPlayer == com.prism.music.data.prefs.PanelPlayer.AUTO_HIDE) Toggle(
+                tr(R.string.scrolling_up_shows_the_controls), tr(R.string.back_up_the_lyrics_or_the), s.behavior.scrollShowsControls,
+                info = tr(R.string.off_scrolling_back_up_to_an),
+            ) { prefs.setScrollShowsControls(it) }
             Toggle(
-                "Song length", "Instead of the time left", s.showTrackLength,
-                info = "The time on the right shows how long the song is rather than how much is left. Tapping the time on the player switches too.",
-            ) { prefs.setShowTrackLength(it) }
+                tr(R.string.queue_headings), tr(R.string.played_now_playing_and_up_next), s.view.queueHeadings,
+                info = tr(R.string.off_the_queue_is_one_list),
+            ) { prefs.setQueueHeadings(it) }
         }
-        Group("Animated covers") {
+        Group(tr(R.string.animated_covers)) {
             Toggle(
-                "Animated covers", "Moving artwork, when a song has it", s.canvasEnabled,
-                info = "Motion artwork and video covers. Turn them off for one song from the player's ⋯ menu. Whether they play on mobile data, and the ones kept on the phone, are in Downloads, storage & data.",
+                tr(R.string.animated_covers), tr(R.string.moving_artwork_when_a_song_has), s.canvasEnabled,
+                info = tr(R.string.motion_artwork_and_video_covers_turn),
             ) { prefs.setCanvasEnabled(it) }
             if (s.canvasEnabled) {
                 Label("Spotify Canvas")
@@ -1541,25 +1618,32 @@ private fun PlayerSettings() {
                 }
             }
             if (s.canvasEnabled && s.canvasAppleEnabled) Toggle(
-                "Fill the player", "Apple Music artwork plays behind everything", s.canvasFillsBackground,
+                tr(R.string.fill_the_player), tr(R.string.the_animated_cover_plays_behind_everything), s.canvasFillsBackground,
                 info = "Spotify Canvas always fills the player when a matching video is available. This option controls only Apple Music artwork.",
             ) { prefs.setCanvasFillsBackground(it) }
         }
-        MoreOptions(listOf("Under the title", "Title and times", "Visualizer", "Immersive mode")) {
-        PlayerArrangeGroup()
+        // #265 (1.8.0): the TV's ambient screen on a phone at its stand ([com.prism.music.ui.tv.AmbientHost]); off unless switched on.
+        Group(tr(R.string.desk_mode)) {
+            Toggle(tr(R.string.desk_mode), tr(R.string.desk_mode_detail), s.tv.deskMode, info = tr(R.string.desk_mode_info)) { prefs.setDeskMode(it) }
+        }
+        MoreOptions(listOf(tr(R.string.title_and_times), tr(R.string.visualizer), tr(R.string.immersive_mode))) {
         PlayerTitleGroup()
         PlayerVisualizerGroup()
-        Group("Immersive mode") {
+        Group(tr(R.string.immersive_mode)) {
             Toggle(
-                "Immersive mode", "The cover fills the screen, lyrics over it", s.immersivePlayer,
-                info = "Like a lyric video. Tap the screen for its settings; press Back, or hold the settings button, to leave. It's also in the player's ⋯ menu.",
+                tr(R.string.immersive_mode), tr(R.string.the_cover_fills_the_screen_lyrics), s.immersivePlayer,
+                info = tr(R.string.like_a_lyric_video_tap_the),
             ) { prefs.setImmersivePlayer(it) }
             if (s.immersivePlayer) {
-                Label("Artwork")
+                Label(tr(R.string.artwork))
                 Chips(com.prism.music.data.prefs.ImmersiveArt.entries, s.immersiveArt, { it.label }) { prefs.setImmersiveArt(it) }
-                Label("Lyrics")
+                Label(tr(R.string.lyrics))
                 Chips(com.prism.music.data.prefs.ImmersiveLyrics.entries, s.immersiveLyrics, { it.label }) { prefs.setImmersiveLyrics(it) }
-                Toggle("Keep controls on screen", "Previous, play and next stay up", s.immersiveControls) { prefs.setImmersiveControls(it) }
+                Toggle(tr(R.string.keep_controls_on_screen), tr(R.string.previous_play_and_next_stay_up), s.immersiveControls) { prefs.setImmersiveControls(it) }
+                Toggle(
+                    tr(R.string.show_the_video), tr(R.string.a_playing_music_video_behind_the), s.view.immersiveVideo,
+                    info = tr(R.string.when_a_music_video_is_playing),
+                ) { prefs.setImmersiveVideo(it) }
                 Spacer(Modifier.height(6.dp))
             }
         }
@@ -1578,19 +1662,28 @@ private fun ControlsPage() {
     Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
         // Swipes, double tap and long press (#79's seeking among them), then the buttons' own.
         PlayerGesturesGroup()
-        Group("Buttons and touch") {
-            Toggle("Hold previous / next to seek", "A tap still changes songs", s.holdSeekSeconds > 0) {
-                prefs.setHoldSeekSeconds(if (it) 10 else 0)
-            }
-            if (s.holdSeekSeconds > 0) SliderSetting("Each step", s.holdSeekSeconds.toFloat(), 1f..20f, { "${it.roundToInt()} s" }, steps = 18) {
-                prefs.setHoldSeekSeconds(it.roundToInt())
-            }
-            Toggle("Haptics", "A light tap on buttons and swipes", s.haptics) { prefs.setHaptics(it) }
+        Group(tr(R.string.buttons_and_touch)) {
+            // 1.8.0: one slider, Off at its start (the switch only flipped this between 0 and 10 s). Same stored value.
+            SliderSetting(
+                tr(R.string.hold_previous_next_to_seek), s.holdSeekSeconds.toFloat(), 0f..20f,
+                { if (it.roundToInt() == 0) tr(R.string.off) else "${it.roundToInt()} s" }, steps = 19,
+                info = tr(R.string.a_tap_still_changes_songs),
+            ) { prefs.setHoldSeekSeconds(it.roundToInt()) }
+            Toggle(tr(R.string.haptics), tr(R.string.a_light_tap_on_buttons_and), s.haptics) { prefs.setHaptics(it) }
+            Toggle(
+                tr(R.string.swipe_up_for_the_queue), tr(R.string.on_the_player_s_lower_half), s.behavior.panelSwipes,
+                info = tr(R.string.swipe_up_on_the_lower_half_all),
+            ) { prefs.setPanelSwipes(it) }
+        }
+        Group(tr(R.string.screen)) {
+            Toggle(
+                tr(R.string.lock_to_portrait), tr(R.string.prism_stays_upright_when_the_phone), s.behavior.lockPortrait,
+                info = tr(R.string.on_a_phone_prism_no_longer),
+            ) { prefs.setLockPortrait(it) }
+            Label(tr(R.string.picture_in_picture), info = tr(R.string.when_a_playing_music_video_floats))
+            Chips(com.prism.music.data.prefs.PipMode.entries, s.behavior.pip, { it.label }) { prefs.setPipMode(it) }
         }
         SessionButtonsGroup()
-        Group("Search") {
-            Toggle("Open the keyboard", "Ready to type when Search opens", s.searchKeyboard) { prefs.setSearchKeyboard(it) }
-        }
     }
 }
 
@@ -1598,35 +1691,68 @@ private fun ControlsPage() {
 private fun PlayerLookGroup() {
     val s = LocalAppSettings.current
     val prefs = LocalContainer.current.settings
-    Group("Look") {
-        Label("Background")
+    Group(tr(R.string.look)) {
+        Label(tr(R.string.background))
         Chips(PlayerBackground.entries, s.playerBackground, { it.label }) { prefs.setPlayerBackground(it) }
         if (s.playerBackground == PlayerBackground.APPEARANCE) {
             val nav = LocalNavigator.current
             val own = s.backdrops[com.prism.music.ui.theme.PLAYER_BACKDROP]
             Item(
-                "Which background",
-                if (own == null) "Same as Home (" + com.prism.music.ui.theme.Backdrop.parse(s.backdrops[com.prism.music.ui.theme.BackdropScreen.HOME.name]).first.label + "), darkened"
-                else com.prism.music.ui.theme.Backdrop.parse(own).first.label + ", darkened",
+                tr(R.string.which_background),
+                if (own == null) tr(R.string.same_as_home_darkened, com.prism.music.ui.theme.Backdrop.parse(s.backdrops[com.prism.music.ui.theme.BackdropScreen.HOME.name]).first.label)
+                else com.prism.music.ui.theme.Backdrop.parse(own).first.label + tr(R.string.darkened_2),
                 onClick = { nav.go(Routes.BACKGROUNDS + "?player=true") },
             ) { Chevron() }
         }
         if (s.playerBackground == PlayerBackground.BLUR || s.playerBackground == PlayerBackground.APPEARANCE) SliderSetting(
-            "Show background", s.playerBackdropShow, 0f..1f, { if (it < 0.2f) "Subtle" else if (it < 0.7f) "Balanced" else "Vivid" },
+            tr(R.string.show_background), s.playerBackdropShow, 0f..1f, { worded(if (it < 0.2f) tr(R.string.subtle) else if (it < 0.7f) tr(R.string.balanced) else tr(R.string.vivid), it) },
         ) { prefs.setPlayerBackdropShow(it) }
-        // The mesh's motion and colors, the blur's softness (1.7.4).
+        // The mesh's movement, the blur's softness (1.7.4; one movement slider since 1.8.0).
         PlayerBackgroundTuning()
-        Label("Controls")
+        Label(tr(R.string.controls))
         Chips(TransportStyle.entries, s.transportStyle, { it.label }) { prefs.setTransportStyle(it) }
-        Label(
-            "Progress bar",
-            info = when (s.scrubberStyle) {
-                ScrubberStyle.WAVE -> "Waveform: each song's own shape, from Prism's scan of it: a plain bar until a song has been scanned (a few seconds into it)."
-                ScrubberStyle.RIBBONS -> "Ribbons flow only while a song plays and the player is open; with Reduce motion or Performance mode they hold still."
-                else -> null
-            },
-        )
-        ScrubberStyleCards()
+        // #231 (1.7.9.2): the split-light ring around play, which some find too much.
+        Toggle(tr(R.string.ring_on_the_play_button), tr(R.string.the_split_light_around_play_and_pause), s.view.playRing) { prefs.setPlayRing(it) }
+        // The row in a capsule or apart (1.8.0: a look choice here; which buttons are in What's on the player).
+        ButtonsPillCards()
+    }
+    // 1.8.0: the progress bar's style, color, thickness and knob in one group (they were split between here and More options).
+    PlayerProgressGroup()
+}
+
+/** The player with its lyrics open, drawn small: lines of lyrics, and the controls under them as [mode] leaves them. */
+@Composable
+private fun PanelPlayerSample(mode: com.prism.music.data.prefs.PanelPlayer) {
+    val ink = MaterialTheme.colorScheme.onSurface
+    androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(96.dp).padding(horizontal = 18.dp, vertical = 6.dp)) {
+        val w = size.width
+        val h = size.height
+        drawRoundRect(ink.copy(alpha = 0.06f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(10.dp.toPx()))
+        val controls = mode != com.prism.music.data.prefs.PanelPlayer.HIDDEN
+        // Small (#230): the controls take a slimmer band at the bottom, the list most of the room.
+        val small = mode == com.prism.music.data.prefs.PanelPlayer.SMALL
+        val linesEnd = if (small) h * 0.76f else if (controls) h * 0.62f else h * 0.92f
+        var y = h * 0.12f
+        var i = 0
+        while (y < linesEnd) {
+            drawRoundRect(
+                ink.copy(alpha = if (i == 1) 0.85f else 0.3f), androidx.compose.ui.geometry.Offset(w * 0.12f, y),
+                androidx.compose.ui.geometry.Size(w * (if (i % 2 == 0) 0.62f else 0.74f), h * 0.07f), androidx.compose.ui.geometry.CornerRadius(h * 0.035f),
+            )
+            y += h * 0.14f; i++
+        }
+        if (small) {
+            drawRect(ink.copy(alpha = 0.5f), androidx.compose.ui.geometry.Offset(w * 0.12f, h * 0.83f), androidx.compose.ui.geometry.Size(w * 0.76f, h * 0.02f))
+            listOf(0.4f, 0.5f, 0.6f).forEachIndexed { k, x ->
+                drawCircle(ink.copy(alpha = 0.85f), if (k == 1) h * 0.05f else h * 0.03f, androidx.compose.ui.geometry.Offset(w * x, h * 0.92f))
+            }
+        } else if (controls) {
+            val a = if (mode == com.prism.music.data.prefs.PanelPlayer.AUTO_HIDE) 0.3f else 0.85f
+            drawRect(ink.copy(alpha = a * 0.6f), androidx.compose.ui.geometry.Offset(w * 0.12f, h * 0.72f), androidx.compose.ui.geometry.Size(w * 0.76f, h * 0.025f))
+            listOf(0.32f, 0.5f, 0.68f).forEachIndexed { k, x ->
+                drawCircle(ink.copy(alpha = a), if (k == 1) h * 0.08f else h * 0.05f, androidx.compose.ui.geometry.Offset(w * x, h * 0.86f))
+            }
+        }
     }
 }
 
@@ -1634,23 +1760,27 @@ private fun PlayerLookGroup() {
 private fun PlayerCoverGroup() {
     val s = LocalAppSettings.current
     val prefs = LocalContainer.current.settings
-    Group("Cover") {
-        Label("Cover size")
+    Group(tr(R.string.cover)) {
+        Label(tr(R.string.cover_size))
         Chips(CoverSize.entries, s.coverSize, { it.label }) { prefs.setCoverSize(it) }
-        SliderSetting("Corners", s.playerArtCorners.toFloat(), 0f..32f, { "${it.roundToInt()} dp" }, steps = 7) { prefs.setPlayerArtCorners(it.roundToInt()) }
+        SliderSetting(tr(R.string.corners), s.playerArtCorners.toFloat(), 0f..32f, { tr(R.string.dp, it.roundToInt()) }, steps = 7) { prefs.setPlayerArtCorners(it.roundToInt()) }
+        // 1.8.0: one switch for the cover and a music video (full-bleed video was its own; on if either was).
         Toggle(
-            "Full-bleed artwork", "Edge to edge at the top", s.fullBleedArtwork,
-            info = "The cover runs to the screen's edges at the top of the player and fades into the background. Cover size then sets how far down it reaches.",
+            tr(R.string.full_bleed_artwork), tr(R.string.cover_and_video_fill_the_top), s.fullBleedArtwork,
+            info = tr(R.string.the_cover_runs_to_the_screen) + " " + tr(R.string.a_music_video_runs_to_the),
         ) { prefs.setFullBleedArtwork(it) }
+        if (s.fullBleedArtwork) Chips(com.prism.music.data.prefs.BleedFit.entries, s.view.bleedFit, { it.label }) { prefs.setBleedFit(it) }
+        // With full-bleed artwork the banner covers the cover that shrinks (Reddit, 1.7.9.3): it says so rather than seem broken.
         Toggle(
-            "Full-bleed video", "Music videos fill the top of the player", s.videoFullBleed,
-            info = "A music video runs to the screen's edges at the top of the player, cropped to fill it, and fades into the background, as on YouTube Music. The button on the video switches it too.",
-        ) { prefs.setVideoFullBleed(it) }
-        Toggle("Shrink when paused", "The cover eases back while paused", s.artShrinkOnPause) { prefs.setArtShrinkOnPause(it) }
+            tr(R.string.shrink_when_paused),
+            if (s.fullBleedArtwork) tr(R.string.not_with_full_bleed_artwork_the_banner_covers_it) else tr(R.string.the_cover_eases_back_while_paused),
+            s.artShrinkOnPause,
+        ) { prefs.setArtShrinkOnPause(it) }
+        // Square video covers moved to Icons & shapes → Covers' shapes (1.8.0: it changes covers everywhere).
         Toggle(
-            "Square video covers", "No black bars when a video plays as a song", s.squareVideoCovers,
-            info = "YouTube's video pictures are wide, with black bars above and below. On, Prism trims the bars and uses the middle of the picture as a square cover: on the player, in lists, the notification and Android Auto.",
-        ) { prefs.setSquareVideoCovers(it) }
+            tr(R.string.cover_flies_into_place), tr(R.string.opening_the_player_the_mini_player), s.view.coverFlight,
+            info = tr(R.string.instead_of_the_whole_player_sliding),
+        ) { prefs.setCoverFlight(it) }
     }
 }
 
@@ -1664,11 +1794,11 @@ private fun CanvasStorage() {
     val sizes by androidx.compose.runtime.produceState(0L to 0L, version, saved) {
         value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { c.canvasStore.savedBytes to c.canvasStore.recentBytes }
     }
-    fun mb(bytes: Long) = "%.0f MB".format(bytes / 1_048_576f)
+    fun mb(bytes: Long) = tr(R.string.t_0f_mb).format(bytes / 1_048_576f)
     Item(
-        "Saved animated covers",
-        if ((saved.count == 0)) "None yet" else "${saved.count} · ${mb(sizes.first)} · tap to remove all",
-        info = "Save one from the player's ⋯ menu and it never has to load again.",
+        tr(R.string.saved_animated_covers),
+        if ((saved.count == 0)) tr(R.string.none_yet) else tr(R.string.tap_to_remove_all, saved.count, mb(sizes.first)),
+        info = tr(R.string.save_one_from_the_player_s),
         onClick = {
             if ((saved.count > 0)) scope.launch {
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { c.canvasStore.clearSaved() }
@@ -1677,9 +1807,9 @@ private fun CanvasStorage() {
         },
     )
     Item(
-        "Recently played covers",
-        "${mb(sizes.second)} · tap to clear",
-        info = "Kept (up to 400 MB) so they start at once next time.",
+        tr(R.string.recently_played_covers),
+        tr(R.string.tap_to_clear, mb(sizes.second)),
+        info = tr(R.string.kept_up_to_400_mb_so),
         onClick = {
             scope.launch {
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { c.canvasStore.clearRecent() }
@@ -1709,70 +1839,47 @@ private fun SoundPage() {
     LaunchedEffect(s.losslessLocal) { if (s.losslessLocal && found < 0) c.losslessSync.sync() }
 
     Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
-        Group("Playback") {
-            Toggle("Autoplay", "Similar music when the queue ends", s.autoplay) { prefs.setAutoplay(it) }
-            if (s.autoplay) {
-                Label(
-                    "Autoplay from",
-                    info = s.autoplaySource.label + ": " + when (s.autoplaySource) {
-                        com.prism.music.data.prefs.AutoplaySource.YOURS -> "Prism's own radio, picked on your phone from what you play, like and keep"
-                        com.prism.music.data.prefs.AutoplaySource.YOUTUBE -> "Prism Music's radio, for songs you haven't heard"
-                        com.prism.music.data.prefs.AutoplaySource.MIXED -> "mostly your music, with two new songs from Prism Music in every five"
-                    } + ". Offline, it's always your music.",
-                )
-                Chips(com.prism.music.data.prefs.AutoplaySource.entries, s.autoplaySource, { it.label }) { prefs.setAutoplaySource(it) }
-            }
-            Toggle(
-                "Songs, not videos", "Autoplay and radios play songs", s.radioSongsOnly,
-                info = "A music video in autoplay or a radio plays as its song, and videos with no song version are left out.",
-            ) { prefs.setRadioSongsOnly(it) }
-            // #80: the same everywhere else music videos turn up.
-            if (s.radioSongsOnly) Toggle(
-                "Everywhere", "Videos everywhere play as their song", s.songsEverywhere,
-                info = "Music videos in search, albums, playlists, Liked songs and downloads play as their song, with its album and cover. The Video button still shows the video; a video with no song plays as it is.",
-            ) { prefs.setSongsEverywhere(it) }
-            Toggle("Keep playing videos", "After a video, the next song plays as video too", s.videoContinues) { prefs.setVideoContinues(it) }
-            Toggle("Skip silence", "Trims silence at the start and end", s.skipSilence) { prefs.setSkipSilence(it) }
-            Toggle("Stop when swiped away", "Swiping Prism out of recent apps stops it", s.stopOnSwipeAway) { prefs.setStopOnSwipeAway(it) }
-            Label(
-                "Load ahead",
-                info = when (s.preload) {
-                    com.prism.music.data.prefs.Preload.START -> "Now: the next song's start, so it plays at once."
-                    else -> "Now: whole songs, so they play through a weak signal."
-                },
-            )
-            Chips(com.prism.music.data.prefs.Preload.entries, s.preload, { it.label }) { prefs.setPreload(it) }
+        // 1.8.0 (#210): one choice per decision. Each choice is a face over the settings Prism already keeps
+        // (autoplay + its source, radioSongsOnly + songsEverywhere, mix + mixAuto), so nothing is migrated and Looks,
+        // backups and old builds read them as before ([SoundChoices]).
+        Group(tr(R.string.what_plays_next)) {
+            Label(tr(R.string.when_the_queue_ends), info = tr(R.string.when_the_queue_ends_info))
+            Chips(QueueEnd.entries, SoundChoices.queueEnd(s), { it.label }) { SoundChoices.setQueueEnd(prefs, it) }
+            Label(tr(R.string.music_videos_label), info = tr(R.string.music_videos_label_info))
+            Chips(VideoPolicy.entries, SoundChoices.videoPolicy(s), { it.label }) { SoundChoices.setVideoPolicy(prefs, it) }
+            Toggle(tr(R.string.keep_playing_videos), tr(R.string.after_a_video_the_next_song), s.videoContinues) { prefs.setVideoContinues(it) }
         }
-        Group("Crossfade") {
-            Toggle(
-                "Crossfade songs", "Each song fades into the next", s.mix,
-                info = "As a song ends it fades out while the next fades in, as on Spotify. Never between an album's own tracks.",
-            ) { prefs.setMix(it) }
+        Group(tr(R.string.crossfade)) {
+            Label(tr(R.string.crossfade), info = tr(R.string.crossfade_choice_info))
+            Chips(Crossfade.entries, SoundChoices.crossfade(s), { it.label }) { SoundChoices.setCrossfade(prefs, it) }
+            if (s.mix && !s.mixAuto) SliderSetting(tr(R.string.length), s.mixSeconds.toFloat(), 1f..12f, { "${it.roundToInt()} s" }, steps = 10) { prefs.setMixSeconds(it.roundToInt()) }
             if (s.mix) {
                 Toggle(
-                    "Automatic length", "Fitted to how songs end and begin", s.mixAuto,
-                    info = "Prism listens to how each song ends and the next begins: a long blend over a fade-out or quiet intro, a short one between two hard edges.",
-                ) { prefs.setMixAuto(it) }
-                if (!s.mixAuto) SliderSetting("Length", s.mixSeconds.toFloat(), 1f..12f, { "${it.roundToInt()} s" }, steps = 10) { prefs.setMixSeconds(it.roundToInt()) }
-                Toggle(
-                    "Match tempo and beats (DJ-style)", "Beats line up while songs overlap", s.mixBeatMatch,
-                    info = "The next song plays at the ending one's tempo with its beats lined up while they overlap, then eases back. Off, they crossfade at their own speed.",
+                    tr(R.string.match_tempo_and_beats_dj_style), tr(R.string.beats_line_up_while_songs_overlap), s.mixBeatMatch,
+                    info = tr(R.string.the_next_song_plays_at_the),
                 ) { prefs.setMixBeatMatch(it) }
+                // #247: an album played as an album never blended; this keeps its songs whole anywhere they meet.
+                Toggle(
+                    tr(R.string.keep_an_album_s_songs_whole), tr(R.string.no_crossfade_between_songs_of_one_album), s.mixKeepAlbums,
+                    info = tr(R.string.an_album_playing_through_never_blends),
+                ) { prefs.setMixKeepAlbums(it) }
             }
+            // The crossfade mark and blended covers are on the player now: Player → What's on the player.
         }
-        Group("Quality") {
+        Group(tr(R.string.speed_pitch_and_fades)) { SpeedAndFades() }
+        Group(tr(R.string.quality)) {
             Toggle(
-                "Lossless playback",
+                tr(R.string.lossless_playback),
                 when {
-                    !s.lossless -> "The best audio, and your FLAC, WAV and AIFF files"
-                    !s.losslessLocal -> "Allow file access to use your lossless files"
-                    found < 0 -> "Looking for lossless files…"
-                    found == 0 -> "No lossless files found yet"
-                    syncing -> "$found lossless files found, adding them…"
-                    else -> "$found lossless files, ${synced.size} in Downloads"
+                    !s.lossless -> tr(R.string.the_best_audio_and_your_flac)
+                    !s.losslessLocal -> tr(R.string.allow_file_access_to_use_your)
+                    found < 0 -> tr(R.string.looking_for_lossless_files)
+                    found == 0 -> tr(R.string.no_lossless_files_found_yet)
+                    syncing -> tr(R.string.lossless_files_found_adding_them, found)
+                    else -> tr(R.string.lossless_files_in_downloads, found, synced.size)
                 },
                 s.lossless,
-                info = "Always plays the best audio there is, keeps hi-res at full resolution, and plays matching FLAC, WAV and AIFF files on your phone instead of the stream. Put them in your Music folder.",
+                info = tr(R.string.always_plays_the_best_audio_there),
             ) { on ->
                 if (!on) { prefs.setLossless(false); prefs.setLosslessLocal(false) }
                 else if (c.localLossless.hasPermission()) {
@@ -1781,36 +1888,47 @@ private fun SoundPage() {
             }
             if (s.lossless) {
                 if (s.losslessLocal) Item(
-                    "Scan for lossless files again", "Also checked every few hours",
+                    tr(R.string.scan_for_lossless_files_again), tr(R.string.also_checked_every_few_hours),
                     onClick = { scope.launch { c.losslessSync.sync() } },
                 )
-                else Item("Allow access to lossless files", null, onClick = { askFiles.launch(LocalLossless.permission) })
+                else Item(tr(R.string.allow_access_to_lossless_files), null, onClick = { askFiles.launch(LocalLossless.permission) })
                 // Data saver plays songs at this quality on mobile data, lossless or not (#40).
                 if (s.dataSaver) {
-                    Label("Streaming quality on mobile data (data saver)")
+                    // 1.8.0: the same row name as without lossless (it is the same setting, cellularQuality).
+                    Label(tr(R.string.streaming_quality_on_mobile_data))
                     Chips(AudioQuality.entries.filter { it != AudioQuality.HIGH }, s.cellularQuality.takeIf { it != AudioQuality.HIGH } ?: AudioQuality.NORMAL, { it.label }) { prefs.setCellularQuality(it) }
                 }
             } else {
-                Label("Streaming quality on Wi-Fi")
+                Label(tr(R.string.streaming_quality_on_wi_fi))
                 Chips(AudioQuality.entries, s.audioQuality, { it.label }) { prefs.setAudioQuality(it) }
-                Label("Streaming quality on mobile data")
+                Label(tr(R.string.streaming_quality_on_mobile_data))
                 Chips(AudioQuality.entries, s.cellularQuality, { it.label }) { prefs.setCellularQuality(it) }
             }
             // Reddit 1.7: "am I getting the quality Premium offers?"
             if (s.isLoggedIn) Toggle(
-                "Premium quality", "256 kbps with YouTube Music Premium", s.premiumStream,
-                info = "Prism normally fetches songs without your account, which starts them fastest but gets YouTube's standard 128–160 kbps stream. On, each song is asked for as you, and with Music Premium that brings its 256 kbps version. Songs can take a moment longer to start. Without Premium, Prism notices and plays as usual. YouTube Music has no lossless streams, even with Premium.",
+                tr(R.string.premium_quality), tr(R.string.t_256_kbps_with_youtube_music_premium), s.premiumStream,
+                info = tr(R.string.prism_normally_fetches_songs_without_your),
             ) { prefs.setPremiumStream(it) }
-            Label("Music video quality")
+            Label(tr(R.string.music_video_quality))
             Chips(listOf(480, 720, 1080, 1440), s.videoMaxHeight, { "${it}p" }) { prefs.setVideoMaxHeight(it) }
             Spacer(Modifier.height(6.dp))
         }
-        Group("Sound") {
-            Toggle(
-                "Normalize volume", "Every song at the same loudness", s.normalize,
-                info = "Each song is measured on your phone and brought to the same level (-14 LUFS, like Spotify): loud ones down, quiet ones up, with a limiter so nothing clips. Works offline too.",
-            ) { prefs.setNormalize(it) }
+        Group(tr(R.string.sound)) {
+            // Normalize's switch and its level are one choice: Off, or how loud (#210).
+            NormalizeLevel()
+            Label(tr(R.string.trim_silence), info = tr(R.string.trim_silence_info))
+            Chips(TrimSilence.entries, SoundChoices.trimSilence(s), { it.label }) { SoundChoices.setTrimSilence(prefs, it) }
             SoundSettings(onOpenEq = { nav.go(Routes.EQ) })
+        }
+        MoreOptions(listOf(tr(R.string.stopping_and_pausing), tr(R.string.how_they_cross))) {
+            Group(tr(R.string.stopping_and_pausing)) {
+                Toggle(tr(R.string.stop_when_swiped_away), tr(R.string.swiping_prism_out_of_recent_apps), s.stopOnSwipeAway) { prefs.setStopOnSwipeAway(it) }
+                Toggle(
+                    tr(R.string.pause_when_muted), tr(R.string.volume_all_the_way_down_pauses), s.behavior.pauseOnMute,
+                    info = tr(R.string.only_the_phone_s_media_volume),
+                ) { prefs.setPauseOnMute(it) }
+            }
+            Group(tr(R.string.how_they_cross)) { CrossfadeCurveCards() }
         }
     }
 }
@@ -1818,10 +1936,10 @@ private fun SoundPage() {
 
 /** Languages lyrics can be translated into (Google Translate codes); "" is the phone's own. */
 private val TRANSLATE_LANGUAGES = listOf(
-    "" to "Phone's language", "en" to "English", "es" to "Spanish", "pt" to "Portuguese", "fr" to "French",
-    "de" to "German", "it" to "Italian", "nl" to "Dutch", "pl" to "Polish", "tr" to "Turkish", "ru" to "Russian",
-    "uk" to "Ukrainian", "ar" to "Arabic", "hi" to "Hindi", "id" to "Indonesian", "vi" to "Vietnamese",
-    "tl" to "Filipino", "ja" to "Japanese", "ko" to "Korean", "zh-CN" to "Chinese (Simplified)", "zh-TW" to "Chinese (Traditional)",
+    "" to tr(R.string.phone_s_language), "en" to tr(R.string.english), "es" to tr(R.string.spanish), "pt" to tr(R.string.portuguese), "fr" to tr(R.string.french),
+    "de" to tr(R.string.german), "it" to tr(R.string.italian), "nl" to tr(R.string.dutch), "pl" to tr(R.string.polish), "tr" to tr(R.string.turkish), "ru" to tr(R.string.russian),
+    "uk" to tr(R.string.ukrainian), "ar" to tr(R.string.arabic), "hi" to tr(R.string.hindi), "id" to tr(R.string.indonesian), "vi" to tr(R.string.vietnamese),
+    "tl" to tr(R.string.filipino), "ja" to tr(R.string.japanese), "ko" to tr(R.string.korean), tr(R.string.zh_cn) to tr(R.string.chinese_simplified), tr(R.string.zh_tw) to tr(R.string.chinese_traditional),
 )
 
 /** Kuromoji's dictionary, for Japanese lyrics' kanji: download, progress, or remove. */
@@ -1833,12 +1951,12 @@ private fun JapaneseReadingData() {
     val m = com.prism.music.data.ModelStore.Model.JAPANESE
     val state = states[m]
     val subtitle = when (state) {
-        com.prism.music.data.ModelStore.State.Ready -> "On this phone, ${formatMb(c.models.sizeOnPhone(m))} · tap to remove"
-        is com.prism.music.data.ModelStore.State.Downloading -> "Downloading… ${(state.fraction * 100).toInt()}%"
-        is com.prism.music.data.ModelStore.State.Failed -> "Couldn't download it · tap to try again"
-        else -> "Only for Japanese songs · ${com.prism.music.data.ModelStore.Model.sizeText(m)}"
+        com.prism.music.data.ModelStore.State.Ready -> tr(R.string.on_this_phone_tap_to_remove, formatMb(c.models.sizeOnPhone(m)))
+        is com.prism.music.data.ModelStore.State.Downloading -> tr(R.string.downloading_5, (state.fraction * 100).toInt())
+        is com.prism.music.data.ModelStore.State.Failed -> tr(R.string.couldn_t_download_it_tap_to)
+        else -> tr(R.string.only_for_japanese_songs, com.prism.music.data.ModelStore.Model.sizeText(m))
     }
-    Item("Japanese kanji readings", subtitle, info = "Only Japanese needs this: its kanji have several readings, so a dictionary picks the right one for romaji (\"kimi no na wa\"). Downloaded once. Other languages (Korean, Chinese, Russian, Hindi…) romanize without a download. Without it, Google spells kanji out.", onClick = {
+    Item(tr(R.string.japanese_kanji_readings), subtitle, info = tr(R.string.only_japanese_needs_this_its_kanji), onClick = {
         when (state) {
             com.prism.music.data.ModelStore.State.Ready -> c.models.delete(m)
             is com.prism.music.data.ModelStore.State.Downloading -> {}
@@ -1861,57 +1979,61 @@ private fun SingSettings() {
     val runtime = com.prism.music.data.ModelStore.Model.singRuntime()
     val model = com.prism.music.data.ModelStore.Model.SING_MODEL
     var used by remember { mutableStateOf(c.sing.store.bytes()) }
-    Group("Sing") {
+    Group(tr(R.string.sing)) {
         if (runtime == null) {
-            Note("Sing doesn't run on this phone's kind of processor.")
+            Note(tr(R.string.sing_doesn_t_run_on_this))
             return@Group
         }
         val ready = states[runtime] == com.prism.music.data.ModelStore.State.Ready && states[model] == com.prism.music.data.ModelStore.State.Ready
         val downloading = listOf(runtime, model).mapNotNull { states[it] as? com.prism.music.data.ModelStore.State.Downloading }.firstOrNull()
         Item(
-            "Sing's voice separation",
+            tr(R.string.sing_s_voice_separation),
             when {
-                ready -> "On this phone, ${formatMb(c.models.sizeOnPhone(runtime) + c.models.sizeOnPhone(model))} · tap to remove"
-                downloading != null -> "Downloading… ${(downloading.fraction * 100).toInt()}%"
-                else -> "Needed for Sing · ${com.prism.music.data.ModelStore.Model.sizeText(runtime, model)}"
+                ready -> tr(R.string.on_this_phone_tap_to_remove, formatMb(c.models.sizeOnPhone(runtime) + c.models.sizeOnPhone(model)))
+                downloading != null -> tr(R.string.downloading_5, (downloading.fraction * 100).toInt())
+                else -> tr(R.string.needed_for_sing, com.prism.music.data.ModelStore.Model.sizeText(runtime, model))
             },
-            info = "Takes the singer's voice out of songs, on your phone, for karaoke. Downloaded once.",
+            info = tr(R.string.takes_the_singer_s_voice_out),
             onClick = {
                 if (ready) { c.sing.setOn(false); c.models.delete(runtime); c.models.delete(model) }
                 else if (downloading == null) scope.launch { c.sing.downloadEngine() }
             },
         )
         Toggle(
-            "Get songs ready while Sing is off", "So Sing starts at once when you turn it on", s.singAlwaysReady,
-            info = "The playing song and the next are separated in the background even with Sing off. It uses more battery while music plays; on mobile data it follows Downloads, storage & data → Mobile data.",
+            tr(R.string.get_songs_ready_while_sing_is), tr(R.string.so_sing_starts_at_once_when), s.singAlwaysReady,
+            info = tr(R.string.the_playing_song_and_the_next),
         ) { c.settings.setSingAlwaysReady(it) }
-        SliderSetting("Room for sung songs", s.singCacheMb.toFloat(), 256f..4096f, { "${(it / 1024f).let { gb -> if (gb >= 1) "%.1f GB".format(gb) else "${it.roundToInt()} MB" }}" }, steps = 14) {
-            c.settings.setSingCacheMb(it.roundToInt())
+        // One step past 4 GB is "Unlimited" (#238).
+        val top = 4096f + 256f
+        SliderSetting(
+            tr(R.string.room_for_sung_songs), s.singCacheMb.toFloat().coerceAtMost(top), 256f..top,
+            { if (it >= top - 1f) tr(R.string.unlimited) else "${(it / 1024f).let { gb -> if (gb >= 1) "%.1f GB".format(gb) else "${it.roundToInt()} MB" }}" }, steps = 15,
+        ) {
+            c.settings.setSingCacheMb(if (it >= top - 1f) com.prism.music.data.prefs.SING_ROOM_UNLIMITED else it.roundToInt())
         }
-        Item("Clear sung songs", "Using ${formatMb(used)}", info = "Songs are worked out again the next time you sing them.", onClick = { c.sing.store.clear(); used = 0 })
+        Item(tr(R.string.clear_sung_songs), tr(R.string.using, formatMb(used)), info = tr(R.string.songs_are_worked_out_again_the), onClick = { c.sing.store.clear(); used = 0 })
     }
 }
 
-/** The lyrics' look; [title] names the group where "Look" alone wouldn't say whose (the player's Customize sheet). */
+/** The lyrics' animation; [title] names the group where "Animation" alone wouldn't say whose (the player's Customize sheet). */
 @Composable
-private fun LyricsLookGroup(title: String = "Look") {
-    val s = LocalAppSettings.current
-    val prefs = LocalContainer.current.settings
-    // Lyrics, your way (1.7.5): LyricsYourWay.kt. The settings above them stay where they were.
-    Group(title) { LyricsLookDetails() }
+private fun LyricsLookGroup(title: String = tr(R.string.animation)) {
+    // Lyrics in parts (1.8.0, #253): LyricsYourWay.kt.
+    Group(title, info = tr(R.string.animation_info)) { LyricsAnimationChoices() }
 }
 
-/** Customize Prism → Lyrics (1.7.6): how the lyrics look, the less-used parts folded away. */
+/** Customize Prism → Lyrics (1.8.0, #253): where you start from, then the four parts; the line on the player folded away. */
 @Composable
 private fun LyricsLookPage() {
     Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
         LyricsStyleGroup()
-        LyricsLookGroup()
-        LyricsColorsGroup()
-        MoreOptions(listOf("Where the lines go", "Translations & romanized lines", "Background")) {
-            LyricsPlacementGroup()
+        LyricsAnimationGroup()
+        LyricsTextGroup()
+        LyricsBackgroundGroup()
+        LyricsEffectsGroup()
+        MoreOptions(listOf(tr(R.string.translations_romanized_lines), tr(R.string.on_the_player))) {
             LyricsExtrasGroup()
-            LyricsBackgroundGroup()
+            LyricsOnThePlayerGroup()
         }
     }
 }
@@ -1922,37 +2044,49 @@ private fun LyricsSettings() {
     val s = LocalAppSettings.current
     val prefs = LocalContainer.current.settings
     Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
-        Group("Sources") {
-            Toggle("Prefer karaoke & synced lyrics", "Word by word first, then by line", s.preferSynced, info = "Karaoke lyrics (lit up word by word) from any source that has them come first, then time-synced lines, then plain text.") { prefs.setPreferSynced(it) }
-            Toggle("Uncensor lyrics", "Fills in starred-out words", s.skipCensored, info = "Swear words starred out (f**k) are filled back in from Genius, keeping the word timings, and a source that still stars them out is passed over.") { prefs.setSkipCensored(it) }
+        Group(tr(R.string.sources)) {
+            Toggle(tr(R.string.prefer_karaoke_synced_lyrics), tr(R.string.word_by_word_first_then_by), s.preferSynced, info = tr(R.string.karaoke_lyrics_lit_up_word_by)) { prefs.setPreferSynced(it) }
+            Toggle(tr(R.string.uncensor_lyrics), tr(R.string.fills_in_starred_out_words), s.skipCensored, info = tr(R.string.swear_words_starred_out_f_k)) { prefs.setSkipCensored(it) }
             LyricSourcesOrder()
+            // 1.8.0: from the lyrics look page (it's about sources, not looks).
+            Toggle(tr(R.string.lyrics_source_button), tr(R.string.lyrics_source_button_info), s.lyricsSourceButton) { prefs.setLyricsSourceButton(it) }
         }
-        Group("Language") {
-            Toggle(
-                "Translate lyrics", "Your language under each line", s.lyricsTranslate,
-                info = "For songs in another language. Machine translation: the lyrics' text (nothing else) is sent to Google Translate.",
-            ) { prefs.setLyricsTranslate(it) }
-            if (s.lyricsTranslate) {
-                Label("Translate into")
-                Chips(TRANSLATE_LANGUAGES.map { it.first }, s.lyricsTranslateTo.takeIf { code -> TRANSLATE_LANGUAGES.any { it.first == code } } ?: "",
-                    { code -> TRANSLATE_LANGUAGES.first { it.first == code }.second }) { prefs.setLyricsTranslateTo(it) }
-            }
-            Label("Romanize lyrics", info = "Other scripts in Latin letters, to sing along.")
+        Group(tr(R.string.language)) {
+            // 1.8.0: the switch is the first choice, Off (same stored settings: lyricsTranslate + lyricsTranslateTo).
+            Label(tr(R.string.translate_into), info = tr(R.string.for_songs_in_another_language_machine))
+            val off = "\u0000off"
+            Chips(
+                listOf(off) + TRANSLATE_LANGUAGES.map { it.first },
+                if (!s.lyricsTranslate) off else s.lyricsTranslateTo.takeIf { code -> TRANSLATE_LANGUAGES.any { it.first == code } } ?: "",
+                { code -> if (code == off) tr(R.string.off) else TRANSLATE_LANGUAGES.first { it.first == code }.second },
+            ) { code -> if (code == off) prefs.setLyricsTranslate(false) else { prefs.setLyricsTranslateTo(code); prefs.setLyricsTranslate(true) } }
+            Label(tr(R.string.romanize_lyrics), info = tr(R.string.other_scripts_in_latin_letters_to))
             Chips(com.prism.music.data.prefs.RomanizeMode.entries, s.romanize, { it.label }) { prefs.setRomanize(it) }
             if (s.romanize != com.prism.music.data.prefs.RomanizeMode.OFF) Toggle(
-                "Romanize my own language too", "${java.util.Locale.getDefault().displayLanguage} lyrics too", s.romanizeAll,
-                info = "Korean, Japanese, Russian and Greek are spelled out on the phone (word by word with karaoke); other scripts by Google Translate, which is sent only the lyrics' text. Turn it on or off for one song from the player's ⋯ menu.",
+                tr(R.string.romanize_my_own_language_too), tr(R.string.lyrics_too, java.util.Locale.getDefault().displayLanguage), s.romanizeAll,
+                info = tr(R.string.korean_japanese_russian_and_greek_are),
             ) { prefs.setRomanizeAll(it) }
             JapaneseReadingData()
         }
         SingSettings()
-        Group("Your music files") {
-            val c = LocalContainer.current
-            Item(
-                "Save lyrics into your music files", "So other players show them too",
-                info = "Synced lyrics go into your FLAC and MP3 files' tags (as LRC): Local files, and the lossless files played for songs. Lyrics already saved are used, others are looked up. Android asks once before any file is changed. For one song, use its ⋯ menu.",
-                onClick = { c.lyricsToFiles.request(null) },
-            )
+        // 1.8.0: rarely used, so folded away.
+        MoreOptions(listOf(tr(R.string.your_music_files))) {
+            Group(tr(R.string.your_music_files)) {
+                val c = LocalContainer.current
+                Item(
+                    tr(R.string.save_lyrics_into_your_music_files), tr(R.string.so_other_players_show_them_too),
+                    info = tr(R.string.synced_lyrics_go_into_your_flac),
+                    onClick = { c.lyricsToFiles.request(null) },
+                )
+                // Reddit, 1.7.9.2: what goes in with them.
+                Toggle(
+                    tr(R.string.keep_word_timings), tr(R.string.karaoke_lyrics_light_word_by_word), s.lyricsFileWords,
+                    info = tr(R.string.saved_as_enhanced_lrc_players),
+                ) { prefs.setLyricsFileWords(it) }
+                Toggle(
+                    tr(R.string.include_the_translation), tr(R.string.under_each_line_in_your_translation_language), s.lyricsFileTranslation,
+                ) { prefs.setLyricsFileTranslation(it) }
+            }
         }
     }
 }
@@ -1962,7 +2096,7 @@ private fun LyricsSettings() {
 private fun LyricSourcesOrder() {
     val s = LocalAppSettings.current
     val prefs = LocalContainer.current.settings
-    Label("Order", info = "Tried top to bottom; hold one to move it. Switch source per song from the player's ⋯.")
+    Label(tr(R.string.order), info = tr(R.string.tried_top_to_bottom_hold_one))
     com.prism.music.ui.components.ReorderList(s.lyricsOrder, { it }, { prefs.setLyricsOrder(it) }) { src, i, held, mod ->
         val on = src !in s.lyricsOff
         Row(mod.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -1985,20 +2119,21 @@ private fun LyricSourcesOrder() {
             )
             if (!held) {
                 IconButton(onClick = { prefs.setLyricsOrder(s.lyricsOrder.toMutableList().apply { add(i - 1, removeAt(i)) }) }, enabled = i > 0) {
-                    Icon(PrismIcons.ChevronUp, "Move ${src.label} up")
+                    Icon(PrismIcons.ChevronUp, tr(R.string.move_up_2, src.label))
                 }
                 IconButton(onClick = { prefs.setLyricsOrder(s.lyricsOrder.toMutableList().apply { add(i + 1, removeAt(i)) }) }, enabled = i < s.lyricsOrder.lastIndex) {
-                    Icon(PrismIcons.ChevronDown, "Move ${src.label} down")
+                    Icon(PrismIcons.ChevronDown, tr(R.string.move_down_2, src.label))
                 }
             } else Spacer(Modifier.width(96.dp))
-            com.prism.music.ui.components.DragGrip(Modifier.dragHandle().padding(start = 2.dp), "Drag ${src.label}")
+            com.prism.music.ui.components.DragGrip(Modifier.dragHandle().padding(start = 2.dp), tr(R.string.drag, src.label))
         }
     }
 }
 
 /**
- * Settings → Car & devices (1.7.6): Android Auto (its lyrics and its look, from Lyrics before), then speakers, TVs and
- * the browser remote, and Discord, each a page of its own.
+ * Settings → Devices & connections (1.7.6, "Car & devices" until 1.7.8): Android Auto (its lyrics and its look, from
+ * Lyrics before), then speakers, TVs and the browser remote, Discord and Last.fm (owner, 1.7.8: beside Discord, the
+ * other account Prism tells what you play), each a page of its own.
  */
 @Composable
 private fun DevicesPage() {
@@ -2006,27 +2141,27 @@ private fun DevicesPage() {
     val prefs = LocalContainer.current.settings
     val nav = LocalNavigator.current
     Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
-        Group("Android Auto") {
-            Toggle("Lyrics in the car", "On the car's player", s.carLyrics, info = "In place of the song title and cover. The car's Lyrics button turns them on and off too.") { prefs.setCarLyrics(it) }
+        Group(tr(R.string.android_auto)) {
+            Toggle(tr(R.string.lyrics_in_the_car), tr(R.string.on_the_car_s_player), s.carLyrics, info = tr(R.string.in_place_of_the_song_title)) { prefs.setCarLyrics(it) }
             if (s.carLyrics) {
-                Label("Style", info = s.carLyricsStyle.label + ": " + s.carLyricsStyle.detail)
+                Label(tr(R.string.style), info = s.carLyricsStyle.label + ": " + s.carLyricsStyle.detail)
                 Chips(CarLyricsStyle.entries, s.carLyricsStyle, { it.label }) { prefs.setCarLyricsStyle(it) }
                 CarLyricsPreview(s.carLyricsStyle)
                 if (s.carLyricsStyle != CarLyricsStyle.TEXT) Toggle(
-                    "Keep the song title", "Lyrics on the cover only", s.carLyricsKeepTitle,
-                    info = "The car's small media card then reads as usual (its cover is tiny), and the full player shows the lyric card big. Android Auto doesn't tell apps which of the two is showing.",
+                    tr(R.string.keep_the_song_title), tr(R.string.lyrics_on_the_cover_only), s.carLyricsKeepTitle,
+                    info = tr(R.string.the_car_s_small_media_card),
                 ) { prefs.setCarLyricsKeepTitle(it) }
-                Toggle("On this phone too", "Lock screen and notification", s.carLyricsOnPhone) { prefs.setCarLyricsOnPhone(it) }
+                Toggle(tr(R.string.on_this_phone_too), tr(R.string.lock_screen_and_notification), s.carLyricsOnPhone) { prefs.setCarLyricsOnPhone(it) }
             }
             Toggle(
-                "Covers in a grid", "Home and Library as cover tiles", s.autoGrid,
-                info = "The car shows Home's sections as rows of covers under their headings, and Library and Made for you as covers, like Spotify's car screen. Off, they're plain lists. Takes effect the next time the car connects.",
+                tr(R.string.covers_in_a_grid), tr(R.string.home_and_library_as_cover_tiles), s.autoGrid,
+                info = tr(R.string.the_car_shows_home_s_sections),
             ) { prefs.setAutoGrid(it) }
-            Item("Buttons in the car", "Beside play, in the order the car shows them", onClick = { nav.go(Routes.settings(SettingsSection.CONTROLS.key, "Notification and car")) }) { Chevron() }
+            Item(tr(R.string.buttons_in_the_car), tr(R.string.beside_play_in_the_order_the), onClick = { nav.go(Routes.settings(SettingsSection.CONTROLS.key, tr(R.string.notification_and_car))) }) { Chevron() }
         }
-        Group("Other devices") {
+        Group(tr(R.string.connections)) {
             val dark = com.prism.music.ui.theme.LocalIsDark.current
-            listOf(SettingsSection.CONNECT, SettingsSection.DISCORD).forEach { sec ->
+            listOf(SettingsSection.CONNECT, SettingsSection.DISCORD, SettingsSection.LASTFM).forEach { sec ->
                 NavRow(sec.icon, sec.title, sec.summary(s, dark)) { nav.go(Routes.settings(sec.key)) }
             }
         }
@@ -2044,27 +2179,27 @@ private fun SharingGroup() {
     // claim them), so the state is read again whenever Prism comes back from that page.
     val resumed = com.prism.music.ui.components.rememberResumeCount()
     val opensLinks = remember(resumed) { com.prism.music.data.LinkHandling.opensYouTubeMusicLinks(context) }
-    Group("Sharing and links") {
-        Label("Links you share", info = "Albums have no page on YouTube, so an album's link is always YouTube Music's.")
+    Group(tr(R.string.sharing_and_links)) {
+        Label(tr(R.string.links_you_share), info = tr(R.string.albums_have_no_page_on_youtube))
         ChoiceCards(
-            listOf(false, true), s.shareYoutubeLinks, title = { if (it) "YouTube" else "YouTube Music" },
-            detail = { if (it) "Opens in YouTube" else "Opens in YouTube Music" }, onSelect = { prefs.setShareYoutubeLinks(it) },
+            listOf(false, true), s.shareYoutubeLinks, title = { if (it) tr(R.string.youtube) else tr(R.string.youtube_music_2) },
+            detail = { if (it) tr(R.string.opens_in_youtube) else tr(R.string.opens_in_youtube_music) }, onSelect = { prefs.setShareYoutubeLinks(it) },
         ) { youtube ->
             Text(
-                if (youtube) "youtu.be/fJ9rUzIMcZQ" else "music.youtube.com/watch?v=fJ9rUzIMcZQ",
+                if (youtube) tr(R.string.youtu_be_fj9ruzimczq) else tr(R.string.music_youtube_com_watch_v_fj9ruzimczq),
                 Modifier.fillMaxWidth().padding(vertical = 10.dp), style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
         }
         Item(
-            "Open YouTube Music links in Prism",
+            tr(R.string.open_youtube_music_links_in_prism),
             when (opensLinks) {
-                true -> "On: links you tap open here"
-                false -> "Off: turn on \"Open supported links\" for music.youtube.com"
-                null -> "Choose Prism when a link asks which app"
+                true -> tr(R.string.on_links_you_tap_open_here)
+                false -> tr(R.string.off_turn_on_open_supported_links)
+                null -> tr(R.string.choose_prism_when_a_link_asks)
             },
-            info = "Android only lets an app open a website's links when you say so. This opens Prism's page for it: turn on its links there.",
+            info = tr(R.string.android_only_lets_an_app_open),
             onClick = { com.prism.music.data.LinkHandling.openSettings(context) },
         ) { Chevron() }
     }
@@ -2081,18 +2216,18 @@ private fun DownloadSettings() {
     val context = LocalContext.current
     var cacheBytes by remember { mutableLongStateOf(c.songCacheBytes()) }
     Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
-        Group("Downloads") {
-            Item("Manage downloads", "See and delete what's on your phone", onClick = { nav.go(Routes.DOWNLOADS) }) { Chevron() }
-            Toggle("Download on Wi-Fi only", null, s.downloadWifiOnly) { prefs.setDownloadWifiOnly(it) }
-            Toggle("Download liked songs automatically", "Including likes from other devices", s.downloadLikes) {
+        Group(tr(R.string.downloads)) {
+            Item(tr(R.string.manage_downloads), tr(R.string.see_and_delete_what_s_on), onClick = { nav.go(Routes.DOWNLOADS) }) { Chevron() }
+            Toggle(tr(R.string.download_on_wi_fi_only), null, s.downloadWifiOnly) { prefs.setDownloadWifiOnly(it) }
+            Toggle(tr(R.string.download_liked_songs_automatically), tr(R.string.including_likes_from_other_devices), s.downloadLikes) {
                 prefs.setDownloadLikes(it)
                 if (it) c.downloads.downloadAll(c.library.liked.value)
             }
         }
-        Group("Smart Downloads") {
+        Group(tr(R.string.smart_downloads)) {
             Toggle(
-                "Smart Downloads", "Songs you'll likely play, ready offline", s.smartDownloads,
-                info = "One space for music on your phone: songs you stream stay, so replays start at once and use no data, and the songs you're most likely to play next are downloaded ahead, a little at a time. When it's full, the songs you're least likely to come back to make room. Learned on your phone from what you play, finish, skip and like. Off, it only keeps songs you've played.",
+                tr(R.string.smart_downloads), tr(R.string.songs_you_ll_likely_play_ready), s.smartDownloads,
+                info = tr(R.string.one_space_for_music_on_your),
             ) {
                 prefs.setSmartDownloads(it)
                 SmartDownloadWorker.schedule(context, it)
@@ -2103,14 +2238,14 @@ private fun DownloadSettings() {
             val gb = sizes[i.roundToInt().coerceIn(0, sizes.lastIndex)]
             val freeGb = remember { context.filesDir.usableSpace / 1_073_741_824f }
             val picks by c.downloads.smartIds.collectAsState()
-            val downloads by c.downloads.downloads.collectAsState()
+            val downloads by c.downloadState.collectAsState()
             val pickBytes = picks.sumOf { downloads[it]?.bytes ?: 0L }
-            Label("Space to use: ${formatGb(gb)}")
+            Label(tr(R.string.space_to_use_2, formatGb(gb)))
             val used = pickBytes + cacheBytes
-            val usedText = if (used < 1_073_741_824L) "${used / 1_048_576} MB" else "%.1f GB".format(used / 1_073_741_824.0)
+            val usedText = if (used < 1_073_741_824L) "${used / 1_048_576} MB" else tr(R.string.t_1f_gb).format(used / 1_073_741_824.0)
             Note(
-                "About ${smartSongEstimate(gb, s.audioQuality)} songs · $usedText used · %.1f GB free on the phone".format(freeGb) +
-                    if (gb > freeGb) " (it stops when storage runs low)" else ""
+                smartSongEstimate(gb, s.audioQuality).let { n -> trp(R.plurals.about_n_songs_used, n.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(), "%,d".format(n), usedText) }.format(freeGb) +
+                    if (gb > freeGb) tr(R.string.it_stops_when_storage_runs_low) else ""
             )
             PrismSlider(
                 i, { i = it }, Modifier.padding(horizontal = 16.dp), valueRange = 0f..sizes.lastIndex.toFloat(), steps = sizes.size - 2,
@@ -2120,35 +2255,46 @@ private fun DownloadSettings() {
                     if (s.smartDownloads) SmartDownloadWorker.runNow(context)
                 },
             )
-            Item("Clear Smart Downloads", "Your own downloads stay", info = "Removes the songs it downloaded ahead and the ones kept from streaming.", onClick = {
+            Item(tr(R.string.clear_smart_downloads), tr(R.string.your_own_downloads_stay), info = tr(R.string.removes_the_songs_it_downloaded_ahead), onClick = {
                 c.downloads.clearSmartDownloads()
                 cacheBytes = c.songCacheBytes()
             })
         }
-        if (s.canvasEnabled) Group("Animated covers") {
+        if (s.canvasEnabled) Group(tr(R.string.animated_covers)) {
             Toggle(
-                "Save with downloads", "Downloaded songs keep theirs", s.canvasWithDownloads,
-                info = "A downloaded song's animated cover is kept on the phone too, so it plays offline. An album's songs share one copy.",
+                tr(R.string.save_with_downloads), tr(R.string.downloaded_songs_keep_theirs), s.canvasWithDownloads,
+                info = tr(R.string.a_downloaded_song_s_animated_cover),
             ) {
                 prefs.setCanvasWithDownloads(it)
                 if (it) c.downloads.saveCanvases()
             }
             CanvasStorage()
         }
+        // How much of the next songs is loaded ahead (1.8.0: from Playback & sound; it's about data and buffering).
+        Group(tr(R.string.load_ahead)) {
+            Label(
+                tr(R.string.load_ahead),
+                info = when (s.preload) {
+                    com.prism.music.data.prefs.Preload.START -> tr(R.string.now_the_next_song_s_start)
+                    else -> tr(R.string.now_whole_songs_so_they_play)
+                },
+            )
+            Chips(com.prism.music.data.prefs.Preload.entries, s.preload, { it.label }) { prefs.setPreload(it) }
+        }
         // Every "on mobile data" choice in one place (1.7.6; they were spread over six pages). Each shows while the
         // thing it's about is on. Streaming quality on mobile data stays with the other qualities in Playback & sound.
-        Group("Mobile data", info = "What Prism may use mobile data for. On Wi-Fi none of these change anything.") {
+        Group(tr(R.string.mobile_data), info = tr(R.string.what_prism_may_use_mobile_data)) {
             Toggle(
-                "Data saver", "Uses much less data off Wi-Fi", s.dataSaver,
-                info = "On mobile data: pictures at the size they're shown, no artist photos for lists, no animated covers (saved ones still play), songs at your mobile data quality and at most Normal (even with lossless on), and videos at 480p at most. Wi-Fi is unaffected.",
+                tr(R.string.data_saver), tr(R.string.uses_much_less_data_off_wi), s.dataSaver,
+                info = tr(R.string.on_mobile_data_pictures_at_the),
             ) { prefs.setDataSaver(it) }
             Toggle(
-                "Load ahead on mobile data",
-                if (s.preload == com.prism.music.data.prefs.Preload.START) "The next song's start, about 0.3 MB" else "Whole songs, about 3–8 MB each",
+                tr(R.string.load_ahead_on_mobile_data),
+                if (s.preload == com.prism.music.data.prefs.Preload.START) tr(R.string.the_next_song_s_start_about) else tr(R.string.whole_songs_about_3_8_mb),
                 s.preloadCellular,
-                info = "Off, songs are only loaded ahead on Wi-Fi (Playback & sound → Load ahead). Whole songs loaded ahead count toward Smart Downloads' space.",
+                info = tr(R.string.off_songs_are_only_loaded_ahead),
             ) { prefs.setPreloadCellular(it) }
-            if (s.smartDownloads) Toggle("Smart Downloads on mobile data", "About 3–8 MB a song", s.smartDownloadsCellular) {
+            if (s.smartDownloads) Toggle(tr(R.string.smart_downloads_on_mobile_data), tr(R.string.about_3_8_mb_a_song), s.smartDownloadsCellular) {
                 prefs.setSmartDownloadsCellular(it)
                 // The worker's network rule is fixed when it's scheduled, so it's scheduled again with the new one.
                 SmartDownloadWorker.schedule(context, true, cellular = it)
@@ -2156,21 +2302,21 @@ private fun DownloadSettings() {
                 c.downloads.refreshSmartIds()
             }
             Toggle(
-                "Lyrics on mobile data", if (s.lyricsOnMobileData) "Looked up as each song starts" else "Only once you open the lyrics", s.lyricsOnMobileData,
-                info = "Off, Prism doesn't look up lyrics on mobile data until you open them (the player's lyrics, Immersive mode or the source list). Lyrics already saved on the phone still show, and on Wi-Fi nothing changes.",
+                tr(R.string.lyrics_on_mobile_data), if (s.lyricsOnMobileData) tr(R.string.looked_up_as_each_song_starts) else tr(R.string.only_once_you_open_the_lyrics), s.lyricsOnMobileData,
+                info = tr(R.string.off_prism_doesn_t_look_up),
             ) { prefs.setLyricsOnMobileData(it) }
-            if (s.canvasEnabled) Toggle("Animated covers on mobile data", "Saved covers play either way", s.canvasOnCellular) { prefs.setCanvasOnCellular(it) }
-            if (s.canvasEnabled && s.canvasWithDownloads) Toggle("Save animated covers on mobile data", "Otherwise they wait for Wi-Fi", s.canvasWithDownloadsCellular) {
+            if (s.canvasEnabled) Toggle(tr(R.string.animated_covers_on_mobile_data), tr(R.string.saved_covers_play_either_way), s.canvasOnCellular) { prefs.setCanvasOnCellular(it) }
+            if (s.canvasEnabled && s.canvasWithDownloads) Toggle(tr(R.string.save_animated_covers_on_mobile_data), tr(R.string.otherwise_they_wait_for_wi_fi), s.canvasWithDownloadsCellular) {
                 prefs.setCanvasWithDownloadsCellular(it)
                 if (it) c.downloads.saveCanvases()
             }
             if (s.normalize || s.mix) Toggle(
-                "Measure songs on mobile data", "For Normalize volume and Crossfade, 1–4 MB a song", s.mixTempoOnCellular,
-                info = "Normalize volume and Crossfade measure each song once: its loudness, how its music starts and ends, its beat. Songs on your phone are measured from there. Off, the rest wait for Wi-Fi.",
+                tr(R.string.measure_songs_on_mobile_data), tr(R.string.for_normalize_volume_and_crossfade_1), s.mixTempoOnCellular,
+                info = tr(R.string.normalize_volume_and_crossfade_measure_each),
             ) { prefs.setMixTempoOnCellular(it) }
             Toggle(
-                "Get songs ready for Sing on mobile data", "A few MB a song", s.singOnCellular,
-                info = "Sing needs each song whole on the phone. Off, it waits for Wi-Fi unless the song is downloaded or already played through.",
+                tr(R.string.get_songs_ready_for_sing_on), tr(R.string.a_few_mb_a_song), s.singOnCellular,
+                info = tr(R.string.sing_needs_each_song_whole_on),
             ) { prefs.setSingOnCellular(it) }
         }
     }
@@ -2178,7 +2324,7 @@ private fun DownloadSettings() {
 
 // ---------------------------------------------------------------------------- Library & Replay
 
-private val libraryTabs = listOf("PLAYLISTS" to "Playlists", "SONGS" to "Songs", "ALBUMS" to "Albums", "ARTISTS" to "Artists", "HISTORY" to "History", "DOWNLOADS" to "Downloads")
+private val libraryTabs = listOf("PLAYLISTS" to tr(R.string.playlists), "SONGS" to tr(R.string.songs), "ALBUMS" to tr(R.string.albums), "ARTISTS" to tr(R.string.artists), "HISTORY" to tr(R.string.history), "DOWNLOADS" to tr(R.string.downloads))
 
 /** Customize Prism → Home & Library (1.7.6): how Home and Library are laid out. */
 @Composable
@@ -2188,19 +2334,26 @@ private fun HomeLibraryLook() {
     val prefs = c.settings
     val nav = LocalNavigator.current
     Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
-        Group("Home") {
-            Item("Customize Home", "Sections, the top of Home, shortcuts", onClick = { nav.go(Routes.CATALOGUE) }) { Chevron() }
-            Toggle("Add new sections automatically", "New YouTube Music shelves appear on Home", s.autoAddSections) { prefs.setAutoAddSections(it) }
+        Group(tr(R.string.home)) {
+            Item(tr(R.string.customize_home), tr(R.string.sections_the_top_of_home_shortcuts), onClick = { nav.go(Routes.CATALOGUE) }) { Chevron() }
+            Toggle(tr(R.string.add_new_sections_automatically), tr(R.string.new_youtube_music_shelves_appear_on), s.autoAddSections) { prefs.setAutoAddSections(it) }
             Toggle(
-                "Continue line", "\"Continue …\" under the greeting", s.homeContinue,
-                info = "The album you were last playing (or your Rewind, in December), under Home's greeting. Tap it to open.",
+                tr(R.string.continue_line), tr(R.string.continue_under_the_greeting), s.homeContinue,
+                info = tr(R.string.the_album_you_were_last_playing),
             ) { prefs.setHomeContinue(it) }
-            Toggle("Podcasts button", "At the top of Home", s.homePodcastsButton, info = "Off, Podcasts opens from Library → Playlists.") { prefs.setHomePodcastsButton(it) }
-            Toggle("Customize button at the top", "Top right of Home", s.homeCustomizeTopButton) { prefs.setHomeCustomizeTopButton(it) }
-            Toggle("Customize button at the bottom", "At the end of Home", s.homeCustomizeButton) { prefs.setHomeCustomizeButton(it) }
+            Label(tr(R.string.recently_played_shows), info = tr(R.string.every_song_you_played_or_the))
+            Chips(com.prism.music.data.prefs.RecentShows.entries, s.behavior.recentShows, { it.label }) { prefs.setRecentShows(it) }
+            // 1.8.0: the two top-bar switches as one choice (same stored settings, HomeChoices).
+            Label(tr(R.string.buttons_at_the_top_of_home), info = tr(R.string.off_podcasts_opens_from_library_playlists))
+            Chips(TopButtons.entries, HomeChoices.topButtons(s), { it.label }) { HomeChoices.setTopButtons(prefs, it) }
+            Toggle(tr(R.string.customize_button_at_the_bottom), tr(R.string.at_the_end_of_home), s.homeCustomizeButton) { prefs.setHomeCustomizeButton(it) }
+        }
+        // Search's own option (1.8.0: from Controls & gestures, it isn't a gesture).
+        Group(tr(R.string.search)) {
+            Toggle(tr(R.string.open_the_keyboard), tr(R.string.ready_to_type_when_search_opens), s.searchKeyboard) { prefs.setSearchKeyboard(it) }
         }
         val look = ReplayCardStyle.entries.firstOrNull { it.name == s.replayCard } ?: ReplayCardStyle.WASH
-        Group("Replay card", info = "How Replay looks on Home, from the quietest to the most colorful. ${look.label}: ${look.note}") {
+        Group(tr(R.string.replay_card), info = tr(R.string.how_replay_looks_on_home_from, look.label, look.note)) {
             Chips(ReplayCardStyle.entries, look, { it.label }) { prefs.setReplayCard(it.name) }
             ReplayCardPreview(look, Modifier.padding(top = 6.dp, bottom = 14.dp))
         }
@@ -2209,6 +2362,39 @@ private fun HomeLibraryLook() {
 }
 
 /** Settings → Recommendations & Replay (1.7.6): what Prism suggests and from where, and your listening recap. */
+/** Last.fm scrobbling (#133, #160): connect your account in the browser, then what's sent. */
+@Composable
+private fun LastFmGroup() {
+    val c = LocalContainer.current
+    val context = LocalContext.current
+    val lastFm = c.lastFm
+    val user by lastFm.user.collectAsState()
+    val o by lastFm.options.collectAsState()
+    val waiting by lastFm.waiting.collectAsState()
+    Group(
+        "Last.fm",
+        info = tr(R.string.sends_what_you_listen_to_scrobbles_all),
+    ) {
+        if (!lastFm.available) {
+            Note(tr(R.string.this_copy_of_prism_was_built))
+            return@Group
+        }
+        if (user == null) {
+            Item(tr(R.string.connect_last_fm), tr(R.string.opens_last_fm_to_let_prism), onClick = {
+                runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(lastFm.authUrl()))) }
+            }) { Chevron() }
+            return@Group
+        }
+        Toggle(tr(R.string.scrobble), tr(R.string.connected_as, user) + if (waiting > 0) tr(R.string.waiting_to_send, waiting) else "", o.scrobble) { lastFm.setOptions(o.copy(scrobble = it)) }
+        Toggle(
+            tr(R.string.first_artist_only), tr(R.string.a_b_c_goes_to_last), o.firstArtistOnly,
+            info = tr(R.string.last_fm_matches_one_artist_per),
+        ) { lastFm.setOptions(o.copy(firstArtistOnly = it)) }
+        Toggle(tr(R.string.love_when_i_like_a_song), tr(R.string.liking_here_loves_it_on_last), o.loveOnLike) { lastFm.setOptions(o.copy(loveOnLike = it)) }
+        Item(tr(R.string.disconnect), tr(R.string.stops_scrobbling_and_forgets_the_connection), onClick = { lastFm.signOut() })
+    }
+}
+
 @Composable
 private fun RecommendationsPage() {
     val c = LocalContainer.current
@@ -2217,27 +2403,33 @@ private fun RecommendationsPage() {
     val nav = LocalNavigator.current
     val context = LocalContext.current
     Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
-        Group("Made for you") {
-            Item("Your artists", "They shape your mixes and Release Radar", onClick = { nav.go(Routes.PICK_ARTISTS) }) { Chevron() }
-            Toggle("New release notifications", "When a starred artist puts out music", s.releaseNotifications) { prefs.setReleaseNotifications(it) }
-            Item("Make my mixes again", "Fresh Daily Mixes now", onClick = {
+        Group(tr(R.string.made_for_you)) {
+            Item(tr(R.string.your_artists), tr(R.string.they_shape_your_mixes_and_release), onClick = { nav.go(Routes.PICK_ARTISTS) }) { Chevron() }
+            Toggle(tr(R.string.new_release_notifications), tr(R.string.when_a_starred_artist_puts_out), s.releaseNotifications) { prefs.setReleaseNotifications(it) }
+            Item(tr(R.string.make_my_mixes_again), tr(R.string.fresh_daily_mixes_now), onClick = {
                 c.scope.launch { c.forYou.refresh(force = true) }
-                android.widget.Toast.makeText(context, "Making your mixes…", android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(context, tr(R.string.making_your_mixes), android.widget.Toast.LENGTH_SHORT).show()
             })
-            Item("Exclusions", "What's kept out of your music", info = "Artists not to play, and playlists or songs left out of your taste.", onClick = { nav.go(Routes.EXCLUSIONS) }) { Chevron() }
+            Item(tr(R.string.exclusions), tr(R.string.what_s_kept_out_of_your), info = tr(R.string.artists_not_to_play_and_playlists), onClick = { nav.go(Routes.EXCLUSIONS) }) { Chevron() }
+            // Suggestions skipped at once stay out of mixes and radio for a while (1.7.9): this lets them all back.
+            Item(tr(R.string.forget_skipped_suggestions), tr(R.string.let_every_song_be_suggested_again), info = tr(R.string.forget_skipped_suggestions_info), onClick = {
+                c.recFeedback.clear()
+                android.widget.Toast.makeText(context, tr(R.string.suggestions_start_fresh), android.widget.Toast.LENGTH_SHORT).show()
+            })
         }
-        Group("Liked songs") {
+        Group(tr(R.string.liked_songs)) {
             Toggle(
-                "A song and its video as one", "Liked both? They show once, as the song", s.mergeLikedVideos,
-                info = "When you've liked a song and its music video, Liked songs, Library and the car show just the song. The video stays liked: unlike the song and it shows again. Nothing changes on YouTube Music.",
+                tr(R.string.a_song_and_its_video_as), tr(R.string.liked_both_they_show_once_as), s.mergeLikedVideos,
+                info = tr(R.string.when_you_ve_liked_a_song),
             ) { prefs.setMergeLikedVideos(it) }
         }
-        Group("Replay") {
-            Toggle("Show time in hours", if (s.replayHours) "Like \"20h 4m\"" else "Like \"1,204 min\"", s.replayHours) { prefs.setReplayHours(it) }
-            Toggle("Use theme colors", "Your accent instead of Prism's gradient", s.replayThemeColors) { prefs.setReplayThemeColors(it) }
-            Toggle("Rewind notification", "On December 1, when your year is ready", s.rewindNotification) { prefs.setRewindNotification(it) }
+        // 1.8.0: the Last.fm link here is gone (its page is in Devices & connections; Settings search finds it).
+        Group(tr(R.string.replay_2)) {
+            Toggle(tr(R.string.show_time_in_hours), if (s.replayHours) tr(R.string.like_20h_4m) else tr(R.string.like_1_204_min), s.replayHours) { prefs.setReplayHours(it) }
+            Toggle(tr(R.string.use_theme_colors), tr(R.string.your_accent_instead_of_prism_s), s.replayThemeColors) { prefs.setReplayThemeColors(it) }
+            Toggle(tr(R.string.rewind_notification), tr(R.string.on_december_1_when_your_year), s.rewindNotification) { prefs.setRewindNotification(it) }
         }
-        ContentCountrySetting()
+        // Region moved to the Language page (1.8.0).
     }
 }
 
@@ -2247,24 +2439,25 @@ private fun LibraryLookGroup() {
     val s = LocalAppSettings.current
     val prefs = LocalContainer.current.settings
     Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
-        Group("Library") {
+        Group(tr(R.string.library)) {
             // Each tab its own way (1.7.6); the button at the top of Library switches the tab you're on.
-            listOf("PLAYLISTS" to "Playlists as", "ALBUMS" to "Albums as", "ARTISTS" to "Artists as").forEach { (tab, title) ->
+            listOf("PLAYLISTS" to tr(R.string.playlists_as), "ALBUMS" to tr(R.string.albums_as), "ARTISTS" to tr(R.string.artists_as)).forEach { (tab, title) ->
                 Label(title)
                 Chips(LibraryView.entries, s.libraryViews[tab] ?: s.libraryView, { it.label }) { prefs.setLibraryTabView(tab, it) }
             }
-            Label("Covers across", info = "In the grid. Auto fits as many as the screen's width allows.")
+            Label(tr(R.string.covers_across), info = tr(R.string.in_the_grid_auto_fits_as))
             Chips(com.prism.music.data.prefs.LibraryColumns.entries, s.libraryColumns, { it.label }) { prefs.setLibraryColumns(it) }
-            Toggle("Details under each one", "Song counts, owners and years", s.librarySubtitles) { prefs.setLibrarySubtitles(it) }
-            Label("Open Library on")
+            Toggle(tr(R.string.details_under_each_one), tr(R.string.song_counts_owners_and_years), s.librarySubtitles) { prefs.setLibrarySubtitles(it) }
+            Label(tr(R.string.open_library_on))
             // "LOCAL" (On this phone) was a tab before Local files got its own page: Playlists stands in for it.
             val startTab = s.libraryStartTab.takeIf { k -> libraryTabs.any { it.first == k } } ?: "PLAYLISTS"
             Chips(libraryTabs.map { it.first }, startTab, { k -> libraryTabs.firstOrNull { it.first == k }?.second ?: k }) { prefs.setLibraryStartTab(it) }
             Spacer(Modifier.height(6.dp))
-            Toggle("Full-width playlist pictures", "Edge to edge, like an artist page", s.playlistHeroCover) { prefs.setPlaylistHeroCover(it) }
+            Toggle(tr(R.string.full_width_playlist_pictures), tr(R.string.edge_to_edge_like_an_artist), s.playlistHeroCover) { prefs.setPlaylistHeroCover(it) }
+            Toggle(tr(R.string.genres_on_playlists), tr(R.string.genres_on_playlists_detail), s.behavior.playlistGenres) { prefs.setPlaylistGenres(it) }
             var editingTiles by remember { mutableStateOf(false) }
             Item(
-                "Library tiles", "${s.libraryTiles.size} of ${com.prism.music.data.prefs.LibraryTile.entries.size} shown · pick and order them",
+                tr(R.string.library_tiles), tr(R.string.of_shown_pick_and_order_them, s.libraryTiles.size, com.prism.music.data.prefs.LibraryTile.entries.size),
                 onClick = { editingTiles = true },
             ) { Chevron() }
             if (editingTiles) LibraryTilesSheet { editingTiles = false }
@@ -2310,17 +2503,17 @@ private fun CarLyricsPreview(style: CarLyricsStyle) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         val shape = LocalUi.current.shape(14.dp)
         val img = card
-        if (img != null) androidx.compose.foundation.Image(img, "Lyric card", Modifier.size(132.dp).clip(shape))
+        if (img != null) androidx.compose.foundation.Image(img, tr(R.string.lyric_card), Modifier.size(132.dp).clip(shape))
         else com.prism.music.ui.components.Artwork(song?.thumbnail, Modifier.size(132.dp), shape, size = 300)
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text("PREVIEW", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
             val s = song
             when {
-                s == null -> Text("Play a song to see how its lyrics look in the car.", style = MaterialTheme.typography.bodyMedium)
+                s == null -> Text(tr(R.string.play_a_song_to_see_how), style = MaterialTheme.typography.bodyMedium)
                 loaded && lyrics == null -> {
                     Text(s.title, style = MaterialTheme.typography.titleMedium, maxLines = 2)
-                    Text("No synced lyrics for this song, so the car shows it as usual.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(tr(R.string.no_synced_lyrics_for_this_song), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 else -> {
                     Text(line ?: s.title, style = MaterialTheme.typography.titleMedium, maxLines = 3)

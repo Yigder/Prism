@@ -1,9 +1,11 @@
 package com.prism.music.playback
 
+import com.prism.music.tr
 import com.prism.music.data.friendlyMessage
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.audio.DefaultAudioSink
 import kotlinx.coroutines.flow.drop
@@ -62,6 +64,16 @@ import kotlin.math.roundToInt
 
 data class VideoLookup(val id: String?, val lookupFailed: Boolean = false)
 
+/**
+ * Whether a song may cross into the next by their albums ([from] and [to] album ids): not while an album plays through
+ * ([albumPlaying]), and with "Keep an album's songs whole" ([keepAlbums], #247) not wherever two of an album's songs
+ * meet (a playlist, shuffle, a radio). An album played as a DJ set ([dj]) is a set: it blends.
+ */
+internal fun blendsAcrossAlbum(from: String?, to: String?, albumPlaying: Boolean, keepAlbums: Boolean, dj: Boolean): Boolean {
+    val sameAlbum = from != null && from == to
+    return dj || !(sameAlbum && (albumPlaying || keepAlbums))
+}
+
 @Serializable
 private data class SavedQueue(
     val songs: List<Song>, val index: Int, val positionMs: Long, val title: String,
@@ -82,7 +94,11 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
     /** Sing: the song's vocals taken out as it plays (first, on the music as it came from the decoder). */
     private val vocals by lazy { com.prism.music.playback.sing.VocalStemProcessor(c.sing) }
     private val headphoneEq = ParametricEqProcessor()
+    /** Skip silence for songs: their start and end only (#210); episodes keep Media3's skipper. */
+    private val edges = EdgeSilenceProcessor()
     private val spatial = SpatialAudioProcessor()
+    /** "Pause when muted" (#157). */
+    private val muteWatch by lazy { MuteWatch(this, player) { c.settings.current.behavior.pauseOnMute } }
     private val normalizer = NormalizerProcessor()
     private var songLoudness: Float? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -110,6 +126,8 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
     /** The tracked play doesn't count towards taste (an excluded song, playlist or artist). */
     private var trackedExcluded = false
     private val retries = HashMap<String, Int>()
+    /** When each music video last got its streams asked for afresh after an error ([videoRetryAllowed]). */
+    private val videoRetriedAt = HashMap<String, Long>()
     private var saveJob: Job? = null
     private var extrasJob: Job? = null
 
@@ -117,6 +135,7 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
     override fun onCreate() {
         super.onCreate()
         PlaybackServices.running = this::class.java
+        if (com.prism.music.BuildConfig.DEBUG) PlaybackServices.failForTest = { onPlayerError(it) }
         AudioDiagnostics.init(this)
         // Media3's own audio warnings (spurious AudioTrack timestamps, position jumps…) go into the diagnostics too.
         androidx.media3.common.util.Log.setLogger(object : androidx.media3.common.util.Log.Logger {
@@ -140,8 +159,14 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
                     .setEnableFloatOutput(enableFloatOutput || c.settings.current.lossless)
                     .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
                     // The visualizer's tap last (1.7.4): what you hear; it passes the sound through untouched and
-                    // only copies it while a visualizer is on screen.
-                    .setAudioProcessors(arrayOf(vocals, headphoneEq, spatial, normalizer, androidx.media3.exoplayer.audio.TeeAudioProcessor(VisualizerTap)))
+                    // only copies it while a visualizer is on screen. Songs' silence is trimmed after Sing (which
+                    // counts the song's own frames) and before the effects, through a chain that tells the player what
+                    // was left out (#210).
+                    .setAudioProcessorChain(
+                        EdgeSilenceProcessor.Chain(
+                            edges, arrayOf(vocals, edges, headphoneEq, spatial, normalizer, androidx.media3.exoplayer.audio.TeeAudioProcessor(VisualizerTap)),
+                        )
+                    )
                     .build()
 
             override fun buildAudioRenderers(
@@ -193,7 +218,7 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         player.addListener(this)
         player.addAnalyticsListener(StatsListener())
         player.addAnalyticsListener(DiagnosticsListener())
-        player.skipSilenceEnabled = c.settings.current.skipSilence
+        applySkipSilence()
 
         sessionPlayer = LyricsOverlayPlayer(player)
         carLyrics = CarLyrics(this, c, player, sessionPlayer, scope)
@@ -204,7 +229,9 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             .setSessionActivity(
                 PendingIntent.getActivity(
                     this, 0,
-                    Intent(this, com.prism.music.PrismActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                    // On a TV, Prism TV's own screen (1.8.0).
+                    Intent(this, if (com.prism.music.ui.tv.TvDevice.isTv(this)) com.prism.music.TvActivity::class.java else com.prism.music.PrismActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
                     PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
                 )
             )
@@ -222,12 +249,30 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         })
         // Keep the media notification (and the system media controls) up for a
         // paused or restored queue, not only while audio is actively playing.
-        setShowNotificationForIdlePlayer(MediaSessionService.SHOW_NOTIFICATION_FOR_IDLE_PLAYER_ALWAYS)
+        // Not after the listener swiped it away, until something plays again ([closedFromNotification]).
+        setShowNotificationForIdlePlayer(
+            if (notificationClosed()) MediaSessionService.SHOW_NOTIFICATION_FOR_IDLE_PLAYER_NEVER
+            else MediaSessionService.SHOW_NOTIFICATION_FOR_IDLE_PLAYER_ALWAYS,
+        )
+        // Android refuses a foreground service started from the background unless the start is exempt (a media button,
+        // the system's own media controls); a play from another app then can't make sound. Logged for #187.
+        setListener(object : MediaSessionService.Listener {
+            override fun onForegroundServiceStartNotAllowedException() =
+                AudioDiagnostics.log("control", "Android refused to bring playback to the foreground (started from the background)")
+        })
 
         effects.attach(player.audioSessionId)
         c.onStreamResolved = { id -> scope.launch { applyStreamStats(id) } }
-        scope.launch { c.settings.flow.map { it.eq }.distinctUntilChanged().collect { effects.apply(it) } }
-        scope.launch { c.settings.flow.map { it.skipSilence }.distinctUntilChanged().collect { player.skipSilenceEnabled = it } }
+        // The equalizer as set, or the preset picked for the output playing now (the car's, the earbuds'; A3).
+        scope.launch {
+            kotlinx.coroutines.flow.combine(c.settings.flow.map { it.eq }, c.headphoneEq.output, c.eqPresets.outputs, c.eqPresets.saved) { eq, out, map, saved ->
+                com.prism.music.data.prefs.EqPresetStore.effective(eq, out?.key, map, saved)
+            }.distinctUntilChanged().collect { eqNow = it; effects.apply(it) }
+        }
+        scope.launch { c.settings.flow.map { it.skipSilence to it.sound.skipSilenceEpisodes }.distinctUntilChanged().collect { applySkipSilence() } }
+        scope.launch { c.settings.flow.map { it.sound.normalizeTarget to it.sound.normalizeAlbums }.distinctUntilChanged().drop(1).collect { applyNormalization() } }
+        sessionPlayer.gentle = ::gentle
+        scope.launch { c.settings.flow.map { it.behavior.pauseOnMute }.distinctUntilChanged().collect { muteWatch.update() } }
         scope.launch { c.settings.flow.map { it.audioDiagnostics }.distinctUntilChanged().collect { on -> AudioDiagnostics.setEnabled(on) { AudioDiagnostics.about(c) } } }
         // The buttons beside play follow Settings → Player → Buttons as soon as they're changed.
         scope.launch { c.settings.flow.map { it.sessionButtons }.distinctUntilChanged().drop(1).collect { updateButtons() } }
@@ -257,8 +302,7 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         // Sing: getting the playing and next songs ready, and the key moved for the singer.
         scope.launch {
             kotlinx.coroutines.flow.combine(c.sing.on, c.sing.semitones) { on, st -> on to st }.collect { (on, _) ->
-                val pitch = singPitch()
-                if (player.playbackParameters.pitch != pitch) player.playbackParameters = androidx.media3.common.PlaybackParameters(player.playbackParameters.speed, pitch)
+                val pitch = applyPitch()
                 AudioDiagnostics.log("sing", "key ${c.sing.semitones.value} (pitch %.3f), Sing ${if (on) "on" else "off"}".format(pitch))
                 if (on) singAhead()
             }
@@ -321,7 +365,9 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             scanFromPhone = { id -> scope.launch { c.mixTempo.measure(id, network = false) } },
             buildTail = ::buildTailPlayer,
             onSettled = ::restoreMusicSpeed,
-            pitch = ::singPitch,
+            pitch = ::pitchNow,
+            curve = { c.settings.current.sound.crossfadeCurve },
+            state = c.mixState,
         ).also { it.start() }
         // Prism Connect: the speaker or TV being cast to plays what this player plays, and its volume is the session's.
         sessionPlayer.remote = object : LyricsOverlayPlayer.Remote {
@@ -336,13 +382,14 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
                 // The renderer gets the sound only: a video goes back to the song, and episodes play at 1×.
                 videoWanted = false
                 if (player.currentMediaItem?.videoModeId != null) scope.launch { setVideoMode(false) }
-                if (player.playbackParameters.speed != 1f) player.setPlaybackSpeed(1f)
+                if (player.playbackParameters != androidx.media3.common.PlaybackParameters.DEFAULT) player.playbackParameters = androidx.media3.common.PlaybackParameters.DEFAULT
             }
 
             override fun afterCasting() {
                 val now = player.currentMediaItem?.toSong()
                 if (now?.isEpisode == true && episodeSpeed != 1f) player.setPlaybackSpeed(episodeSpeed)
                 else if (now != null && !now.isEpisode && !now.isLive && musicSpeed != 1f) player.setPlaybackSpeed(musicSpeed)
+                applyPitch()
             }
 
             override fun remoteChanged() = sessionPlayer.remoteChanged()
@@ -352,6 +399,8 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
     }
 
     private lateinit var mix: MixEngine
+    /** The equalizer in use now (as set, or the output's own preset). */
+    private var eqNow = com.prism.music.data.prefs.EqSettings()
 
     /**
      * Whether Mix may blend these two: not an album running into its own next track (albums are made to flow on
@@ -370,8 +419,7 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         if (c.queue.followingHost || c.together.state.value !is com.prism.music.playback.together.TogetherState.Idle) return false
         // Only while an album plays through (a radio or playlist that puts two of an album's songs side by side blends).
         // An album played as a DJ set is a set: it blends.
-        val album = a.album?.id
-        return c.dj.onNow || !(album != null && album == b.album?.id && c.queue.source.value.kind == QueueKind.ALBUM)
+        return blendsAcrossAlbum(a.album?.id, b.album?.id, c.queue.source.value.kind == QueueKind.ALBUM, c.settings.current.mixKeepAlbums, c.dj.onNow)
     }
 
     /**
@@ -422,27 +470,31 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             .also {
                 it.skipSilenceEnabled = false
                 // The ending song in the key it was playing in (Sing): the blend used to drop back to the original key.
-                singPitch().takeIf { p -> p != 1f }?.let { p -> it.playbackParameters = androidx.media3.common.PlaybackParameters(1f, p) }
+                pitchNow().takeIf { p -> p != 1f }?.let { p -> it.playbackParameters = androidx.media3.common.PlaybackParameters(1f, p) }
                 // With the equalizer on, the tail gets its own audio session and its own copy of the equalizer (Reddit R3:
                 // "crossfade breaks while the equalizer is on"). Two players on one session share one effect chain, which
                 // the platform rebuilds as the tail's track comes and goes. Without the equalizer it shares the main
                 // session, as before (other apps' effects such as Dolby follow that one).
-                if (s.eq.enabled) {
+                val eq = eqNow
+                if (eq.enabled) {
                     val session = androidx.media3.common.util.Util.generateAudioSessionIdV21(this)
                     it.setAudioSessionId(session)
-                    val tailEffects = AudioEffects(this, announce = false).apply { apply(s.eq); attach(session) }
+                    val tailEffects = AudioEffects(this, announce = false).apply { apply(eq); attach(session) }
                     it.addAnalyticsListener(object : AnalyticsListener {
                         override fun onPlayerReleased(eventTime: AnalyticsListener.EventTime) = tailEffects.shutdown()
                     })
-                    AudioDiagnostics.log("mix", "tail on its own session $session with the equalizer (${s.eq.preset})")
+                    AudioDiagnostics.log("mix", "tail on its own session $session with the equalizer (${eq.preset})")
                 } else it.setAudioSessionId(player.audioSessionId)
             }
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession = session
 
+    /** Whether this service is in the foreground now (only known on Android 10+; below, it says yes). */
+    private fun inForeground(): Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || foregroundServiceType != 0
+
     override fun onTaskRemoved(rootIntent: Intent?) {
-        saveQueue()
+        saveQueue(now = true)
         // Settings → Playback → "Stop when swiped away" (#45): closing Prism from Recents ends the music too (some
         // phones, Samsung's among them, otherwise keep it playing with no app on screen).
         if (c.settings.current.stopOnSwipeAway) {
@@ -456,13 +508,15 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
 
     override fun onDestroy() {
         if (PlaybackServices.running == this::class.java) PlaybackServices.running = null
+        PlaybackServices.failForTest = null
         flushPlayTime()
         saveEpisodePosition()
-        saveQueue()
+        saveQueue(now = true)
         player.currentMediaItem?.toSong()?.let { song ->
             com.prism.music.widget.Widgets.update(this, song, false, song.id in c.library.likedIds.value, player.currentPosition, player.duration.takeIf { it > 0 })
         }
         mix.release()
+        muteWatch.release()
         c.cast.detach(player)
         c.player.detach()
         carLyrics.stop()
@@ -496,7 +550,8 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             scheduleSave()
             return
         }
-        flushPlayTime()
+        // Next pressed (or a song picked) before this one had its say: a skip, for recommendations' sake.
+        flushPlayTime(skipped = reason == Player.MEDIA_ITEM_TRANSITION_REASON_SEEK)
         applyLiveVideo()
         val song = mediaItem?.toSong() ?: return
         // Disliked songs are passed over when the queue reaches them on its own (tapping one still plays it), and so are
@@ -521,6 +576,9 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         }
         trackedSong = song
         trackedSource = sourceOf(mediaItem)
+        trackedRecommended = picked || mediaItem.mediaId in c.queue.smartPicks.value ||
+            c.queue.source.value.originId?.let { com.prism.music.data.foryou.ForYou.isMixId(it) } == true
+        c.lastFm.started(song)
         trackedExcluded = c.exclusions.outOfTaste(song, c.queue.source.value.originId)
         // Podcast episodes pick up where they were left, and play at the speed picked for episodes.
         if (song.isEpisode) {
@@ -538,6 +596,8 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             if (lastWasEpisode) videoWanted = false
         }
         lastWasEpisode = song.isEpisode
+        applyPitch()
+        applySkipSilence()
         // Already playing: a seamless move on (gapless, or a Mix blend); nothing to time.
         startedLoading = if (player.isPlaying) null else song.id to SystemClock.elapsedRealtime()
         retries.remove(song.id)
@@ -569,7 +629,9 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         continueVideo()
         maybeAutoplay()
         prefetchNext()
+        songCoverForVideo(song)
         updateButtons()
+        PlayTileService.update(this)
         carLyrics.refresh()
         scheduleSave()
     }
@@ -593,6 +655,71 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             val song = player.currentMediaItem?.toSong() ?: return
             if (!song.isEpisode && !song.isLive && !c.cast.casting) player.setPlaybackSpeed(v)
         }
+
+    /** Songs' own pitch in semitones (1.7.8, R12; the Speed & pitch sheet), apart from Sing's key. */
+    var musicPitch = 0
+        set(v) { field = v; if (::player.isInitialized) applyPitch() }
+
+    /** The pitch to play at now: Sing's key and the listener's own pitch, for songs (episodes, live and casting at 1). */
+    private fun pitchNow(): Float {
+        val song = player.currentMediaItem?.toSong()
+        val own = if (song == null || song.isEpisode || song.isLive || c.cast.casting) 0 else musicPitch
+        return singPitch() * Math.pow(2.0, own / 12.0).toFloat()
+    }
+
+    /** Puts [pitchNow] on the player (the speed stays); returns it. */
+    private fun applyPitch(): Float {
+        val pitch = pitchNow()
+        if (player.playbackParameters.pitch != pitch) player.playbackParameters = androidx.media3.common.PlaybackParameters(player.playbackParameters.speed, pitch)
+        return pitch
+    }
+
+    /**
+     * Skip silence for what's playing: songs and podcast episodes each have their own switch (1.7.8, A4). Songs only
+     * lose the silence at their start and end ([edges], #210); an episode's pauses are shortened too (Media3's skipper).
+     */
+    private fun applySkipSilence() {
+        val s = c.settings.current
+        edges.enabled = s.skipSilence
+        // 1.8.0's one choice has no "songs only": songs trimmed reads as "Songs and podcasts" (SoundChoices), so it is.
+        val on = player.currentMediaItem?.toSong()?.isEpisode == true && (s.sound.skipSilenceEpisodes || s.skipSilence)
+        if (player.skipSilenceEnabled != on) player.skipSilenceEnabled = on
+    }
+
+    private var fadeJob: Job? = null
+
+    /**
+     * "Fade on pause and play" (1.7.8, A5): a pause fades the sound out over a quarter of a second first, a play starts
+     * silent and comes up. Through the player's own volume (heard at once). Not mid-crossfade (the blend owns the volume)
+     * or while casting. Returns false when the change should simply be made.
+     */
+    internal fun gentle(play: Boolean): Boolean {
+        if (!c.settings.current.sound.pauseFade || mixing() || c.cast.casting) return false
+        if (play == player.playWhenReady && fadeJob?.isActive != true) return false
+        fadeJob?.cancel()
+        fadeJob = scope.launch {
+            if (!play) {
+                val from = player.volume
+                for (i in 1..PAUSE_FADE_STEPS) {
+                    player.volume = from * (1f - i.toFloat() / PAUSE_FADE_STEPS).let { it * it }
+                    delay(PAUSE_FADE_STEP_MS)
+                }
+                player.pause()
+                player.volume = 1f
+            } else {
+                val from = if (player.playWhenReady) player.volume else 0f
+                player.volume = from
+                if (player.playbackState == Player.STATE_IDLE) player.prepare()
+                player.play()
+                for (i in 1..PAUSE_FADE_STEPS) {
+                    delay(PAUSE_FADE_STEP_MS)
+                    player.volume = from + (1f - from) * (i.toFloat() / PAUSE_FADE_STEPS).let { it * it }
+                }
+                player.volume = 1f
+            }
+        }
+        return true
+    }
 
     private fun mixing() = ::mix.isInitialized && mix.blending
 
@@ -619,7 +746,37 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
     /** The song that just came up and when, until it's heard: how long starting a song takes (logcat tag PrismStream). */
     private var startedLoading: Pair<String, Long>? = null
 
+    /** Whether the listener swiped the notification away and nothing has played since. */
+    private fun notificationClosed() = getSharedPreferences("playback_service", MODE_PRIVATE).getBoolean("notification_closed", false)
+
+    private fun setNotificationClosed(closed: Boolean) {
+        if (notificationClosed() == closed) return
+        getSharedPreferences("playback_service", MODE_PRIVATE).edit().putBoolean("notification_closed", closed).apply()
+        setShowNotificationForIdlePlayer(
+            if (closed) MediaSessionService.SHOW_NOTIFICATION_FOR_IDLE_PLAYER_NEVER
+            else MediaSessionService.SHOW_NOTIFICATION_FOR_IDLE_PLAYER_ALWAYS,
+        )
+    }
+
+    /**
+     * The paused song's notification was swiped away: that's the listener closing Prism. Where they were is saved, the
+     * notification stays away until something plays, and the service stops (it had stayed in the foreground, listed in
+     * Android's "background activity" until stopped there).
+     */
+    private fun closedFromNotification() {
+        if (player.isPlaying) return
+        android.util.Log.i("PrismControl", "the notification was swiped away: stopping until something plays")
+        AudioDiagnostics.log("control", "the notification was swiped away: Prism stops until something plays")
+        setNotificationClosed(true)
+        flushPlayTime()
+        saveEpisodePosition()
+        saveQueue(now = true)
+        pauseAllPlayersAndStopSelf()
+    }
+
     override fun onIsPlayingChanged(isPlaying: Boolean) {
+        if (isPlaying) setNotificationClosed(false)
+        PlayTileService.update(this)
         val now = SystemClock.elapsedRealtime()
         if (isPlaying) startedLoading?.let { (id, at) ->
             if (id == player.currentMediaItem?.mediaId) android.util.Log.i("PrismStream", "$id playing ${now - at} ms after it came up (${c.streamDetails[id]?.first ?: "?"})")
@@ -644,7 +801,14 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
      * radio song cold, since the suggestions arrive after the song has started.
      */
     override fun onTimelineChanged(timeline: androidx.media3.common.Timeline, reason: Int) {
+        // The processors that follow songs across gapless moves count by the timeline as it is now (a queue change
+        // doesn't flush them), and learn a song's length once it's known.
+        edges.timelineChanged(timeline)
+        vocals.timelineChanged(timeline)
         if (reason != Player.TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED) return
+        // What's lined up changed (songs added, moved, removed, the queue emptied): kept for the next start. It was only
+        // saved on a song change, play / pause, shuffle or repeat, so an emptied or edited queue could come back as it was.
+        scheduleSave()
         val i = player.nextMediaItemIndex
         val next = if (i == C.INDEX_UNSET) null else player.getMediaItemAt(i).mediaId
         if (next != null && next != warmedNext && player.currentMediaItem != null) prefetchNext()
@@ -665,10 +829,35 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             android.util.Log.i("PrismStream", "${player.currentMediaItem?.mediaId} stalled ${now - stalledAt} ms at ${player.currentPosition} ms")
             stalledAt = 0
         }
+        if (playbackState == Player.STATE_READY) checkLength()
+    }
+
+    /** The song whose length was last checked against what's playing ([checkLength]). */
+    private var lengthChecked: String? = null
+
+    /**
+     * Notes in diagnostics when what plays runs much longer or shorter than the song (Reddit, 1.7.9: an album song
+     * played as someone's guitar cover). The release check's night hunt looks for these lines; nothing else changes.
+     */
+    private fun checkLength() {
+        val item = player.currentMediaItem ?: return
+        if (item.mediaId == lengthChecked) return
+        val song = item.toSong() ?: return
+        val playing = player.duration
+        if (playing <= 0 || song.durationSec <= 0 || song.isLive || song.isEpisode || song.isLocal) return
+        lengthChecked = item.mediaId
+        val diff = playing / 1000 - song.durationSec
+        if (kotlin.math.abs(diff) > LENGTH_MISMATCH_SEC) AudioDiagnostics.log(
+            "song",
+            "length mismatch: ${song.id} \"${song.title}\" is ${song.durationSec} s but ${playing / 1000} s plays" +
+                (c.versions.of(song.id)?.let { " (picked version $it)" } ?: c.soundFrom[song.id]?.let { " (from its video $it)" } ?: "") +
+                (if (item.videoModeId != null) " (video mode)" else ""),
+        )
     }
 
     override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
         vocals.shuffle = shuffleModeEnabled
+        edges.shuffle = shuffleModeEnabled
         // Shuffle and DJ mode both decide the order: the listener's shuffle wins.
         if (shuffleModeEnabled && c.dj.onNow) c.dj.setOn(false)
         // Shuffle off (from anywhere: the notification, the car) is Smart Shuffle off too.
@@ -681,6 +870,7 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
 
     override fun onRepeatModeChanged(repeatMode: Int) {
         vocals.repeatMode = repeatMode
+        edges.repeatMode = repeatMode
         updateButtons()
         scheduleSave()
     }
@@ -691,6 +881,25 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
 
     override fun onPlayerError(error: PlaybackException) {
         val id = player.currentMediaItem?.mediaId ?: return
+        // An Apple Lossless file this phone has no decoder for (#135): the lossless add-on's file is set aside and the
+        // song's stream plays; a file of your own says so and stays put rather than being skipped.
+        val format = (error as? androidx.media3.exoplayer.ExoPlaybackException)?.takeIf { it.type == androidx.media3.exoplayer.ExoPlaybackException.TYPE_RENDERER }?.rendererFormat
+        if (format?.sampleMimeType?.contains("alac", true) == true) {
+            val idx = player.currentMediaItemIndex
+            if (id.startsWith(Song.LOCAL_PREFIX)) {
+                AudioDiagnostics.log("error", "$id is ALAC and this phone can't decode it (${error.errorCodeName})")
+                c.player.reportError(tr(R.string.this_phone_can_t_play_apple))
+                return
+            }
+            // Only once per file: one that can't be told apart (or was already set aside) fails as usual, never loops.
+            val file = c.localLossless.matched[id]?.uri
+            if (file == null || !c.localLossless.unplayable.add(file)) { failAndSkip(error); return }
+            AudioDiagnostics.log("error", "$id's ALAC file won't decode here: its stream plays instead")
+            player.seekToDefaultPosition(idx)
+            player.prepare()
+            player.play()
+            return
+        }
         // It turned out to be a live stream (a "Listen together" station): play it again as one, from its HLS manifest.
         val live = generateSequence(error as Throwable) { it.cause }.filterIsInstance<com.prism.music.data.stream.LiveStreamException>().firstOrNull()
         if (live != null) {
@@ -711,12 +920,15 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         // a direct link away, and the next answer comes the other way, through NewPipe); after that it falls back to
         // the song itself — never skip ahead.
         player.currentMediaItem?.videoModeId?.let { videoId ->
-            val key = "video:$videoId"
-            val tries = retries[key] ?: 0
             val parse = generateSequence(error as Throwable) { it.cause }.any { it is androidx.media3.common.ParserException }
-            if (tries < 1 && (httpCode == 403 || httpCode == 410 || parse)) {
-                retries[key] = tries + 1
-                AudioDiagnostics.log("video", "video $videoId failed (${httpCode ?: "unreadable"}): trying its streams afresh")
+            // A dropped connection or a timeout (a long seek on a slow TV, a fast skip) is worth one more go too. One
+            // go a minute per video: it used to be one per session, so a second refused link hours later (a seek far
+            // into the video) sent it back to the song for good.
+            val network = error.errorCode in PlaybackException.ERROR_CODE_IO_UNSPECIFIED..PlaybackException.ERROR_CODE_IO_READ_POSITION_OUT_OF_RANGE
+            val at = SystemClock.elapsedRealtime()
+            if (videoRetryAllowed(videoRetriedAt[videoId], at) && (httpCode == 403 || httpCode == 410 || parse || network)) {
+                videoRetriedAt[videoId] = at
+                AudioDiagnostics.log("video", "video $videoId failed (${httpCode ?: if (parse) "unreadable" else error.errorCodeName}): trying its streams afresh")
                 c.streams.invalidate(videoId, refused = true)
                 val pos = player.currentPosition
                 player.prepare()
@@ -730,14 +942,54 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         val attempts = retries[id] ?: 0
         // A download whose file can't be read (#183: "Skipping atom with length > 2147483647", stitched from two formats
         // by a download that resumed in another one): it's fetched again, and the song streams meanwhile.
-        val unreadable = generateSequence(error as Throwable) { it.cause }.any { it is androidx.media3.common.ParserException }
+        // Also the reader tripping over the bytes (1.7.9's check, "Woke Up Older": a cached part that mixed two versions
+        // of the song threw ArrayIndexOutOfBounds in the loader, "Unexpected exception loading stream"): every tap after
+        // read the same part and failed, since only a ParserException let it go.
+        val unreadable = generateSequence(error as Throwable) { it.cause }.any {
+            it is androidx.media3.common.ParserException || it is androidx.media3.exoplayer.upstream.Loader.UnexpectedLoaderException
+        }
         if (unreadable && retries["file:$id"] == null && c.downloads.redownload(id)) {
             retries["file:$id"] = 1
             AudioDiagnostics.log("song", "$id: its download can't be read (${(error.cause ?: error).message?.take(80)}); downloading it again and streaming it now")
             val pos = player.currentPosition
             scope.launch {
-                // The download's removal lands on the download manager's thread first, so the player reads from the network.
-                delay(600)
+                // The download's removal lands on the download manager's thread first, so the player reads from the
+                // network. A fixed 0.6 s wasn't always enough (the owner's phone, 1.7.9's check): the broken file was
+                // read again and the song skipped.
+                withTimeoutOrNull(8_000) { while (withContext(Dispatchers.IO) { c.downloadedWhole(id) }) delay(100) }
+                player.prepare()
+                player.seekTo(pos)
+                player.play()
+            }
+            return
+        }
+        // A streamed song whose bytes can't be read (Reddit, 1.7.7: "Element 134 must be in a TrackEntry", one song every
+        // time): its cached part came from another format than today's stream, and the two were joined. Its cached bytes
+        // go and it's asked for afresh, once.
+        if (unreadable && retries["cache:$id"] == null && !id.startsWith(Song.LOCAL_PREFIX)) {
+            retries["cache:$id"] = 1
+            AudioDiagnostics.log("song", "$id: its cached part can't be read (${(error.cause ?: error).message?.take(80)}); playing it afresh")
+            val pos = player.currentPosition
+            scope.launch {
+                withContext(Dispatchers.IO) { c.forgetCachedAudio(id) }
+                c.streams.invalidate(id)
+                player.prepare()
+                player.seekTo(pos)
+                player.play()
+            }
+            return
+        }
+        // The phone took the audio decoder away mid-song (1.7.9's night check: screen off, Prism in the background,
+        // "releaseOutputBuffer() is valid only at Executing states; currently at Released state" at 0:58.9, and the
+        // song was skipped). The song itself is fine: it plays on from where it stopped with a new decoder, twice at most.
+        val codecKey = "codec:$id"
+        val codecTries = retries[codecKey] ?: 0
+        if (decoderLost(error) && codecTries < 2) {
+            retries[codecKey] = codecTries + 1
+            AudioDiagnostics.log("song", "$id: the phone released its decoder (${error.errorCodeName}); playing on from ${player.currentPosition / 1000} s")
+            val pos = player.currentPosition
+            scope.launch {
+                delay(300)
                 player.prepare()
                 player.seekTo(pos)
                 player.play()
@@ -775,7 +1027,7 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
                 c.soundFrom[id] = video
                 val here = unavailableHere(error)
                 AudioDiagnostics.log("song", "$id ${if (here) "isn't available here" else "won't play (${(error.cause ?: error).message})"}: playing its music video $video's sound")
-                c.player.reportError("${song.title} ${if (here) "isn't available where you are" else "wouldn't play"}, so its music video's sound plays")
+                c.player.reportError(tr(R.string.so_its_music_video_s_sound, song.title, if (here) tr(R.string.isn_t_available_where_you_are) else tr(R.string.wouldn_t_play)))
                 player.prepare()
                 player.play()
             }
@@ -786,7 +1038,7 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
 
     /** Says why a song didn't play, and moves on to the next one. */
     private fun failAndSkip(error: PlaybackException) {
-        c.player.reportError((error.cause ?: error).friendlyMessage("Playback failed"))
+        c.player.reportError((error.cause ?: error).friendlyMessage(tr(R.string.playback_failed)))
         if (player.hasNextMediaItem()) {
             scope.launch {
                 delay(1500)
@@ -801,8 +1053,8 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
 
     /**
      * Normalization gain for the current song: YouTube's loudness figure says how far the track
-     * sits from its reference level, so loud songs come down and quiet ones go up (by up to 6 dB;
-     * the limiter in [NormalizerProcessor] keeps those from clipping).
+     * sits from its reference level, so loud songs come down and quiet ones go up (as far as their
+     * peaks allow, [NormalizerProcessor.gainFor]; the limiter keeps those from clipping).
      */
     /** The normalization gain now applied (the ending song's, when a Mix blend's tail takes it over). */
     private var normalizeGainDb = 0f
@@ -813,16 +1065,35 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
      */
     private fun settling() = player.currentPosition < SETTLE_MS
 
+    /**
+     * "Albums as they are" (A2): while an album plays through, every song gets the same gain, set by the loudest of its
+     * songs measured so far, so a quiet interlude stays quiet next to the single. Null otherwise.
+     */
+    private fun albumLoudness(): Pair<Float, Float?>? {
+        if (!c.settings.current.sound.normalizeAlbums || c.queue.source.value.kind != QueueKind.ALBUM) return null
+        val album = trackedSong?.album?.id ?: return null
+        val songs = (0 until player.mediaItemCount).map { player.getMediaItemAt(it) }.filter { it.toSong()?.album?.id == album }
+            .filter { c.mixTempo.loudness(it.mediaId) != null }
+        val loudest = songs.maxOfOrNull { c.mixTempo.loudness(it.mediaId)!! } ?: return null
+        // The album's highest peak bounds how far all of it can be lifted (unknown while any song's is).
+        val peaks = songs.map { c.mixTempo.peak(it.mediaId) }
+        return loudest to (if (null in peaks) null else peaks.maxOf { it!! })
+    }
+
     private fun applyNormalization() {
         // The song's own measured loudness (integrated LUFS, from [MixTempo]'s scan) is the real figure. YouTube's
         // loudnessDb hardly differs between a loud master and a quiet one, so it only stands in until the song is
         // measured.
         val measured = trackedSong?.id?.let { c.mixTempo.loudness(it) }
         val yt = songLoudness
+        // The level picked (A2; -14 LUFS unless changed), and with "Albums as they are" one level for a whole album.
+        val target = c.settings.current.sound.normalizeTarget.toFloat()
+        val album = albumLoudness()
         val gain = when {
             !c.settings.current.normalize -> 0f
-            measured != null -> (TARGET_LUFS - measured).coerceIn(-12f, 6f)
-            yt != null -> (-yt).coerceIn(-12f, 6f)
+            album != null -> NormalizerProcessor.gainFor(target, album.first, album.second)
+            measured != null -> NormalizerProcessor.gainFor(target, measured, trackedSong?.id?.let { c.mixTempo.peak(it) })
+            yt != null -> NormalizerProcessor.gainFor(target, TARGET_LUFS + yt)
             else -> 0f
         }
         // Once the song is under way, a better figure eases in over two seconds, and a small one isn't worth a change
@@ -875,7 +1146,7 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             // Crossfade needs it, near its end).
             // With the waveform bar, the playing song goes first: its bar is waiting for it.
             for (song in songs.sortedBy { if (wave) it.id != playing else it.id == playing }) {
-                c.mixTempo.measure(song.id, network, edges, wave = wave)
+                c.mixTempo.measure(song.id, network, edges, wave = wave, peak = s.normalize)
                 // Measured while it's just begun: its own figure takes over (later in the song, a jump would be heard).
                 if (trackedSong?.id == song.id && settling()) applyNormalization()
             }
@@ -932,7 +1203,9 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             val existing = (0 until player.mediaItemCount).map { player.getMediaItemAt(it).mediaId }.toSet()
             val mine = if (!useYours) emptyList() else runCatching {
                 withContext(Dispatchers.IO) { c.yourMusic.radio(seeds, existing, 15, offlineOnly = offline) }
-            }.onFailure { android.util.Log.w("PrismRadio", "Prism radio failed", it) }.getOrNull().orEmpty().map { it.song }
+            }.onFailure { android.util.Log.w("PrismRadio", "Prism radio failed", it) }.getOrNull().orEmpty()
+                .let { com.prism.music.data.foryou.LocalRadio.besideYouTube(it, onlyYours = !useYouTube || mode == com.prism.music.data.prefs.AutoplaySource.YOURS) }
+                .map { it.song }
             // "Your music": YouTube only fills in when your own music has too little to follow with.
             val wantYouTube = useYouTube && (radio || mode != com.prism.music.data.prefs.AutoplaySource.YOURS || mine.size < 5)
             val r = if (!wantYouTube) null else runCatching {
@@ -942,18 +1215,27 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             // Dropped if the queue was replaced, or Autoplay was switched off, while loading.
             if ((r == null && mine.isEmpty()) || c.queue.source.value !== src || (!c.settings.current.autoplay && !radio)) return@launch
             if (r != null) c.queue.autoplayContinuation = r.continuation
-            val theirs = r?.songs.orEmpty()
-            val songs = when {
-                radio || mine.isEmpty() -> theirs
-                theirs.isEmpty() -> mine
-                // Both: mostly your own music, with two of YouTube's in every five.
-                else -> com.prism.music.data.foryou.MadeForYou.interleave(mine, theirs, 20) { it.primaryArtist.lowercase() }
+            // Not what was heard in the last few hours, nor what the listener turned down (skipped at once when a
+            // suggestion): YouTube's radio for a favourite brings the same songs back day after day otherwise.
+            val heardLately = withContext(Dispatchers.IO) {
+                runCatching { c.db.plays().eventsSince(System.currentTimeMillis() - RADIO_REST_MS).map { it.songId }.toSet() }.getOrDefault(emptySet())
             }
+            val fb = c.recFeedback
+            val theirs = r?.songs.orEmpty().filter { it.id !in heardLately && !fb.turnedDown(it.id, known = false) }
+            val freshShare = when {
+                radio || mine.isEmpty() -> 1.0
+                theirs.isEmpty() -> 0.0
+                // Both: YouTube's radio leads, your own songs that belong with it in between (about two in five).
+                else -> 0.6
+            }
+            // An artist a few times a batch at most, never twice running.
+            val songs = com.prism.music.data.foryou.Variety.arrange(mine, theirs, 25, freshShare, perArtist = 3) { it.primaryArtist.lowercase() }
             android.util.Log.i("PrismRadio", "autoplay after $seed: ${mine.size} of yours, ${theirs.size} from YouTube ($mode${if (offline) ", offline" else ""})")
             val add = songs.distinctBy { it.id }.filter { it.id !in existing && !c.library.isDisliked(it.id) && !c.exclusions.blocks(it) }
             if (add.isNotEmpty()) {
                 if (c.queue.autoplayStart.value < 0) c.queue.autoplayStart.value = player.mediaItemCount
                 player.addMediaItems(add.map { it.toMediaItem() })
+                fb.served(add.map { it.id })
             }
         }
     }
@@ -1201,9 +1483,12 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         }
         val vid = if (enabled) {
             val found = videoIdFor(song)
-            found.id ?: return if (found.lookupFailed) "Couldn't reach YouTube for the music video. Tap to try again." else "No music video for this song"
+            found.id ?: return if (found.lookupFailed) tr(R.string.couldn_t_reach_youtube_for_the) else tr(R.string.no_music_video_for_this_song)
         } else null
         if (player.currentMediaItemIndex != idx) return null
+        // Asked twice meanwhile (the service as the song started, and a screen showing video): the first already
+        // swapped it, so the second doesn't load it again.
+        if ((player.currentMediaItem?.videoModeId != null) == enabled) return null
         if (vid != null && failedVideos.remove(vid)) c.streams.invalidate(vid)
         // Videos often have an intro, so the same moment falls at a different time: carry the
         // listener to the matching spot. Uses the measured offset if it's ready (it's prefetched);
@@ -1221,12 +1506,15 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         if (player.playbackState == Player.STATE_IDLE) player.prepare()
         videoWatchdog?.cancel()
         if (vid != null) {
+            val switchedAt = android.os.SystemClock.elapsedRealtime()
             if (known == null && vid != song.id && now > 1_500) scope.launch {
                 val lag = c.videoSync.lagMs(song.id, vid) ?: return@launch
                 val current = player.currentMediaItem
-                // Only if the listener is still on this video and hasn't moved far since switching.
+                // Only if the listener is still on this video, and only right after switching: later, it's a jump in
+                // the middle of the video (#203: the measure took 14 s and moved it 7.9 s on). The lyrics follow the
+                // video by the same measure either way (PlayerConnection's video sync).
                 if (kotlin.math.abs(lag) >= 1_000 && current?.mediaId == song.id && current.videoModeId == vid &&
-                    kotlin.math.abs(player.currentPosition - pos) < 20_000
+                    android.os.SystemClock.elapsedRealtime() - switchedAt < LATE_VIDEO_SEEK_MS
                 ) player.seekTo(player.currentPosition + lag)
             }
             watchVideo(song.id)
@@ -1236,13 +1524,53 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
 
     private var videoWatchdog: Job? = null
 
-    /** No picture after a fair wait: fall back to the song (the button stays usable). */
+    /**
+     * A music video playing as a song shows its song's album cover, not a frame of the video (Reddit, 2026-10: "Carl
+     * Sagan" by Night Moves played with a still from its video), when its song can be found (YouTube's pairing, or a
+     * search for the same title by the same artist, once per video). Only the cover changes: the item keeps its address (and
+     * its video mode), so Media3 swaps it without a pause, and the video and its sound play on as they were.
+     */
+    private fun songCoverForVideo(song: Song) {
+        if (!song.isVideo || song.isLive || song.isLocal || song.isEpisode || song.isUpload) return
+        val item = player.currentMediaItem ?: return
+        // A video found as a song's video already shows its song's cover; a video with no song found when it was
+        // tapped (PlayerConnection.playQueue waits 4 s for it) is the item itself, shown as its video or, after Song, as its sound.
+        if (item.videoModeId != null && item.videoModeId != song.id) return
+        scope.launch {
+            // Its song if one was found to play (the session's), else the same title by the same artist at any length:
+            // only for the cover, so it's never kept as the song to play in its place.
+            val found = c.player.songFor(song) ?: runCatching { withContext(Dispatchers.IO) { c.ytm.songForVideo(song, anyLength = true) } }.getOrNull()
+            android.util.Log.i("PrismVideo", "cover for video ${song.id} \"${song.title}\": song ${found?.id} ${found?.thumbnail}")
+            val cover = found?.thumbnail?.takeIf { it != song.thumbnail } ?: return@launch
+            val idx = player.currentMediaItemIndex
+            val now = player.currentMediaItem
+            // Still this video; its picture or sound goes on as it is (the same address: same video mode).
+            if (now?.mediaId != song.id) return@launch
+            val current = now.toSong() ?: return@launch
+            swapInPlace(idx, current.copy(thumbnail = cover).toMediaItem(now.videoModeId))
+        }
+    }
+
+    /**
+     * No picture after a fair wait: fall back to the song (the button stays usable). While the video is still loading
+     * (a slow TV after a fast skip or a long seek) it waits on, up to [VIDEO_WAIT_MAX_MS]; the song playing on without
+     * a picture is the failure.
+     */
     private fun watchVideo(songId: String) {
         videoWatchdog?.cancel()
         videoWatchdog = scope.launch {
-            delay(20_000)
-            val cur = player.currentMediaItem
-            if (cur?.mediaId == songId && cur.videoModeId != null && player.videoSize.width <= 0) revertVideo(songId)
+            var waited = 0L
+            while (true) {
+                delay(VIDEO_WATCH_STEP_MS)
+                waited += VIDEO_WATCH_STEP_MS
+                val cur = player.currentMediaItem
+                if (cur?.mediaId != songId || cur.videoModeId == null) return@launch
+                when (videoWatchVerdict(player.videoSize.width > 0, player.playbackState == Player.STATE_BUFFERING, waited)) {
+                    VideoWatch.FINE -> return@launch
+                    VideoWatch.WAIT -> Unit
+                    VideoWatch.GIVE_UP -> { revertVideo(songId); return@launch }
+                }
+            }
         }
     }
 
@@ -1270,7 +1598,7 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             applyLiveVideo()
             if (player.playbackState == Player.STATE_IDLE) { player.prepare(); player.play() }
             c.player.onVideoFailed(songId)
-            c.player.reportError("The live video didn't load, so it's playing as audio. Tap the video button to try again.")
+            c.player.reportError(tr(R.string.the_live_video_didn_t_load))
             return
         }
         current.videoModeId?.let { failedVideos += it; prefetched -= it }
@@ -1282,10 +1610,13 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         player.prepare()
         player.play()
         c.player.onVideoFailed(songId)
-        c.player.reportError("The music video didn't load, so the song is playing. Tap the video button to try again.")
+        c.player.reportError(tr(R.string.the_music_video_didn_t_load))
     }
 
-    private fun flushPlayTime() {
+    /** Whether the song being heard was Prism's or YouTube's suggestion (radio, autoplay, a mix, Smart Shuffle). */
+    private var trackedRecommended = false
+
+    private fun flushPlayTime(skipped: Boolean = false) {
         val now = SystemClock.elapsedRealtime()
         if (playStartedAt > 0) accumulatedMs += now - playStartedAt
         playStartedAt = if (::player.isInitialized && player.isPlaying) now else 0
@@ -1294,6 +1625,17 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         val excluded = trackedExcluded
         val ms = accumulatedMs
         accumulatedMs = 0
+        // Last.fm counts every stretch heard (#133); it scrobbles once the play is long enough.
+        if (song != null && ms > 0) c.lastFm.heard(song, ms)
+        // What the listener made of a suggestion (1.7.9): skipped within its first moments, it's left out of them for a while;
+        // heard through, it's welcome. Under ten seconds a play isn't kept at all, so this is the only trace of a quick skip.
+        if (song != null && trackedRecommended && !song.isEpisode && !song.isLive) {
+            val length = song.durationSec * 1000L
+            when {
+                skipped && ms < minOf(30_000L, if (length > 0) length * 3 / 10 else 30_000L) -> c.recFeedback.skipped(song.id, song.primaryArtist)
+                length > 0 && ms >= length * 7 / 10 -> c.recFeedback.heard(song.id, song.primaryArtist)
+            }
+        }
         // Replay, smart downloads and search taste are about music: episodes aren't counted.
         if (song != null && ms >= 10_000 && !song.isEpisode) {
             scope.launch(Dispatchers.IO) {
@@ -1309,7 +1651,8 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
     private fun singAhead() {
         if (!c.sing.onNow && !c.settings.current.singAlwaysReady) return
         val songs = listOfNotNull(player.currentMediaItem, *upcoming(1).toTypedArray()).filter { it.videoModeId == null }.mapNotNull { it.toSong() }
-        c.sing.prepare(songs)
+        // Where the playing song is: Sing switched on part way through starts there (1.8.x).
+        c.sing.prepare(songs, player.currentPosition)
     }
 
     /** What a play of [item] is counted as (play_events.source): the kind of queue it's in. */
@@ -1384,8 +1727,11 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             val r = runCatching { withContext(Dispatchers.IO) { c.radio(seed.id, "RDAMVM${seed.id}") } }.getOrNull() ?: continue
             r.songs.filter { s ->
                 s.id !in inQueue && s.id !in recent && !s.isVideo && !s.isLive && !c.library.isDisliked(s.id) && !c.exclusions.blocks(s) &&
-                    smartPool.none { it.id == s.id }
+                    smartPool.none { it.id == s.id } && !c.recFeedback.turnedDown(s.id, known = false) &&
+                    // One offered in the last day or two (and not taken up) waits its turn.
+                    (c.recFeedback.servedDaysAgo(s.id) ?: 99) > 1
             }.shuffled().take(6).forEach { smartPool += it }
+        c.recFeedback.served(smartPool.map { it.id })
         }
     }
 
@@ -1529,19 +1875,19 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             CommandButton.Builder(icon).setDisplayName(name).setSessionCommand(command).setSlots(CommandButton.SLOT_OVERFLOW).build()
         val custom = c.settings.current.sessionButtons.map { b ->
             when (b) {
-                SessionButton.LIKE -> button(if (liked) CommandButton.ICON_HEART_FILLED else CommandButton.ICON_HEART_UNFILLED, if (liked) "Remove from liked" else "Like", likeCommand)
-                SessionButton.SHUFFLE -> button(if (player.shuffleModeEnabled) CommandButton.ICON_SHUFFLE_ON else CommandButton.ICON_SHUFFLE_OFF, if (player.shuffleModeEnabled) "Shuffle off" else "Shuffle", shuffleCommand)
+                SessionButton.LIKE -> button(if (liked) CommandButton.ICON_HEART_FILLED else CommandButton.ICON_HEART_UNFILLED, if (liked) tr(R.string.remove_from_liked) else tr(R.string.widget_like), likeCommand)
+                SessionButton.SHUFFLE -> button(if (player.shuffleModeEnabled) CommandButton.ICON_SHUFFLE_ON else CommandButton.ICON_SHUFFLE_OFF, if (player.shuffleModeEnabled) tr(R.string.shuffle_off) else tr(R.string.shuffle), shuffleCommand)
                 SessionButton.REPEAT -> when (player.repeatMode) {
-                    Player.REPEAT_MODE_ALL -> button(CommandButton.ICON_REPEAT_ALL, "Repeat one", repeatCommand)
-                    Player.REPEAT_MODE_ONE -> button(CommandButton.ICON_REPEAT_ONE, "Repeat off", repeatCommand)
-                    else -> button(CommandButton.ICON_REPEAT_OFF, "Repeat", repeatCommand)
+                    Player.REPEAT_MODE_ALL -> button(CommandButton.ICON_REPEAT_ALL, tr(R.string.repeat_one), repeatCommand)
+                    Player.REPEAT_MODE_ONE -> button(CommandButton.ICON_REPEAT_ONE, tr(R.string.repeat_off), repeatCommand)
+                    else -> button(CommandButton.ICON_REPEAT_OFF, tr(R.string.repeat), repeatCommand)
                 }
-                SessionButton.CAR_LYRICS -> if (c.settings.current.carLyrics) button(CommandButton.ICON_SUBTITLES, "Hide lyrics", lyricsCommand)
-                    else button(CommandButton.ICON_SUBTITLES_OFF, "Show lyrics", lyricsCommand)
-                SessionButton.RADIO -> button(CommandButton.ICON_RADIO, "Start radio", radioCommand)
-                SessionButton.DISLIKE -> button(CommandButton.ICON_THUMB_DOWN_UNFILLED, "Not for me", dislikeCommand)
-                SessionButton.BACK_10 -> button(CommandButton.ICON_SKIP_BACK_10, "Back 10 seconds", back10Command)
-                SessionButton.AHEAD_30 -> button(CommandButton.ICON_SKIP_FORWARD_30, "Ahead 30 seconds", ahead30Command)
+                SessionButton.CAR_LYRICS -> if (c.settings.current.carLyrics) button(CommandButton.ICON_SUBTITLES, tr(R.string.hide_lyrics), lyricsCommand)
+                    else button(CommandButton.ICON_SUBTITLES_OFF, tr(R.string.show_lyrics), lyricsCommand)
+                SessionButton.RADIO -> button(CommandButton.ICON_RADIO, tr(R.string.start_radio), radioCommand)
+                SessionButton.DISLIKE -> button(CommandButton.ICON_THUMB_DOWN_UNFILLED, tr(R.string.not_for_me), dislikeCommand)
+                SessionButton.BACK_10 -> button(CommandButton.ICON_SKIP_BACK_10, tr(R.string.back_10_seconds), back10Command)
+                SessionButton.AHEAD_30 -> button(CommandButton.ICON_SKIP_FORWARD_30, tr(R.string.ahead_30_seconds), ahead30Command)
             }
         }
         // Previous/next named for their slots outright: with only custom buttons, a controller that lays out by slots (the
@@ -1549,9 +1895,9 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         // Media3 takes the standard skip actions off the phone's media session, so widgets and "Dynamic Island" apps
         // that read those couldn't skip (Reddit R4). So they're only named when a watch's companion app is on the phone.
         val buttons = (if (watchPaired) listOf(
-            CommandButton.Builder(CommandButton.ICON_PREVIOUS).setDisplayName("Previous")
+            CommandButton.Builder(CommandButton.ICON_PREVIOUS).setDisplayName(tr(R.string.widget_previous))
                 .setPlayerCommand(Player.COMMAND_SEEK_TO_PREVIOUS).setSlots(CommandButton.SLOT_BACK).build(),
-            CommandButton.Builder(CommandButton.ICON_NEXT).setDisplayName("Next")
+            CommandButton.Builder(CommandButton.ICON_NEXT).setDisplayName(tr(R.string.widget_next))
                 .setPlayerCommand(Player.COMMAND_SEEK_TO_NEXT).setSlots(CommandButton.SLOT_FORWARD).build(),
         ) else emptyList()) + custom
         session.setMediaButtonPreferences(buttons)
@@ -1605,7 +1951,7 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             if (idx > 0) player.removeMediaItems(0, idx)
             player.shuffleModeEnabled = false
             player.addMediaItems(add.map { it.toMediaItem() })
-            c.queue.source.value = QueueSource(QueueKind.RADIO, "${song.title} radio", seedId = song.id)
+            c.queue.source.value = QueueSource(QueueKind.RADIO, tr(R.string.radio_3, song.title), seedId = song.id)
             c.queue.autoplayStart.value = -1
             c.queue.autoplayContinuation = r.continuation
         }
@@ -1655,8 +2001,8 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
     }
 
     private fun savedLength(id: String): Long = c.localLossless.matched[id]?.size ?: runCatching {
-        listOf(c.downloadCache, c.playerCache).firstNotNullOfOrNull { cache ->
-            androidx.media3.datasource.cache.ContentMetadata.getContentLength(cache.getContentMetadata(id)).takeIf { it > 0 }
+        listOf(c.downloadCache to id, c.playerCache to c.songCacheKey(id)).firstNotNullOfOrNull { (cache, key) ->
+            androidx.media3.datasource.cache.ContentMetadata.getContentLength(cache.getContentMetadata(key)).takeIf { it > 0 }
         } ?: 0L
     }.getOrDefault(0L)
 
@@ -1669,7 +2015,13 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         saveJob = scope.launch { delay(2000); saveQueue() }
     }
 
-    private fun saveQueue() {
+    /**
+     * Writes what's lined up to queue.json. [now]: on this thread, for the last save as the service ends (1.7.9.3: it
+     * went through [scope], which onDestroy cancels right after, so the final save could be dropped and the queue from
+     * before came back; the in-app test PlaybackModesTest failed on it about every other run). Other saves go through
+     * one writer, in order, and every write goes to a temporary file first, then takes the real one's place.
+     */
+    private fun saveQueue(now: Boolean = false) {
         if (!::player.isInitialized) return
         val songs = (0 until player.mediaItemCount).mapNotNull { player.getMediaItemAt(it).toSong() }
         // The play order while shuffled, walked from its first song (only when every item made it into the list).
@@ -1682,12 +2034,28 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             shuffle = player.shuffleModeEnabled, shuffleOrder = order, repeat = player.repeatMode,
         )
         val text = InnerTube.json.encodeToString(SavedQueue.serializer(), q)
-        scope.launch(Dispatchers.IO) { runCatching { queueFile.writeText(text) } }
+        if (now) writeQueue(text) else scope.launch(queueWriter) { writeQueue(text) }
+    }
+
+    private val queueWriter = Dispatchers.IO.limitedParallelism(1)
+
+    @Synchronized private fun writeQueue(text: String) {
+        runCatching {
+            val tmp = File(filesDir, "queue.json.tmp")
+            tmp.writeText(text)
+            if (!tmp.renameTo(queueFile)) { queueFile.writeText(text); tmp.delete() }
+        }
     }
 
     private fun restoreQueue() {
         val q = runCatching { InnerTube.json.decodeFromString(SavedQueue.serializer(), queueFile.readText()) }.getOrNull() ?: return
-        if (q.songs.isEmpty()) return
+        // Repeat and shuffle are how the listener listens, kept with nothing lined up too (#241: the song swiped away from
+        // the mini player, then Prism closed, and repeat was off again).
+        if (q.songs.isEmpty()) {
+            if (q.repeat != Player.REPEAT_MODE_OFF) player.repeatMode = q.repeat
+            if (q.shuffle) player.shuffleModeEnabled = true
+            return
+        }
         c.queue.source.value = QueueSource(QueueKind.OTHER, q.title)
         player.setMediaItems(q.songs.map { it.toMediaItem() }, q.index.coerceIn(0, q.songs.lastIndex), q.positionMs)
         // Shuffle and repeat as they were, in the same order.
@@ -1712,15 +2080,66 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
                 carControllers += controller
                 carLyrics.carConnected = true
             }
+            if (controller.packageName != packageName) {
+                AudioDiagnostics.log("control", "connected: ${controller.packageName} (${if (controller.isTrusted) "trusted" else "not trusted"})")
+            }
             return MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
                 .setAvailableSessionCommands(
                     MediaSession.ConnectionResult.DEFAULT_SESSION_AND_LIBRARY_COMMANDS.buildUpon().apply { customCommands.forEach { add(it) } }.build()
                 )
+                // Every app may play, pause and skip (#178, #187). Media3 1.11 gives apps it doesn't count as trusted only
+                // the read-only player commands, so KDE Connect, "dynamic island" apps and launcher widgets showed the song
+                // but their pause and skip were dropped without a word. Android already limits who can reach a media
+                // session (the system, notification listeners, apps bound to the exported service), and a music player is
+                // there to be controlled.
+                .setAvailablePlayerCommands(MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS)
                 .build()
         }
 
         override fun onDisconnected(session: MediaSession, controller: MediaSession.ControllerInfo) {
             if (carControllers.remove(controller)) carLyrics.carConnected = carControllers.isNotEmpty()
+        }
+
+        // Every play, pause or skip another app sends (a widget, KDE Connect, a watch…), so a diagnostics log shows
+        // whether a command arrived at all and from whom (#187, #178). Prism's own screens aren't logged.
+        override fun onPlayerCommandRequest(session: MediaSession, controller: MediaSession.ControllerInfo, playerCommand: Int): Int {
+            if (AudioDiagnostics.enabled && controller.packageName != packageName) {
+                val what = when (playerCommand) {
+                    Player.COMMAND_PLAY_PAUSE -> "play/pause"
+                    Player.COMMAND_STOP -> "stop"
+                    Player.COMMAND_PREPARE -> "prepare"
+                    Player.COMMAND_SEEK_TO_NEXT, Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM -> "next"
+                    Player.COMMAND_SEEK_TO_PREVIOUS, Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM -> "previous"
+                    Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM -> "seek"
+                    else -> null
+                }
+                if (what != null) {
+                    AudioDiagnostics.log(
+                        "control",
+                        "$what from ${controller.packageName} (${if (controller.isTrusted) "trusted" else "not trusted"}, " +
+                            "service ${if (inForeground()) "in the foreground" else "in the background"}, ${this@PlaybackService.javaClass.simpleName})",
+                    )
+                }
+            }
+            return super.onPlayerCommandRequest(session, controller, playerCommand)
+        }
+
+        override fun onMediaButtonEvent(session: MediaSession, controllerInfo: MediaSession.ControllerInfo, intent: Intent): Boolean {
+            val key = runCatching {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra<android.view.KeyEvent>(Intent.EXTRA_KEY_EVENT)
+            }.getOrNull()
+            if (key?.action == android.view.KeyEvent.ACTION_DOWN) {
+                AudioDiagnostics.log("control", "media button ${android.view.KeyEvent.keyCodeToString(key.keyCode)} from ${controllerInfo.packageName}")
+            }
+            // The notification swiped away (Media3 sends it as a media button with this extra): the listener is closing
+            // Prism (Reddit, 1.7.7: it came back once, then sat in "background activity" until stopped by hand).
+            if (intent.getBooleanExtra(NOTIFICATION_DISMISSED, false)) {
+                val handled = super.onMediaButtonEvent(session, controllerInfo, intent)
+                scope.launch { closedFromNotification() }
+                return handled
+            }
+            return super.onMediaButtonEvent(session, controllerInfo, intent)
         }
 
         override fun onCustomCommand(
@@ -1844,7 +2263,7 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             if (single != null && single.mediaId.isBlank() && !query.isNullOrBlank()) {
                 val top = tree.searchTop(query)
                 if (top != null) {
-                    c.queue.source.value = QueueSource(QueueKind.SINGLE, "Autoplay", seedId = top.id)
+                    c.queue.source.value = QueueSource(QueueKind.SINGLE, tr(R.string.autoplay), seedId = top.id)
                     c.queue.autoplayStart.value = -1
                     c.queue.autoplayContinuation = null
                     return@future MediaSession.MediaItemsWithStartPosition(listOf(top.toMediaItem()), 0, C.TIME_UNSET)
@@ -1891,7 +2310,7 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
                     return@future MediaSession.MediaItemsWithStartPosition(list.map { it.toMediaItem() }, index, startPositionMs)
                 }
                 tree.song(single.mediaId, single)?.let { song ->
-                    c.queue.source.value = QueueSource(QueueKind.SINGLE, "Autoplay", seedId = song.id)
+                    c.queue.source.value = QueueSource(QueueKind.SINGLE, tr(R.string.autoplay), seedId = song.id)
                     c.queue.autoplayStart.value = -1
                     c.queue.autoplayContinuation = null
                     return@future MediaSession.MediaItemsWithStartPosition(listOf(song.toMediaItem()), 0, startPositionMs)
@@ -2048,6 +2467,22 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         override fun onIsPlayingChanged(eventTime: AnalyticsListener.EventTime, isPlaying: Boolean) =
             AudioDiagnostics.log("state", (if (isPlaying) "playing" else "not playing (${player.playbackSuppressionReason.let { if (it == 0) "paused or waiting" else "suppressed: $it" }})") + " ${at(eventTime)}")
 
+        // Why play/pause changed: a refused audio focus (Android 15+ refuses it to apps in the background without a
+        // foreground service) shows up here as "audio focus loss" right after a play from another app (#187).
+        override fun onPlayWhenReadyChanged(eventTime: AnalyticsListener.EventTime, playWhenReady: Boolean, reason: Int) =
+            AudioDiagnostics.log(
+                "state",
+                (if (playWhenReady) "play" else "pause") + " (" + when (reason) {
+                    Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST -> "asked"
+                    Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_FOCUS_LOSS -> "audio focus loss"
+                    Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_BECOMING_NOISY -> "headphones unplugged"
+                    Player.PLAY_WHEN_READY_CHANGE_REASON_REMOTE -> "remote"
+                    Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM -> "end of song"
+                    Player.PLAY_WHEN_READY_CHANGE_REASON_SUPPRESSED_TOO_LONG -> "suppressed too long"
+                    else -> "reason $reason"
+                } + ") ${at(eventTime)}",
+            )
+
         override fun onMediaItemTransition(eventTime: AnalyticsListener.EventTime, mediaItem: MediaItem?, reason: Int) =
             AudioDiagnostics.log(
                 "song",
@@ -2097,7 +2532,21 @@ internal fun wontPlayHere(error: Throwable, refused: Boolean = false): Boolean {
     return unavailableHere(error) || refused || chain.any { it is com.prism.music.data.stream.StreamException }
 }
 
+/**
+ * Whether [error] is the audio decoder failing or going away rather than the song's bytes: Android releases a background
+ * app's codecs when another one needs them (1.7.9's night check). Unreadable bytes are a [androidx.media3.common.ParserException],
+ * handled on their own; a format this phone can't decode has its own error codes and isn't retried.
+ */
+internal fun decoderLost(error: PlaybackException): Boolean =
+    (error.errorCode == PlaybackException.ERROR_CODE_DECODING_FAILED || error.errorCode == PlaybackException.ERROR_CODE_DECODER_INIT_FAILED) &&
+        generateSequence(error as Throwable) { it.cause }.none { it is androidx.media3.common.ParserException }
+
 private const val TARGET_LUFS = -14f
+/** The extra Media3 puts on the media button it sends when its notification is swiped away. */
+private const val NOTIFICATION_DISMISSED = "androidx.media3.session.NOTIFICATION_DISMISSED_EVENT_KEY"
+/** "Fade on pause and play" (A5): 8 steps of 30 ms. */
+private const val PAUSE_FADE_STEPS = 8
+private const val PAUSE_FADE_STEP_MS = 30L
 
 /** How far a music video's length may be from its song's for its sound to play in the song's place (#93, Reddit R1). */
 private const val SOUND_FROM_SLACK_SEC = 8
@@ -2108,6 +2557,17 @@ private const val SETTLE_MS = 2_000L
 private const val MIN_MIDSONG_CHANGE_DB = 1.5f
 /** Queued songs are got ready once the playing one has played this long (not as it starts: that slowed its loading). */
 private const val UNDER_WAY_MS = 5_000L
+/**
+ * How long after switching to a music video its measured offset may still move it to the matching moment (#203);
+ * later the video stays where it is and only the lyrics follow the offset.
+ */
+private const val LATE_VIDEO_SEEK_MS = 3_000L
+
+/** How far what plays may run from the song's own length before diagnostics note it ([PlaybackService.checkLength]). */
+private const val LENGTH_MISMATCH_SEC = 8
+
+/** Songs heard this recently aren't added by radio or autoplay again (1.7.9, Reddit: "the same songs over and over"). */
+private const val RADIO_REST_MS = 4 * 3_600_000L
 /** How many songs ahead DJ mode scans and orders (a quick scan each: three stretches of the song, a few at once). */
 private const val DJ_WINDOW = 40
 /** How long DJ mode waits for more scans before putting the queue in order again. */

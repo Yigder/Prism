@@ -1,5 +1,7 @@
 package com.prism.music.ui.screens
 
+import com.prism.music.R
+import com.prism.music.tr
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -67,9 +69,9 @@ fun rememberColors(s: AppSettings, dark: Boolean): ThemeColors {
 
 /** The three things Prism's colors are made of, numbered the same in every example. */
 enum class ColorPart(val number: Int, val title: String, val detail: String) {
-    LIGHT(1, "Light", "Progress and Play, the playing song, switches"),
-    ACCENT(2, "Accent", "Artist names and links, stars and ticks"),
-    BACKGROUND(3, "Background", "Behind the main screens, and sheets"),
+    LIGHT(1, tr(R.string.light), tr(R.string.progress_and_play_the_playing_song)),
+    ACCENT(2, tr(R.string.accent), tr(R.string.artist_names_and_links_stars_and)),
+    BACKGROUND(3, tr(R.string.background), tr(R.string.behind_the_main_screens_and_sheets)),
 }
 
 /**
@@ -140,9 +142,9 @@ fun ColorStage(c: ThemeColors, song: Song?, modifier: Modifier = Modifier, compa
     // The ② mark only where it really is your accent.
     val accentMarks = marks && pictureAccent == null
     val shape = RoundedCornerShape(if (compact) 18.dp else 24.dp)
-    val title = song?.title ?: "Blinding Lights"
-    val album = song?.album?.title?.takeIf { it.isNotBlank() } ?: if (song == null) "After Hours" else title
-    val artist = song?.artistText ?: "The Weeknd"
+    val title = song?.title ?: tr(R.string.blinding_lights)
+    val album = song?.album?.title?.takeIf { it.isNotBlank() } ?: if (song == null) tr(R.string.after_hours) else title
+    val artist = song?.artistText ?: tr(R.string.the_weeknd)
     val type = MaterialTheme.typography
     val light = Brush.horizontalGradient(*c.run.toTypedArray())
     val card = RoundedCornerShape(14.dp)
@@ -203,7 +205,7 @@ fun ColorStage(c: ThemeColors, song: Song?, modifier: Modifier = Modifier, compa
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("2", Modifier.width(20.dp), color = c.ink3, style = type.labelSmall)
-                    Text(if (song == null) "In Your Eyes" else "The next song", Modifier.weight(1f), color = s.onBackground, style = type.bodyMedium, maxLines = 1)
+                    Text(if (song == null) tr(R.string.in_your_eyes) else tr(R.string.the_next_song), Modifier.weight(1f), color = s.onBackground, style = type.bodyMedium, maxLines = 1)
                     Text("3:57", color = c.ink3, style = type.labelSmall)
                 }
             }
@@ -228,8 +230,8 @@ fun ColorStage(c: ThemeColors, song: Song?, modifier: Modifier = Modifier, compa
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text("Smart Downloads", color = s.onBackground, style = type.bodyMedium, maxLines = 1)
-                    Text("Ready for when you're offline", color = c.ink2, style = type.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(tr(R.string.smart_downloads), color = s.onBackground, style = type.bodyMedium, maxLines = 1)
+                    Text(tr(R.string.ready_for_when_you_re_offline), color = c.ink2, style = type.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 StageSwitch(c)
             }
@@ -296,9 +298,9 @@ fun ColorSample(c: ThemeColors, modifier: Modifier = Modifier, marks: Boolean = 
                 Box(Modifier.size(30.dp).clip(RoundedCornerShape(6.dp)).background(Brush.linearGradient(listOf(Color(0xFF2B1F4A), Color(0xFFE0735A)))))
                 Spacer(Modifier.width(8.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("After Hours", color = s.onBackground, fontSize = 11.sp, lineHeight = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+                    Text(tr(R.string.after_hours), color = s.onBackground, fontSize = 11.sp, lineHeight = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1)
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("The Weeknd", color = accent, fontSize = 9.5.sp, lineHeight = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+                        Text(tr(R.string.the_weeknd), color = accent, fontSize = 9.5.sp, lineHeight = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1)
                         if (marks) PartMark(ColorPart.ACCENT, c, Modifier.padding(start = 5.dp))
                     }
                 }
@@ -311,13 +313,13 @@ fun ColorSample(c: ThemeColors, modifier: Modifier = Modifier, marks: Boolean = 
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        "Blinding Lights", Modifier.weight(1f), style = androidx.compose.ui.text.TextStyle(brush = Brush.horizontalGradient(*run.toTypedArray())),
+                        tr(R.string.blinding_lights), Modifier.weight(1f), style = androidx.compose.ui.text.TextStyle(brush = Brush.horizontalGradient(*run.toTypedArray())),
                         fontSize = 9.5.sp, lineHeight = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Clip,
                     )
                     Text("3:20", color = c.ink2, fontSize = 8.5.sp, lineHeight = 11.sp)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("In Your Eyes", Modifier.weight(1f), color = s.onBackground, fontSize = 9.5.sp, lineHeight = 12.sp, maxLines = 1, overflow = TextOverflow.Clip)
+                    Text(tr(R.string.in_your_eyes), Modifier.weight(1f), color = s.onBackground, fontSize = 9.5.sp, lineHeight = 12.sp, maxLines = 1, overflow = TextOverflow.Clip)
                     Text("3:57", color = c.ink2, fontSize = 8.5.sp, lineHeight = 11.sp)
                 }
             }
@@ -352,11 +354,11 @@ fun TextSample(c: ThemeColors, modifier: Modifier = Modifier) {
         modifier.fillMaxWidth().height(96.dp).clip(shape).background(s.background).border(1.dp, c.line, shape).padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text("Blinding Lights", color = s.onBackground, fontSize = 11.sp, lineHeight = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1)
-        Text("The Weeknd · 2020", color = c.ink2, fontSize = 9.5.sp, lineHeight = 12.sp, maxLines = 1)
+        Text(tr(R.string.blinding_lights), color = s.onBackground, fontSize = 11.sp, lineHeight = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+        Text(tr(R.string.the_weeknd_2020), color = c.ink2, fontSize = 9.5.sp, lineHeight = 12.sp, maxLines = 1)
         Box(Modifier.fillMaxWidth().height(1.dp).background(c.line))
-        Text("In Your Eyes", color = s.onBackground, fontSize = 11.sp, lineHeight = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1)
-        Text("3 min · Explicit", color = c.ink3, fontSize = 9.5.sp, lineHeight = 12.sp, maxLines = 1)
+        Text(tr(R.string.in_your_eyes), color = s.onBackground, fontSize = 11.sp, lineHeight = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+        Text(tr(R.string.t_3_min_explicit), color = c.ink3, fontSize = 9.5.sp, lineHeight = 12.sp, maxLines = 1)
     }
 }
 
@@ -376,7 +378,7 @@ fun ChoiceCard(title: String, detail: String?, selected: Boolean, modifier: Modi
         Spacer(Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(title, Modifier.weight(1f), style = MaterialTheme.typography.labelLarge, color = scheme.onSurface)
-            if (selected) Icon(PrismIcons.CheckCircle, "Picked", Modifier.size(18.dp), tint = scheme.onSurface)
+            if (selected) Icon(PrismIcons.CheckCircle, tr(R.string.picked), Modifier.size(18.dp), tint = scheme.onSurface)
         }
         if (detail != null) Text(detail, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, minLines = 2, maxLines = 3)
     }

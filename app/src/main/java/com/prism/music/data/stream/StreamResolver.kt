@@ -1,5 +1,7 @@
 package com.prism.music.data.stream
 
+import com.prism.music.R
+import com.prism.music.tr
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Uri
@@ -19,6 +21,7 @@ import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.ResponseBody
+import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
 import okio.BufferedSource
 import okio.Timeout
@@ -139,6 +142,13 @@ class YouTubeStreamInterceptor(
         val start = m?.groupValues?.get(1)?.toLong() ?: 0L
         val clen = url.queryParameter("clen")?.toLongOrNull()
         val end = m?.groupValues?.get(2)?.toLongOrNull()?.let { e -> clen?.let { minOf(e, it - 1) } ?: e } ?: clen?.minus(1)
+        // Asked from the stream's end on (#206, Reddit: "Response code: 400" after every song): googlevideo answers that
+        // with a 400, which the player takes as an error, buffering and holding up the next song. HTTP's own answer is a
+        // 416 naming the length, which the player reads as the end of the file.
+        if (m != null && clen != null && start >= clen) {
+            return Response.Builder().request(req).protocol(okhttp3.Protocol.HTTP_1_1).code(416).message("Range Not Satisfiable")
+                .header("Content-Range", "bytes */$clen").body(ByteArray(0).toResponseBody(null)).build()
+        }
 
         if (chunkClient != null && clen != null && end != null && end - start + 1 > chunkSize) {
             val firstEnd = minOf(end, start + chunkSize - 1)
@@ -375,7 +385,8 @@ class StreamResolver(
      * lookup doesn't take the direct answer again (on the phone, "Beat It" `kOn-HdEg6AQ` signed in got 403s on every
      * direct link, so it failed twice and was skipped); it goes through NewPipe, as before the direct lookup.
      */
-    fun invalidate(videoId: String, refused: Boolean = false) {
+    fun invalidate(songId: String, refused: Boolean = false) {
+        val videoId = versionOf(songId) ?: songId
         val was = cache.remove(videoId)
         // The account's own link was the one turned away (its web client's links stop after the first megabyte without
         // a PO token, GitHub #188 #192): asking as the account again gets the same, so the other ways are tried first
@@ -412,7 +423,7 @@ class StreamResolver(
 
     /** Resolves a song ahead of time (e.g. the next one in the queue) so it starts straight away. */
     fun prefetch(videoId: String) {
-        runCatching { formats(videoId) }
+        runCatching { formats(versionOf(videoId) ?: videoId) }
     }
 
     private fun formats(videoId: String): Formats {
@@ -423,7 +434,7 @@ class StreamResolver(
             return try {
                 running.get()
             } catch (e: ExecutionException) {
-                throw (e.cause as? StreamException) ?: StreamException(e.cause?.message ?: "Couldn't load this track", e.cause)
+                throw (e.cause as? StreamException) ?: StreamException(e.cause?.message ?: tr(R.string.couldn_t_load_this_track), e.cause)
             }
         }
         try {
@@ -485,7 +496,7 @@ class StreamResolver(
         }
         if (videoId !in directRefused) directFormats(videoId, signedIn)?.let { return it }
         return try {
-            anonymousFormats(videoId).also { if (it.audio.isEmpty() && it.hlsUrl == null) throw StreamException("No playable audio stream was found") }
+            anonymousFormats(videoId).also { if (it.audio.isEmpty() && it.hlsUrl == null) throw StreamException(tr(R.string.no_playable_audio_stream_was_found)) }
         } catch (e: Exception) {
             val restricted = e is ContentNotAvailableException
             val blocked = e is SignInConfirmNotBotException || e is ReCaptchaException
@@ -493,7 +504,7 @@ class StreamResolver(
                 newPipeBlockedUntil = System.currentTimeMillis() + BLOCK_BACKOFF_MS
                 Log.w("StreamResolver", "YouTube is blocking anonymous web playback here; using other clients for a while: $e")
             }
-            val why = if (blocked) BLOCKED else e.message ?: "Couldn't load this track"
+            val why = if (blocked) BLOCKED else e.message ?: tr(R.string.couldn_t_load_this_track)
             when {
                 // Anything YouTube won't play (or NewPipe can't get) anonymously is asked for as the user.
                 signedIn -> try {
@@ -502,8 +513,8 @@ class StreamResolver(
                     Log.w("StreamResolver", "Signed-in playback of $videoId failed too: ${signed.message}")
                     throw if (restricted) signed else StreamException(why, e)
                 }
-                e is AgeRestrictedContentException -> throw StreamException("Sign in to play age-restricted songs", e)
-                e is YoutubeMusicPremiumContentException -> throw StreamException("This song needs YouTube Music Premium: sign in with a Premium account to play it", e)
+                e is AgeRestrictedContentException -> throw StreamException(tr(R.string.sign_in_to_play_age_restricted), e)
+                e is YoutubeMusicPremiumContentException -> throw StreamException(tr(R.string.this_song_needs_youtube_music_premium), e)
                 else -> throw StreamException(why, e)
             }
         }
@@ -578,7 +589,25 @@ class StreamResolver(
         )
     }
 
-    /** The player response as the signed-in user: the TV clients first (no PO token needed), then the web app. */
+    /**
+     * Which of the account's clients are asked, in what order (1.7.9.3, GitHub #260): yt-dlp's for signed-in users
+     * (the older TV app as a Samsung TV, the embedded player), then the plain older TV app, today's TV app (links
+     * rarely), and the web app last (its links stop after a megabyte without a PO token, unless Premium).
+     */
+    internal object AccountClients {
+        val order = listOf(
+            InnerTube.PlayerClient.TV_SAMSUNG, InnerTube.PlayerClient.WEB_EMBEDDED, InnerTube.PlayerClient.TV_OLD,
+            InnerTube.PlayerClient.TV, InnerTube.PlayerClient.WEB_REMIX,
+        )
+
+        /** One more ask for the older TV app on UNPLAYABLE ("The page needs to be reloaded" comes and goes). */
+        fun retries(client: InnerTube.PlayerClient): Int =
+            if (client == InnerTube.PlayerClient.TV_SAMSUNG || client == InnerTube.PlayerClient.TV_OLD) 1 else 0
+
+        const val RETRY_PAUSE_MS = 300L
+    }
+
+    /** The player response as the signed-in user: [AccountClients.order], the first with links wins. */
     private fun signedInFormats(videoId: String): Formats {
         val player = try {
             solver.currentPlayer()
@@ -589,9 +618,16 @@ class StreamResolver(
         var reason: String? = null
         // A live answer without an HLS manifest is kept only until a client gives one ([liveManifest] fills it in).
         var liveWithoutHls: Formats? = null
-        for (client in InnerTube.PlayerClient.entries) {
+        for (client in AccountClients.order) {
             val res = try {
-                innerTube.signedInPlayer(client, videoId, player?.second)
+                var answer = innerTube.signedInPlayer(client, videoId, player?.second)
+                // "The page needs to be reloaded" (GitHub #260) is often gone on the next ask.
+                repeat(AccountClients.retries(client)) {
+                    if (answer.str("playabilityStatus", "status") != "UNPLAYABLE") return@repeat
+                    Thread.sleep(AccountClients.RETRY_PAUSE_MS)
+                    answer = innerTube.signedInPlayer(client, videoId, player?.second)
+                }
+                answer
             } catch (e: Exception) {
                 reason = reason ?: e.message
                 noteClient(client, "request failed: ${e.message}")
@@ -609,7 +645,7 @@ class StreamResolver(
             noteClient(client, "OK but no audio links (${linkless(res)})")
         }
         liveWithoutHls?.let { return it }
-        throw StreamException(reason ?: "Couldn't load this track")
+        throw StreamException(reason ?: tr(R.string.couldn_t_load_this_track))
     }
 
     /**
@@ -662,12 +698,11 @@ class StreamResolver(
         }
     }
 
-    private companion object {
+    companion object {
         /** YouTube Music Premium's 256 kbps audio: AAC (141) and Opus (774). */
         val PREMIUM_ITAGS = setOf(141, 774)
-        const val BLOCK_BACKOFF_MS = 30 * 60_000L
-        const val BLOCKED = "YouTube is limiting playback on this network right now. Try again in a while, switch networks " +
-            "(or turn off a VPN), or sign in."
+        private const val BLOCK_BACKOFF_MS = 30 * 60_000L
+        val BLOCKED: String get() = com.prism.music.tr(com.prism.music.R.string.youtube_is_limiting_playback)
 
         /**
          * A stream's real average bitrate, from its size and length. YouTube's own figure is the format's nominal one
@@ -721,7 +756,7 @@ class StreamResolver(
     }
 
     /** [videoId]'s length in seconds as YouTube gives it (resolving it if it hasn't been), 0 when unknown. Blocking. */
-    fun durationSec(videoId: String): Long = formats(videoId).durationSec
+    fun durationSec(videoId: String): Long = formats(versionOf(videoId) ?: videoId).durationSec
 
     /** Whether [videoId] is a live stream (resolving it if it hasn't been). Blocking. */
     fun isLive(videoId: String): Boolean = formats(videoId).live
@@ -736,9 +771,9 @@ class StreamResolver(
         val anon = try {
             anonymousFormats(videoId)
         } catch (e: Exception) {
-            throw StreamException("This live stream can't be played", e)
+            throw StreamException(tr(R.string.this_live_stream_can_t_be), e)
         }
-        val url = anon.hlsUrl ?: throw StreamException("This live stream can't be played")
+        val url = anon.hlsUrl ?: throw StreamException(tr(R.string.this_live_stream_can_t_be))
         cache[videoId] = Formats(f.audio, f.videoOnly, f.muxed, f.durationSec, minOf(f.expiresAtMs, anon.expiresAtMs), live = true, hlsUrl = url)
         return url
     }
@@ -760,11 +795,11 @@ class StreamResolver(
             val url = q["url"]
             if (url == null || sig == null) {
                 Log.w("StreamResolver", "signatureCipher has keys ${q.keys}")
-                throw StreamException("Couldn't read this track's stream")
+                throw StreamException(tr(R.string.couldn_t_read_this_track_s))
             }
             url
         }
-        val url = base.toHttpUrlOrNull() ?: throw StreamException("Couldn't read this track's stream")
+        val url = base.toHttpUrlOrNull() ?: throw StreamException(tr(R.string.couldn_t_read_this_track_s))
         val n = url.queryParameter("n")
         if (sig == null && n == null) return base
         val solved = try {
@@ -772,10 +807,10 @@ class StreamResolver(
         } catch (e: Exception) {
             Log.w("StreamResolver", "Couldn't solve the stream URL: $e")
             if (sig == null) return base
-            throw e as? StreamException ?: StreamException("Couldn't unlock this track's stream", e)
+            throw e as? StreamException ?: StreamException(tr(R.string.couldn_t_unlock_this_track_s), e)
         }
         return url.newBuilder().apply {
-            if (sig != null) setQueryParameter(param, solved.first ?: throw StreamException("Couldn't unlock this track's stream"))
+            if (sig != null) setQueryParameter(param, solved.first ?: throw StreamException(tr(R.string.couldn_t_unlock_this_track_s)))
             if (n != null && solved.second != null) setQueryParameter("n", solved.second)
         }.build().toString()
     }
@@ -784,10 +819,10 @@ class StreamResolver(
 
     /** The smallest audio stream (AAC preferred, which decodes from a partial file), for analysis. */
     fun analysisAudio(videoId: String): AnalysisStream {
-        val f = formats(videoId)
+        val f = formats(versionOf(videoId) ?: videoId)
         val usable = f.audio.filter { it.original }.ifEmpty { f.audio }
         val pick = usable.filter { it.mime.contains("mp4") }.minByOrNull { it.kbps }
-            ?: usable.minByOrNull { it.kbps } ?: throw StreamException("No audio stream")
+            ?: usable.minByOrNull { it.kbps } ?: throw StreamException(tr(R.string.no_audio_stream))
         return AnalysisStream(pick.url, pick.contentLength, f.durationSec)
     }
 
@@ -801,12 +836,29 @@ class StreamResolver(
     }
 
     /** Blocking; called from ExoPlayer loader threads. */
-    fun resolve(videoId: String, withVideo: Boolean = false): ResolvedStream {
+    /** The version the listener picked to hear for a song ([com.prism.music.data.SongVersions]), or null for its own. */
+    @Volatile var versionOf: (String) -> String? = { null }
+
+    fun resolve(songId: String, withVideo: Boolean = false): ResolvedStream {
+        // A picked version's sound plays under the song's own key (a song's video keeps its own picture).
+        val videoId = if (withVideo) songId else versionOf(songId) ?: songId
         val f = formats(videoId)
         // A live stream's "file" is only its newest few seconds: the player has to take it as HLS instead.
         if (f.live) throw LiveStreamException(videoId)
         val audio = pickAudio(f.audio, currentQuality())
-            ?: throw StreamException("No playable audio stream was found")
+            ?: throw StreamException(tr(R.string.no_playable_audio_stream_was_found))
+        // The account's link couldn't be unlocked (GitHub #179, 1.7.7.1: the player JS sandbox ran out of memory on a
+        // OnePlus) for a song that went through the account only for Premium quality: it plays as everyone gets it,
+        // at once, rather than failing and falling back to its music video's sound.
+        try {
+            audio.url
+        } catch (e: StreamException) {
+            if (!f.via.startsWith("account") || videoId in needsAccount || !accountRefused.add(videoId)) throw e
+            cache.remove(videoId)
+            Log.i("PrismStream", "$videoId: the account's link couldn't be unlocked (${e.message}); playing the usual stream")
+            runCatching { com.prism.music.playback.AudioDiagnostics.log("stream", "$videoId: the account's link couldn't be unlocked; playing the usual stream instead") }
+            return resolve(videoId, withVideo)
+        }
         val video = if (withVideo) {
             // Data saver on mobile data (#40): music videos at 480p at most.
             val maxHeight = if (settings.current.dataSaver && isMetered()) minOf(480, settings.current.videoMaxHeight) else settings.current.videoMaxHeight

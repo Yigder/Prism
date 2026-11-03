@@ -1,5 +1,7 @@
 package com.prism.music.ui.components
 
+import com.prism.music.R
+import com.prism.music.tr
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -52,7 +54,7 @@ import kotlinx.coroutines.launch
 
 /** What "Customize this" (1.7.3) can open settings for, and where those settings live. */
 enum class CustomizeTarget(val title: String) {
-    MINI_PLAYER("Mini player"), TAB_BAR("Tab bar"), PLAYER("Player"), HOME_SECTION("Home section"),
+    MINI_PLAYER(tr(R.string.mini_player)), TAB_BAR(tr(R.string.tab_bar)), PLAYER(tr(R.string.player)), HOME_SECTION(tr(R.string.home_section)),
 }
 
 /** Opens a target's settings sheet (provided at the app's root); null where there's no sheet to open. */
@@ -114,8 +116,8 @@ fun CustomizingPill(modifier: Modifier = Modifier) {
         ) {
             Icon(PrismIcons.Customize, null, Modifier.size(18.dp), tint = scheme.inverseOnSurface)
             Spacer(Modifier.width(10.dp))
-            Text("Tap anything outlined to change it", style = MaterialTheme.typography.bodyMedium, color = scheme.inverseOnSurface)
-            PrismTextButton({ c.customizing.value = false }) { Text("Done", color = scheme.inversePrimary) }
+            Text(tr(R.string.tap_anything_outlined_to_change_it), style = MaterialTheme.typography.bodyMedium, color = scheme.inverseOnSurface)
+            PrismTextButton({ c.customizing.value = false }) { Text(tr(R.string.done), color = scheme.inversePrimary) }
         }
     }
 }
@@ -137,12 +139,12 @@ fun ScheduleKeptBar(modifier: Modifier = Modifier) {
                 .padding(start = 18.dp, end = 8.dp, top = 12.dp, bottom = 4.dp),
         ) {
             Text(
-                "Day and night switched to $name. Your own settings are kept in Your Looks as \"Before $name\".",
+                tr(R.string.day_and_night_switched_to_your, name, name),
                 style = MaterialTheme.typography.bodyMedium, color = scheme.inverseOnSurface,
             )
             Row(Modifier.align(Alignment.End)) {
                 PrismTextButton({ c.looks.dismissKept() }) { Text("OK", color = scheme.inversePrimary) }
-                PrismTextButton({ scope.launch { c.looks.bringBackKept() } }) { Text("Bring them back", color = scheme.inversePrimary) }
+                PrismTextButton({ scope.launch { c.looks.bringBackKept() } }) { Text(tr(R.string.bring_them_back), color = scheme.inversePrimary) }
             }
         }
     }
@@ -181,7 +183,7 @@ fun LookUndoBar(modifier: Modifier = Modifier) {
             PrismTextButton({ note = null; n.undo?.invoke() ?: c.looks.undo() }) {
                 Icon(PrismIcons.Undo, null, Modifier.size(16.dp), tint = scheme.inversePrimary)
                 Spacer(Modifier.width(6.dp))
-                Text("Undo", color = scheme.inversePrimary)
+                Text(tr(R.string.undo), color = scheme.inversePrimary)
             }
         }
     }

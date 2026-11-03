@@ -50,6 +50,9 @@ object AudioDiagnostics {
     /** One line in the log ([kind] is a short tag: "track", "underrun", "device", "route", "scan", "mark"…). */
     fun log(kind: String, message: String) {
         if (!enabled) return
+        // The release check's night hunt reads these from logcat (a release build's files can't be read over adb):
+        // only when it sets `adb shell setprop log.tag.PrismDiag DEBUG`, never otherwise.
+        if (android.util.Log.isLoggable("PrismDiag", android.util.Log.DEBUG)) android.util.Log.d("PrismDiag", "[$kind] $message")
         val line = "${synchronized(stamp) { stamp.format(Date()) }} [$kind] $message\n"
         writer.execute { append(line) }
     }

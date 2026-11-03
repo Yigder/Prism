@@ -27,6 +27,9 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 
 /** Rewind: every year, on the phone's own clock, kept once it's over, and a story that fits how much was played. */
+// Robolectric: the words come from strings.xml (1.7.9).
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+@org.robolectric.annotation.Config(sdk = [34], application = android.app.Application::class)
 class RewindTest {
     private val zones = listOf("America/New_York", "Europe/London", "Australia/Sydney", "Asia/Kolkata", "America/Sao_Paulo", "Pacific/Chatham", "UTC").map(ZoneId::of)
     private val day = 86_400_000L

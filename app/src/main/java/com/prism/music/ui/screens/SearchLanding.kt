@@ -1,5 +1,7 @@
 package com.prism.music.ui.screens
 
+import com.prism.music.R
+import com.prism.music.tr
 import android.content.Context
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -34,7 +36,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -155,7 +160,7 @@ internal fun SearchLanding(
                 SearchSection.RECENT -> {
                     val items = opened.mapNotNull { o -> o.item()?.let { o to it } }
                     if (items.isNotEmpty()) {
-                        item(key = "opened-h") { SectionHeader("Recently opened") }
+                        item(key = "opened-h") { SectionHeader(tr(R.string.recently_opened)) }
                         item(key = "opened") {
                             LazyRow(contentPadding = PaddingValues(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                 items(items, key = { (o, _) -> o.kind + o.id }) { (o, item) ->
@@ -165,19 +170,19 @@ internal fun SearchLanding(
                         }
                     }
                     if (recents.isNotEmpty()) {
-                        item(key = "recents-h") { SectionHeader("Recent searches") }
+                        item(key = "recents-h") { SectionHeader(tr(R.string.recent_searches)) }
                         item(key = "recents") {
                             FlowRow(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 recents.take(10).forEach { r ->
                                     // The chip takes the long press itself: wrapped in another clickable, its own click ate it.
-                                    PrismChip(false, { onPick(r) }, r, icon = PrismIcons.History, onLongClick = { onRemove(r) }, onLongClickLabel = "Remove")
+                                    PrismChip(false, { onPick(r) }, r, icon = PrismIcons.History, onLongClick = { onRemove(r) }, onLongClickLabel = tr(R.string.remove))
                                 }
                             }
                         }
                     }
                 }
                 SearchSection.ARTISTS -> if (artists.isNotEmpty()) {
-                    item(key = "artists-h") { SectionHeader("Your artists") }
+                    item(key = "artists-h") { SectionHeader(tr(R.string.your_artists)) }
                     item(key = "artists") {
                         LazyRow(contentPadding = PaddingValues(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             items(artists, key = { it.id }) { a -> ItemCard(a, width = 104.dp) { onOpen(a) } }
@@ -189,12 +194,12 @@ internal fun SearchLanding(
                     // "For you" is Prism's own ranking; the groups after it leave out what it already shows.
                     val shown = HashSet<String>()
                     val forYou = ranked.picks.take(8).onEach { shown += it.id + "|" + it.params }
-                    val groups = listOf("For you" to forYou) + ranked.sections.filterNot { it.first.contains("for you", true) }.map { (title, tiles) ->
+                    val groups = listOf(tr(R.string.for_you) to forYou) + ranked.sections.filterNot { it.first.contains("for you", true) }.map { (title, tiles) ->
                         title to tiles.filter { shown.add(it.id + "|" + it.params) }.take(6)
                     }
                     groups.forEach { (title, tiles) ->
                         if (tiles.isEmpty()) return@forEach
-                        item(key = "mh:$title") { SectionHeader(if (title == "For you") "Moods & genres for you" else title, onMore = { nav.go(Routes.MOODS) }) }
+                        item(key = "mh:$title") { SectionHeader(if (title == "For you") tr(R.string.moods_genres_for_you) else title, onMore = { nav.go(Routes.MOODS) }) }
                         tiles.chunked(2).forEachIndexed { i, pair ->
                             item(key = "m:$title:$i") {
                                 Row(Modifier.padding(horizontal = 16.dp, vertical = 5.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -210,7 +215,7 @@ internal fun SearchLanding(
         item(key = "arrange") {
             Box(Modifier.fillMaxWidth().padding(top = 18.dp), contentAlignment = Alignment.Center) {
                 PrismTextButton(onClick = { arranging = true }) {
-                    Icon(PrismIcons.SwapVertical, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Arrange this page")
+                    Icon(PrismIcons.SwapVertical, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text(tr(R.string.arrange_this_page))
                 }
             }
         }
@@ -226,8 +231,8 @@ private fun rememberYourArtists(): List<ArtistItem> {
     val recent by c.library.recent.collectAsState()
     val thumbs by c.library.artistThumbs.collectAsState()
     val list = remember(favorites, library, recent, thumbs) {
-        val played = recent.flatMap { s -> s.artists.take(1).mapNotNull { a -> a.id?.let { ArtistItem(it, a.name, "Artist", thumbs[it]) } } }
-        (favorites.map { ArtistItem(it.id, it.name, "Artist", it.thumbnail) } + library.filterIsInstance<ArtistItem>() + played)
+        val played = recent.flatMap { s -> s.artists.take(1).mapNotNull { a -> a.id?.let { ArtistItem(it, a.name, tr(R.string.artist), thumbs[it]) } } }
+        (favorites.map { ArtistItem(it.id, it.name, tr(R.string.artist), it.thumbnail) } + library.filterIsInstance<ArtistItem>() + played)
             .distinctBy { it.id }.take(16)
             .map { a -> c.covers.custom(c.covers.artistKey(a.id))?.let { a.copy(thumbnail = it) } ?: a }
     }
@@ -274,19 +279,31 @@ private fun ArrangeSearchSheet(onDismiss: () -> Unit) {
     val settings = LocalAppSettings.current
     val shown = settings.searchSections
     androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss) {
-        Text("Arrange Search", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 24.dp))
-        Column(Modifier.padding(top = 8.dp, bottom = 28.dp)) {
+        Text(tr(R.string.arrange_search), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 24.dp))
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(top = 8.dp, bottom = 28.dp)) {
             com.prism.music.ui.components.ReorderList(shown, { it }, { c.settings.setSearchSections(it) }) { s, _, _, mod ->
                 Row(mod.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     PrismCheck(true, enabled = shown.size > 1, label = s.label) { c.settings.setSearchSections(shown - s) }
                     Text(s.label, Modifier.weight(1f).padding(start = 8.dp), style = MaterialTheme.typography.bodyLarge)
-                    com.prism.music.ui.components.DragGrip(Modifier.dragHandle(), "Drag ${s.label}")
+                    com.prism.music.ui.components.DragGrip(Modifier.dragHandle(), tr(R.string.drag, s.label))
                 }
             }
             SearchSection.entries.filter { it !in shown }.forEach { s ->
                 Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     PrismCheck(false, label = s.label) { c.settings.setSearchSections(shown + s) }
                     Text(s.label, Modifier.weight(1f).padding(start = 8.dp), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            // The chips over the results, in your order (#224); Search opens on the first.
+            Text(tr(R.string.search_chips), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 20.dp))
+            Text(tr(R.string.search_opens_on_the_first_one), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 2.dp))
+            val chips = chipOrder(settings.searchChips)
+            com.prism.music.ui.components.ReorderList(chips, ::chipName, { c.settings.setSearchChips(it.map(::chipName)) }) { f, _, _, mod ->
+                val name = f?.label ?: tr(R.string.on_this_phone)
+                Row(mod.fillMaxWidth().testTag("chip:" + chipName(f)).padding(start = 24.dp, end = 12.dp, top = 10.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                    com.prism.music.ui.components.DragGrip(Modifier.dragHandle(), tr(R.string.drag, name))
                 }
             }
         }

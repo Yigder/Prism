@@ -1,5 +1,7 @@
 package com.prism.music.data
 
+import com.prism.music.R
+import com.prism.music.tr
 import com.prism.music.data.db.mergeUploads
 import android.content.Context
 import android.util.Log
@@ -195,8 +197,8 @@ class RewindWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         val (from, to) = RewindCalendar.bounds(year)
         if (c.settings.current.rewindNotification && c.db.plays().totalMs(from, to) > StoryParts.LIGHT_MS) {
             Notifications.post(
-                applicationContext, Notifications.REWIND, 4800 + year % 100, "Your $year Rewind is ready",
-                "Your year in music: your top songs, artists and more, made on your phone.", "prism://rewind/$year",
+                applicationContext, Notifications.REWIND, 4800 + year % 100, tr(R.string.your_rewind_is_ready_2, year),
+                tr(R.string.your_year_in_music_your_top), "prism://rewind/$year",
             )
         }
         Rewinds.schedule(applicationContext)

@@ -1,10 +1,12 @@
 package com.prism.music.playback
 
+import com.prism.music.R
+import com.prism.music.tr
 import kotlin.math.abs
 import kotlin.math.ln
 
 /** How a DJ set's energy should go: level, rising to a peak, or settling down. */
-enum class DjFlow(val label: String) { STEADY("Steady"), BUILD("Build up"), WIND_DOWN("Wind down") }
+enum class DjFlow(val label: String) { STEADY(tr(R.string.steady)), BUILD(tr(R.string.build_up)), WIND_DOWN(tr(R.string.wind_down)) }
 
 /** What DJ mode knows about a song: its key and tempo when they're clear, its loudness, and its artist. */
 data class DjTrack(val id: String, val key: MusicKey?, val bpm: Double?, val loudness: Float?, val artist: String?)

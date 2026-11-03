@@ -31,6 +31,32 @@ class SingDspTest {
     }
 
     @Test
+    fun fftMatchesTheDefinitionAtEverySize() {
+        // Radix 4 (1.8.x), with a radix-2 pass first when the size is an odd power of two: the same answer as the sum.
+        val rnd = Random(3)
+        for (n in listOf(2, 4, 8, 16, 32, 512, 2048, 4096)) {
+            val re = DoubleArray(n) { rnd.nextDouble() - 0.5 }
+            val im = DoubleArray(n) { rnd.nextDouble() - 0.5 }
+            for (inverse in listOf(false, true)) {
+                val sign = if (inverse) 1.0 else -1.0
+                val wantR = DoubleArray(n); val wantI = DoubleArray(n)
+                for (k in 0 until n) for (t in 0 until n) {
+                    val a = sign * 2 * PI * k * t / n
+                    wantR[k] += re[t] * kotlin.math.cos(a) - im[t] * sin(a)
+                    wantI[k] += re[t] * sin(a) + im[t] * kotlin.math.cos(a)
+                }
+                if (inverse) for (k in 0 until n) { wantR[k] /= n; wantI[k] /= n }
+                val r = re.copyOf(); val i = im.copyOf()
+                Fft(n).transform(r, i, inverse)
+                for (k in 0 until n) {
+                    assertEquals("n=$n inverse=$inverse re[$k]", wantR[k], r[k], 1e-9 * n)
+                    assertEquals("n=$n inverse=$inverse im[$k]", wantI[k], i[k], 1e-9 * n)
+                }
+            }
+        }
+    }
+
+    @Test
     fun resamplingKeepsTimingExactly() {
         for ((from, to) in listOf(48_000 to 44_100, 44_100 to 32_000, 32_000 to 48_000)) {
             val hz = 997.0

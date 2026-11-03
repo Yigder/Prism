@@ -26,7 +26,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,6 +52,7 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -245,6 +248,8 @@ fun FrostedBackdrop(
     bleed: Boolean = false,
     /** The Ambient background of the app's own pages: its brightness held so their text reads ([ambientTone]). */
     ambient: Boolean = false,
+    /** A backdrop that never scrolls ([heroScroll] is read as 0): drawn once into a picture, then shown ([BakedFrost]). */
+    baked: Boolean = false,
 ) {
     val dark = LocalIsDark.current
     val settings = LocalAppSettings.current
@@ -267,6 +272,10 @@ fun FrostedBackdrop(
     val tintFilter = remember(pageTint, settings.surfaceTintStrength, dark) {
         pageTint?.let { ambientTintTone(dark, it, settings.surfaceTintStrength) }
     }
+    if (baked) {
+        BakedFrost(frost, if (tintFilter != null) null else palette, bg, heroHeight, parallax, dark, pureBlack, bleed, mono, ambient, tintFilter, grainBrush, modifier)
+        return
+    }
     Canvas(modifier.fillMaxSize()) {
         drawFrostedBackdrop(
             frost?.image, shown, if (tintFilter != null) null else palette, bg, heroHeight.toPx(), heroScroll(), parallax, dark, pureBlack,
@@ -274,6 +283,47 @@ fun FrostedBackdrop(
         )
         drawRect(grainBrush, alpha = if (dark) 0.5f else 0.35f)
     }
+}
+
+/**
+ * [FrostedBackdrop] that stays put (a TV's, 1.8.0): the same drawing and grain, made once into a picture of its size
+ * off the main thread whenever what it's made from changes, then shown as that picture (a new one fades in over the
+ * old). A mid-range TV's GPU spent about 9 ms of every frame drawing the frost live, half of a 60 Hz frame's time.
+ */
+@Composable
+private fun BakedFrost(
+    frost: FrostImage?, palette: ArtPalette?, bg: Color, heroHeight: Dp, parallax: Float, dark: Boolean, pureBlack: Boolean,
+    bleed: Boolean, mono: Boolean, ambient: Boolean, tintFilter: ColorFilter?, grainBrush: ShaderBrush, modifier: Modifier,
+) {
+    var size by remember { mutableStateOf(IntSize.Zero) }
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val picture by produceState<ImageBitmap?>(null, size, frost, palette, bg, heroHeight, parallax, dark, pureBlack, bleed, mono, ambient, tintFilter, density) {
+        if (size.width <= 0 || size.height <= 0) return@produceState
+        value = withContext(Dispatchers.Default) {
+            runCatching {
+                bakeFrost(size, density) {
+                    drawFrostedBackdrop(
+                        frost?.image, if (frost != null) 1f else 0f, palette, bg, heroHeight.toPx(), 0f, parallax, dark, pureBlack,
+                        bleed, mono, ambient, tintFilter,
+                    )
+                    drawRect(grainBrush, alpha = if (dark) 0.5f else 0.35f)
+                }
+            }.getOrNull()
+        } ?: value
+    }
+    androidx.compose.animation.Crossfade(
+        picture, modifier.fillMaxSize().onSizeChanged { size = it }, animationSpec = tween(500), label = "frost",
+    ) { p -> Canvas(Modifier.fillMaxSize()) { if (p != null) drawImage(p) else drawRect(bg) } }
+}
+
+/** [block] drawn into a new picture of [size] (software, so it can be made off the main thread). */
+internal fun bakeFrost(size: IntSize, density: androidx.compose.ui.unit.Density, block: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit): ImageBitmap {
+    val bmp = ImageBitmap(size.width, size.height)
+    androidx.compose.ui.graphics.drawscope.CanvasDrawScope().draw(
+        density, androidx.compose.ui.unit.LayoutDirection.Ltr, androidx.compose.ui.graphics.Canvas(bmp),
+        androidx.compose.ui.geometry.Size(size.width.toFloat(), size.height.toFloat()), block,
+    )
+    return bmp
 }
 
 /**
@@ -551,7 +601,16 @@ fun ArtworkAccent(palette: ArtPalette?, override: Color? = null, content: @Compo
             scheme.copy(primary = accent, onPrimary = on, surfaceTint = accent)
         }
     }
-    MaterialTheme(colorScheme = themed, typography = MaterialTheme.typography, shapes = MaterialTheme.shapes, content = content)
+    // The page's own color, whether or not the page takes it as its accent: the playing song's mark can use it (Reddit,
+    // 1.7.9.2, Color → "Playing song in the page's color").
+    val pageColor = override?.let { com.prism.music.ui.theme.readableOn(it, scheme.background) }
+        ?: palette?.accent(dark)?.let { com.prism.music.ui.theme.readableOn(it, scheme.background) }
+    MaterialTheme(colorScheme = themed, typography = MaterialTheme.typography, shapes = MaterialTheme.shapes) {
+        androidx.compose.runtime.CompositionLocalProvider(LocalPageColor provides pageColor, content = content)
+    }
 }
+
+/** The color of the page's picture (an album's cover, an artist's photo), or null off such pages. See [ArtworkAccent]. */
+val LocalPageColor = androidx.compose.runtime.compositionLocalOf<Color?> { null }
 
 private fun Color.luminance(): Float = ColorUtils.calculateLuminance(toArgb()).toFloat()

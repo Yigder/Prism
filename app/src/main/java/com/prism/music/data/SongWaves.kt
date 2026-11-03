@@ -35,6 +35,12 @@ class SongWaves(context: Context) {
 
     fun has(id: String): Boolean = synchronized(memory) { id in memory } || file(id).isFile
 
+    /** Forgets song [id]'s outline (another version of it plays now). */
+    fun forget(id: String) {
+        synchronized(memory) { memory.remove(id) }
+        runCatching { file(id).delete() }
+    }
+
     fun put(id: String, wave: FloatArray) {
         if (wave.size != POINTS) return
         runCatching { file(id).writeBytes(ByteArray(POINTS) { (wave[it].coerceIn(0f, 1f) * 255).toInt().toByte() }) }

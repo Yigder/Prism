@@ -1,5 +1,7 @@
 package com.prism.music.ui.screens
 
+import com.prism.music.R
+import com.prism.music.tr
 import androidx.compose.foundation.border
 import com.prism.music.ui.components.PrismButton
 import com.prism.music.ui.components.PrismOutlinedButton
@@ -109,9 +111,9 @@ fun RecognizeScreen(autoStart: Boolean, bottomPadding: Dp) {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                RoundAction(PrismIcons.ArrowBack, "Back", glass = true) { nav.back() }
+                RoundAction(PrismIcons.ArrowBack, tr(R.string.back), glass = true) { nav.back() }
                 Spacer(Modifier.weight(1f))
-                PrismTextButton({ nav.go(Routes.RECOGNIZED) }) { Text("Recognized songs") }
+                PrismTextButton({ nav.go(Routes.RECOGNIZED) }) { Text(tr(R.string.widget_recognize_open)) }
             }
             Spacer(Modifier.weight(0.6f))
             when (val s = state) {
@@ -122,23 +124,23 @@ fun RecognizeScreen(autoStart: Boolean, bottomPadding: Dp) {
                     Spacer(Modifier.height(28.dp))
                     Text(
                         when (s) {
-                            is Recognizer.State.Listening -> "Listening… ${s.heardMs / 1000} s"
-                            Recognizer.State.NotFound -> "Couldn't recognize that one"
-                            Recognizer.State.Saved -> "You're offline, so Prism kept what it heard"
-                            Recognizer.State.RateLimited -> "Shazam asks to wait a little"
+                            is Recognizer.State.Listening -> tr(R.string.listening_s, s.heardMs / 1000)
+                            Recognizer.State.NotFound -> tr(R.string.couldn_t_recognize_that_one)
+                            Recognizer.State.Saved -> tr(R.string.you_re_offline_so_prism_kept)
+                            Recognizer.State.RateLimited -> tr(R.string.shazam_asks_to_wait_a_little)
                             is Recognizer.State.Failed -> s.message
-                            else -> "Tap to find out what's playing"
+                            else -> tr(R.string.tap_to_find_out_what_s)
                         },
                         style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Medium, textAlign = TextAlign.Center,
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
                         when (s) {
-                            is Recognizer.State.Listening -> "Hold your phone near the music"
-                            Recognizer.State.NotFound -> "Try again closer to the music, or where it's louder."
-                            Recognizer.State.Saved -> "It'll be looked up when you're back online, with a notification when it's found."
-                            Recognizer.State.RateLimited -> "Try again in a minute."
-                            else -> "Prism listens for up to 12 seconds. The sound stays on your phone: only a fingerprint of it goes to Shazam to find the song."
+                            is Recognizer.State.Listening -> tr(R.string.hold_your_phone_near_the_music)
+                            Recognizer.State.NotFound -> tr(R.string.try_again_closer_to_the_music)
+                            Recognizer.State.Saved -> tr(R.string.it_ll_be_looked_up_when)
+                            Recognizer.State.RateLimited -> tr(R.string.try_again_in_a_minute)
+                            else -> tr(R.string.prism_listens_for_up_to_12_2)
                         },
                         style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
                     )
@@ -146,8 +148,8 @@ fun RecognizeScreen(autoStart: Boolean, bottomPadding: Dp) {
                         Spacer(Modifier.height(20.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
-                                Text("Pause Prism while listening", style = MaterialTheme.typography.bodyLarge)
-                                Text("Off, it can recognize what Prism itself is playing", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(tr(R.string.pause_prism_while_listening), style = MaterialTheme.typography.bodyLarge)
+                                Text(tr(R.string.off_it_can_recognize_what_prism), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             PrismSwitch(pausePrism, { pausePrism = it })
                         }
@@ -177,7 +179,7 @@ internal fun ListenButton(listening: Boolean, level: Float, size: Dp = 260.dp, o
             Modifier.size(size * 0.58f).clip(CircleShape).background(primary).clickable(onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(if (listening) PrismIcons.Close else PrismIcons.Recognize, if (listening) "Stop listening" else "Listen", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(size * 0.25f))
+            Icon(if (listening) PrismIcons.Close else PrismIcons.Recognize, if (listening) tr(R.string.stop_listening) else tr(R.string.listen), tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(size * 0.25f))
         }
     }
 }
@@ -196,22 +198,22 @@ private fun FoundCard(r: RecognitionEntity, song: Song?) {
         Spacer(Modifier.height(20.dp))
         if (song != null) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PrismButton({ c.player.playSingle(song); nav.openPlayer() }) { Icon(PrismIcons.Play, null); Spacer(Modifier.width(6.dp)); Text("Play") }
+                PrismButton({ c.player.playSingle(song); nav.openPlayer() }) { Icon(PrismIcons.Play, null); Spacer(Modifier.width(6.dp)); Text(tr(R.string.widget_play)) }
                 val isLiked = song.id in liked
                 PrismOutlinedButton({ c.library.toggleLike(song) }) {
-                    Icon(if (isLiked) PrismIcons.HeartFilled else PrismIcons.Heart, null); Spacer(Modifier.width(6.dp)); Text(if (isLiked) "Liked" else "Like")
+                    Icon(if (isLiked) PrismIcons.HeartFilled else PrismIcons.Heart, null); Spacer(Modifier.width(6.dp)); Text(if (isLiked) tr(R.string.liked) else tr(R.string.widget_like))
                 }
             }
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                song.album?.id?.let { album -> PrismTextButton({ nav.go(Routes.album(album)) }) { Text("Album") } }
-                PrismTextButton({ c.player.playSingle(song); nav.openPlayer() }) { Text("Lyrics") }
-                PrismTextButton({ c.recognizer.reset() }) { Text("Again") }
+                song.album?.id?.let { album -> PrismTextButton({ nav.go(Routes.album(album)) }) { Text(tr(R.string.album)) } }
+                PrismTextButton({ c.player.playSingle(song); nav.openPlayer() }) { Text(tr(R.string.lyrics)) }
+                PrismTextButton({ c.recognizer.reset() }) { Text(tr(R.string.again)) }
             }
         } else {
-            Text("Not found in Prism Music", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            PrismTextButton({ nav.go(Routes.SEARCH) }) { Text("Search for it") }
-            PrismTextButton({ c.recognizer.reset() }) { Text("Again") }
+            Text(tr(R.string.not_found_in_prism_music), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            PrismTextButton({ nav.go(Routes.SEARCH) }) { Text(tr(R.string.search_for_it)) }
+            PrismTextButton({ c.recognizer.reset() }) { Text(tr(R.string.again)) }
         }
     }
 }
@@ -229,8 +231,8 @@ fun RecognizedScreen(bottomPadding: Dp) {
     val provider = remember { android.content.ComponentName(context, com.prism.music.widget.RecognizeWidget::class.java) }
     var placed by remember { mutableStateOf(widgets?.getAppWidgetIds(provider)?.isNotEmpty() == true) }
     SubPage(
-        "Recognized", bottomPadding, subtitle = "Songs Prism found by listening",
-        actions = { RoundAction(PrismIcons.Recognize, "Recognize a song", glass = true) { nav.go(Routes.RECOGNIZE) } },
+        tr(R.string.recognized), bottomPadding, subtitle = tr(R.string.songs_prism_found_by_listening),
+        actions = { RoundAction(PrismIcons.Recognize, tr(R.string.widget_recognize_empty), glass = true) { nav.go(Routes.RECOGNIZE) } },
     ) {
         if (widgets?.isRequestPinAppWidgetSupported == true && !placed) item("widget") {
             Row(
@@ -244,9 +246,9 @@ fun RecognizedScreen(bottomPadding: Dp) {
                 }
                 Spacer(Modifier.width(14.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("Add the widget", style = MaterialTheme.typography.titleMedium)
+                    Text(tr(R.string.add_the_widget), style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Recognize songs from your home screen", style = MaterialTheme.typography.bodySmall,
+                        tr(R.string.recognize_songs_from_your_home_screen), style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -255,11 +257,11 @@ fun RecognizedScreen(bottomPadding: Dp) {
         if (history.isEmpty()) item("empty") {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                 com.prism.music.ui.components.EmptyState(
-                    PrismIcons.Recognize, "Nothing recognized yet",
-                    "Hear a song you like? Let Prism listen for a few seconds: what it finds is kept here.",
+                    PrismIcons.Recognize, tr(R.string.nothing_recognized_yet),
+                    tr(R.string.hear_a_song_you_like_let),
                 )
                 PrismButton({ nav.go(Routes.RECOGNIZE + "?start=true") }) {
-                    Icon(PrismIcons.Recognize, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Recognize a song")
+                    Icon(PrismIcons.Recognize, null, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text(tr(R.string.widget_recognize_empty))
                 }
             }
         }
@@ -273,7 +275,7 @@ fun RecognizedScreen(bottomPadding: Dp) {
                     Artwork(r.cover, Modifier.size(52.dp), LocalUi.current.art, placeholderIcon = if (r.status == "pending") PrismIcons.Recognize else PrismIcons.Song)
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(if (r.status == "pending") "Waiting for a network" else r.title ?: "", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(if (r.status == "pending") tr(R.string.waiting_for_a_network) else r.title ?: "", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(
                             listOfNotNull(r.artist?.takeIf { r.status != "pending" }, DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(r.at))).joinToString(" · "),
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -285,7 +287,7 @@ fun RecognizedScreen(bottomPadding: Dp) {
                             com.prism.music.widget.RecognizeWidgets.refresh(c.app)
                         }
                     }) {
-                        Icon(PrismIcons.Close, "Remove", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(PrismIcons.Close, tr(R.string.remove), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

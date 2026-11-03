@@ -25,18 +25,27 @@ android {
         applicationId = "com.prism.music"
         minSdk = 26
         targetSdk = 36
-        versionCode = 47
-        versionName = "1.7.7.1"
+        versionCode = 54
+        versionName = "1.8.0"
         vectorDrawables { useSupportLibrary = true }
         // The name under the launcher icon; a side-by-side build (below) is called "Prism Dev" so it can't be mistaken for Prism.
         manifestPlaceholders["appLabel"] = "@string/app_name"
         // Only the side-by-side test copy can be profiled from adb (simpleperf / Perfetto), for chasing jank (1.7.4).
         manifestPlaceholders["profileable"] = "false"
+        // In-app tests (app/src/androidTest, 1.7.9): Prism on a fixed offline setup, YouTube and lyrics answered from
+        // recordings (PrismTestRunner), each test in a fresh app with its data cleared (the orchestrator).
+        testInstrumentationRunner = "com.prism.music.PrismTestRunner"
+        testInstrumentationRunnerArguments["clearPackageData"] = "true"
+        // Tests that need the real internet (@Live) only run when asked for. Prism TV's (@TvTest, 1.8.0) are left out by
+        // PrismTestRunner unless a run asks for them (a second name here only works without the orchestrator).
+        testInstrumentationRunnerArguments["notAnnotation"] = "com.prism.music.Live"
         // Optional: `lastfm.apiKey=…` in local.properties lets genre detection ask Last.fm too.
         val localProps = Properties().apply {
             rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
         }
         buildConfigField("String", "LASTFM_API_KEY", "\"${localProps.getProperty("lastfm.apiKey", "")}\"")
+        // Scrobbling (1.7.8) signs its requests with the API account's shared secret; without one it isn't offered.
+        buildConfigField("String", "LASTFM_SECRET", "\"${localProps.getProperty("lastfm.secret", "")}\"")
     }
 
     // Releases are signed with the key in keystore.properties (gitignored, with the .jks beside it).
@@ -56,12 +65,18 @@ android {
 
     buildTypes {
         debug {
+            // en-XA (stretched, accented English) and ar-XB (mirrored, right to left) in the phone's language list: text
+            // that gets cut off, or a layout that doesn't turn around, shows up before any translation does.
+            isPseudoLocalesEnabled = true
             // `-PsideBySide`: a debug Prism that installs next to the real one (for trying changes on your own phone), as
             // "Prism Dev". `-PsideBySide=name` installs as com.prism.music.name instead of .dev, beside an older dev copy.
             if (project.hasProperty("sideBySide")) {
                 applicationIdSuffix = "." + (project.property("sideBySide") as String).ifBlank { "dev" }
-                manifestPlaceholders["appLabel"] = "Prism Dev"
+                manifestPlaceholders["appLabel"] = (project.findProperty("sideByLabel") as String?) ?: "Prism Dev"
             }
+            // `-PsingBench`: not debuggable, so Sing's speed test (SingSpeedTest) times Prism's own code as a release
+            // runs it (a debuggable app's Kotlin ran Sing's transforms several times slower on the A16).
+            if (project.hasProperty("singBench")) isDebuggable = false
         }
         release {
             // Kept unminified: NewPipeExtractor + Rhino rely on reflection.
@@ -78,7 +93,8 @@ android {
             // it can't be mistaken for (or installed over) the real Prism.
             if (project.hasProperty("sideBySide")) {
                 applicationIdSuffix = "." + (project.property("sideBySide") as String).ifBlank { "dev" }
-                manifestPlaceholders["appLabel"] = "Prism Dev"
+                // `-PsideByLabel="Prism Premium"`: a second test copy that reads differently on the home screen.
+                manifestPlaceholders["appLabel"] = (project.findProperty("sideByLabel") as String?) ?: "Prism Dev"
                 manifestPlaceholders["profileable"] = "true"
                 signingConfig = signingConfigs.getByName("debug")
             }
@@ -96,10 +112,33 @@ android {
         buildConfig = true
     }
 
+    // Android 13+ lists Prism's languages (each values-xx folder) in the phone's own per-app language setting: since
+    // 1.8.0 that list (xml/locales_config) comes from splitTranslations, as the build's own generator only reads src/.
+    androidResources {
+        // Only Prism's own languages (1.8.0, #268): the libraries bring their few words in ~85, and every one of them
+        // costs ~19 KB of resources.arsc (which Android needs stored uncompressed) even where Prism shows English.
+        // A region is only kept when named (the libraries' own regional words for Prism's languages too).
+        localeFilters += listOf(
+            "en", "en-rGB", "en-rAU", "en-rCA", "en-rIN", "es", "es-rUS", "pt", "pt-rBR", "pt-rPT", "fr", "fr-rCA", "de",
+            "it", "nl", "sv", "pl", "cs", "ro", "hu", "el", "ru", "uk", "tr", "ar", "fa", "iw", "hi", "bn", "ur", "in",
+            "ms", "vi", "th", "fil", "tl", "ja", "ko", "zh", "zh-rCN", "zh-rTW", "zh-rHK",
+        )
+    }
+
+    // res/ reaches the build through splitTranslations (below), which keeps the translations out of resources.arsc.
+    sourceSets.getByName("main").res.directories.clear()
+
+    // The translations' MissingTranslation would flag every string (they're assets now); TranslationsTest checks them.
+    lint {
+        disable += "MissingTranslation"
+    }
+
     testOptions {
         unitTests.isReturnDefaultValues = true
         // Robolectric tests can read the app's own resources (strings, the widgets' layouts).
         unitTests.isIncludeAndroidResources = true
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
+        animationsDisabled = true
     }
 
     packaging {
@@ -148,6 +187,9 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     // Window size and fold posture (tablets, foldables, landscape): Apache-2.0, brings androidx.window.
     implementation("androidx.compose.material3.adaptive:adaptive:1.3.0")
+    // Prism TV (1.8.0): Compose for TV's focus styling (cards that lift when focused, the side navigation), Google,
+    // Apache-2.0. Only the TV screens (ui/tv) use it.
+    implementation("androidx.tv:tv-material:1.1.0")
 
     implementation("androidx.core:core-ktx:1.19.1")
     implementation("androidx.activity:activity-compose:1.13.0")
@@ -214,6 +256,16 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     // Renders the backgrounds to PNGs on the PC (BackdropRenderTest), with Robolectric's real graphics.
     testImplementation("org.robolectric:robolectric:4.14.1")
+
+    // In-app tests (1.7.9, release-check PLAN.md): Compose UI tests on a device, all Apache-2.0, test-only.
+    androidTestImplementation(composeBom)
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test:rules:1.7.0")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.4.0")
+    androidTestUtil("androidx.test:orchestrator:1.6.1")
+    androidTestUtil("androidx.test.services:test-services:1.6.0")
 }
 
 // The tests use ONNX Runtime's desktop build (with its PC libraries); the Android one's classes would clash with it.
@@ -555,6 +607,97 @@ androidComponents {
     onVariants { variant ->
         variant.sources.kotlin?.addGeneratedSourceDirectory(generatePrismIcons, GeneratePrismIcons::outputDir)
         variant.sources.res?.addGeneratedSourceDirectory(generatePrismIcons, GeneratePrismIcons::resDir)
+    }
+}
+
+/**
+ * The translations kept small (1.8.0, #268). Android needs resources.arsc stored uncompressed, and 31 languages' text in
+ * it took 1.7.9's APK from 23 to 33 MB. So res/ goes to the build through this copy, in which each values-xx/strings.xml
+ * keeps only what Android reads itself (the manifest's and widgets' labels, [kept]) and the plurals; every other string
+ * goes into the compressed assets/i18n/<folder> (the strings' XML text in names' order, NUL between them, U+0001 for one
+ * not translated yet), which Strings.kt reads. Each language's resources say which table is theirs (prism_i18n_table),
+ * so Android still picks the language, exactly as it picks a values-xx folder. The files in src/main/res stay as they
+ * are (TranslationsTest, corrections as pull requests).
+ */
+abstract class SplitTranslations : DefaultTask() {
+    @get:InputDirectory @get:PathSensitive(PathSensitivity.RELATIVE) abstract val res: DirectoryProperty
+    @get:InputFile @get:PathSensitive(PathSensitivity.RELATIVE) abstract val manifest: RegularFileProperty
+    /** Strings the code hands to Android by id (Media3's download notification) or that the build names (app_name). */
+    @get:Input abstract val kept: SetProperty<String>
+    @get:OutputDirectory abstract val resDir: DirectoryProperty
+    @get:OutputDirectory abstract val assetsDir: DirectoryProperty
+
+    private fun parse(f: File): org.w3c.dom.Document =
+        javax.xml.parsers.DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(f)
+
+    private fun elements(d: org.w3c.dom.Document, tag: String) =
+        d.documentElement.getElementsByTagName(tag).let { l -> (0 until l.length).map { l.item(it) as org.w3c.dom.Element } }
+
+    @TaskAction fun split() {
+        val src = res.get().asFile
+        val outRes = resDir.get().asFile.apply { deleteRecursively(); mkdirs() }
+        val outAssets = assetsDir.get().asFile.apply { deleteRecursively() }.resolve("i18n").apply { mkdirs() }
+        val ref = Regex("@string/(\\w+)")
+        val keep = kept.get().toMutableSet()
+        src.walkTopDown().filter { it.isFile && it.extension == "xml" && !it.parentFile.name.startsWith("values") }
+            .plus(manifest.get().asFile).forEach { f -> ref.findAll(f.readText()).forEach { keep += it.groupValues[1] } }
+
+        val english = elements(parse(File(src, "values/strings.xml")), "string")
+        val names = english.filter { it.getAttribute("translatable") != "false" }.map { it.getAttribute("name") }.filter { it !in keep }
+        outAssets.resolve("names").writeText(names.joinToString("\n"))
+        // English stays in resources.arsc: it's every language's fallback.
+        File(outRes, "values").mkdirs()
+        File(outRes, "values/i18n_table.xml").writeText(
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<resources>\n" +
+                "    <string name=\"prism_i18n_table\" translatable=\"false\"></string>\n</resources>\n",
+        )
+
+        // The phone's per-app language list (Android 13+): English (resources.properties says which) and every values-xx.
+        val default = File(src, "resources.properties").readLines().first { it.startsWith("unqualifiedResLocale=") }.substringAfter('=')
+        val locales = src.listFiles().orEmpty().filter { File(it, "strings.xml").isFile && it.name.startsWith("values-") }
+            .map { it.name.removePrefix("values-").removePrefix("b+").replace("-r", "-").replace('+', '-') }.sorted()
+        File(outRes, "xml").mkdirs()
+        File(outRes, "xml/locales_config.xml").writeText(
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<locale-config xmlns:android=\"http://schemas.android.com/apk/res/android\"" +
+                " android:defaultLocale=\"$default\">\n" +
+                (listOf(default) + locales).joinToString("") { "    <locale android:name=\"$it\"/>\n" } + "</locale-config>\n",
+        )
+
+        val transformer = javax.xml.transform.TransformerFactory.newInstance().newTransformer()
+        src.walkTopDown().filter { it.isFile && it.parentFile != src }.forEach { f ->
+            val rel = f.relativeTo(src).path
+            val folder = f.parentFile.name
+            if (!(folder.startsWith("values-") && f.name == "strings.xml")) {
+                f.copyTo(File(outRes, rel))
+                return@forEach
+            }
+            val doc = parse(f)
+            val qualifier = folder.removePrefix("values-")
+            val texts = elements(doc, "string").associate { it.getAttribute("name") to it.textContent }
+            outAssets.resolve(qualifier).writeText(names.joinToString("\u0000") { texts[it] ?: "\u0001" })
+            elements(doc, "string").filter { it.getAttribute("name") !in keep }.forEach { it.parentNode.removeChild(it) }
+            doc.documentElement.appendChild(doc.createElement("string").apply {
+                setAttribute("name", "prism_i18n_table")
+                textContent = qualifier
+            })
+            File(outRes, rel).apply { parentFile.mkdirs() }.outputStream().use {
+                transformer.transform(javax.xml.transform.dom.DOMSource(doc), javax.xml.transform.stream.StreamResult(it))
+            }
+        }
+    }
+}
+
+val splitTranslations = tasks.register<SplitTranslations>("splitTranslations") {
+    res.set(layout.projectDirectory.dir("src/main/res"))
+    manifest.set(layout.projectDirectory.file("src/main/AndroidManifest.xml"))
+    kept.set(setOf("app_name", "downloads"))
+    resDir.set(layout.buildDirectory.dir("generated/i18n/res"))
+    assetsDir.set(layout.buildDirectory.dir("generated/i18n/assets"))
+}
+androidComponents {
+    onVariants { variant ->
+        variant.sources.res?.addGeneratedSourceDirectory(splitTranslations, SplitTranslations::resDir)
+        variant.sources.assets?.addGeneratedSourceDirectory(splitTranslations, SplitTranslations::assetsDir)
     }
 }
 

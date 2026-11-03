@@ -94,7 +94,7 @@ object SearchRank {
     )
 
     /** Such words in [title]'s brackets or " - …" tail that the query [q] (normalised) doesn't ask for. */
-    private fun knockoffMarks(title: String, q: String): List<String> {
+    internal fun knockoffMarks(title: String, q: String): List<String> {
         val tails = Regex("[(\\[]([^)\\]]*)[)\\]]|\\s-\\s(.*)$").findAll(title).map { norm(it.value) }.joinToString(" ")
         val asked = q.split(" ").toSet()
         return knockoff.findAll(tails).map { it.value }.filter { m -> m.split(" ").any { it !in asked } }.toList()
@@ -118,8 +118,13 @@ object SearchRank {
      * "65 Mio. Zuschauer/Monat", "72,5 jt audiens bulanan", "มีผู้ชมรายเดือน 65 ล้าน คน"): the first number in the
      * artist's subtitle with the size word right after it.
      */
-    internal fun audience(subtitle: String): Long {
-        val text = subtitle.substringAfter(" • ", subtitle)
+    internal fun audience(subtitle: String): Long = count(subtitle.substringAfter(" • ", subtitle))
+
+    /**
+     * The first number in [text] with its size word ("189M plays", "189 M reproducciones", "7963만회 재생",
+     * "79 Mio. Wiedergaben", "조회수 28만회", "443.157 Aufrufe"); 0 when there's none.
+     */
+    internal fun count(text: String): Long {
         val m = audienceRegex.find(text) ?: return 0
         val raw = m.groupValues[1]
         // "72,5" / "7.25" are decimals, "789 000" / "1,234" thousands.
@@ -220,11 +225,15 @@ object SearchRank {
 
     /**
      * Ranks [results]; live streams ([SearchFilter.LIVE]) always get a row of their own, last, and don't
-     * compete for the top spot unless there's nothing else.
+     * compete for the top spot unless there's nothing else. [pageSongs]: the songs on the page of YouTube's card.
      */
-    fun rank(query: String, results: List<Pair<SearchFilter, List<BrowseItem>>>, taste: Taste = Taste.NONE, card: BrowseItem? = null): TopSearch {
+    fun rank(
+        query: String, results: List<Pair<SearchFilter, List<BrowseItem>>>, taste: Taste = Taste.NONE, card: BrowseItem? = null,
+        pageSongs: List<SongItem> = emptyList(),
+    ): TopSearch {
         val live = results.firstOrNull { it.first == SearchFilter.LIVE }?.second.orEmpty().distinctBy { it.id }.take(10)
-        val ranked = rankMusic(query, results.filter { it.first != SearchFilter.LIVE }, taste, card?.takeUnless { it is SongItem && it.song.isLive })
+        val music = withPageSongs(norm(query), results.filter { it.first != SearchFilter.LIVE }, pageSongs)
+        val ranked = rankMusic(query, music, taste, card?.takeUnless { it is SongItem && it.song.isLive })
         if (live.isEmpty()) return ranked
         val top = ranked.top ?: live.first()
         val sections = ranked.sections.toMutableList()
@@ -238,6 +247,98 @@ object SearchRank {
      * a reggae flip): a version the query didn't ask for gets no head start.
      */
     private fun trustCard(query: String, card: BrowseItem): Boolean = knockoffMarks(card.title, norm(query)).isEmpty()
+
+    /** [item] is a song or video of exactly the title typed, not a karaoke or cover version of it. */
+    private fun exactSong(q: String, item: BrowseItem): Boolean =
+        item is SongItem && core(item.title) == q && knockoffMarks(item.title, q).isEmpty()
+
+    /**
+     * A title several artists share ("upside down": Jack Johnson, Diana Ross, a trending Hazbin Hotel song): those
+     * songs most played first, each taking a place one of them held, the rest of the row as YouTube had it. YouTube's
+     * own order leans on what's trending; the song most people mean is the one most people play.
+     */
+    internal fun byPlays(q: String, items: List<BrowseItem>): List<BrowseItem> {
+        val slots = items.indices.filter { exactSong(q, items[it]) && (items[it] as SongItem).plays != null }
+        if (slots.size < 2) return items
+        val ordered = slots.map { items[it] }.sortedByDescending { (it as SongItem).plays }
+        return items.toMutableList().also { out -> slots.forEachIndexed { k, i -> out[i] = ordered[k] } }
+    }
+
+    /**
+     * Songs of exactly the title typed that YouTube's song search left out but its unfiltered page shows join the
+     * songs, at the end ([byPlays] then gives the most played the first place one of them holds). "halo": the song
+     * search had a Halo game soundtrack and LP's live Halo, the page Beyoncé's Halo (2.7B plays).
+     */
+    private fun withPageSongs(q: String, results: List<Pair<SearchFilter, List<BrowseItem>>>, page: List<SongItem>): List<Pair<SearchFilter, List<BrowseItem>>> {
+        val row = results.firstOrNull { it.first == SearchFilter.SONGS }?.second.orEmpty()
+        val extra = page.filter { s -> exactSong(q, s) && (s.plays ?: 0) >= KNOWN_SONG && row.none { it.id == s.id } }.distinctBy { it.id }
+        if (extra.isEmpty()) return results
+        return if (results.any { it.first == SearchFilter.SONGS }) results.map { (f, items) -> if (f == SearchFilter.SONGS) f to (items + extra) else f to items }
+        else results + (SearchFilter.SONGS to extra)
+    }
+
+    /** From this many plays, a song is one people mean when they type its title. */
+    private const val KNOWN_SONG = 1_000_000L
+    /** From this many, a hit: it outranks a card that doesn't even name it. */
+    private const val HIT_SONG = 50_000_000L
+
+    /**
+     * Whether YouTube's card stands against [hit], the most played song of exactly the title typed. A song card holds
+     * when it's that song's artist, or played nearly as often ([cardPlays]: its song's plays, else its video's views);
+     * a card of another kind when it names exactly what was typed, or [hit] isn't a hit. "upside down": the trending
+     * card (79M plays) gives way to Jack Johnson's song (189M); "dreams": a fan video to Fleetwood Mac's.
+     */
+    private fun cardHolds(q: String, card: BrowseItem, cardPlays: Long?, hit: SongItem?): Boolean {
+        if (hit == null || (hit.plays ?: 0) < KNOWN_SONG) return true
+        if (card is SongItem) {
+            if (hit.song.primaryArtist.isNotBlank() && card.song.artists.any { norm(it.name) == norm(hit.song.primaryArtist) }) return true
+            return (cardPlays ?: 0) * 3 >= (hit.plays ?: 0) * 2
+        }
+        if (yieldsToHit(card, hit)) return false
+        return match(q, card.title) >= 0.97 || (hit.plays ?: 0) < HIT_SONG
+    }
+
+    /** From this many plays, a song outranks another artist's soundtrack, cover or tribute collection of its title. */
+    private const val COLLECTION_HIT = 20_000_000L
+    /**
+     * From this many, it outranks another artist's album of its title that came out this year or last ("africa" → a
+     * 2026 album by someone new, against Toto's Africa). Not an older one, however big the song: "AM" is Arctic
+     * Monkeys' album (2013), not Nio Garcia's AM (491M plays); "lemonade" Beyoncé's (2016).
+     */
+    private const val BIG_HIT = 100_000_000L
+
+    /** The year in an album's subtitle ("Album • Buddy DML • 2026") is this year or last. */
+    private fun isNew(item: BrowseItem): Boolean {
+        val year = item.subtitle.split(" • ").lastOrNull { it.trim().matches(Regex("\\d{4}")) }?.trim()?.toInt() ?: return false
+        return year >= java.time.Year.now().value - 1
+    }
+
+    /** Collections of other people's songs: a film's soundtrack, a cast recording, covers, a tribute, karaoke. */
+    private val collection = Regex(
+        "\\b(soundtrack|ost|music from|original cast|cast recording|tribute|covers?|karaoke|made famous|instrumental)\\b",
+    )
+
+    /**
+     * Another artist's album or playlist of the title that gives way to [hit]: a collection of other people's songs
+     * ("yesterday" → the 2019 film's soundtrack album, Himesh Patel, against The Beatles' Yesterday), or a new album
+     * against a big song. The hit's own album stands ("after hours", "thriller": the title track gives way to it
+     * further down).
+     */
+    private fun yieldsToHit(item: BrowseItem, hit: SongItem): Boolean {
+        if (item !is AlbumItem && item !is PlaylistItem) return false
+        val plays = hit.plays ?: return false
+        val artist = norm(hit.song.primaryArtist)
+        if (artist.isNotBlank() && item.subtitle.split(" • ").any { norm(it) == artist }) return false
+        return (plays >= BIG_HIT && item is AlbumItem && isNew(item)) ||
+            (plays >= COLLECTION_HIT && collection.containsMatchIn(norm("${item.title} ${item.subtitle}")))
+    }
+
+    /**
+     * An artist only called what was typed doesn't take the top from a song far better known ("roar": the artist ROAR,
+     * 12M a month, against Katy Perry's Roar, played billions of times). Monthly listeners against all-time plays,
+     * so the song has to be played [SONG_OVER_ARTIST] times the artist's audience.
+     */
+    private const val SONG_OVER_ARTIST = 30
 
     /** The section YouTube's card belongs in. */
     private fun kindOf(item: BrowseItem): SearchFilter? = when (item) {
@@ -261,19 +362,33 @@ object SearchRank {
         // YouTube's card also leads its own kind's row (its per-kind search sometimes leaves it out, or low down).
         // A music video as the card ("humble kendrick" → HUMBLE.'s video) gives way to the song itself when the
         // song results have it: Prism opens videos in video mode, and most searches are for the music.
+        val q = norm(query)
         val songs = results.firstOrNull { it.first == SearchFilter.SONGS }?.second.orEmpty().filterIsInstance<SongItem>()
+        // The video's song: the same title by one of its artists ("Shallow"'s video lists Bradley Cooper; the song
+        // Lady Gaga and Bradley Cooper).
         val asSong = (card as? SongItem)?.takeIf { it.song.isVideo }?.let { v ->
-            songs.firstOrNull { s -> core(s.title) == core(v.title) && s.song.primaryArtist.isNotBlank() && norm(s.song.primaryArtist) == norm(v.song.primaryArtist) }
+            val by = v.song.artists.map { norm(it.name) }.filter { it.isNotBlank() }.toSet()
+            songs.firstOrNull { s -> core(s.title) == core(v.title) && s.song.artists.any { norm(it.name) in by } }
         }
-        val trusted = (asSong ?: card)?.takeIf { trustCard(query, it) }
+        // The most played song of exactly this title, as YouTube's song search shows them.
+        val hit = songs.filter { exactSong(q, it) && it.plays != null }.maxByOrNull { it.plays!! }
+        val cardPlays = (asSong ?: card as? SongItem)?.let { c -> songs.firstOrNull { it.id == c.id }?.plays ?: c.plays }
+        val trusted = (asSong ?: card)?.takeIf { trustCard(query, it) && cardHolds(q, it, cardPlays, hit) }
         val cardKind = trusted?.let(::kindOf)
         val withCard = if (trusted == null || cardKind == null) withKnown else {
             val card: BrowseItem = trusted
             val list = withKnown.map { (f, items) -> if (f == cardKind) f to (listOf(card) + items.filter { it.id != card.id }) else f to items }
             if (list.any { it.first == cardKind }) list else list + (cardKind to listOf(card))
         }
+        // Songs and videos of the same title: the most played first (the card, when it holds, stays first).
         val trimmed = withCard.mapNotNull { (f, items) ->
-            items.distinctBy { it.id }.take(limits[f] ?: 6).takeIf { it.isNotEmpty() }?.let { f to it }
+            val distinct = items.distinctBy { it.id }
+            val ordered = when {
+                f != SearchFilter.SONGS && f != SearchFilter.VIDEOS -> distinct
+                trusted != null && distinct.firstOrNull()?.id == trusted.id -> listOf(distinct.first()) + byPlays(q, distinct.drop(1))
+                else -> byPlays(q, distinct)
+            }
+            ordered.take(limits[f] ?: 6).takeIf { it.isNotEmpty() }?.let { f to it }
         }
         val scored = trimmed.map { (f, items) ->
             Triple(f, items, items.mapIndexed { i, it ->
@@ -283,6 +398,13 @@ object SearchRank {
             })
         }
         var top = scored.flatMap { (_, items, scores) -> items.zip(scores).take(3) }.maxByOrNull { it.second }?.first
+        (top as? ArtistItem)?.let { a ->
+            val audience = audience(a.subtitle)
+            val plays = hit?.plays ?: 0
+            if (norm(a.title) == q && familiarity(a, taste) <= 0.0 && audience > 0 && plays >= SONG_OVER_ARTIST * audience) top = hit
+        }
+        // Nor does another artist's album or playlist of the title, scored on its own, against a far bigger song.
+        if (hit != null && top != null && familiarity(top!!, taste) <= 0.0 && yieldsToHit(top!!, hit)) top = hit
         // A title track ("After Hours" by The Weeknd) gives way to the album it names.
         (top as? SongItem)?.song?.let { song ->
             val albums = trimmed.firstOrNull { it.first == SearchFilter.ALBUMS }?.second.orEmpty()

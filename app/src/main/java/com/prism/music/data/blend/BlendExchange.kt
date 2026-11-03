@@ -1,5 +1,7 @@
 package com.prism.music.data.blend
 
+import com.prism.music.R
+import com.prism.music.tr
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -98,7 +100,7 @@ class BlendExchange(
         }
         when (val r = receive(code, shown)) {
             is Blends.Import.Added -> {
-                writer.write("OK\t" + myName().ifBlank { "A Prism listener" }.replace('\t', ' ').replace('\n', ' ') + "\n"); writer.flush()
+                writer.write("OK\t" + myName().ifBlank { tr(R.string.a_prism_listener) }.replace('\t', ' ').replace('\n', ' ') + "\n"); writer.flush()
                 _made.tryEmit(r)
             }
             else -> { writer.write("NO\n"); writer.flush() }
@@ -139,7 +141,7 @@ class BlendExchange(
                     BufferedReader(InputStreamReader(s.getInputStream(), Charsets.UTF_8)).readLine()
                 }
             }.getOrNull() ?: continue
-            if (answer.startsWith("OK")) return@withContext SendBack.Done(answer.substringAfter('\t', "").ifBlank { "Your friend" })
+            if (answer.startsWith("OK")) return@withContext SendBack.Done(answer.substringAfter('\t', "").ifBlank { tr(R.string.your_friend) })
         }
         SendBack.Unreachable
     }

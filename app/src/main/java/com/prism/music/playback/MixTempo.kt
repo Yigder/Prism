@@ -307,16 +307,29 @@ class MixTempo(
     private val prefs = context.getSharedPreferences("mix_tempo", Context.MODE_PRIVATE)
     /** Song id -> integrated loudness (LUFS; NaN when it couldn't be measured). Also marks a song as scanned. */
     private val loudPrefs = context.getSharedPreferences("song_loudness", Context.MODE_PRIVATE)
+    /** Song id -> its loudest sample (dBFS), measured with its loudness since 1.8.0: how far Normalize may lift it. */
+    private val peakPrefs = context.getSharedPreferences("song_peak", Context.MODE_PRIVATE)
     /** Song id -> its key ([MusicKey.encode], or "none" when it has no clear one); DJ mode's harmonic ordering. */
     private val keyPrefs = context.getSharedPreferences("song_key", Context.MODE_PRIVATE)
     private val failed = ConcurrentHashMap.newKeySet<String>()
     /** One song at a time: decoding a whole song is the heaviest thing Prism does in the background. */
     private val lock = Mutex()
 
+    /** Forgets what was measured of [id] (another version of it plays now), so it's measured again. */
+    fun forget(id: String) {
+        for (p in listOf(prefs, loudPrefs, peakPrefs, keyPrefs, quickPrefs)) p.edit().remove(id).apply()
+    }
+
     fun cached(id: String): Tempo? = prefs.getString(id, null)?.let(Tempo::decode)
 
     /** The song's measured loudness (integrated LUFS), once it's been scanned. */
     fun loudness(id: String): Float? = loudPrefs.getFloat(id, Float.NaN).takeIf { !it.isNaN() }
+
+    /** The song's loudest sample (dBFS), once it's been scanned (by 1.8.0 or later). */
+    fun peak(id: String): Float? = peakPrefs.getFloat(id, Float.NaN).takeIf { !it.isNaN() }
+
+    /** Measured before peaks were (1.8.0): Normalize can lift it no more than 6 dB until it's scanned again. */
+    private fun noPeak(id: String) = loudness(id) != null && !peakPrefs.contains(id)
 
     /** The song's key once it's been scanned for one (null for none clear, or not scanned yet). */
     fun key(id: String): MusicKey? = keyPrefs.getString(id, null)?.let(MusicKey::decode)
@@ -329,7 +342,7 @@ class MixTempo(
     /** Scanned before the song's fade-out and intro were measured (for Mix's Auto length): scanned again once. */
     private fun old(id: String) = prefs.getString(id, null)?.let(Tempo::isOld) == true
 
-    private class Scan(val tempo: Tempo?, val lufs: Float?, val key: MusicKey?)
+    private class Scan(val tempo: Tempo?, val lufs: Float?, val key: MusicKey?, val peakDb: Float?)
 
     // ---------------------------------------------------------------- DJ mode's quick scan
 
@@ -433,10 +446,14 @@ class MixTempo(
      * Scans the song now if it hasn't been ([network]: whether its audio may be downloaded when it isn't on the phone),
      * and returns its tempo; null when it has none that's clear, or it can't be scanned yet. [edges]: a song scanned
      * before its fade-out and intro were measured is scanned again (only Crossfade's automatic length needs them), and
-     * with [key], one scanned before its key was (DJ mode), and with [wave], one with no outline for the waveform bar.
+     * with [key], one scanned before its key was (DJ mode), with [wave], one with no outline for the waveform bar, and
+     * with [peak], one scanned before its peak was (Normalize).
      */
-    suspend fun measure(id: String, network: Boolean = true, edges: Boolean = true, key: Boolean = false, wave: Boolean = false): Tempo? {
-        fun done() = scanned(id) && !(edges && old(id)) && !(key && !keyed(id)) && !(wave && waves?.has(id) == false)
+    suspend fun measure(
+        id: String, network: Boolean = true, edges: Boolean = true, key: Boolean = false, wave: Boolean = false, peak: Boolean = false,
+    ): Tempo? {
+        fun done() = scanned(id) && !(edges && old(id)) && !(key && !keyed(id)) && !(wave && waves?.has(id) == false) &&
+            !(peak && noPeak(id))
         if (done() || id in failed) return cached(id)
         return lock.withLock {
             if (done()) return@withLock cached(id)
@@ -460,6 +477,7 @@ class MixTempo(
                     else -> {
                         prefs.edit().putString(id, s.tempo?.encode() ?: "none").apply()
                         loudPrefs.edit().putFloat(id, s.lufs ?: Float.NaN).apply()
+                        peakPrefs.edit().putFloat(id, s.peakDb ?: Float.NaN).apply()
                         keyPrefs.edit().putString(id, s.key?.encode() ?: "none:${MusicKey.VERSION}").apply()
                         val ms = (System.nanoTime() - started) / 1_000_000
                         val t = s.tempo
@@ -490,7 +508,7 @@ class MixTempo(
                 }
                 android.net.Uri.fromFile(file)
             }
-            val (pcm, rate) = decodeAll(uri) ?: throw java.io.IOException("couldn't decode its audio")
+            val (pcm, rate, peak) = decodeAll(uri) ?: throw java.io.IOException("couldn't decode its audio")
             val lufs = integratedLoudness(pcm, rate)?.let { it + MONO_TO_STEREO_DB }
             // The waveform progress bar's outline, from the same audio (1.7.4).
             waves?.let { w -> runCatching { w.put(id, com.prism.music.data.SongWaves.outline(pcm)) } }
@@ -505,14 +523,15 @@ class MixTempo(
             val bands = VideoSync.bandFeatures(pcm, rate)
             val frameMs = (rate / 100) * 1000.0 / rate
             val key = runCatching { KeyDetector.detect(pcm, rate) }.getOrNull()
-            return Scan(Tempo.analyze(bands, frameMs, offsetMs = VideoSync.WINDOW / 2 * 1000.0 / rate), lufs, key)
+            val peakDb = peak.takeIf { it > 0f }?.let { (20 * kotlin.math.log10(it.toDouble())).toFloat() }
+            return Scan(Tempo.analyze(bands, frameMs, offsetMs = VideoSync.WINDOW / 2 * 1000.0 / rate), lufs, key, peakDb)
         } finally {
             file.delete()
         }
     }
 
-    /** The whole file as mono PCM, decimated to roughly 11 kHz. */
-    private fun decodeAll(uri: android.net.Uri): Pair<FloatArray, Int>? {
+    /** The whole file as mono PCM, decimated to roughly 11 kHz, its rate, and its loudest sample before (0 … 1). */
+    private fun decodeAll(uri: android.net.Uri): Triple<FloatArray, Int, Float>? {
         val ex = MediaExtractor()
         var codec: MediaCodec? = null
         try {
@@ -532,6 +551,7 @@ class MixTempo(
             var count = 0
             var acc = 0f
             var n = 0
+            var peak = 0f
             val info = MediaCodec.BufferInfo()
             var inputDone = false
             while (true) {
@@ -563,7 +583,11 @@ class MixTempo(
                     val frames = info.size / (channels * (if (isFloat) 4 else 2))
                     for (f in 0 until frames) {
                         var m = 0f
-                        for (c in 0 until channels) m += if (isFloat) buf.float else buf.short / 32768f
+                        for (c in 0 until channels) {
+                            val v = if (isFloat) buf.float else buf.short / 32768f
+                            if (v > peak) peak = v else if (-v > peak) peak = -v
+                            m += v
+                        }
                         acc += m / channels
                         if (++n == factor) {
                             if (count == out.size) out = out.copyOf(out.size * 2)
@@ -580,7 +604,7 @@ class MixTempo(
             }
             val sr = rate / factor
             if (count < sr * 20) return null
-            return out.copyOf(count) to sr
+            return Triple(out.copyOf(count), sr, peak)
         } finally {
             runCatching { codec?.stop() }
             runCatching { codec?.release() }

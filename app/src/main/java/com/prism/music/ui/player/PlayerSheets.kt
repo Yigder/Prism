@@ -1,5 +1,7 @@
 package com.prism.music.ui.player
 
+import com.prism.music.R
+import com.prism.music.tr
 import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.launch
 import com.prism.music.ui.components.PrismSlider
@@ -47,9 +49,9 @@ import kotlin.math.roundToInt
 
 /** Plain-language codec name from a codec / mime string ("opus" → "Opus", "mp4a.40.2" → "AAC"). */
 fun codecName(codec: String): String = when {
-    codec.contains("opus", true) -> "Opus"
+    codec.contains("opus", true) -> tr(R.string.opus)
     codec.contains("mp4a", true) || codec.contains("aac", true) -> "AAC"
-    codec.contains("vorbis", true) -> "Vorbis"
+    codec.contains("vorbis", true) -> tr(R.string.vorbis)
     codec.contains("flac", true) -> "FLAC"
     codec.contains("alac", true) -> "ALAC"
     // Uncompressed audio (WAV, AIFF) reaches the player as "audio/raw".
@@ -59,7 +61,7 @@ fun codecName(codec: String): String = when {
     else -> codec.substringBefore('.').uppercase()
 }
 
-fun sampleRateText(hz: Int): String = if (hz <= 0) "—" else if (hz % 1000 == 0) "${hz / 1000} kHz" else "%.1f kHz".format(hz / 1000f)
+fun sampleRateText(hz: Int): String = if (hz <= 0) "—" else if (hz % 1000 == 0) "${hz / 1000} kHz" else tr(R.string.t_1f_khz).format(hz / 1000f)
 
 /**
  * Stats for nerds as one of the player's panels: the artwork tucks into the header, as it does for
@@ -69,39 +71,39 @@ fun sampleRateText(hz: Int): String = if (hz <= 0) "—" else if (hz % 1000 == 0
 fun NerdStatsPanel(modifier: Modifier = Modifier) {
     val stats by LocalContainer.current.nerdStats.collectAsState()
     Column(modifier.verticalScroll(rememberScrollState()).padding(bottom = 12.dp)) {
-        Text("Stats for nerds", color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.labelLarge)
+        Text(tr(R.string.stats_for_nerds), color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.labelLarge)
         Spacer(Modifier.height(10.dp))
         // Nothing has been decoded yet (e.g. a restored queue that hasn't started).
         if (stats.codec.isBlank() && stats.streamBitrateKbps <= 0) {
-            Text("Play the song to see its audio details", color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.bodyMedium)
+            Text(tr(R.string.play_the_song_to_see_its), color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.bodyMedium)
             return@Column
         }
         // The essentials, big: what the audio is.
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            StatTile("Codec", codecName(stats.codec), Modifier.weight(1f))
-            StatTile("Bitrate", stats.streamBitrateKbps.takeIf { it > 0 }?.let { "$it kbps" } ?: "—", Modifier.weight(1f))
-            StatTile("Sample rate", sampleRateText(stats.sampleRate), Modifier.weight(1f))
+            StatTile(tr(R.string.codec), codecName(stats.codec), Modifier.weight(1f))
+            StatTile(tr(R.string.bitrate), stats.streamBitrateKbps.takeIf { it > 0 }?.let { tr(R.string.kbps_2, it) } ?: "—", Modifier.weight(1f))
+            StatTile(tr(R.string.sample_rate), sampleRateText(stats.sampleRate), Modifier.weight(1f))
         }
         Spacer(Modifier.height(8.dp))
-        StatTile("Source", stats.source.ifBlank { "—" }, Modifier.fillMaxWidth())
+        StatTile(tr(R.string.source), stats.source.ifBlank { "—" }, Modifier.fillMaxWidth())
         Spacer(Modifier.height(16.dp))
         val rows = listOf(
-            "Video ID" to stats.videoId,
-            "Source" to stats.source,
-            "Stream" to listOfNotNull(stats.itag.takeIf { it > 0 }?.let { "itag $it" }, stats.container.takeIf { it.isNotBlank() }, stats.client.takeIf { it.isNotBlank() }?.let { "client $it" }).joinToString(" · "),
-            "Codec" to listOfNotNull(stats.codec.takeIf { it.isNotBlank() }, stats.decoder.takeIf { it.isNotBlank() }).joinToString(" · "),
-            "Bitrate" to "${stats.streamBitrateKbps} kbps" + if (stats.contentLength > 0) " · %.2f MB".format(stats.contentLength / 1_048_576f) else "",
-            "Format" to "${stats.sampleRate} Hz · ${stats.channels} ch",
-            "Output" to "${stats.outputEncoding} @ ${stats.outputSampleRate} Hz" + if (stats.offload) " · offload" else "",
-            "Device" to stats.outputDevice,
-            "Spatializer" to stats.spatializer,
-            "Loudness" to (stats.loudnessDb?.let {
-                (if (stats.loudnessMeasured) "%.1f LUFS".format(it) else "%.1f dB (YouTube)".format(it)) + " · gain %.1f dB".format(stats.normalizationGainDb)
+            tr(R.string.video_id) to stats.videoId,
+            tr(R.string.source) to stats.source,
+            tr(R.string.stream) to listOfNotNull(stats.itag.takeIf { it > 0 }?.let { tr(R.string.itag, it) }, stats.container.takeIf { it.isNotBlank() }, stats.client.takeIf { it.isNotBlank() }?.let { tr(R.string.client, it) }).joinToString(" · "),
+            tr(R.string.codec) to listOfNotNull(stats.codec.takeIf { it.isNotBlank() }, stats.decoder.takeIf { it.isNotBlank() }).joinToString(" · "),
+            tr(R.string.bitrate) to tr(R.string.kbps_2, stats.streamBitrateKbps) + if (stats.contentLength > 0) tr(R.string.t_2f_mb).format(stats.contentLength / 1_048_576f) else "",
+            tr(R.string.format) to tr(R.string.hz_ch, stats.sampleRate, stats.channels),
+            tr(R.string.output) to tr(R.string.hz, stats.outputEncoding, stats.outputSampleRate) + if (stats.offload) tr(R.string.offload) else "",
+            tr(R.string.device) to stats.outputDevice,
+            tr(R.string.spatializer) to stats.spatializer,
+            tr(R.string.loudness) to (stats.loudnessDb?.let {
+                (if (stats.loudnessMeasured) tr(R.string.t_1f_lufs).format(it) else tr(R.string.t_1f_db_youtube).format(it)) + tr(R.string.gain_1f_db).format(stats.normalizationGainDb)
             } ?: "—"),
-            "Effects" to stats.effects,
-            "Buffer" to "%.1f s · %d kbps est.".format(stats.bufferMs / 1000f, stats.bandwidthKbps),
-            "Session" to "${stats.audioSessionId} · underruns ${stats.underruns}",
-        ) + if (stats.videoResolution.isNotBlank()) listOf("Video" to "${stats.videoResolution} · ${stats.videoCodec} · dropped ${stats.droppedFrames}") else emptyList()
+            tr(R.string.effects) to stats.effects,
+            tr(R.string.buffer) to tr(R.string.t_1f_s_d_kbps_est).format(stats.bufferMs / 1000f, stats.bandwidthKbps),
+            tr(R.string.session) to tr(R.string.underruns, stats.audioSessionId, stats.underruns),
+        ) + if (stats.videoResolution.isNotBlank()) listOf(tr(R.string.video) to tr(R.string.dropped, stats.videoResolution, stats.videoCodec, stats.droppedFrames)) else emptyList()
         rows.forEach { (k, v) ->
             Row(Modifier.padding(vertical = 3.dp)) {
                 Text(k, style = MonoStyle, color = Color.White.copy(alpha = 0.5f), modifier = Modifier.width(92.dp))
@@ -141,14 +143,14 @@ fun LyricsTimingSheet(onDismiss: () -> Unit) {
     // The same frosted sheet as the player's ⋯ menu it opens from.
     com.prism.music.ui.components.ActionSheet(song?.thumbnail, onDismiss) {
         Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 10.dp)) {
-            Text("Lyrics timing", style = MaterialTheme.typography.titleLarge)
+            Text(tr(R.string.lyrics_timing), style = MaterialTheme.typography.titleLarge)
             Text(
-                if (videoMode) "For this song's music video" else "For this song",
+                if (videoMode) tr(R.string.for_this_song_s_music_video) else tr(R.string.for_this_song),
                 style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(20.dp))
             Text(
-                if (offset == 0L) "In sync" else "${fmt(offset)} · lyrics ${if (offset > 0) "earlier" else "later"}",
+                if (offset == 0L) tr(R.string.in_sync) else tr(if (offset > 0) R.string.lyrics_earlier else R.string.lyrics_later, fmt(offset)),
                 style = MaterialTheme.typography.headlineSmall, modifier = Modifier.align(Alignment.CenterHorizontally),
             )
             Spacer(Modifier.height(14.dp))
@@ -157,39 +159,39 @@ fun LyricsTimingSheet(onDismiss: () -> Unit) {
                     Text(
                         label, style = MaterialTheme.typography.titleSmall,
                         modifier = Modifier.clip(RoundedCornerShape(50)).background(com.prism.music.ui.components.quietFill())
-                            .clickable(onClickLabel = "Lyrics ${label.replace("−", "-")} seconds") { nudge(d) }.padding(horizontal = 11.dp, vertical = 10.dp),
+                            .clickable(onClickLabel = tr(R.string.lyrics_seconds, label.replace("−", "-"))) { nudge(d) }.padding(horizontal = 11.dp, vertical = 10.dp),
                     )
                 }
             }
             Row(Modifier.fillMaxWidth().padding(top = 6.dp, start = 4.dp, end = 4.dp)) {
-                Text("Later", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant, modifier = Modifier.weight(1f))
-                Text("Earlier", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
+                Text(tr(R.string.later), style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                Text(tr(R.string.earlier), style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
             }
             PrismSlider(offset / 1000f, { pc.setLyricOffset((it * 10).roundToInt() * 100L) }, valueRange = -reach..reach)
             Text(
-                "Kept on this phone, for this song only",
+                tr(R.string.kept_on_this_phone_for_this),
                 style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp),
             )
-            if (offset != 0L) PrismTextButton(onClick = { pc.setLyricOffset(0) }, Modifier.align(Alignment.End)) { Text("Reset") }
+            if (offset != 0L) PrismTextButton(onClick = { pc.setLyricOffset(0) }, Modifier.align(Alignment.End)) { Text(tr(R.string.reset)) }
             if (videoMode) {
                 Spacer(Modifier.height(10.dp))
-                Text("Music video", style = MaterialTheme.typography.titleSmall)
+                Text(tr(R.string.music_video_3), style = MaterialTheme.typography.titleSmall)
                 Text(
                     when (val s = sync) {
-                        VideoSyncState.Measuring -> "Matching the lyrics to the video's audio…"
+                        VideoSyncState.Measuring -> tr(R.string.matching_the_lyrics_to_the_video)
                         is VideoSyncState.Synced -> when {
-                            kotlin.math.abs(s.lagMs) < 150 -> "Matched automatically — the video lines up with the song."
-                            s.lagMs > 0 -> "Matched automatically — the song starts ${fmt(s.lagMs).removePrefix("+")} into the video, so the lyrics wait for it."
-                            else -> "Matched automatically — the video skips the song's first ${fmt(-s.lagMs).removePrefix("−")}."
+                            kotlin.math.abs(s.lagMs) < 150 -> tr(R.string.matched_automatically_the_video_lines_up)
+                            s.lagMs > 0 -> tr(R.string.matched_automatically_the_song_starts_into, fmt(s.lagMs).removePrefix("+"))
+                            else -> tr(R.string.matched_automatically_the_video_skips_the, fmt(-s.lagMs).removePrefix("−"))
                         }
-                        VideoSyncState.Unmatched -> "Couldn't match this video to the song automatically. Use the controls above to line the lyrics up."
-                        VideoSyncState.Off -> "The video uses the song's own timing."
+                        VideoSyncState.Unmatched -> tr(R.string.couldn_t_match_this_video_to)
+                        VideoSyncState.Off -> tr(R.string.the_video_uses_the_song_s)
                     },
                     style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
                 )
                 if (sync is VideoSyncState.Synced || sync == VideoSyncState.Unmatched) {
                     PrismTextButton(onClick = { pc.resyncVideo() }) {
-                        Text(if (sync == VideoSyncState.Unmatched) "Try again" else "Match again")
+                        Text(if (sync == VideoSyncState.Unmatched) tr(R.string.try_again) else tr(R.string.match_again))
                     }
                 }
             }
@@ -222,9 +224,9 @@ fun BestPartSheet(onDismiss: () -> Unit) {
     fun set(ms: Long) { at = ms.coerceIn(0L, duration - 1_000L) }
     com.prism.music.ui.components.ActionSheet(s.thumbnail, onDismiss) {
         Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 10.dp)) {
-            Text("Your best part", style = MaterialTheme.typography.titleLarge)
+            Text(tr(R.string.your_best_part), style = MaterialTheme.typography.titleLarge)
             Text(
-                "Where Best part takes you in this song, and where it starts in Rewind and Blend",
+                tr(R.string.where_best_part_takes_you_in),
                 style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(18.dp))
@@ -233,9 +235,9 @@ fun BestPartSheet(onDismiss: () -> Unit) {
             val automatic = auto ?: current?.takeIf { it.songId == s.id && !it.mine }?.startMs
             Text(
                 when {
-                    automatic != null && kotlin.math.abs(at - automatic) < 1_000 -> "The part people replay most"
-                    mine != null && at == mine -> "Your pick"
-                    else -> "Pick a moment on the bar"
+                    automatic != null && kotlin.math.abs(at - automatic) < 1_000 -> tr(R.string.the_part_people_replay_most)
+                    mine != null && at == mine -> tr(R.string.your_pick)
+                    else -> tr(R.string.pick_a_moment_on_the_bar)
                 },
                 style = MaterialTheme.typography.labelMedium, color = scheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally),
             )
@@ -251,19 +253,19 @@ fun BestPartSheet(onDismiss: () -> Unit) {
                 }
                 val now = pc.lyricPosition
                 Text(
-                    "Now · ${fmt(now)}", style = MaterialTheme.typography.titleSmall,
+                    tr(R.string.now, fmt(now)), style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.clip(RoundedCornerShape(50)).background(com.prism.music.ui.components.quietFill())
                         .clickable { set(pc.lyricPosition) }.padding(horizontal = 16.dp, vertical = 9.dp),
                 )
             }
             Spacer(Modifier.height(16.dp))
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                PrismTextButton(onClick = { pc.seekToLyric(at) }) { Text("Listen from here") }
+                PrismTextButton(onClick = { pc.seekToLyric(at) }) { Text(tr(R.string.listen_from_here)) }
                 Spacer(Modifier.weight(1f))
-                com.prism.music.ui.components.PrismButton(onClick = { scope.launch { c.bestParts.setMine(s, at); onDismiss() } }) { Text("Save") }
+                com.prism.music.ui.components.PrismButton(onClick = { scope.launch { c.bestParts.setMine(s, at); onDismiss() } }) { Text(tr(R.string.save)) }
             }
             if (mine != null) PrismTextButton(onClick = { scope.launch { c.bestParts.setMine(s, null); onDismiss() } }) {
-                Text(if (auto != null) "Back to the part people replay most" else "Forget my best part")
+                Text(if (auto != null) tr(R.string.back_to_the_part_people_replay) else tr(R.string.forget_my_best_part))
             }
         }
     }
@@ -284,22 +286,22 @@ fun SleepTimerDialog(onDismiss: () -> Unit) {
     val endOfSong by pc.sleepEndOfSong.collectAsState()
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Sleep timer") },
+        title = { Text(tr(R.string.sleep_timer)) },
         text = {
             Column {
-                if (endOfSong) Text("Stops when this song ends", color = MaterialTheme.colorScheme.primary)
-                else if (sleepAt > 0) Text("Stops in ${((sleepAt - System.currentTimeMillis()) / 60_000).coerceAtLeast(0) + 1} min", color = MaterialTheme.colorScheme.primary)
+                if (endOfSong) Text(tr(R.string.stops_when_this_song_ends), color = MaterialTheme.colorScheme.primary)
+                else if (sleepAt > 0) Text(tr(R.string.stops_in_min, ((sleepAt - System.currentTimeMillis()) / 60_000).coerceAtLeast(0) + 1), color = MaterialTheme.colorScheme.primary)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(endOfSong, { pc.setSleepEndOfSong(true); onDismiss() }, { Text("End of song") })
+                    FilterChip(endOfSong, { pc.setSleepEndOfSong(true); onDismiss() }, { Text(tr(R.string.end_of_song)) })
                     listOf(5, 10, 15, 30, 45, 60, 90).forEach { m ->
-                        FilterChip(false, { pc.setSleepTimer(m); onDismiss() }, { Text("$m min") })
+                        FilterChip(false, { pc.setSleepTimer(m); onDismiss() }, { Text(tr(R.string.min, m)) })
                     }
                 }
             }
         },
-        confirmButton = { PrismTextButton(onClick = onDismiss) { Text("Close") } },
+        confirmButton = { PrismTextButton(onClick = onDismiss) { Text(tr(R.string.close)) } },
         dismissButton = if (sleepAt > 0 || endOfSong) ({
-            PrismTextButton(onClick = { pc.setSleepTimer(0); pc.setSleepEndOfSong(false); onDismiss() }) { Text("Turn off") }
+            PrismTextButton(onClick = { pc.setSleepTimer(0); pc.setSleepEndOfSong(false); onDismiss() }) { Text(tr(R.string.turn_off)) }
         }) else null,
     )
 }

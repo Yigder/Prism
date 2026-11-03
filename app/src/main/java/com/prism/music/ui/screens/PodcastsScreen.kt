@@ -1,5 +1,7 @@
 package com.prism.music.ui.screens
 
+import com.prism.music.R
+import com.prism.music.tr
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.border
 import com.prism.music.ui.components.PrismTextButton
@@ -104,7 +106,7 @@ fun PodcastsScreen(bottomPadding: Dp) {
         }
     }
     val resume by c.episodes.inProgress.collectAsState()
-    val onSong: (SongItem) -> Unit = { playEpisode(c, it.song, "Podcasts") }
+    val onSong: (SongItem) -> Unit = { playEpisode(c, it.song, tr(R.string.podcasts)) }
     // Search right here: shows and episodes only, as you type (a moment after the last key).
     var query by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf("") }
     val found by androidx.compose.runtime.produceState<PodcastSearch?>(null, query) {
@@ -119,25 +121,25 @@ fun PodcastsScreen(bottomPadding: Dp) {
         }
     }
 
-    SubPage("Podcasts", bottomPadding) {
+    SubPage(tr(R.string.podcasts), bottomPadding) {
         item(key = "search") {
-            com.prism.music.ui.components.SearchField(query, "Search shows and episodes", { query = it }, Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
+            com.prism.music.ui.components.SearchField(query, tr(R.string.search_shows_and_episodes), { query = it }, Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
         }
         found?.let { f ->
             when {
                 f.shows == null || f.episodes == null -> item(key = "searching") { LoadingState() }
                 f.shows.isEmpty() && f.episodes.isEmpty() -> item(key = "none") {
-                    EmptyState(PrismIcons.Podcasts, "Nothing found", "No shows or episodes for \"${f.query}\". Try the show's name, or a host.")
+                    EmptyState(PrismIcons.Podcasts, tr(R.string.nothing_found), tr(R.string.no_shows_or_episodes_for_try, f.query))
                 }
                 else -> {
                     if (f.shows.isNotEmpty()) item(key = "found-shows") {
-                        SectionHeader("Shows")
+                        SectionHeader(tr(R.string.shows))
                         ItemCarousel(f.shows, { nav.open(it, onSong) })
                     }
                     if (f.episodes.isNotEmpty()) {
-                        item(key = "found-eps-h") { SectionHeader("Episodes") }
+                        item(key = "found-eps-h") { SectionHeader(tr(R.string.episodes)) }
                         items(f.episodes.take(30), key = { "fe:" + it.id }) { song ->
-                            EpisodeRow(Episode(song, date = null, description = null), showShow = true) { playEpisode(c, song, "Podcast search") }
+                            EpisodeRow(Episode(song, date = null, description = null), showShow = true) { playEpisode(c, song, tr(R.string.podcast_search)) }
                         }
                     }
                 }
@@ -145,13 +147,13 @@ fun PodcastsScreen(bottomPadding: Dp) {
             return@SubPage
         }
         if (resume.isNotEmpty()) {
-            item(key = "resume-h") { SectionHeader("Continue listening") }
+            item(key = "resume-h") { SectionHeader(tr(R.string.continue_listening)) }
             items(resume.take(5), key = { "r:" + it.song.id }) { e ->
                 EpisodeRow(
                     Episode(e.song, date = null, description = null, progress = e.fraction),
                     showShow = true,
                     leftMs = e.leftMs,
-                ) { playEpisode(c, e.song, "Continue listening") }
+                ) { playEpisode(c, e.song, tr(R.string.continue_listening)) }
             }
         }
         when (val st = load.state) {
@@ -160,25 +162,25 @@ fun PodcastsScreen(bottomPadding: Dp) {
             is Load.Ok -> {
                 val home = st.value
                 if (home.yourShows.isNotEmpty()) item(key = "yours") {
-                    SectionHeader("Your shows")
+                    SectionHeader(tr(R.string.your_shows))
                     ItemCarousel(home.yourShows, { nav.open(it, onSong) })
                 }
                 if (home.saved.isNotEmpty()) {
-                    item(key = "saved-h") { SectionHeader("Episodes for later", onMore = { nav.go(Routes.playlist("SE")) }) }
+                    item(key = "saved-h") { SectionHeader(tr(R.string.episodes_for_later), onMore = { nav.go(Routes.playlist("SE")) }) }
                     items(home.saved.take(5), key = { "sv:" + it.id }) { song ->
-                        EpisodeRow(Episode(song, date = null, description = null), showShow = true) { playEpisode(c, song, "Episodes for later") }
+                        EpisodeRow(Episode(song, date = null, description = null), showShow = true) { playEpisode(c, song, tr(R.string.episodes_for_later)) }
                     }
                 }
                 if (!signedIn && resume.isEmpty()) item(key = "hint") {
                     Text(
-                        "Sign in to see the shows you follow on YouTube Music. Shows you open here can be shared or played without an account.",
+                        tr(R.string.sign_in_to_see_the_shows),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                     )
                 }
                 home.shelves.forEach { shelf -> shelfItems(shelf) { nav.open(it, onSong) } }
                 if (home.shelves.isEmpty() && home.yourShows.isEmpty()) item {
-                    EmptyState(PrismIcons.Podcasts, "No Podcasts page here", "Prism Music's Podcasts page isn't offered in your country. Search can still find shows and episodes: search, then pick Podcasts or Episodes.")
+                    EmptyState(PrismIcons.Podcasts, tr(R.string.no_podcasts_page_here), tr(R.string.prism_music_s_podcasts_page_isn))
                 }
             }
         }
@@ -214,8 +216,8 @@ fun PodcastScreen(id: String, bottomPadding: Dp) {
     if (page != null && !nextReady) { next = page.continuation; saved = page.savedToLibrary; nextReady = true }
     val show = page?.let { PodcastItem(it.id, it.title, it.author?.name ?: "", it.thumbnail) }
 
-    SubPage(page?.title ?: "Podcast", bottomPadding, actions = {
-        if (show != null) RoundAction(PrismIcons.Share, "Share") { sharing = true }
+    SubPage(page?.title ?: tr(R.string.podcast), bottomPadding, actions = {
+        if (show != null) RoundAction(PrismIcons.Share, tr(R.string.share)) { sharing = true }
     }) {
         when (val st = load.state) {
             Load.Loading -> item { LoadingState() }
@@ -238,7 +240,7 @@ fun PodcastScreen(id: String, bottomPadding: Dp) {
                                         modifier = Modifier.padding(top = 4.dp).then(if (a.id != null) Modifier.clickable { nav.go(Routes.artist(a.id)) } else Modifier),
                                     )
                                 }
-                                Text("Podcast", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp))
+                                Text(tr(R.string.podcast), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp))
                             }
                         }
                         Spacer(Modifier.height(14.dp))
@@ -252,16 +254,16 @@ fun PodcastScreen(id: String, bottomPadding: Dp) {
                             ) {
                                 Icon(PrismIcons.Play, null, tint = MaterialTheme.colorScheme.surface)
                                 Spacer(Modifier.width(6.dp))
-                                Text("Latest episode", color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.labelLarge)
+                                Text(tr(R.string.latest_episode), color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.labelLarge)
                             }
                             if (s.isLoggedIn && saved != null) {
                                 val on = saved == true
-                                RoundAction(if (on) PrismIcons.BookmarkFilled else PrismIcons.Bookmark, if (on) "Remove from library" else "Save to library") {
+                                RoundAction(if (on) PrismIcons.BookmarkFilled else PrismIcons.Bookmark, if (on) tr(R.string.remove_from_library) else tr(R.string.save_to_library)) {
                                     saved = !on
                                     scope.launch {
                                         runCatching { c.ytm.setLibrarySaved(p.playlistId, !on) }.onFailure {
                                             saved = on
-                                            c.player.reportError("Couldn't update your library. Check your connection.")
+                                            c.player.reportError(tr(R.string.couldn_t_update_your_library_check))
                                         }
                                     }
                                 }
@@ -269,14 +271,14 @@ fun PodcastScreen(id: String, bottomPadding: Dp) {
                         }
                         // Some shows have none on YouTube (JRE's page showed nothing at all): said plainly.
                         Text(
-                            p.description ?: "YouTube has no description for this show.",
+                            p.description ?: tr(R.string.youtube_has_no_description_for_this),
                             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = if (expanded) Int.MAX_VALUE else 3, overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.padding(top = 14.dp).then(if (p.description != null) Modifier.clickable { expanded = !expanded } else Modifier),
                         )
                     }
                 }
-                item(key = "eps-h") { SectionHeader("Episodes") }
+                item(key = "eps-h") { SectionHeader(tr(R.string.episodes)) }
                 items(episodes, key = { "e:" + it.song.id }) { e ->
                     val local = resume.firstOrNull { it.song.id == e.song.id }
                     EpisodeRow(
@@ -298,10 +300,10 @@ fun PodcastScreen(id: String, bottomPadding: Dp) {
                             scope.launch {
                                 runCatching { c.ytm.podcastEpisodes(token, show) }
                                     .onSuccess { (eps, nxt) -> more += eps; next = nxt?.takeIf { eps.isNotEmpty() } }
-                                    .onFailure { c.player.reportError("Couldn't load more episodes") }
+                                    .onFailure { c.player.reportError(tr(R.string.couldn_t_load_more_episodes)) }
                                 loadingMore = false
                             }
-                        }) { Text("More episodes") }
+                        }) { Text(tr(R.string.more_episodes)) }
                     }
                 }
             }
@@ -350,8 +352,8 @@ fun EpisodeRow(
                 color = when { playing -> scheme.primary; dim -> scheme.onSurfaceVariant; else -> scheme.onSurface },
             )
             val length = when {
-                e.played -> "Played"
-                leftMs != null && leftMs > 0 -> "${formatLength(leftMs / 1000)} left"
+                e.played -> tr(R.string.played)
+                leftMs != null && leftMs > 0 -> tr(R.string.left_2, formatLength(leftMs / 1000))
                 song.durationSec > 0 -> formatLength(song.durationSec.toLong())
                 else -> null
             }
@@ -369,13 +371,13 @@ fun EpisodeRow(
                 Text(
                     it.replace(Regex("\\s+"), " "), maxLines = 2, overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant.copy(alpha = 0.85f),
-                    modifier = Modifier.padding(top = 4.dp).clickable(onClickLabel = "Episode details") { details = true },
+                    modifier = Modifier.padding(top = 4.dp).clickable(onClickLabel = tr(R.string.episode_details)) { details = true },
                 )
             }
         }
-        IconButton(onClick = { menu = true }) { Icon(PrismIcons.More, "More", tint = scheme.onSurfaceVariant.copy(alpha = 0.8f)) }
+        IconButton(onClick = { menu = true }) { Icon(PrismIcons.More, tr(R.string.more), tint = scheme.onSurfaceVariant.copy(alpha = 0.8f)) }
     }
-    if (menu) SongActionsSheet(song, extra = listOf(com.prism.music.ui.components.SheetItem(PrismIcons.Info, "Episode details") { details = true })) { menu = false }
+    if (menu) SongActionsSheet(song, extra = listOf(com.prism.music.ui.components.SheetItem(PrismIcons.Info, tr(R.string.episode_details)) { details = true })) { menu = false }
     if (details) EpisodeDetailsSheet(e, about, leftMs) { details = false }
 }
 
@@ -396,27 +398,27 @@ private fun EpisodeDetailsSheet(e: Episode, about: ShowAbout?, leftMs: Long?, on
             listOfNotNull(
                 e.date,
                 song.durationSec.takeIf { it > 0 }?.let { formatLength(it.toLong()) },
-                leftMs?.takeIf { it > 0 && !e.played }?.let { "${formatLength(it / 1000)} left" },
-                "Played".takeIf { e.played },
+                leftMs?.takeIf { it > 0 && !e.played }?.let { tr(R.string.left_2, formatLength(it / 1000)) },
+                tr(R.string.played).takeIf { e.played },
             ).joinToString(" • ").ifEmpty { null },
             shape = LocalUi.current.shape(8.dp), placeholderIcon = PrismIcons.Podcasts,
         )
         Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 24.dp)) {
             Text(
-                e.description?.let { withLinks(it, scheme.primary) } ?: androidx.compose.ui.text.AnnotatedString("YouTube has no description for this episode."),
+                e.description?.let { withLinks(it, scheme.primary) } ?: androidx.compose.ui.text.AnnotatedString(tr(R.string.youtube_has_no_description_for_this_2)),
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (e.description == null) scheme.onSurfaceVariant else scheme.onSurface,
             )
             val showName = about?.title ?: song.artistText.takeIf { song.artists.isNotEmpty() }
             if (showName != null) {
                 Text(
-                    "ABOUT THE SHOW", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant,
+                    tr(R.string.about_the_show), style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 22.dp, bottom = 6.dp),
                 )
                 Text(showName, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
                 // Only on a show's own page do we have its description; elsewhere the show's name is enough.
                 if (about != null) Text(
-                    about.description?.let { withLinks(it, scheme.primary) } ?: androidx.compose.ui.text.AnnotatedString("YouTube has no description for this show."),
+                    about.description?.let { withLinks(it, scheme.primary) } ?: androidx.compose.ui.text.AnnotatedString(tr(R.string.youtube_has_no_description_for_this)),
                     style = MaterialTheme.typography.bodyMedium, color = scheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),
                 )
@@ -449,9 +451,9 @@ private fun formatLength(sec: Long): String {
     val h = sec / 3600
     val m = (sec % 3600) / 60
     return when {
-        h > 0 && m > 0 -> "$h hr $m min"
-        h > 0 -> "$h hr"
-        m > 0 -> "$m min"
-        else -> "$sec sec"
+        h > 0 && m > 0 -> tr(R.string.hr_min, h, m)
+        h > 0 -> tr(R.string.hr, h)
+        m > 0 -> tr(R.string.min, m)
+        else -> tr(R.string.sec, sec)
     }
 }

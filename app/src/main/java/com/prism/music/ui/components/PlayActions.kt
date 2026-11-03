@@ -1,5 +1,7 @@
 package com.prism.music.ui.components
 
+import com.prism.music.R
+import com.prism.music.tr
 import com.prism.music.ui.theme.PrismIcons
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
@@ -60,6 +62,21 @@ sealed interface Playable {
     ) : Playable
 }
 
+/**
+ * [target]'s songs after the current one ([next]) or at the end of the queue, then a note saying so (the menu's Play
+ * next / Add to queue, and a release swiped on New from your artists, #248).
+ */
+fun queuePlayable(c: AppContainer, context: android.content.Context, target: Playable, title: String, next: Boolean) = c.scope.launch(Dispatchers.Main) {
+    val loaded = runCatching { withContext(Dispatchers.IO) { songsFor(c, target, shuffle = false, mix = false) } }.getOrNull()
+    if (loaded == null || loaded.first.isEmpty()) {
+        Toast.makeText(context, if (loaded == null) tr(R.string.couldn_t_load, title) else tr(R.string.nothing_to_play_in, title), Toast.LENGTH_SHORT).show()
+        return@launch
+    }
+    if (next) c.player.playNext(loaded.first, loaded.second) else c.player.addToQueue(loaded.first, loaded.second)
+    // (Was English in every language until 1.7.9.2.)
+    Toast.makeText(context, com.prism.music.data.model.songCount(loaded.first.size) + " · " + (if (next) tr(R.string.playing_next) else tr(R.string.added_to_queue)), Toast.LENGTH_SHORT).show()
+}
+
 /** Moods and genres are pages of shelves, not something to play. */
 fun BrowseItem.playable(): Playable? = if (this is MoodItem) null else Playable.Of(this)
 
@@ -91,11 +108,11 @@ fun PlayActionsSheet(target: Playable, extra: List<SheetItem> = emptyList(), ext
     var adding by remember { mutableStateOf<List<Song>?>(null) }
     val ui = com.prism.music.ui.theme.LocalUi.current
     val (title, subtitle) = when (target) {
-        Playable.Liked -> "Liked songs" to com.prism.music.data.model.songCount(liked.size)
-        Playable.Downloads -> "Downloads" to com.prism.music.data.model.songCount(c.downloads.completedSongs().size)
+        Playable.Liked -> tr(R.string.liked_songs) to com.prism.music.data.model.songCount(liked.size)
+        Playable.Downloads -> tr(R.string.downloads) to com.prism.music.data.model.songCount(c.downloads.completedSongs().size)
         is Playable.Page -> target.title to target.subtitle
         is Playable.Of -> target.item.title to target.item.subtitle.ifBlank {
-            when (target.item) { is AlbumItem -> "Album"; is ArtistItem -> "Artist"; else -> "Playlist" }
+            when (target.item) { is AlbumItem -> tr(R.string.album); is ArtistItem -> tr(R.string.artist); else -> tr(R.string.playlist) }
         }
     }
     val art = when (target) {
@@ -108,7 +125,7 @@ fun PlayActionsSheet(target: Playable, extra: List<SheetItem> = emptyList(), ext
     fun play(shuffle: Boolean, mix: Boolean = false) = c.scope.launch(Dispatchers.Main) {
         val loaded = runCatching { withContext(Dispatchers.IO) { songsFor(c, target, shuffle, mix) } }.getOrNull()
         if (loaded == null || loaded.first.isEmpty()) {
-            Toast.makeText(context, if (loaded == null) "Couldn't load \"$title\"" else "Nothing to play in \"$title\"", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, if (loaded == null) tr(R.string.couldn_t_load, title) else tr(R.string.nothing_to_play_in, title), Toast.LENGTH_SHORT).show()
             return@launch
         }
         // An artist's shuffle and mix come already in YouTube's order; the player shouldn't reshuffle them.
@@ -116,23 +133,15 @@ fun PlayActionsSheet(target: Playable, extra: List<SheetItem> = emptyList(), ext
     }
 
     /** The whole list after the current song ([next]) or at the end of the queue. */
-    fun queue(next: Boolean) = c.scope.launch(Dispatchers.Main) {
-        val loaded = runCatching { withContext(Dispatchers.IO) { songsFor(c, target, shuffle = false, mix = false) } }.getOrNull()
-        if (loaded == null || loaded.first.isEmpty()) {
-            Toast.makeText(context, if (loaded == null) "Couldn't load \"$title\"" else "Nothing to play in \"$title\"", Toast.LENGTH_SHORT).show()
-            return@launch
-        }
-        if (next) c.player.playNext(loaded.first, loaded.second) else c.player.addToQueue(loaded.first, loaded.second)
-        Toast.makeText(context, "${com.prism.music.data.model.songCount(loaded.first.size)} ${if (next) "playing next" else "added to the queue"}", Toast.LENGTH_SHORT).show()
-    }
+    fun queue(next: Boolean) = queuePlayable(c, context, target, title, next)
     val quick = if (item is ArtistItem) listOf(
-        ActionItem(PrismIcons.Shuffle, "Shuffle") { play(shuffle = true) },
-        ActionItem(PrismIcons.Radio, "Mix") { play(shuffle = false, mix = true) },
+        ActionItem(PrismIcons.Shuffle, tr(R.string.shuffle)) { play(shuffle = true) },
+        ActionItem(PrismIcons.Radio, tr(R.string.mix_2)) { play(shuffle = false, mix = true) },
     ) else listOf(
-        ActionItem(PrismIcons.Play, "Play") { play(shuffle = false) },
-        ActionItem(PrismIcons.Shuffle, "Shuffle") { play(shuffle = true) },
-        ActionItem(PrismIcons.PlaylistPlay, "Play next") { queue(next = true) },
-        ActionItem(PrismIcons.QueueMusic, "Add to queue") { queue(next = false) },
+        ActionItem(PrismIcons.Play, tr(R.string.widget_play)) { play(shuffle = false) },
+        ActionItem(PrismIcons.Shuffle, tr(R.string.shuffle)) { play(shuffle = true) },
+        ActionItem(PrismIcons.PlaylistPlay, tr(R.string.play_next)) { queue(next = true) },
+        ActionItem(PrismIcons.QueueMusic, tr(R.string.add_to_queue)) { queue(next = false) },
     )
 
     ActionSheet(art, onDismiss) { close ->
@@ -149,14 +158,14 @@ fun PlayActionsSheet(target: Playable, extra: List<SheetItem> = emptyList(), ext
         ) {
             // Save to (or take out of) the library, or star an artist, right from the cover's long press (Reddit 1.7).
             LibraryToggle(item)
-            SheetIconButton(PrismIcons.Share, "Share") {
+            SheetIconButton(PrismIcons.Share, tr(R.string.share)) {
                 sharing = when (target) {
-                    Playable.Liked -> ShareTarget("Liked songs", com.prism.music.data.model.songCount(liked.size), "Playlist", art, null, songs = liked)
-                    Playable.Downloads -> c.downloads.completedSongs().let { ShareTarget("Downloads", com.prism.music.data.model.songCount(it.size), "Playlist", art, null, songs = it) }
+                    Playable.Liked -> ShareTarget(tr(R.string.liked_songs), com.prism.music.data.model.songCount(liked.size), tr(R.string.playlist), art, null, songs = liked)
+                    Playable.Downloads -> c.downloads.completedSongs().let { ShareTarget(tr(R.string.downloads), com.prism.music.data.model.songCount(it.size), tr(R.string.playlist), art, null, songs = it) }
                     is Playable.Page -> target.share
                     // A Prism playlist has no link: it's shared as its picture and song list.
                     is Playable.Of -> c.prismLibrary.list(target.item.id)?.let { l ->
-                        ShareTarget(l.title, com.prism.music.data.model.songCount(l.songs.size), "Playlist", art, null, songs = l.songs)
+                        ShareTarget(l.title, com.prism.music.data.model.songCount(l.songs.size), tr(R.string.playlist), art, null, songs = l.songs)
                     } ?: target.item.shareTarget(art)
                 }
             }
@@ -171,32 +180,32 @@ fun PlayActionsSheet(target: Playable, extra: List<SheetItem> = emptyList(), ext
             is PlaylistItem -> c.prismLibrary.isPlaylistSaved(item.id)
             else -> false
         }
-        val remove = if (savedHere) listOf(ActionItem(PrismIcons.Delete, "Remove from library") {
+        val remove = if (savedHere) listOf(ActionItem(PrismIcons.Delete, tr(R.string.remove_from_library)) {
             if (item is AlbumItem) c.prismLibrary.unsaveAlbum(item.id) else if (item != null) c.prismLibrary.unsavePlaylist(item.id)
-            Toast.makeText(context, "Removed from your library", Toast.LENGTH_SHORT).show()
-        }) else if (inLibrary) listOf(ActionItem(PrismIcons.Delete, "Remove from library") {
+            Toast.makeText(context, tr(R.string.removed_from_your_library), Toast.LENGTH_SHORT).show()
+        }) else if (inLibrary) listOf(ActionItem(PrismIcons.Delete, tr(R.string.remove_from_library)) {
             c.scope.launch(Dispatchers.Main) {
                 val ok = c.library.removeAlbum(item.id, (item as AlbumItem).playlistId)
-                Toast.makeText(context, if (ok) "Removed from your library" else "Couldn't update your library", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, if (ok) tr(R.string.removed_from_your_library) else tr(R.string.couldn_t_update_your_library), Toast.LENGTH_SHORT).show()
             }
         }) else emptyList()
         // Played in the order that blends best, mixed and beat-matched (DJ mode).
-        val djSet = if (item is ArtistItem) emptyList() else listOf(ActionItem(PrismIcons.Album, "Play as a DJ set") {
+        val djSet = if (item is ArtistItem) emptyList() else listOf(ActionItem(PrismIcons.Album, tr(R.string.play_as_a_dj_set)) {
             c.scope.launch(Dispatchers.Main) {
                 val loaded = runCatching { withContext(Dispatchers.IO) { songsFor(c, target, shuffle = false, mix = false) } }.getOrNull()
                 if (loaded == null || loaded.first.size < 2) {
-                    Toast.makeText(context, if (loaded == null) "Couldn't load \"$title\"" else "A DJ set needs more than one song", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, if (loaded == null) tr(R.string.couldn_t_load, title) else tr(R.string.a_dj_set_needs_more_than), Toast.LENGTH_SHORT).show()
                     return@launch
                 }
                 c.player.playDjSet(loaded.first, loaded.second)
             }
         })
         // Every song of it into one of your playlists, as a song's menu does for one (Reddit R8).
-        val addTo = if (item is ArtistItem) emptyList() else listOf(ActionItem(PrismIcons.PlaylistAdd, "Add to playlist", keepOpen = true) {
+        val addTo = if (item is ArtistItem) emptyList() else listOf(ActionItem(PrismIcons.PlaylistAdd, tr(R.string.add_to_playlist), keepOpen = true) {
             c.scope.launch(Dispatchers.Main) {
                 val loaded = runCatching { withContext(Dispatchers.IO) { songsFor(c, target, shuffle = false, mix = false) } }.getOrNull()
                 if (loaded == null || loaded.first.isEmpty()) {
-                    Toast.makeText(context, if (loaded == null) "Couldn't load \"$title\"" else "Nothing to add in \"$title\"", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, if (loaded == null) tr(R.string.couldn_t_load, title) else tr(R.string.nothing_to_add_in, title), Toast.LENGTH_SHORT).show()
                     return@launch
                 }
                 adding = loaded.first
@@ -209,15 +218,15 @@ fun PlayActionsSheet(target: Playable, extra: List<SheetItem> = emptyList(), ext
             else -> null
         }?.takeIf { (id, _) -> !com.prism.music.data.PrismLibrary.isMix(id) && !com.prism.music.data.PrismLibrary.isPrismList(id) }
         val copy = copyable?.let { (id, name) ->
-            listOf(ActionItem(PrismIcons.PlaylistAdd, "Save a copy as a Prism playlist") { copyToPrism(c, context, id, name) })
+            listOf(ActionItem(PrismIcons.PlaylistAdd, tr(R.string.save_a_copy_as_a_prism)) { copyToPrism(c, context, id, name) })
         }.orEmpty()
         // A section of its own on Home (1.7.6): its songs, under its name.
         val pin = item?.let { com.prism.music.ui.screens.OwnSections.pinOf(it) }?.let { cfg ->
             val layout = c.settings.current.homeLayout
             val on = layout.any { it.key == cfg.key }
-            listOf(ActionItem(if (on) PrismIcons.PinFilled else PrismIcons.Pin, if (on) "Unpin from Home" else "Pin to Home") {
+            listOf(ActionItem(if (on) PrismIcons.PinFilled else PrismIcons.Pin, if (on) tr(R.string.unpin_from_home) else tr(R.string.pin_to_home)) {
                 c.settings.setHomeLayout(if (on) layout.filterNot { it.key == cfg.key } else listOf(cfg) + layout)
-                Toast.makeText(context, if (on) "Taken off Home" else "Pinned to the top of Home", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, if (on) tr(R.string.taken_off_home) else tr(R.string.pinned_to_the_top_of_home), Toast.LENGTH_SHORT).show()
             })
         }.orEmpty()
         if (extraTitle != null) {
@@ -241,15 +250,15 @@ private fun LibraryToggle(item: BrowseItem?) {
             val albums by c.library.albums.collectAsState()
             val here by c.prismLibrary.albums.collectAsState()
             val saved = if (signedIn) albums.any { it.id == item.id } else here.any { it.id == item.id }
-            SheetIconButton(if (saved) PrismIcons.LibraryAdded else PrismIcons.LibraryAdd, if (saved) "Remove from library" else "Add to library") {
+            SheetIconButton(if (saved) PrismIcons.LibraryAdded else PrismIcons.LibraryAdd, if (saved) tr(R.string.remove_from_library) else tr(R.string.add_to_library)) {
                 if (!signedIn) {
                     if (saved) c.prismLibrary.unsaveAlbum(item.id)
                     else c.prismLibrary.saveAlbum(com.prism.music.data.SavedAlbum(item.id, item.title, item.subtitle, item.thumbnail, item.playlistId, System.currentTimeMillis()))
-                    Toast.makeText(context, if (saved) "Removed from your library" else "Added to your library", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, if (saved) tr(R.string.removed_from_your_library) else tr(R.string.added_to_your_library), Toast.LENGTH_SHORT).show()
                 } else c.scope.launch(Dispatchers.Main) {
                     val ok = if (saved) c.library.removeAlbum(item.id, item.playlistId)
                     else c.library.setSaved(item.playlistId ?: item.id, true)
-                    Toast.makeText(context, if (!ok) "Couldn't update your library" else if (saved) "Removed from your library" else "Added to your library", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, if (!ok) tr(R.string.couldn_t_update_your_library) else if (saved) tr(R.string.removed_from_your_library) else tr(R.string.added_to_your_library), Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -259,26 +268,26 @@ private fun LibraryToggle(item: BrowseItem?) {
                 // Without an account, kept on the phone as a bookmark (H7).
                 val here by c.prismLibrary.playlists.collectAsState()
                 val saved = here.any { com.prism.music.data.PrismLibrary.samePlaylist(it.id, item.id) }
-                SheetIconButton(if (saved) PrismIcons.LibraryAdded else PrismIcons.LibraryAdd, if (saved) "Remove from library" else "Add to library") {
+                SheetIconButton(if (saved) PrismIcons.LibraryAdded else PrismIcons.LibraryAdd, if (saved) tr(R.string.remove_from_library) else tr(R.string.add_to_library)) {
                     if (saved) c.prismLibrary.unsavePlaylist(item.id)
                     else c.prismLibrary.savePlaylist(com.prism.music.data.SavedPlaylist(item.id, item.title, item.subtitle, item.thumbnail, System.currentTimeMillis()))
-                    Toast.makeText(context, if (saved) "Removed from your library" else "Added to your library", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, if (saved) tr(R.string.removed_from_your_library) else tr(R.string.added_to_your_library), Toast.LENGTH_SHORT).show()
                 }
                 return
             }
             val playlists by c.library.playlists.collectAsState()
             val saved = playlists.any { it.id.removePrefix("VL") == item.id.removePrefix("VL") }
-            SheetIconButton(if (saved) PrismIcons.LibraryAdded else PrismIcons.LibraryAdd, if (saved) "Remove from library" else "Add to library") {
+            SheetIconButton(if (saved) PrismIcons.LibraryAdded else PrismIcons.LibraryAdd, if (saved) tr(R.string.remove_from_library) else tr(R.string.add_to_library)) {
                 c.scope.launch(Dispatchers.Main) {
                     val ok = c.library.setSaved(item.id, !saved)
-                    Toast.makeText(context, if (!ok) "Couldn't update your library" else if (saved) "Removed from your library" else "Added to your library", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, if (!ok) tr(R.string.couldn_t_update_your_library) else if (saved) tr(R.string.removed_from_your_library) else tr(R.string.added_to_your_library), Toast.LENGTH_SHORT).show()
                 }
             }
         }
         is ArtistItem -> {
             val favorites by c.artistPrefs.favorites.collectAsState()
             val starred = favorites.any { it.id == item.id }
-            SheetIconButton(if (starred) PrismIcons.StarFilled else PrismIcons.Star, if (starred) "Remove from favorites" else "Add to favorites") {
+            SheetIconButton(if (starred) PrismIcons.StarFilled else PrismIcons.Star, if (starred) tr(R.string.remove_from_favorites) else tr(R.string.add_to_favorites)) {
                 c.library.setFavoriteArtist(com.prism.music.data.FavoriteArtist(item.id, item.title, item.thumbnail), null, !starred)
             }
         }
@@ -293,35 +302,35 @@ private val PLAYLIST_IN_LINK = Regex("[?&]list=([A-Za-z0-9_-]+)")
  * yours, on the phone, and stays as it is when the original changes.
  */
 fun copyToPrism(c: AppContainer, context: android.content.Context, id: String, title: String) {
-    Toast.makeText(context, "Copying \"$title\"…", Toast.LENGTH_SHORT).show()
+    Toast.makeText(context, tr(R.string.copying, title), Toast.LENGTH_SHORT).show()
     c.scope.launch(Dispatchers.Main) {
         val songs = runCatching { withContext(Dispatchers.IO) { c.ytm.playlistAll(id, 5000).songs } }.getOrNull()
         if (songs.isNullOrEmpty()) {
-            Toast.makeText(context, if (songs == null) "Couldn't load \"$title\"" else "\"$title\" has no songs to copy", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, if (songs == null) tr(R.string.couldn_t_load, title) else tr(R.string.has_no_songs_to_copy, title), Toast.LENGTH_SHORT).show()
             return@launch
         }
         c.prismLibrary.create(title, songs)
-        Toast.makeText(context, "Saved \"$title\" as a Prism playlist (${com.prism.music.data.model.songCount(songs.size)})", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, tr(R.string.saved_as_a_prism_playlist, title, com.prism.music.data.model.songCount(songs.size)), Toast.LENGTH_SHORT).show()
     }
 }
 
 /** The songs to queue for [target], and what the queue is called. */
 private suspend fun songsFor(c: AppContainer, target: Playable, shuffle: Boolean, mix: Boolean): Pair<List<Song>, QueueSource> = when (target) {
-    Playable.Liked -> c.library.likedShown.value to QueueSource(QueueKind.PLAYLIST, "Liked songs")
-    Playable.Downloads -> c.downloads.completedSongs() to QueueSource(QueueKind.PLAYLIST, "Downloads")
+    Playable.Liked -> c.library.likedShown.value to QueueSource(QueueKind.PLAYLIST, tr(R.string.liked_songs))
+    Playable.Downloads -> c.downloads.completedSongs() to QueueSource(QueueKind.PLAYLIST, tr(R.string.downloads))
     is Playable.Page -> target.load()
     is Playable.Of -> when (val item = target.item) {
-        is AlbumItem -> c.ytm.album(item.id).songs to QueueSource(QueueKind.ALBUM, item.title)
+        is AlbumItem -> c.ytm.album(item.id).songs to QueueSource(QueueKind.ALBUM, item.title, page = item)
         is PlaylistItem ->
             // A Prism playlist is on the phone; mixes and radios only exist as a watch queue.
             if (com.prism.music.data.PrismLibrary.isPrismList(item.id))
-                (c.prismLibrary.list(item.id)?.songs ?: emptyList()) to QueueSource(QueueKind.PLAYLIST, item.title, originId = item.id)
+                (c.prismLibrary.list(item.id)?.songs ?: emptyList()) to QueueSource(QueueKind.PLAYLIST, item.title, originId = item.id, page = item)
             else if (item.isMix || item.id.startsWith("RD")) radio(c, item.seedVideoId, item.id, item.params, item.title)
-            else c.ytm.playlistAll(item.id, 1000).songs to QueueSource(QueueKind.PLAYLIST, item.title, originId = item.id.removePrefix("VL"))
+            else c.ytm.playlistAll(item.id, 1000).songs to QueueSource(QueueKind.PLAYLIST, item.title, originId = item.id.removePrefix("VL"), page = item)
         is ArtistItem -> {
             val a = c.ytm.artist(item.id)
             if (shuffle && !mix && a.shufflePlaylistId != null) radio(c, a.shuffleVideoId, a.shufflePlaylistId, a.shuffleParams, a.name)
-            else radio(c, a.radioVideoId, a.radioPlaylistId ?: throw java.io.IOException("No mix"), a.radioParams, "${a.name} Mix")
+            else radio(c, a.radioVideoId, a.radioPlaylistId ?: throw java.io.IOException(tr(R.string.no_mix)), a.radioParams, tr(R.string.mix, a.name))
         }
         else -> emptyList<Song>() to QueueSource(QueueKind.OTHER, item.title)
     }

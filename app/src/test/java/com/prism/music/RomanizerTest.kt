@@ -56,6 +56,27 @@ class RomanizerTest {
         assertNull(r[0])
     }
 
+    /**
+     * #256: with Google out of reach and no Japanese dictionary, Android's transliterator spelled a Japanese song's
+     * kanji as Chinese (pinyin, "xīn の zàng") and kept it. A Japanese line now waits for a proper spelling instead.
+     */
+    @Test
+    fun aJapaneseSongIsNeverSpelledAsChinese() = runBlocking {
+        val r = romanizer.romanize("ja-offline", listOf(LyricLine(0, "心の臓を鳴らす")), skip = emptySet(), network = false)
+        assertNull("left for a proper spelling, not pinyin: ${r[0]?.text}", r[0])
+        assertTrue("not kept, so it's asked for again", saved.isEmpty())
+    }
+
+    @Test
+    fun googleSpellsOutJapaneseWholly() = runBlocking {
+        val r = romanizer.romanize("ja-live", listOf(LyricLine(0, "心の臓を鳴らす"), LyricLine(2_000, "風の中でも")), skip = emptySet(), network = true)
+        println("[live] " + r.map { it?.text })
+        for (line in r) {
+            assertNotNull(line)
+            assertTrue("no kanji or kana left: ${line!!.text}", Script.foreignIn(line.text).isEmpty())
+        }
+    }
+
     @Test
     fun spreadFollowsTheOriginalTiming() {
         // Two words of 4 letters over 0–1 s and 1–3 s: the second half of the letters is sung in the last 2 s.

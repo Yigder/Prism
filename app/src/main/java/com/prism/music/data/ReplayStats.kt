@@ -1,5 +1,8 @@
 package com.prism.music.data
 
+import com.prism.music.R
+import com.prism.music.tr
+import com.prism.music.trp
 import com.prism.music.data.db.PlayEventEntity
 import java.time.Instant
 import java.time.LocalDate
@@ -28,10 +31,10 @@ class Habits(
 data class Personality(val name: String, val line: String)
 
 object ReplayStats {
-    val weekdays = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+    val weekdays = listOf(tr(R.string.monday), tr(R.string.tuesday), tr(R.string.wednesday), tr(R.string.thursday), tr(R.string.friday), tr(R.string.saturday), tr(R.string.sunday))
 
     fun hourLabel(h: Int): String = when (h) {
-        0 -> "12 AM"; 12 -> "12 PM"
+        0 -> tr(R.string.t_12_am); 12 -> tr(R.string.t_12_pm)
         in 1..11 -> "$h AM"
         else -> "${h - 12} PM"
     }
@@ -79,19 +82,19 @@ object ReplayStats {
         val loyal = topFiveArtistsMs / total
         val minutesPerDay = totalMs / 60_000.0 / activeDays.coerceAtLeast(1)
         val candidates = buildList {
-            add(Triple(loyal / 0.55, "The Loyalist", "You know what you love. Your top five artists made up ${(loyal * 100).toInt()}% of everything you played."))
+            add(Triple(loyal / 0.55, tr(R.string.the_loyalist), tr(R.string.you_know_what_you_love_your, (loyal * 100).toInt())))
             if (newArtistCount != null && artistCount > 0) {
                 val share = newArtistCount.toDouble() / artistCount
-                add(Triple(share / 0.35, "The Explorer", "Always on the hunt. $newArtistCount of the $artistCount artists you played were new to you."))
+                add(Triple(share / 0.35, tr(R.string.the_explorer), trp(R.plurals.explorer_n_of_artists, artistCount, newArtistCount, artistCount)))
             }
-            if (songCount > 0) add(Triple(plays.toDouble() / songCount / 4.0, "The Replayer",
-                "When a song hits, you run it back. ${topSongTitle?.let { "\"$it\" alone got $topSongPlays plays." } ?: ""}".trim()))
-            add(Triple(habits.nightShare / 0.35, "The Night Owl", "Your music comes alive after dark: ${(habits.nightShare * 100).toInt()}% of it played between 10 PM and 4 AM."))
-            add(Triple(habits.morningShare / 0.30, "The Early Riser", "You start the day with a soundtrack: ${(habits.morningShare * 100).toInt()}% of your listening happened before 9 AM."))
-            add(Triple(minutesPerDay / 150.0, "The Marathoner", "On the days you listened, you averaged ${minutesPerDay.toInt()} minutes. That's commitment."))
-            if (topGenreShare != null) add(Triple((1 - topGenreShare) / 0.65, "The Shapeshifter", "No single sound could hold you. You moved between genres all the time."))
+            if (songCount > 0) add(Triple(plays.toDouble() / songCount / 4.0, tr(R.string.the_replayer),
+                tr(R.string.when_a_song_hits_you_run, topSongTitle?.let { trp(R.plurals.alone_got_n_plays, topSongPlays, it, topSongPlays) } ?: "").trim()))
+            add(Triple(habits.nightShare / 0.35, tr(R.string.the_night_owl), tr(R.string.your_music_comes_alive_after_dark, (habits.nightShare * 100).toInt())))
+            add(Triple(habits.morningShare / 0.30, tr(R.string.the_early_riser), tr(R.string.you_start_the_day_with_a, (habits.morningShare * 100).toInt())))
+            add(Triple(minutesPerDay / 150.0, tr(R.string.the_marathoner), trp(R.plurals.marathon_n_minutes, minutesPerDay.toInt())))
+            if (topGenreShare != null) add(Triple((1 - topGenreShare) / 0.65, tr(R.string.the_shapeshifter), tr(R.string.no_single_sound_could_hold_you)))
         }
-        val best = candidates.maxByOrNull { it.first } ?: return Personality("The Listener", "Every play counted.")
+        val best = candidates.maxByOrNull { it.first } ?: return Personality(tr(R.string.the_listener), tr(R.string.every_play_counted))
         return Personality(best.second, best.third)
     }
 }

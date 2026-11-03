@@ -16,7 +16,8 @@ import kotlin.math.sqrt
 
 /**
  * Sing's processor: takes the song's separated vocals ([StemStore]) out of the music as it plays, as much as Sing's
- * level says (output = music − (1 − level) × vocals).
+ * level says (output = music − (1 − level) × vocals). Where they don't reach yet, the quick way's stand-ins (done in
+ * seconds, 1.8.x) are taken out instead, so Sing takes effect at once and gets better as the separation goes.
  *
  * Subtracting only works when the vocals line up with the music to the sample, and two decodes of a file can differ
  * by a few milliseconds at the start. So the processor never assumes: a background thread keeps the last seconds of
@@ -32,7 +33,41 @@ class VocalStemProcessor(private val sing: Source) : BaseAudioProcessor() {
         val onNow: Boolean
         val levelNow: Float
         val store: StemStore
+        /** The quick way's stand-ins, used wherever [store]'s vocals don't reach yet (1.8.x). */
+        val quickStore: StemStore? get() = store.quick
     }
+
+    /** One store's vocals for the playing song, opened again every quarter second while they're missing or short. */
+    private inner class Stems(private val store: () -> StemStore?) {
+        var reader: StemStore.Reader? = null
+        var readerFor: String? = null
+        var retryIn = 0
+        var short = false
+        var buf = FloatArray(0)
+
+        /** [frames] of [id]'s vocals from song frame [at] into [buf]; how many are real (0 with none). */
+        fun read(id: String, at: Long, frames: Int): Int {
+            if (readerFor == id && (reader == null || short)) retryIn -= frames
+            if (readerFor != id || retryIn <= 0) {
+                reader?.close()
+                reader = store()?.reader(id)?.takeIf { it.meta.rate == rate }
+                readerFor = id
+                retryIn = rate / 4
+            }
+            if (buf.size < frames * 2) buf = FloatArray(frames * 2)
+            val r = reader
+            val real = r?.read(at, frames, buf) ?: run { java.util.Arrays.fill(buf, 0, frames * 2, 0f); 0 }
+            short = real < frames
+            return real
+        }
+
+        fun close() { reader?.close(); reader = null; readerFor = null }
+    }
+
+    private val full = Stems { sing.store }
+    private val quick = Stems { sing.quickStore }
+    /** How much of the song's own vocals (rather than the quick way's) is subtracted, gliding between the two. */
+    private var blend = 1f
 
     /** The player's repeat and shuffle modes, for working out which song follows (set from the playback thread). */
     @Volatile var repeatMode = Player.REPEAT_MODE_OFF
@@ -48,17 +83,12 @@ class VocalStemProcessor(private val sing: Source) : BaseAudioProcessor() {
     private var periodFrames = -1L
     /** The song frame the next input sample is (in the song's own frames). */
     private var position = 0L
-    private var reader: StemStore.Reader? = null
-    private var readerFor: String? = null
-    private var retryIn = 0
-    private var short = false
     private var inEnergy = 0.0
     private var outEnergy = 0.0
     private var energyFrames = 0L
 
     private var fade = 0f
     private var gain = 0f
-    private var stem = FloatArray(0)
 
     // What's been playing (mono), for the alignment thread.
     private val ringLock = Any()
@@ -87,7 +117,20 @@ class VocalStemProcessor(private val sing: Source) : BaseAudioProcessor() {
         return inputAudioFormat
     }
 
+    /**
+     * The player's timeline since the last flush: songs put in or taken out after the playing one (Play next, queue
+     * edits) don't flush the processors, and the gapless move used to go by the timeline the last flush brought, so the
+     * song that really came next was taken for the old next one (1.8.0 review). Period uids stay the same across it.
+     */
+    @Volatile private var newTimeline: Timeline? = null
+
+    /** The player's timeline changed (from the player's listener; any thread). */
+    fun timelineChanged(timeline: Timeline) {
+        newTimeline = timeline
+    }
+
     override fun onFlush(streamMetadata: AudioProcessor.StreamMetadata) {
+        newTimeline = null
         val tl = streamMetadata.timeline
         val uid = streamMetadata.periodUid
         timeline = tl.takeIf { !it.isEmpty }
@@ -101,7 +144,7 @@ class VocalStemProcessor(private val sing: Source) : BaseAudioProcessor() {
     }
 
     override fun onReset() {
-        reader?.close(); reader = null; readerFor = null
+        full.close(); quick.close()
         timeline = null; periodUid = null; songId = null
     }
 
@@ -145,6 +188,12 @@ class VocalStemProcessor(private val sing: Source) : BaseAudioProcessor() {
         val bytes = inputBuffer.remaining()
         if (bytes == 0) return
         val t0 = if (com.prism.music.playback.AudioDiagnostics.enabled) System.nanoTime() else 0L
+        // The queue changed: the same song, in the timeline as it is now (what follows it, and how long it is).
+        newTimeline?.let { tl ->
+            newTimeline = null
+            timeline = tl.takeIf { !it.isEmpty }
+            identify()
+        }
         val frameBytes = (if (float) 4 else 2) * channels
         var frames = bytes / frameBytes
         val total = frames
@@ -177,43 +226,42 @@ class VocalStemProcessor(private val sing: Source) : BaseAudioProcessor() {
         val on = sing.onNow && id != null
         // The vocals may not exist yet when the song starts (Sing was just switched on), or be started afresh in a new
         // file: while they're missing or short of where the song is, they're looked for again every quarter second.
-        if (on && readerFor == id && (reader == null || short)) retryIn -= frames
-        if (on && (readerFor != id || retryIn <= 0)) {
-            reader?.close()
-            reader = sing.store.reader(id!!)?.takeIf { it.meta.rate == rate }
-            readerFor = id
-            retryIn = rate / 4
-        }
-        val r = if (on) reader else null
-        val matched = on && matchedFor == id
+        // Two sets (1.8.x): the song's own (the full or light way) and the quick way's stand-ins, done first in seconds;
+        // both come from the same decode, so they line up alike, frame for frame.
         val shift = lag
-        var real = 0
-        if (r != null) {
-            if (stem.size < frames * 2) stem = FloatArray(frames * 2)
-            real = r.read(position + shift, frames, stem)
-        }
-        short = real < frames
+        val realFull = if (on) full.read(id!!, position + shift, frames) else 0
+        val realQuick = if (on) quick.read(id!!, position + shift, frames) else 0
+        val haveAny = on && (full.reader != null || quick.reader != null)
+        val matched = on && matchedFor == id
         // Subtract only where the vocals are written and known to line up. Mid-song, vocals not written yet (the
         // separation is behind) fade it out; in the song's last moments, what's there is used (the rest reads as 0).
         val nearEnd = periodFrames > 0 && position + frames + rate / 10 >= periodFrames
-        val target = if (matched && (real == frames || (nearEnd && real > 0))) 1f else 0f
+        fun reaches(real: Int) = real == frames || (nearEnd && real > 0)
+        val ownHere = reaches(realFull)
+        val target = if (matched && (ownHere || reaches(realQuick))) 1f else 0f
+        // The song's own vocals wherever they reach, the quick way's elsewhere: the change glides over ~30 ms, at the
+        // same place in the song (nothing is repeated or skipped; only what's subtracted changes).
+        val blendTarget = if (ownHere) 1f else 0f
+        val vf = full.buf
+        val vq = quick.buf
         val level = sing.levelNow
         val glide = 1f - exp(-1f / (0.03f * rate))
-        val record = on && r != null
+        val record = haveAny
         // One buffer kept and reused (a new array for every buffer of audio was garbage for the collector to chase).
         if (record && monoBuf.size < frames) monoBuf = FloatArray(frames)
         val mono = if (record) monoBuf else null
         for (f in 0 until frames) {
             fade += (target - fade) * glide
             gain += ((1f - level) * fade - gain) * glide
+            blend += (blendTarget - blend) * glide
             var sum = 0f
             for (ch in 0 until channels) {
                 val x = if (float) input.float else input.short / 32768f
                 sum += x
                 val v = when {
-                    r == null || gain < 1e-5f -> 0f
-                    channels == 1 -> (stem[f * 2] + stem[f * 2 + 1]) * 0.5f
-                    ch < 2 -> stem[f * 2 + ch]
+                    !haveAny || gain < 1e-5f -> 0f
+                    channels == 1 -> (blend * (vf[f * 2] + vf[f * 2 + 1]) + (1 - blend) * (vq[f * 2] + vq[f * 2 + 1])) * 0.5f
+                    ch < 2 -> blend * vf[f * 2 + ch] + (1 - blend) * vq[f * 2 + ch]
                     else -> 0f
                 }
                 val y = x - gain * v
@@ -250,7 +298,8 @@ class VocalStemProcessor(private val sing: Source) : BaseAudioProcessor() {
         var lastCheck = 0L
         var misses = 0
         while (true) {
-            try { Thread.sleep(400) } catch (_: InterruptedException) { return }
+            // Till the vocals line up, looked at more often: the first seconds of Sing are the ones that count.
+            try { Thread.sleep(if (matchedFor == null) 250 else 400) } catch (_: InterruptedException) { return }
             if (!sing.onNow) continue
             val (id, music, end) = synchronized(ringLock) {
                 if (ringSong == null || ringFilled < rate * ALIGN_SECONDS) return@synchronized Triple(null, null, 0L)
@@ -282,8 +331,12 @@ class VocalStemProcessor(private val sing: Source) : BaseAudioProcessor() {
      * Where [music] (mono, starting at song frame [start]) best matches the vocals: the offset to read the vocals at,
      * and how strongly they match there (normalized cross-correlation; -1 when the vocals are too quiet to say).
      */
-    private fun match(id: String, music: FloatArray, start: Long): Pair<Long, Float>? {
-        val r = sing.store.reader(id) ?: return null
+    private fun match(id: String, music: FloatArray, start: Long): Pair<Long, Float>? =
+        // The song's own vocals where they reach this far, else the quick way's (they line up alike).
+        match(sing.store, id, music, start) ?: sing.quickStore?.let { match(it, id, music, start) }
+
+    private fun match(store: StemStore, id: String, music: FloatArray, start: Long): Pair<Long, Float>? {
+        val r = store.reader(id) ?: return null
         r.use { reader ->
             val maxLag = rate * MAX_LAG_MS / 1000
             val span = music.size + 2 * maxLag
@@ -320,7 +373,8 @@ class VocalStemProcessor(private val sing: Source) : BaseAudioProcessor() {
     companion object {
         private const val TAG = "PrismSing"
         private const val RING_SECONDS = 4
-        private const val ALIGN_SECONDS = 3
+        /** How much of what's playing is matched against the vocals (2 s, 1.8.x: 3 s held the first effect back). */
+        private const val ALIGN_SECONDS = 2
         private const val MAX_LAG_MS = 150
         /** How strongly the music must match the vocals to subtract them (the vocals are part of the music). */
         private const val MIN_MATCH = 0.2f

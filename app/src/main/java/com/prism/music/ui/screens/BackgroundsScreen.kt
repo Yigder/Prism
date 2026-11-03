@@ -1,5 +1,7 @@
 package com.prism.music.ui.screens
 
+import com.prism.music.R
+import com.prism.music.tr
 import com.prism.music.ui.components.PrismSlider
 import com.prism.music.ui.components.PrismSwitch
 import com.prism.music.ui.components.PrismTextButton
@@ -90,6 +92,7 @@ fun BackgroundsScreen(bottomPadding: Dp, forPlayer: Boolean = false) {
     val scroll = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val current = if (forPlayer) s.backdrops[com.prism.music.ui.theme.PLAYER_BACKDROP] ?: s.backdrops[BackdropScreen.HOME.name] else s.backdrops[screen.name]
     val (currentStyle, currentPhoto) = Backdrop.parse(current)
+    val today = remember { com.prism.music.data.looks.Seasons.today() }
 
     fun apply(value: String?) {
         val map = s.backdrops.toMutableMap()
@@ -108,14 +111,14 @@ fun BackgroundsScreen(bottomPadding: Dp, forPlayer: Boolean = false) {
         scope.launch {
             val name = if (forPlayer) "player" else if (everywhere) "all" else screen.name.lowercase()
             val file = withContext(Dispatchers.IO) { savePhoto(context, uri, name) }
-            if (file != null) apply("PHOTO|${file.absolutePath}")
+            if (file != null) apply(tr(R.string.photo, file.absolutePath))
         }
     }
 
     val ui = com.prism.music.ui.theme.LocalUi.current
     com.prism.music.ui.components.SubPage(
-        if (forPlayer) "Player background" else "Backgrounds", bottomPadding,
-        subtitle = if (forPlayer) "Behind the player, darkened so its white text reads" else "Color from what's playing, ready-made designs or your own photo",
+        if (forPlayer) tr(R.string.player_background) else tr(R.string.backgrounds), bottomPadding,
+        subtitle = if (forPlayer) tr(R.string.behind_the_player_darkened_so_its) else tr(R.string.color_from_what_s_playing_ready),
         horizontalPadding = 16.dp, spacing = 12.dp,
     ) {
             if (forPlayer) item {
@@ -128,8 +131,8 @@ fun BackgroundsScreen(bottomPadding: Dp, forPlayer: Boolean = false) {
                         c.settings.setBackdrops(map)
                     }.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text("Same as Home", style = MaterialTheme.typography.bodyLarge)
-                            Text("The player follows Home's background", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(tr(R.string.same_as_home), style = MaterialTheme.typography.bodyLarge)
+                            Text(tr(R.string.the_player_follows_home_s_background), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         PrismSwitch(own == null, null)
                     }
@@ -139,8 +142,8 @@ fun BackgroundsScreen(bottomPadding: Dp, forPlayer: Boolean = false) {
                 Column(Modifier.pane(ui.card, MaterialTheme.colorScheme.surfaceContainer).padding(vertical = 8.dp)) {
                     Row(Modifier.fillMaxWidth().clickable { everywhere = !everywhere }.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text("Same on every screen", style = MaterialTheme.typography.bodyLarge)
-                            Text("Home, Search, Library, Replay and Settings", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(tr(R.string.same_on_every_screen), style = MaterialTheme.typography.bodyLarge)
+                            Text(tr(R.string.home_search_library_replay_and_settings), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         PrismSwitch(everywhere, { everywhere = it })
                     }
@@ -154,7 +157,7 @@ fun BackgroundsScreen(bottomPadding: Dp, forPlayer: Boolean = false) {
             }
             item {
                 com.prism.music.ui.components.Eyebrow(
-                    if (forPlayer) "Background for the player" else if (everywhere) "Choose a background" else "Background for ${screen.label}",
+                    if (forPlayer) tr(R.string.background_for_the_player) else if (everywhere) tr(R.string.choose_a_background) else tr(R.string.background_for, screen.label),
                     Modifier.padding(start = 8.dp, top = 10.dp),
                 )
             }
@@ -164,15 +167,16 @@ fun BackgroundsScreen(bottomPadding: Dp, forPlayer: Boolean = false) {
                     Text(group.label, style = MaterialTheme.typography.titleLarge)
                     Text(
                         when (group) {
-                            com.prism.music.ui.theme.BackdropGroup.COLOR -> "Glowing in dark mode, soft pastels in light mode"
-                            com.prism.music.ui.theme.BackdropGroup.DESIGNS -> "Detailed scenes that fade away behind the text"
-                            else -> "Quiet patterns in your accent color"
+                            com.prism.music.ui.theme.BackdropGroup.COLOR -> tr(R.string.glowing_in_dark_mode_soft_pastels)
+                            com.prism.music.ui.theme.BackdropGroup.DESIGNS -> tr(R.string.detailed_scenes_that_fade_away_behind)
+                            else -> tr(R.string.quiet_patterns_in_your_accent_color)
                         },
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
-            Backdrop.entries.filter { it.group == group }.chunked(3).forEachIndexed { r, row -> item(key = "bg:${group.name}:$r") {
+            // A seasonal background only in its month (still shown when it's the one picked).
+            Backdrop.entries.filter { it.group == group && (it.offeredOn(today) || it == currentStyle) }.chunked(3).forEachIndexed { r, row -> item(key = "bg:${group.name}:$r") {
               Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
               row.forEach { style ->
                 val selected = style == currentStyle && (!forPlayer || s.backdrops[com.prism.music.ui.theme.PLAYER_BACKDROP] != null)
@@ -217,17 +221,20 @@ fun BackgroundsScreen(bottomPadding: Dp, forPlayer: Boolean = false) {
             }
             if (!forPlayer) item {
                 Column(Modifier.padding(top = 8.dp).pane(ui.card, MaterialTheme.colorScheme.surfaceContainer).padding(16.dp)) {
-                    Text("Softness", style = MaterialTheme.typography.bodyLarge)
-                    Text("How much the theme color washes over the background, for easier reading", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(tr(R.string.softness), Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                        Text("${kotlin.math.round(dim / 0.8f * 100).toInt()}%", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Text(tr(R.string.how_much_the_theme_color_washes), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     PrismSlider(dim, { dim = it }, valueRange = 0f..0.8f, onValueChangeFinished = { c.settings.setBackdropDim(dim) })
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text("Gentle motion", style = MaterialTheme.typography.bodyLarge)
-                            Text("Color fields drift, waves roll and ripples spread, slowly", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(tr(R.string.gentle_motion), style = MaterialTheme.typography.bodyLarge)
+                            Text(tr(R.string.color_fields_drift_waves_roll_and), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         PrismSwitch(s.backdropMotion, { c.settings.setBackdropMotion(it) })
                     }
-                    if (s.backdrops.isNotEmpty()) PrismTextButton(onClick = { c.settings.setBackdrops(emptyMap()) }, Modifier.align(Alignment.End)) { Text("Reset all to Ambient") }
+                    if (s.backdrops.isNotEmpty()) PrismTextButton(onClick = { c.settings.setBackdrops(emptyMap()) }, Modifier.align(Alignment.End)) { Text(tr(R.string.reset_all_to_ambient)) }
                 }
             }
     }

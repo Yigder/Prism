@@ -64,6 +64,14 @@ object LocalRadio {
     data class Pick(val song: Song, val score: Double, val related: Boolean)
 
     /**
+     * Your picks to play beside YouTube's radio: only the ones that belong with the seeds (played around them, the same
+     * artist or genre). Favourites that have nothing to do with them fill in only when your music is all there is
+     * ([onlyYours]: offline, after a file on the phone, or "Your music"). Reddit, after 1.7.8: "if I select rock it
+     * plays NSYNC, if I select opera, NSYNC too".
+     */
+    fun besideYouTube(picks: List<Pick>, onlyYours: Boolean): List<Pick> = if (onlyYours) picks else picks.filter { it.related }
+
+    /**
      * Up to [count] songs to follow [seeds] (newest last), from [pool], leaving out [exclude]. [jitter]: a small
      * per-song shake (0.9–1.1) so the same seed doesn't always give the same order.
      */

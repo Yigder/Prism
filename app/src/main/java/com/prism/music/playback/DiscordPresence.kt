@@ -1,5 +1,7 @@
 package com.prism.music.playback
 
+import com.prism.music.R
+import com.prism.music.tr
 import android.content.Context
 import android.util.Log
 import com.prism.music.data.innertube.InnerTube
@@ -116,7 +118,7 @@ class DiscordPresence(context: Context, http: OkHttpClient, private val scope: C
             } else if (cover != null) fetchArt(song.id, cover)
         }
         put("details", song.title.take(128))
-        put("state", (if (song.isEpisode) song.primaryArtist else "by ${song.artists.joinToString(", ") { it.name }}").take(128).ifBlank { "Prism" })
+        put("state", (if (song.isEpisode) song.primaryArtist else tr(R.string.by_2, song.artists.joinToString(", ") { it.name })).take(128).ifBlank { tr(R.string.app_name) })
         if (!song.isLive && durationMs > 0) {
             val start = System.currentTimeMillis() - positionMs.coerceAtLeast(0)
             putJsonObject("timestamps") {

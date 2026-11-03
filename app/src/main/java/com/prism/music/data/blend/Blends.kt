@@ -1,5 +1,7 @@
 package com.prism.music.data.blend
 
+import com.prism.music.R
+import com.prism.music.tr
 import android.content.Context
 import com.prism.music.AppContainer
 import com.prism.music.data.db.BlendEntity
@@ -77,7 +79,7 @@ class Blends(private val c: AppContainer) {
         val genres = runCatching { c.taste.profile() }.getOrDefault(emptyMap())
             .entries.sortedByDescending { it.value }.take(8)
             .associate { it.key to (it.value * 100).roundToInt() }.filterValues { it > 0 }
-        return TasteCode(myWho, myName.ifBlank { "A Prism listener" }, codeArtists, songs, genres)
+        return TasteCode(myWho, myName.ifBlank { tr(R.string.a_prism_listener) }, codeArtists, songs, genres)
     }
 
     /** 1–99 on a log scale against the most played: a favourite played 200 times doesn't drown everything else. */

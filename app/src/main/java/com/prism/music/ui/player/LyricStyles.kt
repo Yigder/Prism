@@ -34,7 +34,7 @@ import com.prism.music.data.lyrics.LyricWord
 import com.prism.music.data.prefs.AppSettings
 import com.prism.music.data.prefs.LyricsBackground
 import com.prism.music.data.prefs.LyricsColor
-import com.prism.music.data.prefs.LyricsStyle
+import com.prism.music.data.prefs.LyricsMotion
 import com.prism.music.ui.theme.PrismTokens
 import kotlin.math.roundToInt
 
@@ -47,7 +47,12 @@ import kotlin.math.roundToInt
 /** Everything about how lyrics look, from the settings. */
 @Immutable
 data class LyricsLook(
-    val style: LyricsStyle = LyricsStyle.PRISM,
+    /** How the sung line moves, whether lines timed as a whole move word by word too, and Glow's halo (1.8.0's parts). */
+    val motion: LyricsMotion = LyricsMotion.GROW,
+    val wordByWord: Boolean = false,
+    val halo: Boolean = false,
+    /** The size the lines are drawn at against 1.7's (Bold card's lines are bigger). */
+    val sizeScale: Float = 1f,
     /** The sung words' fill: null is plain white (as before). */
     val sung: Brush? = null,
     /** One color standing for [sung] (a glow, a spectrum's middle). */
@@ -74,8 +79,8 @@ data class LyricsLook(
     /** Bold card: the color the lines sit on (null for every other style). */
     val card: Color? = null,
 ) {
-    /** The size the lines are drawn at against 1.7's (Bold card's lines are bigger). */
-    val sizeScale: Float get() = if (style == LyricsStyle.CARD) 1.1f else 1f
+    /** Lines timed as a whole are drawn plain, not moving (Prism's own sweep, as 1.7 drew them). */
+    val plainWhenLineTimed: Boolean get() = motion == LyricsMotion.GROW && !wordByWord
 
     /** The same look with no card under it (a wide player's lyrics pane, immersive mode): the other lines dim white. */
     fun withoutCard(othersAlpha: Float): LyricsLook = if (card == null) this else copy(card = null, others = Color.White, othersAlpha = othersAlpha)
@@ -84,7 +89,7 @@ data class LyricsLook(
     fun shown(line: LyricLine): LyricLine = if (uppercase) line.upper() else line
 
     companion object {
-        /** The lyrics exactly as 1.7.4 drew them (the strip and immersive mode when they don't follow the lyrics page). */
+        /** The lyrics exactly as 1.7.4 drew them (Prism's defaults). */
         val Classic = LyricsLook()
     }
 }
@@ -130,44 +135,53 @@ internal fun cardColor(c: Color): Color {
 /** The lyrics' look from [s], for a song with the cover [cover]. */
 @Composable
 fun rememberLyricsLook(s: AppSettings, cover: String?): LyricsLook {
-    val sung = lyricsFill(s.lyricsSungColor, s.lyricsSungCustom, cover)
-    val others = lyricsFill(s.lyricsOtherColor, s.lyricsOtherCustom, cover).solid()
-    val extra = lyricsFill(s.lyricsExtraColor, s.lyricsOtherCustom, cover).solid()
+    val p = s.lyricsLook
+    val sung = lyricsFill(p.sungColor, p.sungCustom, cover)
+    val others = lyricsFill(p.otherColor, p.otherCustom, cover).solid()
+    val extra = lyricsFill(p.extraColor, p.otherCustom, cover).solid()
     // The card's ground is there only when the lyrics page shows the cover's color behind it.
-    val onGround = s.lyricsStyle == LyricsStyle.CARD && s.lyricsPageBackground() == LyricsBackground.COVER_COLOR
-    val palette = if (onGround) com.prism.music.ui.components.rememberArtPalette(cover) else null
-    val card = if (!onGround) null else cardColor(palette?.vibrant ?: palette?.dominant ?: MaterialTheme.colorScheme.primary)
-    val weight = if (s.lyricsStyle == LyricsStyle.CARD) maxOf(s.lyricsWeight.weight, 700) else s.lyricsWeight.weight
-    return remember(s.lyricsStyle, sung, others, extra, card, weight, s.lyricsOthersAlpha, s.lyricsBlurAmount, s.lyricsSpacing, s.lyricsBackingSize,
-        s.lyricsShadow, s.lyricsUppercase, s.lyricsExtraSize, s.lyricsExtraItalic, s.lyricsExtraPlace, s.lyricsAhead, s.lyricsPosition) {
-        LyricsLook(
-            style = s.lyricsStyle,
-            // Classic karaoke needs a color to fill with: white fills with your light.
-            sung = sung ?: if (s.lyricsStyle == LyricsStyle.KARAOKE) PrismTokens.spectrum(true) else null,
-            sungSolid = (sung ?: if (s.lyricsStyle == LyricsStyle.KARAOKE) PrismTokens.spectrum(true) else null).solid(),
-            others = if (card != null) Color.Black else others,
-            othersAlpha = if (card != null) 0.8f else s.lyricsOthersAlpha,
-            weight = weight,
-            sungWeight = (weight + 200).coerceAtMost(900),
-            blur = if (card != null) 0f else s.lyricsBlurAmount,
-            spacing = s.lyricsSpacing,
-            backingSize = s.lyricsBackingSize,
-            shadow = if (s.lyricsShadow) LyricsShadow else null,
-            uppercase = s.lyricsUppercase,
-            extraSize = s.lyricsExtraSize,
-            extraColor = extra,
-            extraItalic = s.lyricsExtraItalic,
-            extraAbove = s.lyricsExtraPlace == com.prism.music.data.prefs.LyricsExtraPlace.ABOVE,
-            ahead = s.lyricsAhead.lines,
-            position = s.lyricsPosition.fraction,
-            card = card,
-        )
-    }
+    val palette = if (p.onCard) com.prism.music.ui.components.rememberArtPalette(cover) else null
+    val card = if (!p.onCard) null else cardColor(palette?.vibrant ?: palette?.dominant ?: MaterialTheme.colorScheme.primary)
+    return remember(p, sung, others, extra, card) { lyricsLookOf(p, sung, others, extra, card) }
+}
+
+/**
+ * The look [p] draws, given its colors as fills ([sung] null for white; [others] and [extra] as one color each) and Bold
+ * card's ground ([card], null when the card isn't drawn). Worked out the same way for the lyrics and their examples.
+ */
+fun lyricsLookOf(p: com.prism.music.data.prefs.LyricsLookPrefs, sung: Brush?, others: Color, extra: Color, card: Color?): LyricsLook {
+    val motion = p.motionNow
+    // Color fills needs a color to fill with: white fills with your light.
+    val fill = sung ?: if (motion == LyricsMotion.FILL) PrismTokens.spectrum(true) else null
+    val weight = p.weightNow.weight
+    return LyricsLook(
+        motion = motion,
+        wordByWord = p.wordByWordNow,
+        halo = p.haloNow,
+        sizeScale = p.sizeScale,
+        sung = fill,
+        sungSolid = fill.solid(),
+        others = if (card != null) Color.Black else others,
+        othersAlpha = if (card != null) 0.8f else p.othersAlpha,
+        weight = weight,
+        sungWeight = (weight + 200).coerceAtMost(900),
+        blur = if (card != null) 0f else p.blurAmount,
+        spacing = p.spacing,
+        backingSize = p.backingSize,
+        shadow = if (p.shadow) LyricsShadow else null,
+        uppercase = p.uppercase,
+        extraSize = p.extraSize,
+        extraColor = extra,
+        extraItalic = p.extraItalic,
+        extraAbove = p.extraPlace == com.prism.music.data.prefs.LyricsExtraPlace.ABOVE,
+        ahead = p.ahead.lines,
+        position = p.position.fraction,
+        card = card,
+    )
 }
 
 /** What's behind the lyrics page: Bold card brings its own color when the background is left as it is. */
-fun AppSettings.lyricsPageBackground(): LyricsBackground =
-    if (lyricsStyle == LyricsStyle.CARD && lyricsBackground == LyricsBackground.PLAYER) LyricsBackground.COVER_COLOR else lyricsBackground
+fun AppSettings.lyricsPageBackground(): LyricsBackground = lyricsLook.pageBackground
 
 /** The line in capitals, its words too (a word whose capitals are a different length, like ß, stays as it was). */
 internal fun LyricLine.upper(): LyricLine {
@@ -195,9 +209,46 @@ internal fun LyricLine.withWords(): LyricLine {
     return copy(text = words.joinToString("") { it.text }, words = words)
 }
 
+/** How the line being sung is drawn ([sungPlan]): all at once, growing bolder, a light sweeping through, word by word. */
+internal enum class SungKind { PLAIN, GROW, SWEEP, TYPEWRITER }
+
 /**
- * The line being sung, drawn in [look]'s style. [onCard]: on Bold card's own color (the lyrics page), where the words still
- * to come are dark; elsewhere they're dim white. [strip]: the one-line strip above the scrubber.
+ * The line being sung as [SungLine] draws it: [kind]; the weight it's set in ([weight], null keeps the caller's); the
+ * words still to come ([dim], for a sweep or growing words); and Glow's halo behind it ([halo]).
+ */
+internal data class SungPlan(val kind: SungKind, val weight: Int?, val dim: Color = Color.Unspecified, val halo: Boolean = false)
+
+/** Lines timed only as a whole get words of their own first ([withWords]): the look moves them word by word. */
+internal val LyricsLook.timesWords: Boolean get() = wordByWord && motion != LyricsMotion.NONE
+
+/**
+ * How the line is drawn in this look: [wordSynced] (after [timesWords]), on Bold card's color ([onCard]), on the strip
+ * ([strip]), with a typeface on a weight axis ([axis]). A glow makes the line a step bolder, as Glow drew it.
+ */
+internal fun LyricsLook.sungPlan(wordSynced: Boolean, onCard: Boolean, strip: Boolean, axis: Boolean, dimAlpha: Float): SungPlan {
+    val bump = if (halo) 100 else 0
+    val sweepDim = if (onCard) Color.Black.copy(alpha = 0.55f) else Color.White.copy(alpha = dimAlpha)
+    val plan = when (motion) {
+        LyricsMotion.GROW -> when {
+            !wordSynced -> SungPlan(SungKind.PLAIN, sungWeight)
+            // The strip sweeps a light through the words (it always has); the page grows them bolder.
+            axis && !strip -> SungPlan(SungKind.GROW, null)
+            else -> SungPlan(SungKind.SWEEP, if (strip) null else sungWeight, Color.White.copy(alpha = dimAlpha))
+        }
+        // Unsung words full white, the color filling them as they're sung.
+        LyricsMotion.FILL -> if (!wordSynced) SungPlan(SungKind.PLAIN, null)
+            else SungPlan(SungKind.SWEEP, weight + 100, if (onCard) sweepDim else Color.White.copy(alpha = 0.92f))
+        LyricsMotion.SWEEP -> if (!wordSynced) SungPlan(SungKind.PLAIN, weight + bump) else SungPlan(SungKind.SWEEP, weight + bump, sweepDim)
+        LyricsMotion.TYPEWRITER -> if (!wordSynced) SungPlan(SungKind.PLAIN, null) else SungPlan(SungKind.TYPEWRITER, weight + 100)
+        // No movement: the line is simply as bright as it gets.
+        LyricsMotion.NONE -> SungPlan(SungKind.PLAIN, weight + bump)
+    }
+    return plan.copy(halo = halo)
+}
+
+/**
+ * The line being sung, drawn in [look]'s animation. [onCard]: on Bold card's own color (the lyrics page), where the words
+ * still to come are dark; elsewhere they're dim white. [strip]: the one-line strip above the scrubber.
  */
 @Composable
 fun SungLine(
@@ -213,61 +264,38 @@ fun SungLine(
     dimAlpha: Float = 0.38f,
 ) {
     val st = style.copy(shadow = look.shadow ?: style.shadow)
-    val dim = if (onCard) Color.Black.copy(alpha = 0.55f) else Color.White.copy(alpha = dimAlpha)
-    when (look.style) {
-        LyricsStyle.PRISM -> when {
-            !line.isWordSynced -> PlainSung(line, st.copy(fontWeight = FontWeight(look.sungWeight)), look, modifier, maxLines)
-            // The strip sweeps a light through the words (it always has); the page grows them bolder.
-            axis != null && !strip -> WeightSweptLine(line, clock, st, axis, modifier, look.weight, look.sungWeight, look.sung)
-            else -> SweptLine(line, clock, if (strip) st else st.copy(fontWeight = FontWeight(look.sungWeight)), modifier, maxLines, dimAlpha, litBrush = look.sung)
+    val timed = if (look.timesWords) remember(line) { line.withWords() } else line
+    val plan = look.sungPlan(timed.isWordSynced, onCard, strip, axis != null, dimAlpha)
+    val set = if (plan.weight != null) st.copy(fontWeight = FontWeight(plan.weight)) else st
+    val drawn = @Composable { m: Modifier ->
+        when (plan.kind) {
+            SungKind.PLAIN -> PlainSung(line, set, look, m, maxLines)
+            SungKind.GROW -> WeightSweptLine(timed, clock, st, axis!!, m, look.weight, look.sungWeight, look.sung)
+            SungKind.SWEEP -> SweptLine(timed, clock, set, m, maxLines, litBrush = look.sung, dimColor = plan.dim)
+            SungKind.TYPEWRITER -> TypewriterLine(timed, clock, set, look, m, maxLines)
         }
-        LyricsStyle.KARAOKE -> {
-            val timed = remember(line) { line.withWords() }
-            if (!timed.isWordSynced) PlainSung(line, st, look, modifier, maxLines)
-            // Unsung words full white, the color filling them as they're sung.
-            else SweptLine(timed, clock, st.copy(fontWeight = FontWeight(look.weight + 100)), modifier, maxLines, litBrush = look.sung, dimColor = if (onCard) dim else Color.White.copy(alpha = 0.92f))
-        }
-        LyricsStyle.CARD -> {
-            val timed = remember(line) { line.withWords() }
-            val bold = st.copy(fontWeight = FontWeight(look.weight))
-            if (!timed.isWordSynced) PlainSung(line, bold, look, modifier, maxLines)
-            else SweptLine(timed, clock, bold, modifier, maxLines, litBrush = look.sung, dimColor = dim)
-        }
-        LyricsStyle.GLOW -> {
-            val bright = st.copy(fontWeight = FontWeight(look.weight + 100))
-            // The glow is a blurred copy of the sung words behind them (a text shadow is cut off at the line's edges by
-            // the sweep's layer, and came out as a box). The copy is the letters thickened by an outline and only lightly
-            // blurred, so the light hugs each letter's shape instead of clouding the space round the words (a 10 dp blur
-            // did that before 1.7.5's release). Below Android 12 there's no blur, so no glow copy.
-            val glowFill = SolidColor(look.sungSolid.copy(alpha = 0.85f))
-            // Its children fill the line's width when the line does (the lyrics page), and wrap their words when it doesn't (the strip).
-            Box(modifier, propagateMinConstraints = true) {
-                if (android.os.Build.VERSION.SDK_INT >= 31) {
-                    val density = androidx.compose.ui.platform.LocalDensity.current
-                    val glowStyle = remember(bright, density) {
-                        val px = with(density) { if (bright.fontSize.isSpecified) bright.fontSize.toPx() else 24.dp.toPx() }
-                        bright.copy(
-                            brush = glowFill, shadow = null,
-                            drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(
-                                width = px * GLOW_OUTLINE, join = androidx.compose.ui.graphics.StrokeJoin.Round,
-                            ),
-                        )
-                    }
-                    val soft = Modifier.matchParentSize().blur(GLOW_BLUR, androidx.compose.ui.draw.BlurredEdgeTreatment.Unbounded)
-                    if (!line.isWordSynced) Text(line.text, soft, style = glowStyle, maxLines = maxLines, overflow = TextOverflow.Ellipsis)
-                    else SweptLine(line, clock, glowStyle, soft, maxLines, litBrush = glowFill, dimColor = Color.Transparent)
-                }
-                if (!line.isWordSynced) PlainSung(line, bright, look, Modifier, maxLines)
-                else SweptLine(line, clock, bright, Modifier, maxLines, dimAlpha, litBrush = look.sung)
-            }
-        }
-        LyricsStyle.TYPEWRITER -> {
-            val timed = remember(line) { line.withWords() }
-            if (!timed.isWordSynced) PlainSung(line, st, look, modifier, maxLines)
-            else TypewriterLine(timed, clock, st.copy(fontWeight = FontWeight(look.weight + 100)), look, modifier, maxLines)
-        }
-        // No movement: the line is simply as bright as it gets.
-        LyricsStyle.CALM -> PlainSung(line, st.copy(fontWeight = FontWeight(look.weight)), look, modifier, maxLines)
+    }
+    // The glow is a blurred copy of the sung words behind them (a text shadow is cut off at the line's edges). The copy is
+    // the letters thickened by an outline and only lightly blurred, so the light hugs each letter's shape instead of
+    // clouding the space round the words (a 10 dp blur did that before 1.7.5's release). Below Android 12 there's no blur,
+    // so no glow copy.
+    if (!plan.halo || android.os.Build.VERSION.SDK_INT < 31) { drawn(modifier); return }
+    val glowFill = SolidColor(look.sungSolid.copy(alpha = 0.85f))
+    val bright = if (plan.kind == SungKind.GROW) st.copy(fontWeight = FontWeight(look.sungWeight)) else set
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val glowStyle = remember(bright, density) {
+        val px = with(density) { if (bright.fontSize.isSpecified) bright.fontSize.toPx() else 24.dp.toPx() }
+        bright.copy(
+            brush = glowFill, shadow = null,
+            drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = px * GLOW_OUTLINE, join = androidx.compose.ui.graphics.StrokeJoin.Round),
+        )
+    }
+    // Its children fill the line's width when the line does (the lyrics page), and wrap their words when it doesn't (the strip).
+    Box(modifier, propagateMinConstraints = true) {
+        val soft = Modifier.matchParentSize().blur(GLOW_BLUR, androidx.compose.ui.draw.BlurredEdgeTreatment.Unbounded)
+        if (!timed.isWordSynced || plan.kind == SungKind.PLAIN) Text(timed.text, soft, style = glowStyle, maxLines = maxLines, overflow = TextOverflow.Ellipsis)
+        else SweptLine(timed, clock, glowStyle, soft, maxLines, litBrush = glowFill, dimColor = Color.Transparent)
+        drawn(Modifier)
     }
 }
 

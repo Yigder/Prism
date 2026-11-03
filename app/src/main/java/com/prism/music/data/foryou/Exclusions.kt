@@ -33,6 +33,13 @@ class Exclusions(context: Context) {
     private val _songs = MutableStateFlow(load(SONGS))
     val songs: StateFlow<List<Excluded>> = _songs
 
+    /** Reads them again (after "Bring your Prism" merged a phone's in, 1.8.0). */
+    fun reload() {
+        _artists.value = load(ARTISTS)
+        _playlists.value = load(PLAYLISTS)
+        _songs.value = load(SONGS)
+    }
+
     private fun save(key: String, flow: MutableStateFlow<List<Excluded>>, list: List<Excluded>) {
         flow.value = list
         prefs.edit().putString(key, json.encodeToString(list)).apply()

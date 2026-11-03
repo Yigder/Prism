@@ -114,6 +114,14 @@ class LyricsOverlayPlayer(player: Player) : ForwardingSimpleBasePlayer(player) {
         return com.google.common.util.concurrent.Futures.immediateVoidFuture()
     }
 
+    /** Fades a pause or play in (1.7.8, A5): true when it took the change over, false to make it at once. */
+    var gentle: ((play: Boolean) -> Boolean)? = null
+
+    override fun handleSetPlayWhenReady(playWhenReady: Boolean): com.google.common.util.concurrent.ListenableFuture<*> {
+        if (gentle?.invoke(playWhenReady) == true) return com.google.common.util.concurrent.Futures.immediateVoidFuture()
+        return super.handleSetPlayWhenReady(playWhenReady)
+    }
+
     override fun handleSeek(mediaItemIndex: Int, positionMs: Long, seekCommand: Int): com.google.common.util.concurrent.ListenableFuture<*> {
         val order = shown
         val real = if (order != null && mediaItemIndex in order.indices) order[mediaItemIndex] else mediaItemIndex

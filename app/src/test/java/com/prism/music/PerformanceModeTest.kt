@@ -38,7 +38,9 @@ class PerformanceModeTest {
         assertEquals(VisualizerStyle.OFF, e.visualizer)
         assertEquals(0f, e.meshSpeed)
         assertEquals(PlayerBackground.MESH, e.playerBackground)
-        assertEquals(LyricsStyle.PRISM, e.lyricsStyle)
+        // 1.8.0: Glow's halo goes; its sweep (no layer, no blur) stays.
+        assertEquals(false, e.lyricsLook.haloNow)
+        assertEquals(com.prism.music.data.prefs.LyricsMotion.SWEEP, e.lyricsLook.motionNow)
         assertEquals(0f, e.lyricsBlurAmount)
         assertEquals(LyricsBackground.PLAYER, e.lyricsBackground)
         assertEquals(HomeHeader.GREETING, e.homeHeader)

@@ -307,13 +307,43 @@ fun prismTypography(
 
 val PrismTypography = prismTypography()
 
+/**
+ * Prism 1.6's type (1.7.8, Classic type, #155): Material's sizes with tight, heavy headings over a calm body, as 1.6.9
+ * drew it. Text → Weight, spacing and the titles' font still apply on top.
+ */
+fun classicTypography(family: FontFamily, titleFamily: FontFamily = family, weightShift: Int = 0, tracking: Float = 0f): Typography {
+    fun TextStyle.f(title: Boolean = false, weight: FontWeight? = fontWeight) = copy(
+        fontFamily = if (title) titleFamily else family,
+        fontWeight = FontWeight(((weight ?: FontWeight.Normal).weight + weightShift).coerceIn(100, 900)),
+        letterSpacing = (letterSpacing.takeIf { it.isEm }?.value ?: 0f).plus(tracking).em,
+    )
+    return Typography(
+        displayLarge = base.displayLarge.copy(letterSpacing = (-0.035).em).f(true, FontWeight.Black),
+        displayMedium = base.displayMedium.copy(letterSpacing = (-0.03).em).f(true, FontWeight.Black),
+        displaySmall = base.displaySmall.copy(letterSpacing = (-0.025).em).f(true, FontWeight.ExtraBold),
+        headlineLarge = base.headlineLarge.copy(letterSpacing = (-0.025).em).f(true, FontWeight.ExtraBold),
+        headlineMedium = base.headlineMedium.copy(letterSpacing = (-0.02).em).f(true, FontWeight.Bold),
+        headlineSmall = base.headlineSmall.copy(letterSpacing = (-0.015).em).f(true, FontWeight.Bold),
+        titleLarge = base.titleLarge.copy(letterSpacing = (-0.012).em).f(true, FontWeight.Bold),
+        titleMedium = base.titleMedium.copy(letterSpacing = (-0.005).em).f(weight = FontWeight.SemiBold),
+        titleSmall = base.titleSmall.copy(letterSpacing = 0.em).f(weight = FontWeight.SemiBold),
+        labelLarge = base.labelLarge.copy(letterSpacing = 0.em).f(weight = FontWeight.SemiBold),
+        labelMedium = base.labelMedium.copy(letterSpacing = 0.em).f(weight = FontWeight.Medium),
+        labelSmall = base.labelSmall.copy(letterSpacing = 0.em).f(weight = FontWeight.Medium),
+        bodyLarge = base.bodyLarge.copy(letterSpacing = 0.006.em).f(),
+        bodyMedium = base.bodyMedium.copy(letterSpacing = 0.em).f(),
+        bodySmall = base.bodySmall.copy(letterSpacing = 0.em).f(),
+    )
+}
+
 /** The app's type for [s]: its font, titles in their own font if one's picked, the weight and spacing (1.7.7). */
 fun appTypography(s: AppSettings): Typography {
     val family = AppFonts.family(s.fontChoice)
+    if (s.type.classic) return classicTypography(family, s.type.titleFont?.let { AppFonts.family(it) } ?: family, s.type.weight.shift, s.type.spacing.em).hyphenated()
     return prismTypography(
         family, s.type.titleFont?.let { AppFonts.family(it) } ?: family,
         weightShift = s.type.weight.shift, tracking = s.type.spacing.em,
-    )
+    ).hyphenated()
 }
 
 val MonoStyle = TextStyle(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, fontSize = 11.sp, lineHeight = 15.sp)
@@ -407,14 +437,31 @@ fun themeColors(s: AppSettings, dark: Boolean, seed: Color, dynamic: ((Boolean) 
  * grey cover still gives a color. Null when the cover has none to give.
  */
 fun pickSwatch(p: androidx.palette.graphics.Palette, swatch: com.prism.music.data.prefs.ArtworkSwatch, vivid: Boolean): Int? {
+    // A swatch from a speck of the picture isn't its color (Reddit, 2026-10: Jaze's "Desconectado", a deep blue night,
+    // gave a pink accent from two tail lights, 7 of its 25,600 pixels): those fall through to the next choice.
+    val total = p.swatches.sumOf { it.population }.coerceAtLeast(1)
+    fun androidx.palette.graphics.Palette.Swatch?.big() = this?.takeIf { it.population >= total * MIN_SWATCH_SHARE }
     val picked = when (swatch) {
-        com.prism.music.data.prefs.ArtworkSwatch.VIBRANT -> p.vibrantSwatch ?: p.lightVibrantSwatch ?: p.dominantSwatch ?: p.mutedSwatch
-        com.prism.music.data.prefs.ArtworkSwatch.MUTED -> p.mutedSwatch ?: p.lightMutedSwatch ?: p.darkMutedSwatch ?: p.dominantSwatch
+        com.prism.music.data.prefs.ArtworkSwatch.VIBRANT -> p.vibrantSwatch.big() ?: p.lightVibrantSwatch.big() ?: p.dominantSwatch ?: p.mutedSwatch
+        com.prism.music.data.prefs.ArtworkSwatch.MUTED -> p.mutedSwatch.big() ?: p.lightMutedSwatch.big() ?: p.darkMutedSwatch.big() ?: p.dominantSwatch
         com.prism.music.data.prefs.ArtworkSwatch.DOMINANT -> p.dominantSwatch ?: p.vibrantSwatch ?: p.mutedSwatch
     }?.rgb ?: return null
     val opaque = picked or (0xFF shl 24)
-    return if (!vivid) opaque else ColorMath.toHsl(opaque).let { h -> ColorMath.fromHsl(h[0], h[1].coerceAtLeast(0.55f), h[2].coerceIn(0.35f, 0.7f)) }
+    val hsl = ColorMath.toHsl(opaque)
+    return when {
+        vivid -> ColorMath.fromHsl(hsl[0], hsl[1].coerceAtLeast(0.55f), hsl[2].coerceIn(0.35f, 0.7f))
+        // A black-and-white cover's grey is a little tinted (a photo, the JPEG): made a true grey, it reads as neutral,
+        // so the accent goes grey as the cover is (Reddit, 1.7.9), instead of the tint pushed up into a color.
+        hsl[1] < GREY_COVER_SATURATION -> ColorMath.fromHsl(0f, 0f, hsl[2])
+        else -> opaque
+    }
 }
+
+/** A cover's color this pale is its grey ("Always colorful" off keeps it grey). */
+private const val GREY_COVER_SATURATION = 0.15f
+
+/** The least of a cover's swatched pixels a swatch needs to be its accent (see [pickSwatch]). */
+private const val MIN_SWATCH_SHARE = 0.02f
 
 @Composable
 fun PrismTheme(settings: AppSettings, artworkColor: Color?, content: @Composable () -> Unit) {
@@ -464,4 +511,19 @@ fun PrismTheme(settings: AppSettings, artworkColor: Color?, content: @Composable
             CompositionLocalProvider(LocalContentColor provides scheme.onBackground, content = content)
         }
     }
+}
+
+/**
+ * Long words broken with a hyphen where they must break, in the language's own rules (1.7.9): a narrow tile split
+ * German's "Lieblingssongs" as "Lieblingssong / s" without it. Android hyphenates only where a word doesn't fit.
+ */
+private fun Typography.hyphenated(): Typography {
+    fun TextStyle.h() = copy(hyphens = androidx.compose.ui.text.style.Hyphens.Auto)
+    return copy(
+        displayLarge = displayLarge.h(), displayMedium = displayMedium.h(), displaySmall = displaySmall.h(),
+        headlineLarge = headlineLarge.h(), headlineMedium = headlineMedium.h(), headlineSmall = headlineSmall.h(),
+        titleLarge = titleLarge.h(), titleMedium = titleMedium.h(), titleSmall = titleSmall.h(),
+        bodyLarge = bodyLarge.h(), bodyMedium = bodyMedium.h(), bodySmall = bodySmall.h(),
+        labelLarge = labelLarge.h(), labelMedium = labelMedium.h(), labelSmall = labelSmall.h(),
+    )
 }

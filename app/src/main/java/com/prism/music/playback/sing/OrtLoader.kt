@@ -1,5 +1,7 @@
 package com.prism.music.playback.sing
 
+import com.prism.music.R
+import com.prism.music.tr
 import ai.onnxruntime.OrtEnvironment
 import android.util.Log
 import java.io.File
@@ -19,7 +21,7 @@ object OrtLoader {
     fun environment(libraryDir: File): OrtEnvironment {
         env?.let { return it }
         val engine = File(libraryDir, "libonnxruntime.so")
-        require(engine.isFile) { "Sing's engine isn't downloaded" }
+        require(engine.isFile) { tr(R.string.sing_s_engine_isn_t_downloaded) }
         try {
             System.load(engine.absolutePath)
             return OrtEnvironment.getEnvironment().also {
@@ -31,7 +33,7 @@ object OrtLoader {
             }
         } catch (t: Throwable) {
             Log.w("PrismSing", "ONNX Runtime didn't start: $t")
-            throw IllegalStateException("Sing's engine didn't start on this phone", t)
+            throw IllegalStateException(tr(R.string.sing_s_engine_didn_t_start), t)
         }
     }
 }

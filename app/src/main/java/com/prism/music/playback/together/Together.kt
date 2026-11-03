@@ -1,5 +1,7 @@
 package com.prism.music.playback.together
 
+import com.prism.music.R
+import com.prism.music.tr
 import android.app.Application
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
@@ -78,7 +80,7 @@ class Together(private val app: Application, private val c: AppContainer) {
     private val nsd: NsdManager? by lazy { app.getSystemService(NsdManager::class.java) }
 
     /** How this phone introduces itself: the account's first name, or the phone's model. */
-    val myName: String get() = c.displayName(first = true).ifBlank { Build.MODEL ?: "Prism" }
+    val myName: String get() = c.displayName(first = true).ifBlank { Build.MODEL ?: tr(R.string.app_name) }
 
     // ------------------------------------------------------------ Hosting
 
@@ -101,7 +103,7 @@ class Together(private val app: Application, private val c: AppContainer) {
             code = (1000..9999).random().toString()
             val ss = runCatching { ServerSocket(PORT) }.getOrNull() ?: runCatching { ServerSocket(0) }.getOrNull()
             starting = false
-            if (ss == null) { _events.tryEmit("Couldn't start a session on this network"); return@launch }
+            if (ss == null) { _events.tryEmit(tr(R.string.couldn_t_start_a_session_on)); return@launch }
             server = ss
             _state.value = TogetherState.Hosting(code, localAddress(), ss.localPort, emptyList(), guestsControl)
             register(ss.localPort)
@@ -137,19 +139,19 @@ class Together(private val app: Application, private val c: AppContainer) {
         socket.soTimeout = 0
         when {
             hello == null -> { link.close(); return }
-            hello.version != Msg.VERSION -> { link.send(Msg.Denied("Both phones need the latest Prism")); link.close(); return }
+            hello.version != Msg.VERSION -> { link.send(Msg.Denied(tr(R.string.both_phones_need_the_latest_prism))); link.close(); return }
             hello.code.trim() != code -> {
                 delay(700) // makes guessing codes slow
-                link.send(Msg.Denied("That code doesn't match. Check the one on the host's screen."))
+                link.send(Msg.Denied(tr(R.string.that_code_doesn_t_match_check)))
                 link.close()
                 return
             }
         }
-        val g = GuestLink(link, hello.name.trim().take(32).ifBlank { "A guest" })
+        val g = GuestLink(link, hello.name.trim().take(32).ifBlank { tr(R.string.a_guest) })
         guests += g
         link.send(Msg.Welcome(myName))
         updateHosting()
-        _events.tryEmit("${g.name} joined")
+        _events.tryEmit(tr(R.string.joined, g.name))
         broadcastSoon()
         try {
             while (true) {
@@ -166,7 +168,7 @@ class Together(private val app: Application, private val c: AppContainer) {
             link.close()
             if (_state.value is TogetherState.Hosting) {
                 updateHosting()
-                _events.tryEmit("${g.name} left")
+                _events.tryEmit(tr(R.string.left_2, g.name))
                 broadcastSoon()
             }
         }
@@ -175,7 +177,7 @@ class Together(private val app: Application, private val c: AppContainer) {
     private suspend fun onGuestAdd(g: GuestLink, m: Msg.Add) {
         val song = m.song.fromPeer() ?: return
         withContext(Dispatchers.Main) { if (m.next) c.player.playNext(song) else c.player.addToQueue(song) }
-        _events.tryEmit("${g.name} added ${song.title}")
+        _events.tryEmit(tr(R.string.added_2, g.name, song.title))
         val added = Msg.Added(song, g.name)
         guests.forEach { it.link.send(added) }
         broadcastSoon()
@@ -346,7 +348,7 @@ class Together(private val app: Application, private val c: AppContainer) {
 
     /** Joins the session at [host]:[port] with its [code]. Returns why not, or null once in. */
     suspend fun join(host: String, port: Int, code: String, label: String): String? = withContext(Dispatchers.IO) {
-        if (_state.value !is TogetherState.Idle) return@withContext "Leave this session first"
+        if (_state.value !is TogetherState.Idle) return@withContext tr(R.string.leave_this_session_first)
         _state.value = TogetherState.Joining(label)
         val (link, reply) = connect(host, port, code)
         when (reply) {
@@ -357,8 +359,8 @@ class Together(private val app: Application, private val c: AppContainer) {
                 null
             }
             is Msg.Denied -> { _state.value = TogetherState.Idle; reply.reason }
-            null -> { _state.value = TogetherState.Idle; "Couldn't reach $label. Make sure both phones are on the same Wi-Fi." }
-            else -> { _state.value = TogetherState.Idle; "$label didn't answer" }
+            null -> { _state.value = TogetherState.Idle; tr(R.string.couldn_t_reach_make_sure_both, label) }
+            else -> { _state.value = TogetherState.Idle; tr(R.string.didn_t_answer, label) }
         }
     }
 
@@ -402,8 +404,8 @@ class Together(private val app: Application, private val c: AppContainer) {
                     lastState = s
                     withContext(Dispatchers.Main) { onHostState(s) }
                 }
-                is Msg.Added -> if (m.by != myName) _events.tryEmit("${m.by.take(32)} added ${m.song.title.take(120)}")
-                is Msg.Bye -> { endGuest("$hostName ended the session"); return }
+                is Msg.Added -> if (m.by != myName) _events.tryEmit(tr(R.string.added_2, m.by.take(32), m.song.title.take(120)))
+                is Msg.Bye -> { endGuest(tr(R.string.ended_the_session, hostName)); return }
                 else -> Unit
             }
         }
@@ -421,7 +423,7 @@ class Together(private val app: Application, private val c: AppContainer) {
                 return
             }
         }
-        endGuest("Lost the connection to $hostName")
+        endGuest(tr(R.string.lost_the_connection_to, hostName))
     }
 
     private fun endGuest(message: String) {
@@ -471,7 +473,7 @@ class Together(private val app: Application, private val c: AppContainer) {
     fun leave() {
         when (_state.value) {
             is TogetherState.Hosting -> {
-                stopHosting("$myName ended the session")
+                stopHosting(tr(R.string.ended_the_session, myName))
                 _state.value = TogetherState.Idle
             }
             is TogetherState.Guest, is TogetherState.Joining -> {
@@ -527,7 +529,7 @@ class Together(private val app: Application, private val c: AppContainer) {
         val pos = clock.hostPosition(s, now)
         val p = pc.player
         if (p == null || pc.currentSong.value?.id != target.id) {
-            pc.follow(s.songs, pos, "Listening with $hostName", s.playing)
+            pc.follow(s.songs, pos, tr(R.string.listening_with, hostName), s.playing)
             lastSeekAt = now
             appliedAt = now
         } else {

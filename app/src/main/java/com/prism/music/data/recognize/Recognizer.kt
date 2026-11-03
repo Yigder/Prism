@@ -1,5 +1,7 @@
 package com.prism.music.data.recognize
 
+import com.prism.music.R
+import com.prism.music.tr
 import android.annotation.SuppressLint
 import android.content.Context
 import android.media.AudioFormat
@@ -76,7 +78,7 @@ class Recognizer(private val c: AppContainer) {
                 throw e
             } catch (e: Exception) {
                 Log.w(TAG, "recognition failed", e)
-                _state.value = State.Failed(e.message ?: "Couldn't listen")
+                _state.value = State.Failed(e.message ?: tr(R.string.couldn_t_listen))
             } finally {
                 if (resumeAfter) { resumeAfter = false; withContext(kotlinx.coroutines.NonCancellable + Dispatchers.Main) { c.player.setPlaying(true) } }
             }
@@ -87,7 +89,7 @@ class Recognizer(private val c: AppContainer) {
 
     @SuppressLint("MissingPermission")
     private suspend fun listen(): State = withContext(Dispatchers.IO) {
-        val (rec, rate) = openRecorder() ?: return@withContext State.Failed("The microphone isn't available")
+        val (rec, rate) = openRecorder() ?: return@withContext State.Failed(tr(R.string.the_microphone_isn_t_available))
         val all = ShortArray(rate * MAX_MS.toInt() / 1000)
         var have = 0
         val chunk = ShortArray(rate / 10)
@@ -214,7 +216,7 @@ class RecognitionWorker(context: Context, params: WorkerParameters) : CoroutineW
                     val song = runCatching { c.recognizer.youtubeSong(r) }.getOrNull()
                     c.db.recognitions().put(p.copy(status = "found", title = r.title, artist = r.artist, album = r.album, cover = r.cover, shazamKey = r.key, videoId = song?.id, signature = null))
                     Notifications.post(
-                        c.app, Notifications.RECOGNITION, (4200 + p.id % 1000).toInt(), "Found it: ${r.title}", r.artist,
+                        c.app, Notifications.RECOGNITION, (4200 + p.id % 1000).toInt(), tr(R.string.found_it_2, r.title), r.artist,
                         song?.let { "https://music.youtube.com/watch?v=${it.id}" } ?: "prism://recognized",
                     )
                 }

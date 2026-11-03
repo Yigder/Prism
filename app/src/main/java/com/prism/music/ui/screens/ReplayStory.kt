@@ -1,5 +1,8 @@
 package com.prism.music.ui.screens
 
+import com.prism.music.R
+import com.prism.music.tr
+import com.prism.music.trp
 import com.prism.music.data.db.mergeUploads
 import com.prism.music.ui.theme.PrismIcons
 import android.content.Context
@@ -163,7 +166,7 @@ internal class ReplayStory(
     val previousSongCount: Int? = null,
 ) {
     /** "PRISM REWIND" for a year, "PRISM REPLAY" otherwise. */
-    val brand: String get() = if (rewind) "PRISM REWIND" else "PRISM REPLAY"
+    val brand: String get() = if (rewind) tr(R.string.prism_rewind) else tr(R.string.prism_replay)
 }
 
 /** The facts [StoryParts.pick] chooses this story's slides by. */
@@ -218,8 +221,13 @@ private suspend fun loadPeriodStory(c: AppContainer, period: Period): ReplayStor
     val (prevFrom, prevTo, prevLabel) = Calendar.getInstance().let {
         fun shift(t: Long, field: Int, by: Int) = Calendar.getInstance().apply { timeInMillis = t; add(field, by) }.timeInMillis
         when (period.kind) {
-            Period.Kind.MONTH -> Triple(shift(from, Calendar.MONTH, -1), shift(to, Calendar.MONTH, -1), "the same time last month")
-            Period.Kind.DAYS30 -> Triple(from - 30L * 86_400_000, from - 1, "the 30 days before")
+            Period.Kind.MONTH -> Triple(shift(from, Calendar.MONTH, -1), shift(to, Calendar.MONTH, -1), tr(R.string.the_same_time_last_month))
+            Period.Kind.MONTH_OF -> Triple(shift(from, Calendar.MONTH, -1), from - 1, tr(R.string.the_month_before))
+            Period.Kind.DAYS30 -> Triple(from - 30L * 86_400_000, from - 1, tr(R.string.the_30_days_before))
+            Period.Kind.TODAY -> Triple(from - 86_400_000, to - 86_400_000, tr(R.string.this_time_yesterday))
+            Period.Kind.WEEK -> Triple(from - 7 * 86_400_000L, to - 7 * 86_400_000L, tr(R.string.the_same_time_last_week))
+            // Any days: as many days just before them.
+            Period.Kind.DAYS -> (to - from).let { span -> Triple(from - span - 1, from - 1, trp(R.plurals.the_n_days_before, (span / 86_400_000 + 1).toInt())) }
             Period.Kind.YEAR, Period.Kind.ALL -> Triple(0L, -1L, null)
         }
     }
@@ -250,9 +258,9 @@ private suspend fun loadPeriodStory(c: AppContainer, period: Period): ReplayStor
         period = period,
         title = when (period.kind) {
             Period.Kind.YEAR -> "${period.year}"
-            Period.Kind.MONTH -> Calendar.getInstance().getDisplayName(Calendar.MONTH, Calendar.LONG, java.util.Locale.getDefault()) ?: "This month"
-            Period.Kind.DAYS30 -> "Last 30 days"
-            Period.Kind.ALL -> "All time"
+            Period.Kind.MONTH -> Calendar.getInstance().getDisplayName(Calendar.MONTH, Calendar.LONG, java.util.Locale.getDefault()) ?: tr(R.string.this_month)
+            Period.Kind.MONTH_OF -> java.time.Month.of(period.month + 1).getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.getDefault())
+            else -> period.label
         },
         totalMs = totalMs, previousMs = previousMs, previousLabel = prevLabel,
         plays = plays, activeDays = activeDays, songCount = songCount, artistCount = artistCount,
@@ -454,7 +462,7 @@ private fun StoryContent(story: ReplayStory, onDismiss: () -> Unit) {
             ) { i ->
                 SlideView(slides[i], story, onReplay = { go(0) }, onPlayAll = {
                     handedOff[0] = true
-                    c.player.playQueue(story.songs.map { it.toSong() }, 0, QueueSource(QueueKind.REPLAY, (if (story.rewind) "Rewind · " else "Replay · ") + story.title))
+                    c.player.playQueue(story.songs.map { it.toSong() }, 0, QueueSource(QueueKind.REPLAY, (if (story.rewind) tr(R.string.rewind_2) else tr(R.string.replay_4)) + story.title))
                     onDismiss()
                 })
             }
@@ -480,19 +488,19 @@ private fun StoryContent(story: ReplayStory, onDismiss: () -> Unit) {
                 IconButton(onClick = {
                     paused = true
                     scope.launch {
-                        val name = if (story.rewind) "Rewind" else "Replay"
-                        if (!shareLayer(context, slideLayer, "prism-${name.lowercase()}-${index + 1}.png", "My Prism $name · ${story.title}", "Share this slide")) {
-                            Toast.makeText(context, "Couldn't share this slide", Toast.LENGTH_SHORT).show()
+                        val name = if (story.rewind) tr(R.string.rewind_3) else tr(R.string.replay_2)
+                        if (!shareLayer(context, slideLayer, "prism-${name.lowercase()}-${index + 1}.png", tr(R.string.my_prism, name, story.title), tr(R.string.share_this_slide))) {
+                            Toast.makeText(context, tr(R.string.couldn_t_share_this_slide), Toast.LENGTH_SHORT).show()
                         }
                         paused = false
                     }
                 }) {
-                    Icon(PrismIcons.Share, "Share this slide", tint = Color.White)
+                    Icon(PrismIcons.Share, tr(R.string.share_this_slide), tint = Color.White)
                 }
                 IconButton(onClick = { muted = !muted }) {
-                    Icon(if (muted) PrismIcons.VolumeOff else PrismIcons.VolumeUp, if (muted) "Unmute" else "Mute", tint = Color.White)
+                    Icon(if (muted) PrismIcons.VolumeOff else PrismIcons.VolumeUp, if (muted) tr(R.string.unmute) else tr(R.string.mute), tint = Color.White)
                 }
-                IconButton(onClick = onDismiss) { Icon(PrismIcons.Close, "Close", tint = Color.White) }
+                IconButton(onClick = onDismiss) { Icon(PrismIcons.Close, tr(R.string.close), tint = Color.White) }
             }
         }
 
@@ -605,14 +613,17 @@ private fun Intro(s: ReplayStory, modifier: Modifier) {
         Text(s.title.uppercase(), style = display(if (s.title.length > 6) 76.sp else 120.sp), modifier = Modifier.reveal(550))
         Text(
             when (s.period.kind) {
-                Period.Kind.YEAR -> "Your year in music."
-                Period.Kind.MONTH -> "Your month in music."
-                Period.Kind.DAYS30 -> "Your last 30 days in music."
-                Period.Kind.ALL -> "Everything you've played, in one story."
+                Period.Kind.YEAR -> tr(R.string.your_year_in_music_2)
+                Period.Kind.MONTH, Period.Kind.MONTH_OF -> tr(R.string.your_month_in_music)
+                Period.Kind.DAYS30 -> tr(R.string.your_last_30_days_in_music)
+                Period.Kind.TODAY -> tr(R.string.your_day_in_music)
+                Period.Kind.WEEK -> tr(R.string.your_week_in_music)
+                Period.Kind.DAYS -> tr(R.string.those_days_in_music)
+                Period.Kind.ALL -> tr(R.string.everything_you_ve_played_in_one)
             },
             style = body.copy(fontSize = 24.sp), modifier = Modifier.reveal(800).padding(top = 8.dp),
         )
-        Text("Tap to go on · hold to pause", style = body.copy(fontSize = 14.sp, color = Color.White.copy(alpha = 0.6f)), modifier = Modifier.reveal(1_400).padding(top = 24.dp))
+        Text(tr(R.string.tap_to_go_on_hold_to), style = body.copy(fontSize = 14.sp, color = Color.White.copy(alpha = 0.6f)), modifier = Modifier.reveal(1_400).padding(top = 24.dp))
     }
 }
 
@@ -622,15 +633,15 @@ private fun Minutes(s: ReplayStory, modifier: Modifier) {
     val count = remember { Animatable(0f) }
     LaunchedEffect(Unit) { delay(400); count.animateTo(total.value.toFloat(), tween(2_200, easing = androidx.compose.animation.core.FastOutSlowInEasing)) }
     Column(modifier, verticalArrangement = Arrangement.Center) {
-        Text("YOU LISTENED FOR", style = kicker(), modifier = Modifier.reveal(100))
+        Text(tr(R.string.you_listened_for), style = kicker(), modifier = Modifier.reveal(100))
         val text = total.text(count.value.toLong())
         val longest = total.text(total.value).length
         Text(text, style = display(if (longest > 8) 72.sp else if (longest > 6) 96.sp else 130.sp), maxLines = 1, modifier = Modifier.reveal(200))
-        Text(total.unit.ifEmpty { "of music" }.uppercase(),style = display(46.sp, ArtistTypography.extended), modifier = Modifier.reveal(400))
+        Text(total.unit.ifEmpty { tr(R.string.of_music) }.uppercase(),style = display(46.sp, ArtistTypography.extended), modifier = Modifier.reveal(400))
         Spacer(Modifier.height(28.dp))
         val hours = s.totalMs / 3_600_000.0
         Text(
-            if (hours >= 24) "That's %.1f days of music, start to finish.".format(hours / 24) else "That's %.1f hours of music, start to finish.".format(hours),
+            if (hours >= 24) tr(R.string.that_s_1f_days_of_music).format(hours / 24) else tr(R.string.that_s_1f_hours_of_music).format(hours),
             style = body, modifier = Modifier.reveal(2_400),
         )
         if (s.previousMs != null && s.previousLabel != null) {
@@ -638,13 +649,13 @@ private fun Minutes(s: ReplayStory, modifier: Modifier) {
             Row(Modifier.reveal(3_000).padding(top = 14.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(if (change >= 0) PrismIcons.TrendingUp else PrismIcons.TrendingDown, null, tint = Color.White, modifier = Modifier.size(26.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(if (change >= 0) "$change% more than ${s.previousLabel}" else "${-change}% less than ${s.previousLabel}", style = body)
+                Text(if (change >= 0) tr(R.string.more_than, change, s.previousLabel) else tr(R.string.less_than, -change, s.previousLabel), style = body)
             }
         }
         Row(Modifier.reveal(3_600).padding(top = 22.dp), horizontalArrangement = Arrangement.spacedBy(22.dp)) {
-            Stat(fmt(s.songCount.toLong()), if (s.songCount == 1) "song" else "songs")
-            Stat(fmt(s.artistCount.toLong()), if (s.artistCount == 1) "artist" else "artists")
-            Stat(fmt(s.activeDays.toLong()), if (s.activeDays == 1) "day" else "days")
+            Stat(fmt(s.songCount.toLong()), trp(R.plurals.songs_word, s.songCount))
+            Stat(fmt(s.artistCount.toLong()), trp(R.plurals.artists_word, s.artistCount))
+            Stat(fmt(s.activeDays.toLong()), trp(R.plurals.days_word, s.activeDays))
         }
     }
 }
@@ -661,8 +672,8 @@ private fun Stat(value: String, label: String) {
 private fun Genres(s: ReplayStory, modifier: Modifier) {
     val total = s.genres.sumOf { it.second }.coerceAtLeast(1)
     Column(modifier, verticalArrangement = Arrangement.Center) {
-        Text("YOUR TOP GENRE", style = kicker(), modifier = Modifier.reveal(100))
-        Text(s.genres.first().first.uppercase(), style = display(72.sp), modifier = Modifier.reveal(300))
+        Text(tr(R.string.your_top_genre), style = kicker(), modifier = Modifier.reveal(100))
+        Text(com.prism.music.data.meta.Genres.shown(s.genres.first().first).uppercase(), style = display(72.sp), modifier = Modifier.reveal(300))
         Spacer(Modifier.height(30.dp))
         s.genres.forEachIndexed { i, (g, ms) ->
             val share = ms.toFloat() / total
@@ -692,7 +703,7 @@ private fun TopArtist(s: ReplayStory, modifier: Modifier) {
         AsyncImage(hiRes(image, 2880), null, Modifier.fillMaxSize().graphicsLayer { scaleX = zoom; scaleY = zoom }, contentScale = ContentScale.Crop)
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Black.copy(alpha = 0.45f), 0.35f to Color.Transparent, 0.6f to Color.Black.copy(alpha = 0.35f), 1f to Color.Black.copy(alpha = 0.9f))))
         Column(modifier, verticalArrangement = Arrangement.Bottom) {
-            Text("YOUR TOP ARTIST", style = kicker(), modifier = Modifier.reveal(300))
+            Text(tr(R.string.your_top_artist_2), style = kicker(), modifier = Modifier.reveal(300))
             val type = s.topArtistType
             Text(
                 if (type.caps) a.artistName.uppercase() else a.artistName,
@@ -710,7 +721,7 @@ private fun TopArtist(s: ReplayStory, modifier: Modifier) {
                 Stat("${s.songs.count { it.mainArtist == a.artistName }}", "songs")
             }
             val share = (a.ms * 100.0 / s.totalMs.coerceAtLeast(1)).toInt()
-            Text("$share% of everything you played was them.", style = body, modifier = Modifier.reveal(1_800).padding(top = 16.dp))
+            Text(tr(R.string.of_everything_you_played_was_them, share), style = body, modifier = Modifier.reveal(1_800).padding(top = 16.dp))
         }
     }
 }
@@ -720,7 +731,7 @@ private fun TopArtists(s: ReplayStory, modifier: Modifier) {
     val lib = LocalContainer.current.library
     val thumbs by lib.artistThumbs.collectAsState()
     Column(modifier, verticalArrangement = Arrangement.Center) {
-        Text("YOUR TOP ARTISTS", style = kicker(), modifier = Modifier.reveal(100))
+        Text(tr(R.string.your_top_artists), style = kicker(), modifier = Modifier.reveal(100))
         Spacer(Modifier.height(20.dp))
         s.artists.take(5).forEachIndexed { i, a ->
             Row(Modifier.padding(vertical = 8.dp).reveal(300 + i * 220), verticalAlignment = Alignment.CenterVertically) {
@@ -748,7 +759,7 @@ private fun TopSong(s: ReplayStory, modifier: Modifier) {
         // Keeps white text readable over light covers.
         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.32f)))
         Column(modifier, verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("YOUR #1 SONG", style = kicker(), modifier = Modifier.reveal(100))
+            Text(tr(R.string.your_1_song_2), style = kicker(), modifier = Modifier.reveal(100))
             Spacer(Modifier.height(22.dp))
             AsyncImage(
                 hiRes(song.thumbnail, 900), null, contentScale = ContentScale.Crop,
@@ -760,7 +771,7 @@ private fun TopSong(s: ReplayStory, modifier: Modifier) {
             Text(song.artistName, style = body.copy(fontSize = 20.sp), textAlign = TextAlign.Center, modifier = Modifier.reveal(900).padding(top = 6.dp))
             Spacer(Modifier.height(20.dp))
             Text(
-                "You played it ${song.plays} ${if (song.plays == 1) "time" else "times"}, for ${listenTime(song.ms)}.",
+                trp(R.plurals.played_it_n_times, song.plays, song.plays, listenTime(song.ms)),
                 style = body, textAlign = TextAlign.Center, modifier = Modifier.reveal(1_500),
             )
             // The line it's playing from (its best part).
@@ -777,7 +788,7 @@ private fun TopSong(s: ReplayStory, modifier: Modifier) {
 @Composable
 private fun TopSongs(s: ReplayStory, modifier: Modifier) {
     Column(modifier, verticalArrangement = Arrangement.Center) {
-        Text("YOUR TOP SONGS", style = kicker(), modifier = Modifier.reveal(100))
+        Text(tr(R.string.your_top_songs), style = kicker(), modifier = Modifier.reveal(100))
         Spacer(Modifier.height(20.dp))
         s.songs.take(5).forEachIndexed { i, song ->
             Row(Modifier.padding(vertical = 7.dp).reveal(300 + i * 220), verticalAlignment = Alignment.CenterVertically) {
@@ -798,7 +809,7 @@ private fun HabitsSlide(h: Habits, modifier: Modifier) {
     val grow = remember { Animatable(0f) }
     LaunchedEffect(Unit) { delay(300); grow.animateTo(1f, tween(1_400)) }
     Column(modifier, verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("WHEN YOU LISTEN", style = kicker(), modifier = Modifier.reveal(100).fillMaxWidth())
+        Text(tr(R.string.when_you_listen), style = kicker(), modifier = Modifier.reveal(100).fillMaxWidth())
         Spacer(Modifier.height(18.dp))
         // A 24-hour clock: each spoke is an hour, its length how much you listened then.
         Box(Modifier.size(280.dp).reveal(200), contentAlignment = Alignment.Center) {
@@ -818,16 +829,16 @@ private fun HabitsSlide(h: Habits, modifier: Modifier) {
                 drawCircle(Color.White.copy(alpha = 0.25f), inner - 8.dp.toPx(), style = Stroke(1.5f.dp.toPx()))
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("PRIME TIME", style = kicker(10.sp))
+                Text(tr(R.string.prime_time), style = kicker(10.sp))
                 Text(ReplayStats.hourLabel(h.peakHour), style = display(34.sp))
             }
         }
         Spacer(Modifier.height(26.dp))
-        val fmtDay = DateTimeFormatter.ofPattern("MMM d")
+        val fmtDay = com.prism.music.localDates("MMMd")
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Fact("Favorite day", ReplayStats.weekdays[h.topWeekday], 1_200)
-            if (h.longestStreak > 1) Fact("Longest streak", "${h.longestStreak} days in a row", 1_450)
-            h.biggestDay?.let { Fact("Biggest day", "${it.format(fmtDay)} · ${listenTime(h.biggestDayMs)}", 1_700) }
+            Fact(tr(R.string.favorite_day), ReplayStats.weekdays[h.topWeekday], 1_200)
+            if (h.longestStreak > 1) Fact(tr(R.string.longest_streak), trp(R.plurals.n_days_in_a_row, h.longestStreak), 1_450)
+            h.biggestDay?.let { Fact(tr(R.string.biggest_day), "${it.format(fmtDay)} · ${listenTime(h.biggestDayMs)}", 1_700) }
         }
     }
 }
@@ -849,10 +860,10 @@ private fun Discovery(s: ReplayStory, modifier: Modifier) {
     val lib = LocalContainer.current.library
     val thumbs by lib.artistThumbs.collectAsState()
     Column(modifier, verticalArrangement = Arrangement.Center) {
-        Text("NEW TO YOU", style = kicker(), modifier = Modifier.reveal(100))
+        Text(tr(R.string.new_to_you), style = kicker(), modifier = Modifier.reveal(100))
         Text(fmt(found.size.toLong()), style = display(140.sp), modifier = Modifier.reveal(250))
-        Text(if (found.size == 1) "NEW ARTIST" else "NEW ARTISTS", style = display(44.sp, ArtistTypography.extended), modifier = Modifier.reveal(450))
-        Text("found their way into your rotation.", style = body, modifier = Modifier.reveal(700).padding(top = 8.dp))
+        Text(trp(R.plurals.new_artists_title, found.size), style = display(44.sp, ArtistTypography.extended), modifier = Modifier.reveal(450))
+        Text(tr(R.string.found_their_way_into_your_rotation), style = body, modifier = Modifier.reveal(700).padding(top = 8.dp))
         Spacer(Modifier.height(26.dp))
         Row(Modifier.reveal(1_000)) {
             found.take(6).forEachIndexed { i, a ->
@@ -864,7 +875,7 @@ private fun Discovery(s: ReplayStory, modifier: Modifier) {
         }
         found.firstOrNull()?.let { a ->
             Text(
-                "Your favorite find: ${a.artistName}, with ${listenTime(a.ms)}.",
+                tr(R.string.your_favorite_find_with, a.artistName, listenTime(a.ms)),
                 style = body, modifier = Modifier.reveal(1_500).padding(top = 22.dp),
             )
         }
@@ -875,7 +886,7 @@ private fun Discovery(s: ReplayStory, modifier: Modifier) {
 private fun PersonalitySlide(p: Personality, modifier: Modifier) {
     val turn by rememberInfiniteTransition(label = "prism").animateFloat(0f, 360f, infiniteRepeatable(tween(16_000, easing = LinearEasing)), label = "a")
     Column(modifier, verticalArrangement = Arrangement.Center) {
-        Text("YOUR LISTENING PERSONALITY", style = kicker(), modifier = Modifier.reveal(100))
+        Text(tr(R.string.your_listening_personality), style = kicker(), modifier = Modifier.reveal(100))
         Spacer(Modifier.height(24.dp))
         // A slowly turning prism, Prism's emblem.
         Canvas(Modifier.size(170.dp).reveal(300).rotate(turn)) {
@@ -896,7 +907,7 @@ private fun PersonalitySlide(p: Personality, modifier: Modifier) {
 @Composable
 private fun Seasons(s: ReplayStory, modifier: Modifier) {
     Column(modifier, verticalArrangement = Arrangement.Center) {
-        Text("YOUR YEAR, SEASON BY SEASON", style = kicker(), modifier = Modifier.reveal(100))
+        Text(tr(R.string.your_year_season_by_season), style = kicker(), modifier = Modifier.reveal(100))
         Spacer(Modifier.height(22.dp))
         s.seasons.forEachIndexed { i, q ->
             Column(
@@ -904,8 +915,8 @@ private fun Seasons(s: ReplayStory, modifier: Modifier) {
                     .clip(RoundedCornerShape(18.dp)).background(Color.White.copy(alpha = 0.12f)).padding(horizontal = 18.dp, vertical = 14.dp),
             ) {
                 Text(q.label.uppercase(), style = kicker(11.sp).copy(color = Color.White.copy(alpha = 0.75f)))
-                Text(q.genre ?: "A bit of everything", style = display(34.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                q.topSong?.let { Text("On repeat: $it", style = body.copy(fontSize = 15.sp, color = Color.White.copy(alpha = 0.8f)), maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                Text(q.genre?.let { com.prism.music.data.meta.Genres.shown(it) } ?: tr(R.string.a_bit_of_everything), style = display(34.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                q.topSong?.let { Text(tr(R.string.on_repeat, it), style = body.copy(fontSize = 15.sp, color = Color.White.copy(alpha = 0.8f)), maxLines = 1, overflow = TextOverflow.Ellipsis) }
             }
         }
     }
@@ -916,7 +927,7 @@ private fun TopAlbum(s: ReplayStory, modifier: Modifier) {
     val a = s.topAlbum ?: return
     val turn by rememberInfiniteTransition(label = "disc").animateFloat(0f, 360f, infiniteRepeatable(tween(12_000, easing = LinearEasing)), label = "d")
     Column(modifier, verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("YOUR TOP ALBUM", style = kicker(), modifier = Modifier.reveal(100).fillMaxWidth())
+        Text(tr(R.string.your_top_album), style = kicker(), modifier = Modifier.reveal(100).fillMaxWidth())
         Spacer(Modifier.height(26.dp))
         // The cover, with its record sliding out from behind it.
         Box(Modifier.reveal(250).size(width = 300.dp, height = 240.dp)) {
@@ -933,7 +944,7 @@ private fun TopAlbum(s: ReplayStory, modifier: Modifier) {
         Text(a.albumTitle.uppercase(), style = display(44.sp), textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.reveal(700))
         Text(a.artistName, style = body.copy(fontSize = 20.sp), modifier = Modifier.reveal(900).padding(top = 6.dp))
         Text(
-            "${a.songs} of its songs, ${a.plays} plays, ${listenTime(a.ms)}.",
+            tr(R.string.of_its_songs_plays, trp(R.plurals.n_of_its_songs, a.songs), trp(R.plurals.n_plays, a.plays), listenTime(a.ms)),
             style = body, textAlign = TextAlign.Center, modifier = Modifier.reveal(1_400).padding(top = 16.dp),
         )
     }
@@ -950,9 +961,9 @@ private fun Months(s: ReplayStory, modifier: Modifier) {
     val names = java.text.DateFormatSymbols.getInstance().months
     val letters = listOf("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")
     Column(modifier, verticalArrangement = Arrangement.Center) {
-        Text("YOUR BIGGEST MONTH", style = kicker(), modifier = Modifier.reveal(100))
+        Text(tr(R.string.your_biggest_month), style = kicker(), modifier = Modifier.reveal(100))
         Text(names.getOrElse(peak) { "" }.uppercase(), style = display(72.sp), maxLines = 1, modifier = Modifier.reveal(300))
-        Text("${listenTime(byMonth[peak])} that month.", style = body, modifier = Modifier.reveal(600).padding(top = 6.dp))
+        Text(tr(R.string.that_month, listenTime(byMonth[peak])), style = body, modifier = Modifier.reveal(600).padding(top = 6.dp))
         Spacer(Modifier.height(30.dp))
         Canvas(Modifier.fillMaxWidth().height(200.dp).reveal(400)) {
             val max = byMonth.max().coerceAtLeast(1)
@@ -978,18 +989,18 @@ private fun FirstSong(s: ReplayStory, modifier: Modifier) {
     val f = s.firstSong ?: return
     val at = java.time.Instant.ofEpochMilli(f.timestamp).atZone(java.time.ZoneId.systemDefault())
     Column(modifier, verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("WHERE IT STARTED", style = kicker(), modifier = Modifier.reveal(100).fillMaxWidth())
+        Text(tr(R.string.where_it_started), style = kicker(), modifier = Modifier.reveal(100).fillMaxWidth())
         Spacer(Modifier.height(24.dp))
         AsyncImage(
             hiRes(f.thumbnail, 900), null, contentScale = ContentScale.Crop,
             modifier = Modifier.reveal(250).size(240.dp).shadow(30.dp, RoundedCornerShape(20.dp)).clip(RoundedCornerShape(20.dp)),
         )
         Spacer(Modifier.height(24.dp))
-        Text("Your first song of ${s.title}:", style = body, modifier = Modifier.reveal(600))
+        Text(tr(R.string.your_first_song_of, s.title), style = body, modifier = Modifier.reveal(600))
         Text(f.title.uppercase(), style = display(44.sp), textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.reveal(800).padding(top = 6.dp))
         Text(f.artistName, style = body.copy(fontSize = 20.sp), modifier = Modifier.reveal(1_000).padding(top = 4.dp))
         Text(
-            at.format(DateTimeFormatter.ofPattern("MMMM d")) + " at " + at.format(DateTimeFormatter.ofPattern("h:mm a")),
+            tr(R.string.date_at_time, at.format(com.prism.music.localDates("MMMMd")), at.format(com.prism.music.localDates("jmm"))),
             style = body.copy(fontSize = 15.sp, color = Color.White.copy(alpha = 0.75f)), modifier = Modifier.reveal(1_400).padding(top = 12.dp),
         )
     }
@@ -1000,16 +1011,16 @@ private fun FirstSong(s: ReplayStory, modifier: Modifier) {
 private fun PrismYearSlide(s: ReplayStory, modifier: Modifier) {
     val p = s.prism
     val rows = listOfNotNull(
-        p.sung.takeIf { it > 0 }?.let { "Songs you sang" to fmt(it.toLong()) },
-        p.djSongs.takeIf { it > 0 }?.let { "Songs in DJ sets" to fmt(it.toLong()) },
-        p.smartPicks.takeIf { it > 0 }?.let { "Smart Shuffle finds played" to fmt(it.toLong()) },
-        p.recognized.takeIf { it > 0 }?.let { "Songs recognized" to fmt(it.toLong()) },
-        p.blends.takeIf { it > 0 }?.let { (if (p.blends == 1) "Blend made" else "Blends made") to fmt(it.toLong()) },
-        p.radarFinds.takeIf { it > 0 }?.let { "Release Radar finds" to fmt(it.toLong()) },
+        p.sung.takeIf { it > 0 }?.let { tr(R.string.songs_you_sang) to fmt(it.toLong()) },
+        p.djSongs.takeIf { it > 0 }?.let { tr(R.string.songs_in_dj_sets) to fmt(it.toLong()) },
+        p.smartPicks.takeIf { it > 0 }?.let { tr(R.string.smart_shuffle_finds_played) to fmt(it.toLong()) },
+        p.recognized.takeIf { it > 0 }?.let { tr(R.string.songs_recognized) to fmt(it.toLong()) },
+        p.blends.takeIf { it > 0 }?.let { trp(R.plurals.blends_made, p.blends) to fmt(it.toLong()) },
+        p.radarFinds.takeIf { it > 0 }?.let { tr(R.string.release_radar_finds) to fmt(it.toLong()) },
     )
     Column(modifier, verticalArrangement = Arrangement.Center) {
-        Text("YOUR YEAR IN PRISM", style = kicker(), modifier = Modifier.reveal(100))
-        Text("MORE THAN\nLISTENING", style = display(56.sp), modifier = Modifier.reveal(300).padding(top = 6.dp))
+        Text(tr(R.string.your_year_in_prism), style = kicker(), modifier = Modifier.reveal(100))
+        Text(tr(R.string.more_than_listening), style = display(56.sp), modifier = Modifier.reveal(300).padding(top = 6.dp))
         Spacer(Modifier.height(24.dp))
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             rows.forEachIndexed { i, (label, value) -> Fact(label, value, 700 + i * 220) }
@@ -1026,14 +1037,14 @@ private fun YearCompare(s: ReplayStory, modifier: Modifier) {
     Column(modifier, verticalArrangement = Arrangement.Center) {
         Text("${year?.minus(1) ?: "LAST YEAR"} → ${s.title}", style = kicker(), modifier = Modifier.reveal(100))
         Text(if (change >= 0) "+$change%" else "$change%", style = display(130.sp), maxLines = 1, modifier = Modifier.reveal(300))
-        Text(if (change >= 0) "MORE MUSIC" else "LESS MUSIC", style = display(44.sp, ArtistTypography.extended), modifier = Modifier.reveal(500))
+        Text(if (change >= 0) tr(R.string.more_music) else tr(R.string.less_music), style = display(44.sp, ArtistTypography.extended), modifier = Modifier.reveal(500))
         Spacer(Modifier.height(26.dp))
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Fact("Listening", "${listenTime(prev)} → ${listenTime(s.totalMs)}", 900)
-            s.previousSongCount?.let { Fact("Different songs", "${fmt(it.toLong())} → ${fmt(s.songCount.toLong())}", 1_150) }
+            Fact(tr(R.string.listening), "${listenTime(prev)} → ${listenTime(s.totalMs)}", 900)
+            s.previousSongCount?.let { Fact(tr(R.string.different_songs), "${fmt(it.toLong())} → ${fmt(s.songCount.toLong())}", 1_150) }
             val now = s.artists.firstOrNull()?.artistName
             if (s.previousTopArtist != null && now != null) {
-                Fact("Top artist", if (s.previousTopArtist == now) "$now, again" else "${s.previousTopArtist} → $now", 1_400)
+                Fact(tr(R.string.top_artist), if (s.previousTopArtist == now) tr(R.string.again_2, now) else "${s.previousTopArtist} → $now", 1_400)
             }
         }
     }
@@ -1069,20 +1080,20 @@ private fun Summary(s: ReplayStory, modifier: Modifier, onReplay: () -> Unit, on
             }
             Spacer(Modifier.height(18.dp))
             Row {
-                SummaryList("Top artists", s.artists.take(5).map { it.artistName }, Modifier.weight(1f))
+                SummaryList(tr(R.string.top_artists), s.artists.take(5).map { it.artistName }, Modifier.weight(1f))
                 Spacer(Modifier.width(12.dp))
-                SummaryList("Top songs", s.songs.take(5).map { it.title }, Modifier.weight(1f))
+                SummaryList(tr(R.string.top_songs_3), s.songs.take(5).map { it.title }, Modifier.weight(1f))
             }
             Spacer(Modifier.height(16.dp))
             Row {
                 Column(Modifier.weight(1f)) {
                     val total = listenTotal(s.totalMs)
-                    Text("${total.unit} listened".trim().uppercase(), style = kicker(10.sp).copy(color = Color.White.copy(alpha = 0.75f)))
+                    Text(tr(R.string.listened_2, total.unit).trim().uppercase(), style = kicker(10.sp).copy(color = Color.White.copy(alpha = 0.75f)))
                     Text(total.text(total.value), style = display(36.sp), maxLines = 1)
                 }
                 s.genres.firstOrNull()?.let { (g, _) ->
                     Column(Modifier.weight(1f).padding(start = 12.dp)) {
-                        Text("TOP GENRE", style = kicker(10.sp).copy(color = Color.White.copy(alpha = 0.75f)))
+                        Text(tr(R.string.top_genre), style = kicker(10.sp).copy(color = Color.White.copy(alpha = 0.75f)))
                         Text(g, style = body.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold), maxLines = 2)
                     }
                 }
@@ -1092,26 +1103,26 @@ private fun Summary(s: ReplayStory, modifier: Modifier, onReplay: () -> Unit, on
         }
         Spacer(Modifier.height(18.dp))
         Row(Modifier.reveal(500), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Pill("Share", PrismIcons.Share, primary = true) {
+            Pill(tr(R.string.share), PrismIcons.Share, primary = true) {
                 scope.launch {
-                    val name = if (s.rewind) "Rewind" else "Replay"
-                    if (!shareLayer(context, card, "prism-${name.lowercase()}.png", "My Prism $name · ${s.title}", "Share your $name")) {
-                        Toast.makeText(context, "Couldn't share your $name", Toast.LENGTH_SHORT).show()
+                    val name = if (s.rewind) tr(R.string.rewind_3) else tr(R.string.replay_2)
+                    if (!shareLayer(context, card, "prism-${name.lowercase()}.png", tr(R.string.my_prism, name, s.title), tr(R.string.share_your, name))) {
+                        Toast.makeText(context, tr(R.string.couldn_t_share_your, name), Toast.LENGTH_SHORT).show()
                     }
                 }
             }
-            Pill("Play", PrismIcons.Play, onClick = onPlayAll)
+            Pill(tr(R.string.widget_play), PrismIcons.Play, onClick = onPlayAll)
         }
         Spacer(Modifier.height(10.dp))
         Row(Modifier.reveal(700), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (c.settings.current.isLoggedIn) Pill(if (s.rewind) "Save Top 100" else "Save playlist", PrismIcons.PlaylistAdd) {
+            if (c.settings.current.isLoggedIn) Pill(if (s.rewind) tr(R.string.save_top_100) else tr(R.string.save_playlist), PrismIcons.PlaylistAdd) {
                 scope.launch {
-                    val name = if (s.rewind) "Top 100 of ${s.title}" else "Replay ${s.title}"
-                    val id = runCatching { c.ytm.createPlaylist(name, s.songs.take(100).map { it.songId }, if (s.rewind) "Made with Prism Rewind" else "Made with Prism Replay") }.getOrNull()
-                    Toast.makeText(context, if (id != null) "Saved \"$name\" to YouTube Music" else "Couldn't create playlist", Toast.LENGTH_SHORT).show()
+                    val name = if (s.rewind) tr(R.string.top_100_of, s.title) else tr(R.string.replay, s.title)
+                    val id = runCatching { c.ytm.createPlaylist(name, s.songs.take(100).map { it.songId }, if (s.rewind) tr(R.string.made_with_prism_rewind) else tr(R.string.made_with_prism_replay)) }.getOrNull()
+                    Toast.makeText(context, if (id != null) tr(R.string.saved_to_youtube_music, name) else tr(R.string.couldn_t_create_playlist), Toast.LENGTH_SHORT).show()
                 }
             }
-            Pill("Watch again", PrismIcons.Refresh, onClick = onReplay)
+            Pill(tr(R.string.watch_again), PrismIcons.Refresh, onClick = onReplay)
         }
     }
 }

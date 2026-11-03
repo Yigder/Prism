@@ -1,5 +1,8 @@
 package com.prism.music.ui.screens
 
+import com.prism.music.R
+import com.prism.music.tr
+import com.prism.music.trp
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -62,24 +65,24 @@ fun FolderScreen(id: String, bottomPadding: Dp) {
     var renaming by remember { mutableStateOf(false) }
     var menuFor by remember { mutableStateOf<BrowseItem?>(null) }
     if (folder == null) {
-        SubPage("Folder", bottomPadding) { item { EmptyState(PrismIcons.Folder, "This folder is gone", "Its playlists are back in Library → Playlists.") } }
+        SubPage(tr(R.string.folder), bottomPadding) { item { EmptyState(PrismIcons.Folder, tr(R.string.this_folder_is_gone), tr(R.string.its_playlists_are_back_in_library)) } }
         return
     }
     val inside = folder.playlists.mapNotNull { pid -> all.firstOrNull { PrismLibrary.samePlaylist(it.id, pid) } }
-    SubPage(folder.name, bottomPadding, subtitle = if (inside.size == 1) "1 playlist" else "${inside.size} playlists", actions = {
-        RoundAction(PrismIcons.Edit, "Rename folder") { renaming = true }
-        RoundAction(PrismIcons.Delete, "Take the folder apart") { c.prismLibrary.deleteFolder(id); nav.back() }
+    SubPage(folder.name, bottomPadding, subtitle = trp(R.plurals.n_playlists, inside.size), actions = {
+        RoundAction(PrismIcons.Edit, tr(R.string.rename_folder)) { renaming = true }
+        RoundAction(PrismIcons.Delete, tr(R.string.take_the_folder_apart)) { c.prismLibrary.deleteFolder(id); nav.back() }
     }) {
         if (inside.isEmpty()) item {
-            EmptyState(PrismIcons.Folder, "Nothing in here yet", "Hold a playlist in Library → Playlists and pick \"Move to a folder\".")
+            EmptyState(PrismIcons.Folder, tr(R.string.nothing_in_here_yet), tr(R.string.hold_a_playlist_in_library_playlists))
         }
         items(inside, key = { it.id }) { p -> ResultRow(p, onLongClick = { menuFor = p }) { nav.open(p) {} } }
     }
-    if (renaming) FolderNameDialog("Rename folder", folder.name, { renaming = false }) { c.prismLibrary.renameFolder(id, it); renaming = false }
+    if (renaming) FolderNameDialog(tr(R.string.rename_folder), folder.name, { renaming = false }) { c.prismLibrary.renameFolder(id, it); renaming = false }
     menuFor?.let { p ->
         com.prism.music.ui.components.PlayActionsSheet(
             com.prism.music.ui.components.Playable.Of(p),
-            extra = listOf(com.prism.music.ui.components.SheetItem(PrismIcons.Folder, "Take out of \"${folder.name}\"") { c.prismLibrary.moveToFolder(p.id, null) }),
+            extra = listOf(com.prism.music.ui.components.SheetItem(PrismIcons.Folder, tr(R.string.take_out_of, folder.name)) { c.prismLibrary.moveToFolder(p.id, null) }),
         ) { menuFor = null }
     }
 }
@@ -92,19 +95,19 @@ internal fun MoveToFolderSheet(playlist: BrowseItem, onDismiss: () -> Unit) {
     val current = folders.firstOrNull { f -> f.playlists.any { PrismLibrary.samePlaylist(it, playlist.id) } }
     var naming by remember { mutableStateOf(false) }
     if (naming) {
-        FolderNameDialog("New folder", "", { naming = false }) { c.prismLibrary.createFolder(it, playlist.id); naming = false; onDismiss() }
+        FolderNameDialog(tr(R.string.new_folder), "", { naming = false }) { c.prismLibrary.createFolder(it, playlist.id); naming = false; onDismiss() }
         return
     }
     com.prism.music.ui.components.ActionSheet(c.covers.art(playlist), onDismiss) { close ->
-        com.prism.music.ui.components.ActionHeader(c.covers.art(playlist), playlist.title, current?.let { "In \"${it.name}\"" } ?: "Move to a folder", placeholderIcon = PrismIcons.QueueMusic)
+        com.prism.music.ui.components.ActionHeader(c.covers.art(playlist), playlist.title, current?.let { tr(R.string.in_text, it.name) } ?: tr(R.string.move_to_a_folder), placeholderIcon = PrismIcons.QueueMusic)
         Column(Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
             folders.filter { it.id != current?.id }.forEach { f ->
-                FolderRow(PrismIcons.Folder, f.name, if (f.playlists.size == 1) "1 playlist" else "${f.playlists.size} playlists") {
+                FolderRow(PrismIcons.Folder, f.name, trp(R.plurals.n_playlists, f.playlists.size)) {
                     c.prismLibrary.moveToFolder(playlist.id, f.id); close {}
                 }
             }
-            FolderRow(PrismIcons.Add, "New folder", null) { naming = true }
-            if (current != null) FolderRow(PrismIcons.Remove, "Take out of \"${current.name}\"", null) {
+            FolderRow(PrismIcons.Add, tr(R.string.new_folder), null) { naming = true }
+            if (current != null) FolderRow(PrismIcons.Remove, tr(R.string.take_out_of, current.name), null) {
                 c.prismLibrary.moveToFolder(playlist.id, null); close {}
             }
         }
@@ -134,10 +137,10 @@ internal fun FolderNameDialog(title: String, current: String, onDismiss: () -> U
         title = { Text(title) },
         text = {
             com.prism.music.ui.components.PrismTextField(
-                text, { text = it.take(60) }, Modifier.fillMaxWidth(), singleLine = true, placeholder = { Text("Folder name") },
+                text, { text = it.take(60) }, Modifier.fillMaxWidth(), singleLine = true, placeholder = { Text(tr(R.string.folder_name)) },
             )
         },
-        confirmButton = { PrismTextButton(onClick = { onSave(text) }, enabled = text.isNotBlank()) { Text("Save") } },
-        dismissButton = { PrismTextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { PrismTextButton(onClick = { onSave(text) }, enabled = text.isNotBlank()) { Text(tr(R.string.save)) } },
+        dismissButton = { PrismTextButton(onClick = onDismiss) { Text(tr(R.string.cancel)) } },
     )
 }

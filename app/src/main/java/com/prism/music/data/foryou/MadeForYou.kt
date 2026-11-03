@@ -1,5 +1,7 @@
 package com.prism.music.data.foryou
 
+import com.prism.music.R
+import com.prism.music.tr
 import kotlin.math.exp
 
 /**
@@ -12,6 +14,21 @@ object MadeForYou {
     const val TIME = "time"
     fun daily(n: Int) = "daily:$n"
     const val MAX_DAILY = 6
+
+    /**
+     * A Daily Mix (1.7.9): 50 songs, half of them new to the listener, found from three of the day's familiar picks.
+     * A mix of few artists lets each of them more songs (a one-artist mix is mostly that artist, with new ones like
+     * them), a mix of many keeps each to a handful.
+     */
+    fun dailyRecipe(id: String, artists: Int): MixMaker.Recipe {
+        val size = 50
+        val share = 0.5
+        val perArtist = maxOf(4, kotlin.math.ceil(size * (1 - share) / artists.coerceAtLeast(1)).toInt() + 2)
+        return MixMaker.Recipe(id, size, share, seeds = 3, perArtist = perArtist)
+    }
+
+    /** The time-of-day mix: 30 songs, mostly what's played at this time, with new ones like them. */
+    val timeRecipe = MixMaker.Recipe(TIME, size = 30, freshShare = 0.4, seeds = 2, perArtist = 4)
 
     /** A play, as the mixes see it. */
     data class Play(val songId: String, val artist: String, val at: Long, val weight: Double = 1.0)
@@ -124,9 +141,9 @@ object MadeForYou {
     fun namesLine(names: List<String>): String = when {
         names.isEmpty() -> ""
         names.size == 1 -> names[0]
-        names.size == 2 -> "${names[0]} and ${names[1]}"
-        names.size == 3 -> "${names[0]}, ${names[1]} and ${names[2]}"
-        else -> "${names[0]}, ${names[1]}, ${names[2]} and more"
+        names.size == 2 -> tr(R.string.and, names[0], names[1])
+        names.size == 3 -> tr(R.string.and_2, names[0], names[1], names[2])
+        else -> tr(R.string.and_more_5, names[0], names[1], names[2])
     }
 
     /** The parts of the day the time-of-day mix follows. */
@@ -139,6 +156,9 @@ object MadeForYou {
 
         operator fun contains(hour: Int) = hour in hours
 
+        /** The part of the day in the listener's language, for the mix's name. */
+        val shown: String get() = tr(when (this) { MORNING -> R.string.time_morning; AFTERNOON -> R.string.time_afternoon; EVENING -> R.string.time_evening; NIGHT -> R.string.time_night; LATE -> R.string.time_late })
+
         companion object {
             fun of(hour: Int): TimeBucket = entries.first { hour in it.hours }
         }
@@ -146,7 +166,7 @@ object MadeForYou {
 
     /** "Your Tuesday late-night hip-hop" (or "… mix" without a clear genre). */
     fun timeTitle(weekday: String, bucket: TimeBucket, genre: String?): String =
-        "Your $weekday ${bucket.label} ${genre?.lowercase()?.takeIf { it.isNotBlank() } ?: "mix"}"
+        tr(R.string.your, weekday, bucket.shown, genre?.takeIf { it.isNotBlank() }?.let { com.prism.music.data.meta.Genres.word(it) } ?: tr(R.string.mix_word))
 
     /**
      * What a mix can be called by: the genre of more than half its songs whose genre is known, with at least half its

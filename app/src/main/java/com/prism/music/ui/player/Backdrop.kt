@@ -115,6 +115,11 @@ fun ArtworkMeshBackdrop(
     speed: Float = 0f,
     intensity: Float = 1f,
     blur: Float = 1f,
+    /**
+     * The system's blur over the mesh (Android 12+), redone every frame it's drawn. Off on a TV (1.8.0): the mesh is a
+     * smoothly scaled texture already, and a TV's GPU spends its frames on focus moves instead.
+     */
+    liveBlur: Boolean = true,
 ) {
     var shown by remember { mutableStateOf(mesh) }
     var incoming by remember { mutableStateOf<ArtworkMesh?>(null) }
@@ -155,7 +160,7 @@ fun ArtworkMeshBackdrop(
                 translationX = size.width * 0.04f * kotlin.math.cos(t)
                 translationY = size.height * 0.03f * kotlin.math.sin(t)
             }
-            .then(if (Build.VERSION.SDK_INT >= 31) Modifier.blur(32.dp * blur.coerceIn(0.3f, 2f)) else Modifier),
+            .then(if (liveBlur && Build.VERSION.SDK_INT >= 31) Modifier.blur(32.dp * blur.coerceIn(0.3f, 2f)) else Modifier),
     ) {
         val seamY = seam.toPx().coerceIn(0f, size.height)
         shown?.let { drawMesh(it, seamY, 1f, tone) }
@@ -163,6 +168,16 @@ fun ArtworkMeshBackdrop(
         // Aura × Spectrum (1.7): the cover's colors glow, deepening under the controls so the white type reads.
         drawRect(Brush.verticalGradient(0f to Color.Black.copy(alpha = 0.08f), 0.55f to Color.Black.copy(alpha = 0.22f), 1f to Color.Black.copy(alpha = 0.42f)))
     }
+}
+
+/**
+ * [ArtworkMeshBackdrop] as it rests on a TV (no drift, no live blur, no seam): the same fill, mesh and deepening,
+ * for the TV to make once into a picture (1.8.0).
+ */
+internal fun DrawScope.drawStillMesh(mesh: ArtworkMesh) {
+    drawRect(PlayerFallbackBackdrop)
+    drawMesh(mesh, 0f, 1f)
+    drawRect(Brush.verticalGradient(0f to Color.Black.copy(alpha = 0.08f), 0.55f to Color.Black.copy(alpha = 0.22f), 1f to Color.Black.copy(alpha = 0.42f)))
 }
 
 private fun DrawScope.drawMesh(mesh: ArtworkMesh, seamY: Float, alpha: Float, tone: androidx.compose.ui.graphics.ColorFilter? = null) {

@@ -46,6 +46,8 @@ class InnerTube(
         const val TV_CLIENT_VERSION = "7.20260707.07.00"
         /** The older TV app's version ([PlayerClient.TV_OLD]). */
         const val TV_OLD_CLIENT_VERSION = "5.20260707"
+        /** The embedded player's version ([PlayerClient.WEB_EMBEDDED]), as yt-dlp sends it (2026-07). */
+        const val WEB_EMBEDDED_CLIENT_VERSION = "2.20260708.00.00"
         /** The YouTube Music Android app version [androidMusicPost] asks as (for synced lyrics). */
         const val ANDROID_MUSIC_VERSION = "7.27.52"
         /** youtube.com's web client, for [webPost] (live stream search). */
@@ -336,7 +338,29 @@ class InnerTube(
         val clientName: String, val nameId: Int, val userAgent: String, val origin: String,
         /** Its own client version; null = the web app's current one. */
         val version: String? = null,
+        /** More of the client's description (a TV's make and model, its OS), as YouTube's own app sends it. */
+        val extra: Map<String, String> = emptyMap(),
     ) {
+        /**
+         * The older TV app as a Samsung TV (yt-dlp's "tv_samsung", its first TV client for signed-in users since
+         * 2026-10). In 1.7.9.x the plain older TV app ([TV_OLD]) began answering "The page needs to be reloaded" for
+         * most songs (GitHub #260; yt-dlp #17389), so account-only songs fell to the web app's links, cut at 1 MB.
+         */
+        TV_SAMSUNG(
+            "TVHTML5", 7,
+            "Mozilla/5.0 (SMART-TV; Linux; Tizen 2.4.0) AppleWebKit/538.1 (KHTML, like Gecko) Version/2.4.0 TV Safari/538.1",
+            "https://www.youtube.com", TV_OLD_CLIENT_VERSION,
+            mapOf("deviceMake" to "Samsung", "deviceModel" to "UKS9800", "osName" to "Tizen", "osVersion" to "2.4.0"),
+        ),
+        /**
+         * YouTube's embedded player (yt-dlp's "web_embedded", its first client for signed-in users): takes the
+         * cookies and needs no PO token. Videos whose owners turned embedding off answer no, and the next client asks.
+         */
+        WEB_EMBEDDED(
+            "WEB_EMBEDDED_PLAYER", 56,
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.5 Safari/605.1.15,gzip(gfe)",
+            "https://www.youtube.com", WEB_EMBEDDED_CLIENT_VERSION,
+        ),
         /**
          * The older TV app (yt-dlp's "tv_downgraded"): takes the signed-in cookies, plays age-restricted and
          * Premium-only songs with plain (ciphered) links and needs no PO token. On the owner's phone (2026-10-27,
@@ -371,6 +395,7 @@ class InnerTube(
                 putJsonObject("client") {
                     put("clientName", client.clientName)
                     put("clientVersion", version)
+                    client.extra.forEach { (k, v) -> put(k, v) }
                     put("hl", hl)
                     put("gl", gl)
                     put("userAgent", client.userAgent)

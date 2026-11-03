@@ -1,5 +1,8 @@
 package com.prism.music.playback
 
+import com.prism.music.R
+import com.prism.music.tr
+import com.prism.music.trp
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -60,18 +63,18 @@ data class DjProgress(val looked: Int, val all: Int, val keyed: Int, val needNet
 object DjStatus {
     /** The line, and whether to offer "Use mobile data" beside it. */
     fun of(p: DjProgress?): Pair<String, Boolean> = when {
-        p == null || p.all == 0 -> "DJ mode" to false
+        p == null || p.all == 0 -> tr(R.string.dj_mode) to false
         // Songs waiting for Wi-Fi aren't being read: they're said apart (with the chip at once), not counted as done.
         p.looked < p.all -> {
-            val reading = "DJ mode: reading keys and tempos… ${p.looked - p.needNetwork} of ${p.all - p.needNetwork}"
-            if (p.needNetwork > 0) "$reading, ${p.needNetwork} wait for Wi-Fi" to true else reading to false
+            val reading = tr(R.string.dj_mode_reading_keys_and_tempos, p.looked - p.needNetwork, p.all - p.needNetwork)
+            if (p.needNetwork > 0) tr(R.string.wait_for_wi_fi, reading, p.needNetwork) to true else reading to false
         }
         p.needNetwork > 0 && p.keyed < MIN_ORDERED ->
-            "DJ mode: keys are read on Wi-Fi (${p.needNetwork} ${if (p.needNetwork == 1) "song" else "songs"} waiting)" to true
-        p.keyed < MIN_ORDERED -> "DJ mode: no clear keys to order these by" to false
+            trp(R.plurals.dj_keys_wait_for_wifi, p.needNetwork) to true
+        p.keyed < MIN_ORDERED -> tr(R.string.dj_mode_no_clear_keys_to) to false
         p.keyed < p.all ->
-            "DJ mode: ${p.keyed} of ${p.all} songs in key order" + (if (p.needNetwork > 0) ", the rest wait for Wi-Fi" else ", the rest stay put") to (p.needNetwork > 0)
-        else -> "DJ mode: in key order, beat-matched" to false
+            trp(R.plurals.dj_n_of_songs_in_key, p.all, p.keyed, p.all) + (if (p.needNetwork > 0) tr(R.string.the_rest_wait_for_wi_fi) else tr(R.string.the_rest_stay_put)) to (p.needNetwork > 0)
+        else -> tr(R.string.dj_mode_in_key_order_beat) to false
     }
 
     /** The next song plus two to order after it. */

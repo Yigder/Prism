@@ -1,5 +1,7 @@
 package com.prism.music.ui.components
 
+import com.prism.music.R
+import com.prism.music.tr
 import com.prism.music.ui.theme.PrismIcons
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -217,7 +219,7 @@ fun SubPage(
                 .statusBarsPadding()
                 .height(60.dp),
         ) {
-            if (showBack) RoundAction(PrismIcons.ArrowBack, "Back", Modifier.align(Alignment.CenterStart).padding(start = 12.dp), glass = true) { nav.back() }
+            if (showBack) RoundAction(PrismIcons.ArrowBack, tr(R.string.back), Modifier.align(Alignment.CenterStart).padding(start = 12.dp), glass = true) { nav.back() }
             Text(
                 title, Modifier.align(Alignment.Center).padding(horizontal = 72.dp).graphicsLayer { alpha = bar },
                 style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis,

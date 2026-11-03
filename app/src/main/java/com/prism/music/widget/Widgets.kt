@@ -35,6 +35,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -118,6 +119,9 @@ object Widgets {
     private val RINGED = setOf(WidgetStyle.PRISM, WidgetStyle.COVER, WidgetStyle.STRIP)
     private val SPLIT_PROGRESS = setOf(WidgetStyle.PRISM, WidgetStyle.COVER, WidgetStyle.DISC)
 
+    /** Whether [style]'s play button or progress can take another color ([WidgetOptions.buttons]): Android 12+. */
+    fun hasButtonColor(style: WidgetStyle) = Build.VERSION.SDK_INT >= 31 && (style in RINGED || style in SPLIT_PROGRESS)
+
     /** Appearance → Color → Spectrum is White light. */
     fun whiteLight(context: Context): Boolean = runCatching {
         context.container.settings.current.lightStyle == com.prism.music.data.prefs.LightStyle.WHITE
@@ -136,13 +140,15 @@ object Widgets {
     private fun grey(argb: Int): Int = FloatArray(3).also { ColorUtils.colorToHSL(argb, it); it[1] = 0f }.let { ColorUtils.HSLToColor(it) }
 
     /** The cover in each form the widgets use, for one song's picture. */
-    private class Art(val url: String, val square: Map<WidgetStyle, Bitmap>, val frost: Bitmap?, val color: Int)
+    private class Art(val url: String, val square: Map<WidgetStyle, Bitmap>, val frost: Bitmap?, val color: Int, val vivid: Int = color)
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val lock = Mutex()
     @Volatile private var state: State? = null
     @Volatile private var art: Art? = null
     private var job: Job? = null
+    /** The cover being loaded, by its address: a refresh while it loads waits for the same load, never starts over. */
+    private var artLoad: Pair<String, kotlinx.coroutines.Deferred<Art?>>? = null
 
     private fun placed(context: Context): Map<WidgetStyle, IntArray> {
         val manager = AppWidgetManager.getInstance(context) ?: return emptyMap()
@@ -175,15 +181,24 @@ object Widgets {
             lock.withLock {
                 val s = state ?: State(lastSong(app), playing = false, liked = false, 0L, 0L)
                 val url = s.song?.thumbnail
-                // Offline with a cover Coil hasn't kept: the widget shows Prism's mark instead.
-                if (art?.url != url) art = url?.let { loadArt(app, it) }
                 val manager = AppWidgetManager.getInstance(app) ?: return@withLock
-                placed(app).forEach { (style, ids) ->
+                fun draw(a: Art?) = placed(app).forEach { (style, ids) ->
                     // Widgets left as designed share one update; each with settings of its own (1.7.7) gets its own.
                     val (plain, own) = ids.partition { WidgetOptionsStore.get(app, it).isDefault }
-                    if (plain.isNotEmpty()) runCatching { manager.updateAppWidget(plain.toIntArray(), views(app, style, s, art)) }
-                    own.forEach { id -> runCatching { manager.updateAppWidget(id, views(app, style, s, art, WidgetOptionsStore.get(app, id))) } }
+                    if (plain.isNotEmpty()) runCatching { manager.updateAppWidget(plain.toIntArray(), views(app, style, s, a)) }
+                    own.forEach { id -> runCatching { manager.updateAppWidget(id, views(app, style, s, a, WidgetOptionsStore.get(app, id))) } }
                 }
+                if (art?.url != url) {
+                    // A new song shows at once, its cover once it's loaded (#217: the widget waited for the cover, and
+                    // each update meanwhile started that load over, so the new song showed seconds late).
+                    draw(null)
+                    // Offline with a cover Coil hasn't kept: the widget keeps Prism's mark.
+                    art = url?.let { u ->
+                        val load = artLoad?.takeIf { it.first == u }?.second ?: scope.async { loadArt(app, u) }.also { artLoad = u to it }
+                        load.await()
+                    }
+                }
+                draw(art)
             }
         }
     }
@@ -202,12 +217,12 @@ object Widgets {
     private fun views(context: Context, style: WidgetStyle, s: State, art: Art?, o: WidgetOptions = WidgetOptions()): RemoteViews {
         val v = RemoteViews(context.packageName, style.layout)
         val song = s.song
-        v.setTextViewText(R.id.widget_title, song?.title ?: context.getString(R.string.widget_nothing))
-        v.setTextViewText(R.id.widget_artist, song?.artistText ?: context.getString(R.string.widget_tap_to_play))
+        v.setTextViewText(R.id.widget_title, song?.title ?: com.prism.music.tr(R.string.widget_nothing))
+        v.setTextViewText(R.id.widget_artist, song?.artistText ?: com.prism.music.tr(R.string.widget_tap_to_play))
         val cover = art?.square?.get(style)
         if (cover != null) v.setImageViewBitmap(R.id.widget_art, cover) else v.setImageViewResource(R.id.widget_art, R.drawable.ic_notification)
         v.setImageViewResource(R.id.widget_play, if (s.playing) R.drawable.ic_w_pause else R.drawable.ic_w_play)
-        v.setContentDescription(R.id.widget_play, context.getString(if (s.playing) R.string.widget_pause else R.string.widget_play))
+        v.setContentDescription(R.id.widget_play, com.prism.music.tr(if (s.playing) R.string.widget_pause else R.string.widget_play))
         val heart = when (style) {
             WidgetStyle.YTMUSIC -> if (s.liked) R.drawable.ic_w_thumb else R.drawable.ic_w_thumb_outline
             else -> if (s.liked) R.drawable.ic_w_heart else R.drawable.ic_w_heart_outline
@@ -286,6 +301,25 @@ object Widgets {
                 v.setTextColor(R.id.widget_artist, ColorUtils.setAlphaComponent(ink, 0xB3))
             }
         }
+        if (o.buttons != WidgetButtons.LIGHT && hasButtonColor(style)) {
+            val c = when (o.buttons) {
+                WidgetButtons.COVER -> art?.vivid ?: Color.WHITE
+                WidgetButtons.COLOR -> o.buttonColor or 0xFF000000.toInt()
+                else -> Color.WHITE
+            }
+            val tint = android.content.res.ColorStateList.valueOf(c)
+            if (style in RINGED) {
+                // A plain disc in the color (the split-light ring would clash with it), the icon dark or white on it.
+                v.setInt(R.id.widget_play, "setBackgroundResource", R.drawable.widget_circle)
+                v.setColorStateList(R.id.widget_play, "setBackgroundTintList", tint)
+                v.setInt(R.id.widget_play, "setColorFilter", if (ColorUtils.calculateLuminance(c) > 0.4) 0xFF111114.toInt() else Color.WHITE)
+            }
+            if (style in SPLIT_PROGRESS && o.progress) {
+                v.setViewVisibility(R.id.widget_progress, android.view.View.VISIBLE)
+                v.setViewVisibility(R.id.widget_progress_white, gone)
+                v.setColorStateList(R.id.widget_progress, "setProgressTintList", tint)
+            }
+        }
         if (o.background == WidgetBackground.DESIGN) return
         // The style's own color layers go (Prism's frost, Apple's and Strip's tint); the panel takes the new color.
         if (style == WidgetStyle.PRISM) v.setViewVisibility(R.id.widget_bg, gone)
@@ -325,6 +359,8 @@ object Widgets {
             square = WidgetStyle.entries.associateWith { rounded(if (it == WidgetStyle.COVER) big else square, it.artCorner) },
             frost = frost(square),
             color = card or 0xFF000000.toInt(),
+            // The play button in the cover's color: its brightest lively color, so it stands out on the card.
+            vivid = ((palette.vibrantSwatch ?: palette.lightVibrantSwatch ?: palette.lightMutedSwatch)?.rgb ?: base) or 0xFF000000.toInt(),
         )
     }.getOrNull()
 

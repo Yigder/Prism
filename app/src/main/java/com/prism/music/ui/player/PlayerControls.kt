@@ -1,5 +1,8 @@
 package com.prism.music.ui.player
 
+import com.prism.music.R
+import com.prism.music.tr
+import com.prism.music.trp
 import androidx.compose.foundation.layout.ColumnScope
 import android.content.Context
 import android.media.AudioDeviceInfo
@@ -88,6 +91,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -366,6 +370,10 @@ fun PlayerScrubber(positionMs: Long, durationMs: Long, centerLabel: @Composable 
     val shift by pc.lyricShift.collectAsState()
     val bestMark = best?.takeIf { it.songId == current?.id && LocalAppSettings.current.bestPartButton }
         ?.startMs?.let { ((it - shift).toFloat() / duration).takeIf { f -> f in 0.01f..0.99f } }
+    // Where the crossfade into the next song starts (A6, an option): once it's known, while Crossfade is on.
+    val blend by c.mixState.mark.collectAsState()
+    val blendMark = blend?.takeIf { LocalAppSettings.current.view.crossfadeMark && it.songId == current?.id }
+        ?.let { (it.startMs.toFloat() / duration).takeIf { f -> f in 0.01f..0.99f } }
     val times = MaterialTheme.typography.labelMedium.copy(fontFeatureSettings = "tnum")
     val settings = LocalAppSettings.current
     val fill = scrubberFill(settings.scrubberColor, current?.thumbnail)
@@ -397,14 +405,15 @@ fun PlayerScrubber(positionMs: Long, durationMs: Long, centerLabel: @Composable 
         // Spectrum: a thin line, the played part in the split light (or the color picked for it).
         ThinSlider(
             value = shown,
+            modifier = Modifier.testTag("progressBar"),
             onValueChange = { scrub = it },
             onValueChangeFinished = { scrub?.let { pc.seekTo((it * duration).toLong()) }; scrub = null },
-            idleHeight = if (waved) 22.dp else when (style) { ScrubberStyle.HAIRLINE -> 5.dp; ScrubberStyle.BOLD, ScrubberStyle.WAVE -> 9.dp; ScrubberStyle.THUMB -> 4.dp; ScrubberStyle.RIBBONS -> 6.dp } * thick,
-            activeHeight = if (waved) 26.dp else when (style) { ScrubberStyle.HAIRLINE -> 10.dp; ScrubberStyle.BOLD, ScrubberStyle.WAVE -> 14.dp; ScrubberStyle.THUMB -> 6.dp; ScrubberStyle.RIBBONS -> 9.dp } * thick,
+            idleHeight = if (waved) 22.dp else barHeights(style, thick).first,
+            activeHeight = if (waved) 26.dp else barHeights(style, thick).second,
             thumb = knob != com.prism.music.data.prefs.ScrubberThumb.NONE,
             thumbShape = knob,
             spectrum = true,
-            marks = listOfNotNull(bestMark),
+            marks = listOfNotNull(bestMark, blendMark),
             fill = fill,
             wave = wave,
             pulse = pulse?.let { level -> { level.floatValue } },
@@ -420,7 +429,7 @@ fun PlayerScrubber(positionMs: Long, durationMs: Long, centerLabel: @Composable 
                     style = times, color = Color.White.copy(alpha = 0.55f),
                     modifier = Modifier
                         .clip(androidx.compose.foundation.shape.RoundedCornerShape(6.dp))
-                        .clickable(onClickLabel = if (showLength) "Show time left" else "Show song length") { c.settings.setShowTrackLength(!showLength) },
+                        .clickable(onClickLabel = if (showLength) tr(R.string.show_time_left) else tr(R.string.show_song_length)) { c.settings.setShowTrackLength(!showLength) },
                 )
             }
             centerLabel()
@@ -468,7 +477,7 @@ fun BoxScope.BestPartChip(): Boolean {
         Modifier.align(Alignment.Center).clip(tag).background(Color.White.copy(alpha = 0.08f))
             .border(1.dp, com.prism.music.ui.theme.PrismTokens.spectrumRing(), tag)
             .combinedClickable(
-                onClickLabel = "Skip to the best part", onLongClickLabel = "Set your own best part",
+                onClickLabel = tr(R.string.skip_to_the_best_part), onLongClickLabel = tr(R.string.set_your_own_best_part),
                 onLongClick = { haptics.tick(); BestPartEditor.open = true },
             ) { haptics.tick(); pc.seekToLyric(start) }
             .padding(horizontal = 10.dp, vertical = 3.dp),
@@ -476,7 +485,7 @@ fun BoxScope.BestPartChip(): Boolean {
     ) {
         Icon(if (now.mine) PrismIcons.FlameFilled else PrismIcons.Flame, null, tint = Color.White.copy(alpha = 0.92f), modifier = Modifier.size(12.dp))
         Spacer(Modifier.width(5.dp))
-        Text(if (now.mine) "Your best part" else "Best part", style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.92f))
+        Text(if (now.mine) tr(R.string.your_best_part) else tr(R.string.best_part), style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.92f))
     }
     return true
 }
@@ -502,7 +511,11 @@ object BestPartButton {
 
 /** Previous, play/pause, next — oversized glyphs, no circles. */
 @Composable
-fun TransportRow(isPlaying: Boolean, isLoading: Boolean, previousEnabled: Boolean, nextEnabled: Boolean, compact: Boolean = false, episode: Boolean = false) {
+fun TransportRow(
+    isPlaying: Boolean, isLoading: Boolean, previousEnabled: Boolean, nextEnabled: Boolean, compact: Boolean = false, episode: Boolean = false,
+    /** Previous and next on the player: What's on the player can hide them (1.8.0). An episode keeps its back / ahead skips. */
+    skips: Boolean = true,
+) {
     val pc = LocalContainer.current.player
     val style = LocalAppSettings.current.transportStyle
     val playSize = if (compact) 58.dp else 74.dp
@@ -517,7 +530,7 @@ fun TransportRow(isPlaying: Boolean, isLoading: Boolean, previousEnabled: Boolea
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround, verticalAlignment = Alignment.CenterVertically) {
         if (modes) ModeGlyph(
             if (smart) PrismIcons.SmartShuffle else PrismIcons.Shuffle,
-            if (smart) "Smart Shuffle on" else if (shuffle) "Shuffle on" else "Shuffle off", shuffle,
+            if (smart) tr(R.string.smart_shuffle_on) else if (shuffle) tr(R.string.shuffle_on) else tr(R.string.shuffle_off), shuffle,
         ) { pc.toggleShuffle() }
         val prevIcon = if (style == TransportStyle.GLYPHS) PrismIcons.Backward else PrismIcons.Previous
         val nextIcon = if (style == TransportStyle.GLYPHS) PrismIcons.Forward else PrismIcons.Next
@@ -527,24 +540,28 @@ fun TransportRow(isPlaying: Boolean, isLoading: Boolean, previousEnabled: Boolea
         val back = if (holdMs > 0) ({ pc.seekBy(-holdMs) }) else null
         val ahead = if (holdMs > 0) ({ pc.seekBy(holdMs) }) else null
         // A podcast episode skips within itself, as podcast players do: back 15 s, ahead 30 s.
-        if (episode) SkipGlyph(EPISODE_BACK_S, ahead = false, touch = 53.dp) { pc.seekBy(-EPISODE_BACK_S * 1000L) }
-        else TransportGlyph(prevIcon, "Previous", skip, 53.dp, if (style == TransportStyle.GLYPHS) 0.85f else 1f, previousEnabled, onHold = back) { pc.previous() }
+        if (skips || episode) {
+            if (episode) SkipGlyph(EPISODE_BACK_S, ahead = false, touch = 53.dp) { pc.seekBy(-EPISODE_BACK_S * 1000L) }
+            else TransportGlyph(prevIcon, tr(R.string.widget_previous), skip, 53.dp, if (style == TransportStyle.GLYPHS) 0.85f else 1f, previousEnabled, onHold = back) { pc.previous() }
+        }
         if (style == TransportStyle.GLYPHS) {
             if (isLoading) {
                 Box(Modifier.size(playTouch), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp, modifier = Modifier.size(if (compact) 30.dp else 38.dp))
                 }
             } else {
-                TransportGlyph(if (isPlaying) PrismIcons.Pause else PrismIcons.Play, if (isPlaying) "Pause" else "Play", playSize, playTouch) { pc.togglePlay() }
+                TransportGlyph(if (isPlaying) PrismIcons.Pause else PrismIcons.Play, if (isPlaying) tr(R.string.widget_pause) else tr(R.string.widget_play), playSize, playTouch) { pc.togglePlay() }
             }
         } else {
             PlayDisc(isPlaying, isLoading, filled = style == TransportStyle.BUTTON, size = if (compact) 64.dp else 78.dp) { pc.togglePlay() }
         }
-        if (episode) SkipGlyph(EPISODE_AHEAD_S, ahead = true, touch = 53.dp) { pc.seekBy(EPISODE_AHEAD_S * 1000L) }
-        else TransportGlyph(nextIcon, "Next", skip, 53.dp, if (style == TransportStyle.GLYPHS) 0.85f else 1f, nextEnabled, onHold = ahead) { pc.next() }
+        if (skips || episode) {
+            if (episode) SkipGlyph(EPISODE_AHEAD_S, ahead = true, touch = 53.dp) { pc.seekBy(EPISODE_AHEAD_S * 1000L) }
+            else TransportGlyph(nextIcon, tr(R.string.widget_next), skip, 53.dp, if (style == TransportStyle.GLYPHS) 0.85f else 1f, nextEnabled, onHold = ahead) { pc.next() }
+        }
         if (modes) ModeGlyph(
             PrismIcons.Repeat,
-            when (repeat) { Player.REPEAT_MODE_ALL -> "Repeat all"; Player.REPEAT_MODE_ONE -> "Repeat one"; else -> "Repeat off" },
+            when (repeat) { Player.REPEAT_MODE_ALL -> tr(R.string.repeat_all); Player.REPEAT_MODE_ONE -> tr(R.string.repeat_one); else -> tr(R.string.repeat_off) },
             repeat != Player.REPEAT_MODE_OFF,
             badge = if (repeat == Player.REPEAT_MODE_ONE) "1" else null,
         ) { pc.cycleRepeat() }
@@ -559,7 +576,7 @@ fun MinimalPlay(isPlaying: Boolean, isLoading: Boolean) {
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         if (style == TransportStyle.GLYPHS) {
             if (isLoading) CircularProgressIndicator(color = Color.White, strokeWidth = 3.dp, modifier = Modifier.padding(26.dp).size(40.dp))
-            else TransportGlyph(if (isPlaying) PrismIcons.Pause else PrismIcons.Play, if (isPlaying) "Pause" else "Play", 84.dp, 100.dp) { pc.togglePlay() }
+            else TransportGlyph(if (isPlaying) PrismIcons.Pause else PrismIcons.Play, if (isPlaying) tr(R.string.widget_pause) else tr(R.string.widget_play), 84.dp, 100.dp) { pc.togglePlay() }
         } else PlayDisc(isPlaying, isLoading, filled = style == TransportStyle.BUTTON, size = 88.dp) { pc.togglePlay() }
     }
 }
@@ -591,19 +608,19 @@ private fun PlayDisc(isPlaying: Boolean, isLoading: Boolean, filled: Boolean, si
     val haptics = rememberHaptics()
     val pressed = remember { MutableInteractionSource() }
     Box(
-        Modifier.size(size + 14.dp).clickable(pressed, indication = null) { haptics.click(); onClick() },
+        Modifier.size(size + 14.dp).testTag("playDisc").clickable(pressed, indication = null) { haptics.click(); onClick() },
         contentAlignment = Alignment.Center,
     ) {
         Box(
             Modifier.size(size).clip(CircleShape)
                 .background(if (filled) Color.White else Color.White.copy(alpha = 0.10f))
-                .border(2.dp, com.prism.music.ui.theme.PrismTokens.spectrumRing(), CircleShape),
+                .then(if (com.prism.music.ui.theme.LocalAppSettings.current.view.playRing) Modifier.border(2.dp, com.prism.music.ui.theme.PrismTokens.spectrumRing(), CircleShape) else Modifier),
             contentAlignment = Alignment.Center,
         ) {
             val tint = if (filled) Color.Black else Color.White
             if (isLoading) CircularProgressIndicator(color = tint, strokeWidth = 1.5.dp, modifier = Modifier.size(size * 0.42f))
             else Crossfade(isPlaying, animationSpec = tween(160), label = "playDisc") { p ->
-                Icon(if (p) PrismIcons.Pause else PrismIcons.Play, if (p) "Pause" else "Play", tint = tint, modifier = Modifier.size(size * (if (filled) 0.56f else 0.46f)))
+                Icon(if (p) PrismIcons.Pause else PrismIcons.Play, if (p) tr(R.string.widget_pause) else tr(R.string.widget_play), tint = tint, modifier = Modifier.size(size * (if (filled) 0.56f else 0.46f)))
             }
         }
     }
@@ -660,7 +677,7 @@ private fun TransportGlyph(
 @Composable
 private fun SkipGlyph(seconds: Int, ahead: Boolean, touch: Dp, onClick: () -> Unit) {
     val haptics = rememberHaptics()
-    val label = if (ahead) "Ahead $seconds seconds" else "Back $seconds seconds"
+    val label = if (ahead) trp(R.plurals.ahead_n_seconds, seconds.toInt()) else trp(R.plurals.back_n_seconds, seconds.toInt())
     Box(
         Modifier.size(touch).clickable(remember { MutableInteractionSource() }, indication = null, onClickLabel = label) { haptics.click(); onClick() }
             .semantics { contentDescription = label },
@@ -751,12 +768,23 @@ fun rememberPlayerVolume(): PlayerVolume {
 
 val VOLUME_ROW_HEIGHT = 32.dp
 
+/** The progress bar's line at rest and while held, for its [style] and thickness [thick] (the waveform aside). */
+fun barHeights(style: ScrubberStyle, thick: Float): Pair<Dp, Dp> = when (style) {
+    ScrubberStyle.HAIRLINE -> 5.dp to 10.dp
+    ScrubberStyle.BOLD, ScrubberStyle.WAVE -> 9.dp to 14.dp
+    ScrubberStyle.THUMB -> 4.dp to 6.dp
+    ScrubberStyle.RIBBONS -> 6.dp to 9.dp
+}.let { (idle, held) -> idle * thick to held * thick }
+
 @Composable
 fun VolumeRow(volume: PlayerVolume) {
+    val s = LocalAppSettings.current
+    // Reddit, 1.7.9.1: "Volume bar like the progress bar" takes its style's height and thickness; else its own, as before.
+    val (idle, held) = if (s.volumeMatchesProgress) barHeights(s.scrubberStyle, s.scrubberThickness) else 6.dp to 10.dp
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Icon(PrismIcons.VolumeDown, null, tint = Color.White.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(10.dp))
-        ThinSlider(volume.level, volume::drag, Modifier.weight(1f), volume::release, idleHeight = 6.dp, activeHeight = 10.dp)
+        ThinSlider(volume.level, volume::drag, Modifier.weight(1f).testTag("volumeBar"), volume::release, idleHeight = idle, activeHeight = held)
         Spacer(Modifier.width(10.dp))
         Icon(PrismIcons.VolumeUp, null, tint = Color.White.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
     }
@@ -792,10 +820,13 @@ fun PlayerActionRow(
     val chosen = settings.playerButtons.filter { it != PlayerButton.VIDEO || settings.showVideoSwitch }
     // Six to a row still fits a small phone: the buttons narrow a little past four.
     val glyph = when { chosen.size >= 6 -> 46.dp; chosen.size == 5 -> 50.dp; else -> 56.dp }
+    // In one glass capsule (1.7), or (1.7.8, #155) as separate buttons spread across the row, as Prism 1.6 had them.
+    val pill = settings.view.buttonsPill
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Row(
-            Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.10f)).border(1.dp, Color.White.copy(alpha = 0.16f), CircleShape).padding(5.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically,
+            if (pill) Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.10f)).border(1.dp, Color.White.copy(alpha = 0.16f), CircleShape).padding(5.dp)
+            else Modifier.fillMaxWidth(),
+            horizontalArrangement = if (pill) Arrangement.spacedBy(4.dp) else Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
         ) {
             AnimatedContent(
                 queueOpen,
@@ -805,22 +836,25 @@ fun PlayerActionRow(
                 label = "pill",
             ) { modes ->
                 if (modes) Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    if (PlayerButton.LYRICS in chosen) BottomGlyph(PrismIcons.Lyrics, "Lyrics", false, onToggleLyrics)
+                    if (PlayerButton.LYRICS in chosen) BottomGlyph(PrismIcons.Lyrics, tr(R.string.lyrics), false, onToggleLyrics)
                     Pill {
                         PillSegment(
-                            if (smart) PrismIcons.SmartShuffle else PrismIcons.Shuffle, if (smart) "Smart Shuffle" else "Shuffle", shuffle,
+                            if (smart) PrismIcons.SmartShuffle else PrismIcons.Shuffle, if (smart) tr(R.string.smart_shuffle) else tr(R.string.shuffle), shuffle,
                             width = PILL_SEGMENT_WIDTH_TRIPLE,
                         ) { pc.toggleShuffle() }
                         PillDivider()
                         PillSegment(
-                            if (repeat == Player.REPEAT_MODE_ONE) null else PrismIcons.Repeat, "Repeat",
+                            if (repeat == Player.REPEAT_MODE_ONE) null else PrismIcons.Repeat, tr(R.string.repeat),
                             repeat != Player.REPEAT_MODE_OFF, label = if (repeat == Player.REPEAT_MODE_ONE) "1" else null, width = PILL_SEGMENT_WIDTH_TRIPLE,
                         ) { pc.cycleRepeat() }
                         PillDivider()
-                        PillSegment(PrismIcons.Autoplay, "Autoplay", settings.autoplay, width = PILL_SEGMENT_WIDTH_TRIPLE) { c.settings.setAutoplay(!settings.autoplay) }
+                        PillSegment(PrismIcons.Autoplay, tr(R.string.autoplay), settings.autoplay, width = PILL_SEGMENT_WIDTH_TRIPLE) { c.settings.setAutoplay(!settings.autoplay) }
                     }
-                    BottomGlyph(PrismIcons.Queue, "Up next", true, onToggleQueue)
-                } else Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    BottomGlyph(PrismIcons.Queue, tr(R.string.up_next), true, onToggleQueue)
+                } else Row(
+                    if (pill) Modifier else Modifier.fillMaxWidth(),
+                    horizontalArrangement = if (pill) Arrangement.spacedBy(4.dp) else Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically,
+                ) {
                     for (b in chosen) PlayerButtonGlyph(b, glyph, lyricsOpen, videoMode, videoAvailable, videoLoading, onToggleLyrics, onToggleQueue, onVideoMode, onButton)
                 }
             }
@@ -847,47 +881,47 @@ private fun PlayerButtonGlyph(
     val song by pc.currentSong.collectAsState()
     val s = song ?: return
     when (b) {
-        PlayerButton.LYRICS -> BottomGlyph(if (lyricsOpen) PrismIcons.LyricsFilled else PrismIcons.Lyrics, if (lyricsOpen) "Close lyrics" else "Lyrics", lyricsOpen, onToggleLyrics, width)
+        PlayerButton.LYRICS -> BottomGlyph(if (lyricsOpen) PrismIcons.LyricsFilled else PrismIcons.Lyrics, if (lyricsOpen) tr(R.string.close_lyrics) else tr(R.string.lyrics), lyricsOpen, onToggleLyrics, width)
         // One Video toggle: on (marked) plays the music video; tapping again goes back to the song.
         PlayerButton.VIDEO -> PillSegment(
             PrismIcons.Video,
-            when { videoMode -> "Back to the song"; videoAvailable -> "Music video"; else -> "No music video for this song" },
+            when { videoMode -> tr(R.string.back_to_the_song); videoAvailable -> tr(R.string.music_video_3); else -> tr(R.string.no_music_video_for_this_song) },
             videoMode || videoLoading, enabled = videoAvailable || videoMode, loading = videoLoading, width = width,
         ) { onVideoMode(!(videoMode || videoLoading)) }
-        PlayerButton.QUEUE -> BottomGlyph(PrismIcons.Queue, "Up next", false, onToggleQueue, width)
+        PlayerButton.QUEUE -> BottomGlyph(PrismIcons.Queue, tr(R.string.up_next), false, onToggleQueue, width)
         PlayerButton.LIKE -> {
             val liked by c.library.likedIds.collectAsState()
             val on = s.id in liked
-            BottomGlyph(if (on) PrismIcons.HeartFilled else PrismIcons.Heart, if (on) "Remove from liked" else "Like", on, { c.library.toggleLike(s) }, width)
+            BottomGlyph(if (on) PrismIcons.HeartFilled else PrismIcons.Heart, if (on) tr(R.string.remove_from_liked) else tr(R.string.widget_like), on, { c.library.toggleLike(s) }, width)
         }
         PlayerButton.DISLIKE -> {
             val disliked by c.library.dislikedIds.collectAsState()
             val on = s.id in disliked
-            BottomGlyph(if (on) PrismIcons.ThumbDownFilled else PrismIcons.ThumbDown, "Not for me", on, {
+            BottomGlyph(if (on) PrismIcons.ThumbDownFilled else PrismIcons.ThumbDown, tr(R.string.not_for_me), on, {
                 c.library.setDisliked(s, !on)
                 if (!on && pc.hasNext.value) pc.next()
             }, width)
         }
         PlayerButton.DOWNLOAD -> {
-            val downloads by c.downloads.downloads.collectAsState()
+            val downloads by c.downloadState.collectAsState()
             val d = downloads[s.id]
             val done = d?.state == androidx.media3.exoplayer.offline.Download.STATE_COMPLETED
             BottomGlyph(
                 if (done) PrismIcons.DownloadDone else PrismIcons.Download,
-                when { done -> "Downloaded"; d != null -> "Downloading"; else -> "Download" }, done || d != null,
+                when { done -> tr(R.string.downloaded); d != null -> tr(R.string.downloading_2); else -> tr(R.string.download) }, done || d != null,
                 { if (d != null) c.downloads.remove(s.id) else c.downloads.download(s) }, width, enabled = !s.isLocal && !s.isLive,
             )
         }
-        PlayerButton.RADIO -> BottomGlyph(PrismIcons.Radio, "Start radio", false, { pc.playRadio(s) }, width, enabled = !s.isLocal)
-        // Songs a little faster or slower (1.7.4): each tap the next speed; the speed itself shows while it isn't 1×.
+        PlayerButton.RADIO -> BottomGlyph(PrismIcons.Radio, tr(R.string.start_radio), false, { pc.playRadio(s) }, width, enabled = !s.isLocal)
+        // Songs faster or slower (1.7.4), and higher or lower (1.7.8): a tap opens Speed & pitch; the speed shows while it isn't 1×.
         PlayerButton.SPEED -> {
             val speed by pc.musicSpeed.collectAsState()
-            val next = MUSIC_SPEEDS[(MUSIC_SPEEDS.indexOf(speed) + 1).mod(MUSIC_SPEEDS.size)]
+            val pitch by pc.musicPitch.collectAsState()
             val haptics = rememberHaptics()
-            if (speed == 1f) BottomGlyph(PrismIcons.Speed, "Playback speed 1×", false, { pc.setMusicSpeed(next) }, width, enabled = !s.isLive)
+            if (speed == 1f) BottomGlyph(PrismIcons.Speed, if (pitch == 0) tr(R.string.speed_pitch_2) else tr(R.string.speed_pitch_pitch_moved), pitch != 0, { onButton(b) }, width, enabled = !s.isLive)
             else Box(
                 Modifier.size(width = width, height = BOTTOM_ACTION_SIZE).clip(CircleShape).background(Color.White.copy(alpha = 0.16f))
-                    .clickable(onClickLabel = "Playback speed ${speedText(speed)}") { haptics.tick(); pc.setMusicSpeed(next) },
+                    .clickable(onClickLabel = tr(R.string.speed_pitch, speedText(speed))) { haptics.tick(); onButton(b) },
                 contentAlignment = Alignment.Center,
             ) {
                 Text(speedText(speed), style = MaterialTheme.typography.labelLarge.copy(fontFeatureSettings = "tnum"), color = Color.White)
@@ -896,21 +930,21 @@ private fun PlayerButtonGlyph(
         }
         PlayerButton.DJ -> {
             val on by c.dj.on.collectAsState()
-            BottomGlyph(if (on) PrismIcons.TurntableFilled else PrismIcons.Turntable, if (on) "DJ mode off" else "DJ mode", on, { c.dj.setOn(!on) }, width)
+            BottomGlyph(if (on) PrismIcons.TurntableFilled else PrismIcons.Turntable, if (on) tr(R.string.dj_mode_off) else tr(R.string.dj_mode), on, { c.dj.setOn(!on) }, width)
         }
         PlayerButton.SLEEP -> {
             val at by pc.sleepAt.collectAsState()
             val end by pc.sleepEndOfSong.collectAsState()
-            BottomGlyph(PrismIcons.Moon, "Sleep timer", at > 0 || end, { onButton(b) }, width)
+            BottomGlyph(PrismIcons.Moon, tr(R.string.sleep_timer), at > 0 || end, { onButton(b) }, width)
         }
         PlayerButton.SING -> {
             val on by c.sing.on.collectAsState()
-            BottomGlyph(PrismIcons.Mic, "Sing", on, { onButton(b) }, width, enabled = !s.isEpisode)
+            BottomGlyph(PrismIcons.Mic, tr(R.string.sing), on, { onButton(b) }, width, enabled = !s.isEpisode)
         }
-        PlayerButton.OUTPUT -> BottomGlyph(PrismIcons.Cast, "Play on", false, { onButton(b) }, width)
-        PlayerButton.ADD_TO_PLAYLIST -> BottomGlyph(PrismIcons.PlaylistAdd, "Add to playlist", false, { onButton(b) }, width)
-        PlayerButton.SHARE -> BottomGlyph(PrismIcons.Share, "Share", false, { onButton(b) }, width, enabled = !s.isLocal)
-        PlayerButton.EQUALIZER -> BottomGlyph(PrismIcons.Equalizer, "Equalizer", false, { onButton(b) }, width)
+        PlayerButton.OUTPUT -> BottomGlyph(PrismIcons.Cast, tr(R.string.play_on), false, { onButton(b) }, width)
+        PlayerButton.ADD_TO_PLAYLIST -> BottomGlyph(PrismIcons.PlaylistAdd, tr(R.string.add_to_playlist), false, { onButton(b) }, width)
+        PlayerButton.SHARE -> BottomGlyph(PrismIcons.Share, tr(R.string.share), false, { onButton(b) }, width, enabled = !s.isLocal)
+        PlayerButton.EQUALIZER -> BottomGlyph(PrismIcons.Equalizer, tr(R.string.equalizer), false, { onButton(b) }, width)
     }
 }
 
@@ -932,7 +966,7 @@ private fun EpisodeActionRow(queueOpen: Boolean, onToggleQueue: () -> Unit) {
             Box(
                 Modifier.height(BOTTOM_ACTION_SIZE).clip(CircleShape)
                     .background(if (speed != 1f) Color.White.copy(alpha = 0.14f) else Color.Transparent)
-                    .clickable(onClickLabel = "Playback speed $label") {
+                    .clickable(onClickLabel = tr(R.string.playback_speed, label)) {
                         haptics.tick()
                         pc.setEpisodeSpeed(EPISODE_SPEEDS[(EPISODE_SPEEDS.indexOf(speed) + 1).mod(EPISODE_SPEEDS.size)])
                     }
@@ -941,7 +975,7 @@ private fun EpisodeActionRow(queueOpen: Boolean, onToggleQueue: () -> Unit) {
             ) {
                 Text(label, color = Color.White, style = MaterialTheme.typography.labelLarge)
             }
-            BottomGlyph(PrismIcons.Queue, "Up next", queueOpen, onToggleQueue)
+            BottomGlyph(PrismIcons.Queue, tr(R.string.up_next), queueOpen, onToggleQueue)
         }
     }
 }
@@ -1044,7 +1078,7 @@ fun OutputCaption() {
     val settings by c.settings.flow.collectAsState()
     val preferred by c.player.preferredOutput.collectAsState()
     val profile by c.account.profile.collectAsState()
-    val phoneName = (profile?.name ?: settings.accountName).trim().split(" ").firstOrNull()?.takeIf { it.isNotBlank() }?.let { "$it's Phone" } ?: "This Phone"
+    val phoneName = (profile?.name ?: settings.accountName).trim().split(" ").firstOrNull()?.takeIf { it.isNotBlank() }?.let { tr(R.string.s_phone, it) } ?: tr(R.string.this_phone)
     var current by remember { mutableStateOf(currentOutput(context, preferred)) }
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(preferred, lifecycle) {
@@ -1053,8 +1087,8 @@ fun OutputCaption() {
     var picking by remember { mutableStateOf(false) }
     val castState by c.cast.state.collectAsState()
     val castLabel = when (val cs = castState) {
-        is com.prism.music.connect.CastState.Casting -> "Playing on ${cs.renderer.name}"
-        is com.prism.music.connect.CastState.Connecting -> "Connecting to ${cs.renderer.name}…"
+        is com.prism.music.connect.CastState.Casting -> tr(R.string.playing_on, cs.renderer.name)
+        is com.prism.music.connect.CastState.Connecting -> tr(R.string.connecting_to, cs.renderer.name)
         else -> null
     }
     // Where the sound goes, after a dot of split light; while casting, a glass pill with the cast mark, so it's plain
@@ -1077,10 +1111,11 @@ fun OutputCaption() {
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
         )
-        // The cast mark says the line opens speakers and TVs (Reddit 1.7: "where's the cast button?").
+        // The cast mark says the line opens speakers and TVs (Reddit 1.7: "where's the cast button?"). 1.8.0: no longer a
+        // choice of its own (#149's switch is gone): the line itself can be hidden in What's on the player.
         if (!away) {
             Spacer(Modifier.width(7.dp))
-            Icon(PrismIcons.Cast, "Play on a speaker or TV", Modifier.size(14.dp), tint = Color.White.copy(alpha = 0.62f))
+            Icon(PrismIcons.Cast, tr(R.string.play_on_a_speaker_or_tv), Modifier.size(14.dp), tint = Color.White.copy(alpha = 0.62f))
         }
     }
     if (picking) OutputPickerSheet(phoneName) { picking = false }
@@ -1099,12 +1134,12 @@ fun SleepBadge(modifier: Modifier = Modifier) {
     var now by remember { mutableStateOf(System.currentTimeMillis()) }
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
     LaunchedEffect(sleepAt, lifecycle) { if (sleepAt > 0) lifecycle.tickWhileShown(15_000) { now = System.currentTimeMillis() } }
-    val left = if (endOfSong) "Song end" else "${((sleepAt - now) / 60_000).coerceAtLeast(0) + 1} min"
+    val left = if (endOfSong) tr(R.string.song_end) else tr(R.string.min, ((sleepAt - now) / 60_000).coerceAtLeast(0) + 1)
     var open by remember { mutableStateOf(false) }
     Row(
         modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.10f)).clickable { open = true }
             .padding(horizontal = 9.dp, vertical = 3.dp)
-            .semantics(mergeDescendants = true) { contentDescription = "Sleep timer: $left. Tap to change it." },
+            .semantics(mergeDescendants = true) { contentDescription = tr(R.string.sleep_timer_tap_to_change_it, left) },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(PrismIcons.Moon, null, Modifier.size(13.dp), tint = Color.White.copy(alpha = 0.85f))
@@ -1153,10 +1188,10 @@ fun currentOutput(context: Context, preferred: AudioDeviceInfo?): AudioDeviceInf
 
 fun outputLabel(d: AudioDeviceInfo, phoneName: String): String = when (d.type) {
     AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> phoneName
-    AudioDeviceInfo.TYPE_WIRED_HEADPHONES, AudioDeviceInfo.TYPE_WIRED_HEADSET -> "Headphones"
+    AudioDeviceInfo.TYPE_WIRED_HEADPHONES, AudioDeviceInfo.TYPE_WIRED_HEADSET -> tr(R.string.headphones)
     AudioDeviceInfo.TYPE_HDMI -> "HDMI"
     else -> d.productName?.toString()?.takeIf { it.isNotBlank() && it != android.os.Build.MODEL }
-        ?: if (isBluetooth(d.type)) "Bluetooth device" else "USB audio"
+        ?: if (isBluetooth(d.type)) tr(R.string.bluetooth_device) else tr(R.string.usb_audio)
 }
 
 private fun outputIcon(d: AudioDeviceInfo): ImageVector = when {
@@ -1195,35 +1230,36 @@ fun OutputPickerSheet(phoneName: String, onDismiss: () -> Unit) {
     val castingName = (castState as? com.prism.music.connect.CastState.Casting)?.renderer?.name
     com.prism.music.ui.components.ActionSheet(song?.thumbnail, onDismiss) { _ ->
         Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 4.dp)) {
-            Text("Play on", style = MaterialTheme.typography.titleLarge)
+            Text(tr(R.string.play_on), style = MaterialTheme.typography.titleLarge)
             Text(
-                castingName?.let { "Playing on $it" } ?: current?.let { "Playing on ${outputLabel(it, phoneName)}" } ?: "Pick where the music plays",
+                castingName?.let { tr(R.string.playing_on, it) } ?: current?.let { tr(R.string.playing_on, outputLabel(it, phoneName)) } ?: tr(R.string.pick_where_the_music_plays),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         // No scroll of its own: the sheet already scrolls (a scroller inside a scroller is measured with no height
         // limit, and Compose crashes on it).
         Column(Modifier.padding(bottom = 24.dp)) {
-            OutputGroup("This phone") {
+            OutputGroup(tr(R.string.this_phone_2)) {
                 options.forEach { d ->
                     val selected = castingTo == null && current?.id == d.id
                     DeviceRow(
                         outputIcon(d), outputLabel(d, phoneName),
                         when {
-                            d.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> "Phone speaker"
-                            isBluetooth(d.type) -> "Bluetooth"
+                            d.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> tr(R.string.phone_speaker)
+                            isBluetooth(d.type) -> tr(R.string.bluetooth)
                             d.type == AudioDeviceInfo.TYPE_USB_DEVICE || d.type == AudioDeviceInfo.TYPE_USB_HEADSET -> "USB"
-                            else -> "Wired"
+                            else -> tr(R.string.wired)
                         },
                         selected = selected,
                     ) { pc.setOutput(d) }
                 }
-                if (android.os.Build.VERSION.SDK_INT >= 34) DeviceRow(PrismIcons.Headphones, "Other Bluetooth devices", "Ones that aren't connected yet") {
+                if (android.os.Build.VERSION.SDK_INT >= 34) DeviceRow(PrismIcons.Headphones, tr(R.string.other_bluetooth_devices), tr(R.string.ones_that_aren_t_connected_yet)) {
                     if (MediaRouter2.getInstance(context).showSystemOutputSwitcher()) onDismiss()
                 }
             }
-            SpeakersAndTvs(castState, castingTo)
+            // Prism devices first: a TV with Prism on it plays there in the app, rather than in its own Cast player.
             PrismDevices()
+            SpeakersAndTvs(castState, castingTo)
         }
     }
 }
@@ -1271,7 +1307,7 @@ internal fun DeviceRow(
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
-                subtitle + if (selected) " · Playing" else "",
+                subtitle + if (selected) tr(R.string.playing) else "",
                 style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
         }
@@ -1283,22 +1319,40 @@ internal fun DeviceRow(
 @Composable
 private fun PrismDevices() {
     val handoff = LocalContainer.current.handoff
+    val cast = LocalContainer.current.cast
     val devices by handoff.devices.collectAsState()
     val busy by handoff.busy.collectAsState()
+    val castState by cast.state.collectAsState()
+    // A Prism TV the music plays on now (or is going to): it shows as playing, as a speaker cast to does.
+    val tvNow = ((castState as? com.prism.music.connect.CastState.Casting)?.renderer ?: (castState as? com.prism.music.connect.CastState.Connecting)?.renderer)
+        ?.takeIf { it.kind == com.prism.music.connect.RendererKind.PRISM_TV }
     DisposableEffect(Unit) {
         handoff.startDiscovery()
         onDispose { handoff.stopDiscovery() }
     }
+    // A TV running Prism (1.8.0) gets its remote here (with its sign-in and the look), beside moving the music there.
+    var remoteFor by remember { mutableStateOf<com.prism.music.connect.PrismDevice?>(null) }
+    remoteFor?.let { tv -> com.prism.music.ui.components.TvRemoteSheet(tv) { remoteFor = null } }
     if (devices.isEmpty() && busy == null) return
-    OutputGroup("Prism devices") {
-        busy?.let { label -> DeviceRow(PrismIcons.Handoff, label, "One moment…", busy = true, enabled = false) {} }
+    OutputGroup(tr(R.string.prism_devices)) {
+        busy?.let { label -> DeviceRow(PrismIcons.Handoff, label, tr(R.string.one_moment), busy = true, enabled = false) {} }
         devices.forEach { d ->
+            // A TV plays along with this phone (1.8.0), the phone staying its remote; another phone takes the music over.
+            val thisTv = d.tv && tvNow != null && tvNow.id == "prism:${d.id ?: d.key}"
+            val connecting = thisTv && castState is com.prism.music.connect.CastState.Connecting
             DeviceRow(
-                PrismIcons.Handoff, d.name, "Move the music there" + if (d.paired) "" else " · pairs the first time", enabled = busy == null,
-                trailing = {
-                    com.prism.music.ui.components.PrismTextButton(onClick = { handoff.bringFrom(d) }, enabled = busy == null) { Text("Bring here") }
+                if (d.tv) PrismIcons.Tv else PrismIcons.Handoff, d.name,
+                when {
+                    connecting -> tvNow!!.detail + tr(R.string.connecting)
+                    thisTv -> tvNow!!.detail
+                    else -> tr(R.string.move_the_music_there) + if (d.paired) "" else tr(R.string.pairs_the_first_time)
                 },
-            ) { handoff.moveTo(d) }
+                selected = thisTv && !connecting, busy = connecting, enabled = busy == null,
+                trailing = {
+                    if (d.tv) com.prism.music.ui.components.PrismTextButton(onClick = { remoteFor = d }, enabled = busy == null) { Text(tr(R.string.tv_remote)) }
+                    else com.prism.music.ui.components.PrismTextButton(onClick = { handoff.bringFrom(d) }, enabled = busy == null) { Text(tr(R.string.bring_here)) }
+                },
+            ) { if (d.tv) { if (!thisTv) cast.connectTv(d) } else handoff.moveTo(d) }
         }
     }
 }
@@ -1309,7 +1363,9 @@ private val speakerWords = listOf("speaker", "sonos", "receiver", "avr", "denon"
 @Composable
 private fun SpeakersAndTvs(castState: com.prism.music.connect.CastState, castingTo: String?) {
     val cast = LocalContainer.current.cast
+    val handoff = LocalContainer.current.handoff
     val renderers by cast.renderers.collectAsState()
+    val prismTvs by handoff.devices.collectAsState()
     var lookedLong by remember { mutableStateOf(false) }
     DisposableEffect(Unit) {
         cast.startDiscovery()
@@ -1319,32 +1375,49 @@ private fun SpeakersAndTvs(castState: com.prism.music.connect.CastState, casting
     val shown = renderers.let { list ->
         // The one being cast to stays listed even if it's stopped answering searches.
         val playing = (castState as? com.prism.music.connect.CastState.Casting)?.renderer ?: (castState as? com.prism.music.connect.CastState.Connecting)?.renderer
-        if (playing != null && list.none { it.id == playing.id }) listOf(playing) + list else list
+        val all = if (playing != null && playing.kind != com.prism.music.connect.RendererKind.PRISM_TV && list.none { it.id == playing.id }) listOf(playing) + list else list
+        // A TV whose Prism is listed under Prism devices isn't listed again as its own Cast or DLNA player.
+        all.filter { r -> r.id == castingTo || prismTvs.none { it.tv && it.host == rendererHost(r) } }
     }
-    OutputGroup("Speakers & TVs") {
+    // A TV that had Prism on it, not open now: the TV's own player still works, and Prism plays there once opened.
+    val closedPrismTv = shown.firstNotNullOfOrNull { r -> handoff.prismTvAt(rendererHost(r)) }
+    OutputGroup(tr(R.string.speakers_tvs)) {
         shown.forEach { r ->
             val selected = r.id == castingTo
             val connecting = castState is com.prism.music.connect.CastState.Connecting && selected
             val speaker = speakerWords.any { w -> "${r.name} ${r.manufacturer} ${r.model}".lowercase().contains(w) }
             DeviceRow(
                 if (speaker) PrismIcons.Speaker else PrismIcons.Tv, r.name,
-                r.detail + if (connecting) " · Connecting…" else "",
+                r.detail + if (connecting) tr(R.string.connecting) else "",
                 selected = selected && !connecting, busy = connecting,
             ) { if (!selected) cast.connect(r) }
         }
-        if (castingTo != null) DeviceRow(PrismIcons.Close, "Stop casting", "The music pauses; pick this phone to carry on here") {
+        // A Prism TV's music comes back to this phone, playing; a speaker's pauses.
+        if (castingTo != null) DeviceRow(PrismIcons.Close, tr(R.string.stop_casting), tr(if (cast.toPrismTv) R.string.tv_stop_comes_back else R.string.the_music_pauses_pick_this_phone)) {
             cast.disconnect(keepPlaying = false)
         }
         if (shown.isEmpty()) {
-            if (!lookedLong) DeviceRow(PrismIcons.Cast, "Looking on this Wi-Fi…", "Speakers, TVs and receivers", busy = true, enabled = false) {}
+            if (!lookedLong) DeviceRow(PrismIcons.Cast, tr(R.string.looking_on_this_wi_fi), tr(R.string.speakers_tvs_and_receivers), busy = true, enabled = false) {}
             else Text(
-                "None found. They show here when they're on this Wi-Fi with Google Cast (Chromecast, Google TV) or DLNA / UPnP (often called media sharing).",
+                tr(R.string.none_found_they_show_here_when),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(16.dp),
             )
         }
+        closedPrismTv?.let { name ->
+            Text(
+                tr(R.string.open_prism_on_first_android_only, name),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp).testTag("output/open_prism_on_tv"),
+            )
+        }
     }
 }
+
+/** The address a Cast or DLNA player answers on (its location's host), to tell when it's a TV with Prism on it. */
+internal fun rendererHost(r: com.prism.music.connect.Renderer): String? =
+    runCatching { java.net.URI(r.location.replace("googlecast://", "http://")).host }.getOrNull()
+
 @Composable
 fun PlaybackOriginCaption(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Text(
@@ -1383,17 +1456,17 @@ fun qualityText(stats: com.prism.music.playback.NerdStats): String {
     val lossless = stats.source.startsWith("Lossless") ||
         listOf("flac", "alac", "wav", "pcm", "aiff", "raw").any { stats.codec.contains(it, true) }
     return when {
-        stats.source == "Downloaded" -> "Downloaded"
+        stats.source == "Downloaded" -> tr(R.string.downloaded)
         lossless -> {
             // The file's own format when Prism knows it ("On this phone · WAV", "Lossless · FLAC on this phone").
             val named = Regex("\\b(WAV|AIFF|FLAC|ALAC)\\b").find(stats.source)?.value
             listOfNotNull(
-                named ?: codec.takeIf { it != "PCM" && it.isNotBlank() } ?: "Lossless",
+                named ?: codec.takeIf { it != "PCM" && it.isNotBlank() } ?: tr(R.string.lossless),
                 stats.bitDepth.takeIf { it > 0 }?.let { "$it-bit" },
                 stats.sampleRate.takeIf { it > 0 }?.let(::sampleRateText),
             ).joinToString(" · ")
         }
-        stats.streamBitrateKbps > 0 -> "$codec ${stats.streamBitrateKbps} kbps".trim()
+        stats.streamBitrateKbps > 0 -> tr(R.string.kbps, codec, stats.streamBitrateKbps).trim()
         else -> codec
     }
 }

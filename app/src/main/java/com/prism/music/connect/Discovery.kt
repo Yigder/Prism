@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit
 /** SSDP searches for renderers (the same on the phone and in tests, which point [to] at a pretend one). */
 object SsdpSearch {
     /**
-     * Asks for MediaRenderers (three times, as UDP can drop a packet) and passes every answer that's about one to
+     * Asks for MediaRenderers and Sonos speakers (three times, as UDP can drop a packet) and passes every answer that's about one to
      * [onFound] for [windowMs]. Blocking.
      */
     fun run(
@@ -30,7 +30,7 @@ object SsdpSearch {
             var nextSend = 0L
             while (System.currentTimeMillis() < until && !stop()) {
                 if (rounds < 3 && System.currentTimeMillis() >= nextSend) {
-                    for (t in listOf(Ssdp.RENDERER, Ssdp.AV_TRANSPORT)) {
+                    for (t in listOf(Ssdp.RENDERER, Ssdp.AV_TRANSPORT, Ssdp.ZONE_PLAYER)) {
                         val b = Ssdp.search(t).toByteArray()
                         runCatching { s.send(DatagramPacket(b, b.size, to)) }
                     }

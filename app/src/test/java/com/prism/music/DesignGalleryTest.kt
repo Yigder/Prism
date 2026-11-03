@@ -112,6 +112,44 @@ class DesignGalleryTest {
     }
 
     /**
+     * The seasonal Looks (1.8.0), Harvest and Holiday, each in dark and in light: Home, the player and the lyrics as the
+     * Looks page draws them, with their colors throughout (accent, split light, page tint) and their background, onto
+     * seasonal-looks.png.
+     */
+    @Test fun seasonalLooks() {
+        val repo = com.prism.music.data.prefs.SettingsRepository(
+            org.robolectric.RuntimeEnvironment.getApplication(),
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default),
+        )
+        compose.setContent {
+            PrismTheme(AppSettings(themeMode = ThemeMode.DARK), artworkColor = null) {
+                androidx.compose.foundation.layout.Column(
+                    Modifier.width(820.dp).background(MaterialTheme.colorScheme.background).padding(8.dp),
+                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp),
+                ) {
+                    for (season in com.prism.music.data.looks.Season.entries) {
+                        val look = com.prism.music.data.looks.BuiltInLooks.of(season.lookId)!!
+                        for (mode in listOf(ThemeMode.DARK, ThemeMode.LIGHT)) {
+                            val s = repo.previewLook(look.values).copy(frostedPages = false, themeMode = mode)
+                            val dark = mode == ThemeMode.DARK
+                            androidx.compose.material3.Text("${look.name} · ${mode.name.lowercase()}", style = MaterialTheme.typography.labelMedium)
+                            androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)) {
+                                com.prism.music.ui.screens.PreviewPhone(190.dp) { com.prism.music.ui.screens.LookTheme(s, dark) { c -> com.prism.music.ui.screens.MiniHome(c, null) } }
+                                com.prism.music.ui.screens.PreviewPhone(190.dp) { com.prism.music.ui.screens.LookTheme(s, dark) { c -> com.prism.music.ui.screens.MiniPlayerScreen(c, null) } }
+                                com.prism.music.ui.screens.PreviewPhone(190.dp) { com.prism.music.ui.screens.LookTheme(s, dark) { c -> com.prism.music.ui.screens.MiniLyrics(c, null) } }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        compose.waitForIdle()
+        val bmp = compose.onRoot().captureToImage().asAndroidBitmap()
+        val dir = File("build/design-previews").apply { mkdirs() }
+        File(dir, "seasonal-looks.png").outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
+
+    /**
      * The player, your way (1.7.4): the Looks preview's player (as the pinned preview on Settings → Player draws it) in
      * each layout, and with the details changed (centred large title, accent bar, time left only, waveform, other
      * buttons, the deck in another order), onto player174.png.

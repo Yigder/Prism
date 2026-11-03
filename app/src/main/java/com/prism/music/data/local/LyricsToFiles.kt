@@ -35,7 +35,7 @@ class LyricsToFiles(private val context: Context, private val c: AppContainer) {
 
     fun request(songs: List<Song>?) { _requests.tryEmit(songs) }
 
-    /** The files [songs] play from that can take lyrics (FLAC and MP3); null: all of them. */
+    /** The files [songs] play from that can take lyrics (FLAC, MP3 and M4A); null: all of them. */
     fun targets(songs: List<Song>?): List<Target> {
         val local = c.localMusic.tracks.value.associateBy { it.song.id }
         fun of(s: Song): Target? {
@@ -53,12 +53,20 @@ class LyricsToFiles(private val context: Context, private val c: AppContainer) {
     /** Each file's lyrics text: saved ones, or looked up now when online (a few at a time). Files without any are left out. */
     suspend fun prepare(targets: List<Target>): List<Item> = coroutineScope {
         val online = c.network.isOnline()
+        val s = c.settings.current
+        // Settings → Lyrics & Sing → Your music files (1.7.9.2, Reddit): word timings and the translation, when asked for.
+        val to = s.lyricsTranslateTo.ifBlank { com.prism.music.ui.player.defaultTranslateTarget() }
         val gate = Semaphore(4)
         targets.map { t ->
             async(Dispatchers.IO) {
                 gate.withPermit {
                     val l = runCatching { c.lyrics.best(t.song, fetch = online) }.getOrNull()
-                    l?.takeIf { it.lines.any { line -> !line.isGap && line.text.isNotBlank() } }?.let { Item(t, LyricsTags.text(it)) }
+                        ?.takeIf { it.lines.any { line -> !line.isGap && line.text.isNotBlank() } } ?: return@withPermit null
+                    // Kept translations come back without the network (1.7.8); a song already in that language gets none.
+                    val translations = if (!s.lyricsFileTranslation) null else runCatching {
+                        c.translator.translate(l.lines.map { if (it.isGap) "" else it.text }, to).takeUnless { it.sameLanguage }?.translations
+                    }.getOrNull()
+                    Item(t, LyricsTags.text(l, words = s.lyricsFileWords, translations = translations))
                 }
             }
         }.awaitAll().filterNotNull()
@@ -77,8 +85,8 @@ class LyricsToFiles(private val context: Context, private val c: AppContainer) {
             try {
                 context.contentResolver.openInputStream(item.target.uri)?.use { input -> src.outputStream().use { input.copyTo(it) } } ?: continue
                 if (!LyricsTags.write(src, out, item.target.kind, item.text)) continue
-                // The new file has to end with the same audio as the old one, or it doesn't go back.
-                if (!sameEnding(src, out)) continue
+                // The new file has to hold exactly the old one's audio, or it doesn't go back.
+                if (!LyricsTags.audioIntact(src, out, item.target.kind)) continue
                 // Until the new file is fully back in place, the original is kept (with where it goes), so a failed or
                 // cut-short write can be put right, here or at the next launch ([recover]).
                 val backup = File(work, "backup-$n")
@@ -100,14 +108,6 @@ class LyricsToFiles(private val context: Context, private val c: AppContainer) {
     }
 
     private val work get() = File(context.filesDir, "lyrics-tags").apply { mkdirs() }
-
-    /** The last up to 1 MB of both files match: the audio came through whole. */
-    private fun sameEnding(a: File, b: File): Boolean {
-        val n = minOf(1L shl 20, a.length(), b.length()).toInt()
-        if (n <= 0) return false
-        fun tail(f: File) = java.io.RandomAccessFile(f, "r").use { r -> ByteArray(n).also { r.seek(f.length() - n); r.readFully(it) } }
-        return tail(a).contentEquals(tail(b))
-    }
 
     private fun sizeOf(uri: Uri): Long = context.contentResolver.openFileDescriptor(uri, "r")?.use { it.statSize } ?: -1
 

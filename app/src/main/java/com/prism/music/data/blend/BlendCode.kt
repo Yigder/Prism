@@ -1,5 +1,7 @@
 package com.prism.music.data.blend
 
+import com.prism.music.R
+import com.prism.music.tr
 import java.io.ByteArrayOutputStream
 import java.util.Base64
 import java.util.zip.Deflater
@@ -138,7 +140,7 @@ object BlendCode {
             CodeSong(id, title, artist?.name ?: by, artist?.id, w.toIntOrNull() ?: 1)
         }
         if (lines[1].isBlank()) return null
-        return TasteCode(lines[1], lines[2].ifBlank { "A friend" }, artists, songs, genres)
+        return TasteCode(lines[1], lines[2].ifBlank { tr(R.string.a_friend) }, artists, songs, genres)
     }
 
     /** Names compared without case, accents or punctuation. */

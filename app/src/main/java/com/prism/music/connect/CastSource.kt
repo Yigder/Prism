@@ -1,5 +1,7 @@
 package com.prism.music.connect
 
+import com.prism.music.R
+import com.prism.music.tr
 import android.content.Context
 import android.media.AudioFormat
 import android.media.MediaCodec
@@ -75,14 +77,14 @@ class CastDecoder(private val setSource: (MediaExtractor) -> Unit) {
             f.read() // the first decoded piece settles the output format
             val rate = f.rate
             val us = f.durationUs.takeIf { it > 0 } ?: (fallbackMs * 1000)
-            if (rate <= 0 || us <= 0) throw IOException("Couldn't read the song's format")
+            if (rate <= 0 || us <= 0) throw IOException(tr(R.string.couldn_t_read_the_song_s))
             return CastProbe(rate, us * rate / 1_000_000)
         }
     }
 
     /** Frames from [startFrame] at [rate] (the probed rate). */
     fun from(startFrame: Long, rate: Int): PcmFrames {
-        if (!permits.tryAcquire(20, TimeUnit.SECONDS)) throw IOException("Too many decoders at once")
+        if (!permits.tryAcquire(20, TimeUnit.SECONDS)) throw IOException(tr(R.string.too_many_decoders_at_once))
         return try {
             object : PcmFrames {
                 val f = Frames(setSource, startFrame, rate)
@@ -114,7 +116,7 @@ class CastDecoder(private val setSource: (MediaExtractor) -> Unit) {
                 setSource(extractor)
                 val track = (0 until extractor.trackCount).firstOrNull {
                     extractor.getTrackFormat(it).getString(MediaFormat.KEY_MIME)?.startsWith("audio/") == true
-                } ?: throw IOException("No audio in the song")
+                } ?: throw IOException(tr(R.string.no_audio_in_the_song))
                 extractor.selectTrack(track)
                 val format = extractor.getTrackFormat(track)
                 rate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE)

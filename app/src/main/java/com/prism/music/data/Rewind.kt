@@ -1,5 +1,7 @@
 package com.prism.music.data
 
+import com.prism.music.R
+import com.prism.music.tr
 import com.prism.music.data.db.AlbumPlays
 import com.prism.music.data.db.ArtistPlays
 import com.prism.music.data.db.FirstPlay
@@ -48,7 +50,7 @@ object RewindCalendar {
     }
 
     /** "January–March"… for a year's four seasons (by months: hemispheres disagree on the names). */
-    val quarters = listOf("January–March" to 1, "April–June" to 4, "July–September" to 7, "October–December" to 10)
+    val quarters = listOf(tr(R.string.january_march) to 1, tr(R.string.april_june) to 4, tr(R.string.july_september) to 7, tr(R.string.october_december) to 10)
 
     fun quarterBounds(year: Int, q: Int, zone: ZoneId = ZoneId.systemDefault()): Pair<Long, Long> {
         val month = quarters[q].second

@@ -8,6 +8,9 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 
+// Robolectric: the words come from strings.xml (1.7.9).
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+@org.robolectric.annotation.Config(sdk = [34], application = android.app.Application::class)
 class ReplayStatsTest {
     private fun at(d: String, hour: Int, min: Int) =
         PlayEventEntity(songId = "s", timestamp = LocalDateTime.parse("${d}T%02d:00".format(hour)).toInstant(ZoneOffset.UTC).toEpochMilli(), playedMs = min * 60_000L)

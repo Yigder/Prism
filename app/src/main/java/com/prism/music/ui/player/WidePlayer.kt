@@ -1,5 +1,7 @@
 package com.prism.music.ui.player
 
+import com.prism.music.R
+import com.prism.music.tr
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
@@ -8,6 +10,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import com.prism.music.data.prefs.PlayerPart
+import com.prism.music.data.prefs.shows
+import com.prism.music.data.prefs.showsMenuButton
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -73,7 +79,7 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /** What the second pane of a wide player shows. */
-enum class PlayerPane(val label: String) { LYRICS("Lyrics"), QUEUE("Up next"), STATS("Stats") }
+enum class PlayerPane(val label: String) { LYRICS(tr(R.string.lyrics)), QUEUE(tr(R.string.up_next)), STATS(tr(R.string.stats)) }
 
 /**
  * The player on a wide window (a tablet, an unfolded foldable, a phone on its side): the cover and controls on one
@@ -117,19 +123,25 @@ internal fun WidePlayerContent(
     val pastStart by androidx.compose.runtime.remember { androidx.compose.runtime.derivedStateOf { position.value > 3000 } }
     val deck: @Composable (short: Boolean) -> Unit = { short ->
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            PlayheadScrubber(position, pc.duration) {
-                if (!BestPartChip() && settings.showQuality) QualityLabel(Modifier.align(Alignment.Center), selected = pane == PlayerPane.STATS) {
-                    onPane(if (pane == PlayerPane.STATS) PlayerPane.LYRICS else PlayerPane.STATS)
+            // What's on the player (1.8.0) hides parts here too.
+            if (settings.shows(PlayerPart.PROGRESS)) {
+                PlayheadScrubber(position, pc.duration) {
+                    if (!BestPartChip() && settings.showQuality) QualityLabel(Modifier.align(Alignment.Center), selected = pane == PlayerPane.STATS) {
+                        onPane(if (pane == PlayerPane.STATS) PlayerPane.LYRICS else PlayerPane.STATS)
+                    }
                 }
+                Spacer(Modifier.height(if (short) 2.dp else 8.dp))
             }
-            Spacer(Modifier.height(if (short) 2.dp else 8.dp))
-            TransportRow(isPlaying, buffering, previousEnabled = hasPrevious || pastStart, nextEnabled = hasNext, compact = short, episode = song.isEpisode)
+            TransportRow(
+                isPlaying, buffering, previousEnabled = hasPrevious || pastStart, nextEnabled = hasNext, compact = short, episode = song.isEpisode,
+                skips = settings.shows(PlayerPart.PREV_NEXT),
+            )
             if (!short) {
                 Spacer(Modifier.height(10.dp))
-                if (!settings.hideVolumeBar) VolumeRow(volume)
+                if (settings.shows(com.prism.music.data.prefs.PlayerPart.VOLUME)) VolumeRow(volume)
             }
             Spacer(Modifier.height(if (short) 2.dp else 6.dp))
-            PlayerActionRow(
+            if (settings.shows(PlayerPart.BUTTONS)) PlayerActionRow(
                 lyricsOpen = pane == PlayerPane.LYRICS, queueOpen = pane == PlayerPane.QUEUE, videoMode, videoAvailable,
                 onToggleLyrics = { onPane(PlayerPane.LYRICS) },
                 onToggleQueue = { onPane(if (pane == PlayerPane.QUEUE) PlayerPane.LYRICS else PlayerPane.QUEUE) },
@@ -175,7 +187,7 @@ internal fun WidePlayerContent(
             val short = maxHeight < 520.dp
             Column(Modifier.fillMaxSize()) {
                 Box(Modifier.fillMaxWidth().height(if (short) 18.dp else 28.dp).then(dismissGesture)) {
-                    Box(
+                    if (com.prism.music.ui.theme.LocalAppSettings.current.playerHandle) Box(
                         Modifier.align(Alignment.Center).size(38.dp, 5.dp).clip(RoundedCornerShape(3.dp))
                             .background(Color.White.copy(alpha = 0.6f)),
                     )
@@ -208,8 +220,8 @@ internal fun WidePlayerContent(
             Crossfade(pane, Modifier.weight(1f).fillMaxWidth(), animationSpec = tween(220), label = "pane") { p ->
                 when (p) {
                     PlayerPane.LYRICS -> Column(Modifier.fillMaxSize()) {
-                        LyricsPanel(lyricsState, isPlaying && !covered, controlsOpen = true, onRevealControls = {}, onHideControls = {}, modifier = Modifier.weight(1f).fillMaxWidth(), lyricsGround = false)
-                        LyricsFooter(lyricsState, song, onChangeSource = onLyricsSource, onNeedsDownload = onSingNeedsDownload)
+                        LyricsPanel(lyricsState, isPlaying && !covered, controlsOpen = true, onRevealControls = {}, onHideControls = {}, modifier = Modifier.weight(1f).fillMaxWidth(), lyricsGround = false, onChangeSource = onLyricsSource)
+                        LyricsButtonsRow(song, lyricsState, onChangeSource = onLyricsSource, onNeedsDownload = onSingNeedsDownload)
                         Spacer(Modifier.height(10.dp))
                     }
                     PlayerPane.QUEUE -> InlineQueue(onRevealPlayer = {}, onHidePlayer = {}, modifier = Modifier.fillMaxSize())
@@ -321,20 +333,24 @@ internal fun PlayerCredits(song: Song, onMore: () -> Unit, onCollapse: () -> Uni
     val nav = LocalNavigator.current
     val liked by c.library.likedIds.collectAsState()
     val settings by c.settings.flow.collectAsState()
-    val heart = com.prism.music.data.prefs.PlayerButton.LIKE !in settings.playerButtons
+    val heart = (com.prism.music.data.prefs.PlayerButton.LIKE !in settings.playerButtons || !settings.shows(PlayerPart.BUTTONS)) && settings.shows(PlayerPart.LIKE)
+    // With the ⋯ button hidden (1.8.0), a long press on the title or the artist opens the menu.
+    val menuHeld: (() -> Unit)? = if (settings.shows(PlayerPart.MENU)) null else onMore
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            PlayerMarquee(
+            if (settings.shows(PlayerPart.TITLE)) PlayerMarquee(
                 song.title, MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp, lineHeight = 28.sp), Color.White, true,
-                Modifier.clickable(enabled = song.album?.id != null) { song.album?.id?.let { onCollapse(); nav.go(Routes.album(it)) } },
+                Modifier.combinedClickable(enabled = song.album?.id != null || menuHeld != null, onLongClick = menuHeld) {
+                    song.album?.id?.let { onCollapse(); nav.go(Routes.album(it)) }
+                },
             )
             val linked = com.prism.music.ui.components.openableArtists(song)
             var pickArtist by remember(song.id) { mutableStateOf(false) }
-            Box {
+            if (settings.shows(PlayerPart.ARTIST)) Box {
                 PlayerMarquee(
                     song.artistText, MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.W500, fontSize = 17.sp, lineHeight = 22.sp),
                     Color.White.copy(alpha = 0.6f), true,
-                    Modifier.clickable(enabled = linked.isNotEmpty()) {
+                    Modifier.combinedClickable(enabled = linked.isNotEmpty() || menuHeld != null, onLongClick = menuHeld) {
                         if (linked.size > 1) pickArtist = true else linked.firstOrNull()?.let { onCollapse(); nav.go(Routes.artist(it)) }
                     },
                     delayMs = 5500,
@@ -349,9 +365,9 @@ internal fun PlayerCredits(song: Song, onMore: () -> Unit, onCollapse: () -> Uni
         Spacer(Modifier.width(10.dp))
         val isLiked = song.id in liked
         if (heart) {
-            CircleGlyph(if (isLiked) PrismIcons.HeartFilled else PrismIcons.Heart, if (isLiked) "Remove from liked" else "Like", isLiked) { c.library.toggleLike(song) }
+            CircleGlyph(if (isLiked) PrismIcons.HeartFilled else PrismIcons.Heart, if (isLiked) tr(R.string.remove_from_liked) else tr(R.string.widget_like), isLiked) { c.library.toggleLike(song) }
             Spacer(Modifier.width(8.dp))
         }
-        CircleGlyph(PrismIcons.More, "Song options", onClick = onMore)
+        if (settings.showsMenuButton(wide = true)) CircleGlyph(PrismIcons.More, tr(R.string.song_options), onClick = onMore)
     }
 }

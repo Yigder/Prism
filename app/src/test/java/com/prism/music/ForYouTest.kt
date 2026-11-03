@@ -16,6 +16,9 @@ import org.junit.Test
 import java.time.LocalDate
 import java.time.ZoneId
 
+// Robolectric: the words come from strings.xml (1.7.9).
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+@org.robolectric.annotation.Config(sdk = [34], application = android.app.Application::class)
 class ForYouTest {
     private val now = 1_800_000_000_000L
     private val minute = 60_000L

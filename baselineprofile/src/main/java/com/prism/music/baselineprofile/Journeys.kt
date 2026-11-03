@@ -37,6 +37,29 @@ object Journeys {
         flingPage(down = false, times = 5)
     }
 
+    /**
+     * Opens a playlist or mix from Home and goes back (#228, 1.7.9: the first open of a mix and the way back to Home
+     * stalled for a few hundred milliseconds; their code wasn't in the profile). Signed out, YouTube's own shelves
+     * hold playlists ("Playlist • …" under them); without one on screen it does nothing.
+     */
+    fun MacrobenchmarkScope.openAPlaylist() {
+        tab("Home")
+        device.wait(Until.hasObject(By.textContains("Quick picks").pkg(PACKAGE)), 8_000)
+        var item: UiObject2? = null
+        repeat(6) {
+            item = device.findObject(By.textStartsWith("Playlist").pkg(PACKAGE)) ?: device.findObject(By.textContains("Mix").pkg(PACKAGE))
+            if (item != null) return@repeat
+            flingPage(down = true, times = 1)
+        }
+        if (item?.tap() != true) return
+        // The page's song rows have a "More" button.
+        device.wait(Until.hasObject(By.desc("More")), WAIT)
+        flingPage(down = true, times = 2)
+        device.pressBack()
+        device.waitForIdle(2_000)
+        flingPage(down = false, times = 6)
+    }
+
     /** Search for [query], then scroll through the results. */
     fun MacrobenchmarkScope.search(query: String) {
         tab("Search")

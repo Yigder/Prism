@@ -1,5 +1,7 @@
 package com.prism.music.data.foryou
 
+import com.prism.music.R
+import com.prism.music.tr
 import android.content.Context
 import android.util.Log
 import com.prism.music.AppContainer
@@ -48,7 +50,7 @@ data class Mix(
  *   all day (and offline).
  * - **The time-of-day mix**: what they play at this time of day, plus more like it ("Your Tuesday evening hip-hop"),
  *   made again when the part of the day changes.
- * Disliked songs and excluded artists never appear; songs played three times in the last three days rest.
+ * Disliked songs and excluded artists never appear; what was heard or served lately rests ([MixMaker], [Variety]).
  */
 class ForYou(private val c: AppContainer) {
     private val prefs = c.app.getSharedPreferences("for_you", Context.MODE_PRIVATE)
@@ -113,8 +115,6 @@ class ForYou(private val c: AppContainer) {
         val now: Long,
     ) {
         val played90 = events.map { it.songId }.toSet()
-        /** Songs played three or more times in the last three days: they rest. */
-        val tired: Set<String> = events.filter { now - it.timestamp < 3 * DAY }.groupingBy { it.songId }.eachCount().filter { it.value >= 3 }.keys
 
         companion object {
             suspend fun load(c: AppContainer): Listening? {
@@ -129,10 +129,51 @@ class ForYou(private val c: AppContainer) {
         }
     }
 
-    private fun ok(s: Song, data: Listening) = !s.isLocal && !s.isEpisode && !s.isLive && !c.library.isDisliked(s.id) && !c.exclusions.blocks(s) && s.id !in data.tired
+    private fun ok(s: Song) = !s.isLocal && !s.isEpisode && !s.isLive && !c.library.isDisliked(s.id) && !c.exclusions.blocks(s)
 
-    /** A day's own shuffle of near-equal scores, so a mix isn't the same songs in the same order every day. */
-    private fun jitter(id: String, day: String) = 0.85 + 0.3 * ((id + day).hashCode().toLong().and(0xffff) / 65535.0)
+    /**
+     * The listener as the mix maker sees them: every song they know scored, with how much it's been heard and served
+     * lately, what's been played (never "new"), and what they've turned down.
+     */
+    private fun taste(data: Listening): MixMaker.Taste {
+        val now = data.now
+        val lately = data.events.filter { now - it.timestamp < Variety.LATELY_DAYS * DAY }.groupingBy { it.songId }.eachCount()
+        val last = HashMap<String, Long>()
+        data.events.forEach { e -> if (e.timestamp > (last[e.songId] ?: 0L)) last[e.songId] = e.timestamp }
+        val fb = c.recFeedback
+        val known = data.songs.values.filter { ok(it) }.map { s ->
+            MixMaker.Known(
+                s, data.model.score(s), lately[s.id] ?: 0,
+                last[s.id]?.let { (now - it) / 3_600_000.0 }, fb.servedDaysAgo(s.id),
+            )
+        }
+        val played = data.played90 + data.played90.mapNotNull { data.songs[it] }.map { LocalRadio.sameSong(it) }
+        return MixMaker.Taste(
+            known, played,
+            refused = { s, knownSong -> !ok(s) || c.exclusions.isSongExcluded(s.id) || fb.turnedDown(s.id, knownSong) },
+            artistDoubt = fb::artistDoubt,
+            servedDaysAgo = fb::servedDaysAgo,
+        )
+    }
+
+    /**
+     * Where new songs come from: YouTube Music's radio of a song, its Related tab and its similar artists' top songs.
+     * Each asked once per run (several mixes can share a seed or an artist).
+     */
+    private fun sources() = object : MixMaker.Sources {
+        private val radios = java.util.concurrent.ConcurrentHashMap<String, List<Song>>()
+        private val related = java.util.concurrent.ConcurrentHashMap<String, com.prism.music.data.model.Related>()
+        private val tops = java.util.concurrent.ConcurrentHashMap<String, List<Song>>()
+        override suspend fun radio(seed: Song) = radios[seed.id] ?: withContext(Dispatchers.IO) {
+            c.radio(seed.id, "RDAMVM${seed.id}").songs
+        }.also { radios[seed.id] = it }
+        override suspend fun related(seed: Song) = related[seed.id] ?: withContext(Dispatchers.IO) {
+            c.ytm.related(seed.id, seed.title)
+        }.also { related[seed.id] = it }
+        override suspend fun artistTop(artist: com.prism.music.data.model.ArtistItem) = tops[artist.id] ?: withContext(Dispatchers.IO) {
+            c.ytm.artistTopSongs(artist.id)
+        }.also { tops[artist.id] = it }
+    }
 
     private suspend fun makeDaily(data: Listening) {
         val day = LocalDate.now().toString()
@@ -140,46 +181,30 @@ class ForYou(private val c: AppContainer) {
             data.liked.map { MadeForYou.Play(it.id, it.primaryArtist, data.now - 7 * DAY, 0.5) }
         val genres = artistGenres(MadeForYou.topArtists(plays.filter { it.artist.isNotBlank() }, data.now), data)
         val clusters = MadeForYou.clusters(plays.filter { it.artist.isNotBlank() }, genres, data.now)
+        val taste = taste(data)
+        val maker = MixMaker(sources())
         val made = ArrayList<String>()
+        val served = ArrayList<String>()
         for (cl in clusters) {
             // Numbered by the mixes actually made: a group without enough songs is skipped without leaving a gap.
             val n = made.size + 1
             val members = cl.artists.map { it.lowercase() }.toSet()
-            val known = data.songs.values.filter { it.primaryArtist.lowercase() in members && ok(it, data) && !it.isVideo }
-                .sortedByDescending { data.model.score(it) * jitter(it.id, day) }
-            val own = known.take(30)
-            val fresh = discover(own.take(3), data, members, day, exclude = own.map { it.id }.toSet())
-            val songs = MadeForYou.interleave(own, fresh, 50) { it.primaryArtist.lowercase() }
-            if (songs.size < 10) continue
-            saveMix(MadeForYou.daily(n), "Daily Mix $n", MadeForYou.namesLine(cl.artists), cl.artists.take(4), COLORS[(n - 1) % COLORS.size], songs)
+            val recipe = MadeForYou.dailyRecipe(MadeForYou.daily(n), members.size)
+            val mix = maker.make(recipe, taste, day) { it.song.primaryArtist.lowercase() in members }
+            if (mix.songs.size < 10) continue
+            saveMix(MadeForYou.daily(n), tr(R.string.daily_mix, n), MadeForYou.namesLine(cl.artists), cl.artists.take(4), COLORS[(n - 1) % COLORS.size], mix.songs)
             made += MadeForYou.daily(n)
+            served += mix.songs.map { it.id }
+            Log.i(TAG, "daily mix $n: ${mix.familiar.size} known, ${mix.fresh.size} new, seeds ${mix.seeds.map { it.title }}")
         }
+        c.recFeedback.served(served)
         // Mixes from a day with more groups than today's go.
         c.db.mixes().deleteOthers("daily:%", made.ifEmpty { listOf("-") })
         Log.i(TAG, "daily mixes: ${clusters.joinToString(" | ") { "${it.artists} %.0f%%".format(it.weight * 100) }}")
     }
 
-    /**
-     * New songs like [seeds] (their radios), that the listener hasn't played in 90 days, best first. [near]: artists
-     * the mix is about (a new song by one of them is welcome).
-     */
-    private suspend fun discover(seeds: List<Song>, data: Listening, near: Set<String>, day: String, exclude: Set<String>, max: Int = 20): List<Song> {
-        val found = LinkedHashMap<String, Pair<Song, Double>>()
-        for (seed in seeds) {
-            val radio = runCatching { withContext(Dispatchers.IO) { c.radio(seed.id, "RDAMVM${seed.id}") } }.getOrNull()?.songs ?: continue
-            val seedScore = data.model.score(seed)
-            radio.forEachIndexed { rank, s ->
-                if (s.id in exclude || s.id in data.played90 || s.isVideo || !ok(s, data)) return@forEachIndexed
-                val bonus = if (s.primaryArtist.lowercase() in near) 1.15 else 1.0
-                val score = data.model.score(s, recommendedFrom = seedScore, rank = rank) * bonus * jitter(s.id, day)
-                if ((found[s.id]?.second ?: -1.0) < score) found[s.id] = s to score
-            }
-        }
-        return found.values.sortedByDescending { it.second }.map { it.first }.distinctBy { it.title.lowercase() to it.primaryArtist.lowercase() }.take(max)
-    }
-
     private suspend fun makeTimeMix(data: Listening, bucket: MadeForYou.TimeBucket) {
-        val day = LocalDate.now().toString()
+        val day = LocalDate.now().toString() + bucket.name
         val cal = Calendar.getInstance()
         val weight = HashMap<String, Double>()
         for (e in data.events) {
@@ -187,28 +212,33 @@ class ForYou(private val c: AppContainer) {
             if (cal.get(Calendar.HOUR_OF_DAY) !in bucket) continue
             weight.merge(e.songId, 1.0, Double::plus)
         }
-        val known = weight.entries.mapNotNull { (id, w) -> data.songs[id]?.takeIf { ok(it, data) && !it.isVideo }?.let { it to w * data.model.score(it) * jitter(id, day) } }
-            .sortedByDescending { it.second }.map { it.first }
-        if (known.size < 5) { c.db.mixes().deleteOthers(MadeForYou.TIME, listOf("-")); return }
-        val own = known.take(18)
-        val fresh = discover(own.take(2), data, own.map { it.primaryArtist.lowercase() }.toSet(), day, own.map { it.id }.toSet(), max = 12)
-        val songs = MadeForYou.interleave(own, fresh, 30) { it.primaryArtist.lowercase() }
+        val top = weight.values.maxOrNull() ?: 0.0
+        if (weight.size < 5) { c.db.mixes().deleteOthers(MadeForYou.TIME, listOf("-")); return }
+        // What's played at this time of day, in proportion to how often: the time counts as much as the liking.
+        val base = taste(data)
+        val taste = MixMaker.Taste(
+            base.known.map { k -> k.copy(score = k.score * (0.4 + 0.6 * (weight[k.song.id] ?: 0.0) / top)) },
+            base.played, base.refused, base.artistDoubt, base.servedDaysAgo,
+        )
+        val mix = MixMaker(sources()).make(MadeForYou.timeRecipe, taste, day) { it.song.id in weight }
+        if (mix.familiar.size < 5) { c.db.mixes().deleteOthers(MadeForYou.TIME, listOf("-")); return }
+        val songs = mix.songs
+        c.recFeedback.served(songs.map { it.id })
         // Artists whose genre isn't known yet are looked up first (briefly), so the name has the whole mix to go by.
         withTimeoutOrNull(6_000) {
             val known = c.meta.cachedGenres(songs)
             val missing = songs.filter { it.id !in known }.map { it.primaryArtist }.filter { it.isNotBlank() }.distinct()
             coroutineScope { missing.map { a -> async { runCatching { c.meta.artistGenre(a) } } }.awaitAll() }
         }
-        val weekday = LocalDate.now().dayOfWeek.getDisplayName(TextStyle.FULL, Locale.ENGLISH)
-        val artists = own.map { it.primaryArtist }.distinct()
+        val weekday = LocalDate.now().dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault())
+        val artists = mix.familiar.map { it.primaryArtist }.distinct()
         saveMix(MadeForYou.TIME, MadeForYou.timeTitle(weekday, bucket, timeGenre(songs)), MadeForYou.namesLine(artists),
             artists.take(4), TIME_COLORS.getValue(bucket), songs)
     }
-
     /** The genre word in the time-of-day mix's name ("indie", "hip-hop"), or null for "mix". */
     private suspend fun timeGenre(songs: List<Song>): String? {
         val g = c.meta.cachedGenres(songs)
-        return MadeForYou.mainGenre(songs.map { g[it.id] })?.substringBefore(" & ")
+        return MadeForYou.mainGenre(songs.map { g[it.id] })
     }
 
     /**
@@ -221,7 +251,7 @@ class ForYou(private val c: AppContainer) {
         val e = c.db.mixes().get(MadeForYou.TIME) ?: return
         val made = java.time.Instant.ofEpochMilli(e.createdAt).atZone(java.time.ZoneId.systemDefault())
         val bucket = MadeForYou.TimeBucket.of(made.hour)
-        val title = MadeForYou.timeTitle(made.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.ENGLISH), bucket, timeGenre(toMix(e).songs))
+        val title = MadeForYou.timeTitle(made.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault()), bucket, timeGenre(toMix(e).songs))
         if (title != e.title) {
             c.db.mixes().put(e.copy(title = title))
             Log.i(TAG, "time mix renamed: ${e.title} -> $title")
@@ -245,13 +275,16 @@ class ForYou(private val c: AppContainer) {
         return out
     }
 
-    private companion object {
-        const val TAG = "ForYou"
-        const val DAILY_DAY = "daily_day"
-        const val TIME_KEY = "time_key"
-        const val DAY = 86_400_000L
-        val COLORS = listOf(0xFFE0533D, 0xFF3D7BE0, 0xFF8E44AD, 0xFF27AE60, 0xFFD4A017, 0xFFD6336C).map { it.toInt() }
-        val TIME_COLORS = mapOf(
+    companion object {
+        /** A queue started from one of Prism's mixes (a Daily Mix, the time mix, Release Radar, a mix from your music). */
+        fun isMixId(id: String) = id.startsWith("daily:") || id == MadeForYou.TIME || id == MadeForYou.RADAR || YourMusic.isLibraryMix(id)
+
+        private const val TAG = "ForYou"
+        private const val DAILY_DAY = "daily_day"
+        private const val TIME_KEY = "time_key"
+        private const val DAY = 86_400_000L
+        private val COLORS = listOf(0xFFE0533D, 0xFF3D7BE0, 0xFF8E44AD, 0xFF27AE60, 0xFFD4A017, 0xFFD6336C).map { it.toInt() }
+        private val TIME_COLORS = mapOf(
             MadeForYou.TimeBucket.MORNING to 0xFFF2A541.toInt(),
             MadeForYou.TimeBucket.AFTERNOON to 0xFF4FB3BF.toInt(),
             MadeForYou.TimeBucket.EVENING to 0xFFE76F51.toInt(),

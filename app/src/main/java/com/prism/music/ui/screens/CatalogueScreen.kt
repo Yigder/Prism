@@ -1,5 +1,7 @@
 package com.prism.music.ui.screens
 
+import com.prism.music.R
+import com.prism.music.tr
 import com.prism.music.data.model.quickPicks
 import com.prism.music.ui.theme.PrismIcons
 import androidx.compose.foundation.background
@@ -73,7 +75,7 @@ import com.prism.music.ui.theme.LocalContainer
 
 private fun SectionStyle.icon(): ImageVector = when (this) {
     SectionStyle.CAROUSEL -> PrismIcons.Carousel
-    SectionStyle.GRID -> PrismIcons.Customize
+    SectionStyle.GRID, SectionStyle.DIAL -> PrismIcons.Customize
     SectionStyle.LIST -> PrismIcons.Queue
     SectionStyle.HERO -> PrismIcons.Rows
 }
@@ -96,7 +98,7 @@ private fun CataloguePage(bottomPadding: Dp) {
     val ytShelves by homeShelfCache.collectAsState()
     val layout = settings.homeLayout
     // Every section Prism can show — built-in and every shelf YouTube Music has offered — that isn't on Home yet.
-    val picks = ytShelves.quickPicks()
+    val picks = ytShelves.quickPicks(settings.accountName)
     val available = (HomeSections.defaults + ytShelves.filterNot { it === picks }.map { HomeSectionConfig(shelfKey(it.title), it.title) })
         .filter { cfg -> layout.none { it.key == cfg.key } }
         .distinctBy { it.key }
@@ -108,13 +110,13 @@ private fun CataloguePage(bottomPadding: Dp) {
     fun save(list: List<HomeSectionConfig>) = c.settings.setHomeLayout(list)
 
     SubPage(
-        "Customize Home", bottomPadding,
+        tr(R.string.customize_home), bottomPadding,
         horizontalPadding = 16.dp,
         spacing = 22.dp,
-        actions = { RoundAction(PrismIcons.History, "Reset", glass = true) { save(HomeSections.initial) } },
+        actions = { RoundAction(PrismIcons.History, tr(R.string.reset), glass = true) { save(HomeSections.initial) } },
     ) {
         item(key = "greeting") {
-            Group("Top of Home") {
+            Group(tr(R.string.top_of_home)) {
                 // 1.7.6: the greeting as before, just the buttons, or the greeting over a picture.
                 ChoiceCards(
                     com.prism.music.data.prefs.HomeHeader.entries, settings.homeHeader, title = { it.label }, detail = { it.note },
@@ -122,17 +124,17 @@ private fun CataloguePage(bottomPadding: Dp) {
                 ) { HeaderSample(it) }
                 if (settings.homeHeader != com.prism.music.data.prefs.HomeHeader.NONE) {
                     GreetingField()
-                    Toggle("Show your name", null, settings.greetingShowName) { c.settings.setGreetingShowName(it) }
+                    Toggle(tr(R.string.show_your_name), null, settings.greetingShowName) { c.settings.setGreetingShowName(it) }
                 }
                 if (settings.homeHeader == com.prism.music.data.prefs.HomeHeader.PICTURE || settings.homeHeader == com.prism.music.data.prefs.HomeHeader.NOW_PLAYING) {
-                    Label("Height")
+                    Label(tr(R.string.height))
                     Chips(com.prism.music.data.prefs.HomeHeaderHeight.entries, settings.homeHeaderHeight, { it.label }) { c.settings.setHomeHeaderHeight(it) }
                 }
                 if (settings.homeHeader == com.prism.music.data.prefs.HomeHeader.PICTURE) HeaderPicturePicker()
             }
         }
         item(key = "sections") {
-            Group("Sections", info = "Hold a section (or drag its grip) to move it; tap it to show or hide it.") {
+            Group(tr(R.string.sections), info = tr(R.string.hold_a_section_or_drag_its)) {
                 com.prism.music.ui.components.ReorderList(layout, { it.key }, { save(it) }) { cfg, i, held, mod ->
                     Column(mod) {
                         if (i > 0 && !held) HorizontalDivider(Modifier.padding(start = 52.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
@@ -155,15 +157,15 @@ private fun CataloguePage(bottomPadding: Dp) {
                 ) {
                     Icon(PrismIcons.Add, null, Modifier.size(22.dp), tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.width(14.dp))
-                    Text("Add a section", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+                    Text(tr(R.string.add_a_section), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
                 }
             }
         }
         item(key = "tiles") {
             // Greyed out (still editable) while the Shortcut tiles section is hidden or removed.
-            Column(Modifier.alpha(if (tilesOn) 1f else 0.45f)) { Group(HomeSections.TILES_TITLE, info = "Shortcuts appear in the order you pick them.") {
+            Column(Modifier.alpha(if (tilesOn) 1f else 0.45f)) { Group(tr(R.string.section_shortcut_tiles), info = tr(R.string.shortcuts_appear_in_the_order_you)) {
                 // Why they're greyed out: a state, so it stays in view.
-                if (!tilesOn) Note("Show the ${HomeSections.TILES_TITLE} section to see these on Home")
+                if (!tilesOn) Note(tr(R.string.show_the_section_to_see_these, tr(R.string.section_shortcut_tiles)))
                 FlowRow(
                     Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -177,35 +179,35 @@ private fun CataloguePage(bottomPadding: Dp) {
                     }
                 }
                 Item(
-                    "Pinned playlists",
-                    settings.homePlaylists.takeIf { it.isNotEmpty() }?.joinToString(", ") { it.title } ?: "None",
+                    tr(R.string.pinned_playlists),
+                    settings.homePlaylists.takeIf { it.isNotEmpty() }?.joinToString(", ") { it.title } ?: tr(R.string.none),
                     onClick = { pinning = true },
                 )
-                Item("Recently played albums", null, onClick = { c.settings.setHomeRecentTiles((settings.homeRecentTiles + 1) % 7) }) {
+                Item(tr(R.string.recently_played_albums), null, onClick = { c.settings.setHomeRecentTiles((settings.homeRecentTiles + 1) % 7) }) {
                     Stepper(settings.homeRecentTiles, 0..6) { c.settings.setHomeRecentTiles(it) }
                 }
             } }
         }
         item(key = "options") {
-            Group("Options") {
-                Toggle("Add new sections automatically", "New shelves from YouTube Music appear at the bottom", settings.autoAddSections) { c.settings.setAutoAddSections(it) }
+            Group(tr(R.string.options)) {
+                Toggle(tr(R.string.add_new_sections_automatically), tr(R.string.new_shelves_from_youtube_music_appear), settings.autoAddSections) { c.settings.setAutoAddSections(it) }
                 // YouTube Music's own sections of a kind, left off Home (1.7.6).
                 Toggle(
-                    "Leave off music video sections", "YouTube Music's sections that are mostly videos", HomeSections.KIND_VIDEOS in settings.homeHideKinds,
+                    tr(R.string.leave_off_music_video_sections), tr(R.string.youtube_music_s_sections_that_are), HomeSections.KIND_VIDEOS in settings.homeHideKinds,
                 ) { c.settings.setHomeHideKind(HomeSections.KIND_VIDEOS, it) }
                 Toggle(
-                    "Leave off podcast sections", "YouTube Music's sections of shows and episodes", HomeSections.KIND_PODCASTS in settings.homeHideKinds,
+                    tr(R.string.leave_off_podcast_sections), tr(R.string.youtube_music_s_sections_of_shows), HomeSections.KIND_PODCASTS in settings.homeHideKinds,
                 ) { c.settings.setHomeHideKind(HomeSections.KIND_PODCASTS, it) }
                 Toggle(
-                    "Quick picks start a radio",
-                    if (settings.quickPicksRadio) "Tapping a pick plays it, then songs like it" else "Tapping a pick plays Quick picks in order from it",
+                    tr(R.string.quick_picks_start_a_radio),
+                    if (settings.quickPicksRadio) tr(R.string.tapping_a_pick_plays_it_then) else tr(R.string.tapping_a_pick_plays_quick_picks),
                     settings.quickPicksRadio,
                 ) { c.settings.setQuickPicksRadio(it) }
                 Toggle(
-                    "Speed dial: YouTube Music's only", "Without the albums and songs Prism adds from your plays", settings.speedDialYouTubeOnly,
-                    info = "Speed dial starts with YouTube Music's own tiles and fills up with what you play most on this phone. On, it keeps to YouTube Music's. When YouTube Music has none (signed out, or offline), yours still show.",
+                    tr(R.string.speed_dial_youtube_music_s_only), tr(R.string.without_the_albums_and_songs_prism), settings.speedDialYouTubeOnly,
+                    info = tr(R.string.speed_dial_starts_with_youtube_music),
                 ) { c.settings.setSpeedDialYouTubeOnly(it) }
-                Toggle("Customize button on Home", null, settings.homeCustomizeButton) { c.settings.setHomeCustomizeButton(it) }
+                Toggle(tr(R.string.customize_button_on_home), null, settings.homeCustomizeButton) { c.settings.setHomeCustomizeButton(it) }
             }
         }
     }
@@ -238,7 +240,7 @@ private fun SectionRow(
     val fg = if (cfg.visible) scheme.onSurface else scheme.onSurfaceVariant.copy(alpha = 0.6f)
     Row(
         // No tap while held, so letting go of a drag doesn't also hide the section.
-        modifier.fillMaxWidth().clickable(enabled = !held, onClickLabel = if (cfg.visible) "Hide" else "Show") { onChange(cfg.copy(visible = !cfg.visible)) }
+        modifier.fillMaxWidth().clickable(enabled = !held, onClickLabel = if (cfg.visible) tr(R.string.hide) else tr(R.string.show)) { onChange(cfg.copy(visible = !cfg.visible)) }
             .padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -248,16 +250,16 @@ private fun SectionRow(
             Text(cfg.titled(), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
                 listOfNotNull(
-                    if (cfg.visible) cfg.style.label else "Hidden",
-                    cfg.title.takeIf { cfg.name != null }?.let { "was \"$it\"" },
-                    "Pinned".takeIf { cfg.key.startsWith(HomeSections.PIN_PREFIX) },
+                    if (cfg.visible) cfg.style.label else tr(R.string.hidden),
+                    cfg.title.takeIf { cfg.name != null }?.let { tr(R.string.was, it) },
+                    tr(R.string.pinned).takeIf { cfg.key.startsWith(HomeSections.PIN_PREFIX) },
                 ).joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
         }
-        com.prism.music.ui.components.DragGrip(grip, "Drag ${cfg.titled()}")
+        com.prism.music.ui.components.DragGrip(grip, tr(R.string.drag, cfg.titled()))
         IconButton(onClick = { menu = true }) {
-            Icon(PrismIcons.MoreVertical, "Options for ${cfg.title}", tint = scheme.onSurfaceVariant)
+            Icon(PrismIcons.MoreVertical, tr(R.string.options_for, cfg.title), tint = scheme.onSurfaceVariant)
             DropdownMenu(menu, { menu = false }) {
                 SectionStyle.entries.forEach { st ->
                     DropdownMenuItem(
@@ -267,14 +269,14 @@ private fun SectionRow(
                     )
                 }
                 HorizontalDivider()
-                DropdownMenuItem({ Text("Rename") }, { renaming = true; menu = false }, leadingIcon = { Icon(PrismIcons.Edit, null) })
-                if (canUp) DropdownMenuItem({ Text("Move up") }, { onMove(-1); menu = false }, leadingIcon = { Icon(PrismIcons.ChevronUp, null) })
-                if (canDown) DropdownMenuItem({ Text("Move down") }, { onMove(1); menu = false }, leadingIcon = { Icon(PrismIcons.ChevronDown, null) })
+                DropdownMenuItem({ Text(tr(R.string.rename)) }, { renaming = true; menu = false }, leadingIcon = { Icon(PrismIcons.Edit, null) })
+                if (canUp) DropdownMenuItem({ Text(tr(R.string.move_up)) }, { onMove(-1); menu = false }, leadingIcon = { Icon(PrismIcons.ChevronUp, null) })
+                if (canDown) DropdownMenuItem({ Text(tr(R.string.move_down)) }, { onMove(1); menu = false }, leadingIcon = { Icon(PrismIcons.ChevronDown, null) })
                 DropdownMenuItem(
-                    { Text(if (cfg.visible) "Hide" else "Show") }, { onChange(cfg.copy(visible = !cfg.visible)); menu = false },
+                    { Text(if (cfg.visible) tr(R.string.hide) else tr(R.string.show)) }, { onChange(cfg.copy(visible = !cfg.visible)); menu = false },
                     leadingIcon = { Icon(if (cfg.visible) PrismIcons.Hidden else PrismIcons.Visible, null) },
                 )
-                DropdownMenuItem({ Text("Remove") }, { onRemove(); menu = false }, leadingIcon = { Icon(PrismIcons.Delete, null) })
+                DropdownMenuItem({ Text(tr(R.string.remove)) }, { onRemove(); menu = false }, leadingIcon = { Icon(PrismIcons.Delete, null) })
             }
         }
     }
@@ -318,21 +320,22 @@ private fun HeaderPicturePicker() {
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
             val file = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { savePhoto(context, uri, "home-header") }
-            if (file != null) c.settings.setHomeHeaderPicture("PHOTO|${file.absolutePath}")
+            if (file != null) c.settings.setHomeHeaderPicture(tr(R.string.photo, file.absolutePath))
         }
     }
     val current = com.prism.music.ui.theme.Backdrop.parse(settings.homeHeaderPicture).first
     val designs = com.prism.music.ui.theme.Backdrop.entries.filter {
-        it.group == com.prism.music.ui.theme.BackdropGroup.COLOR || it.group == com.prism.music.ui.theme.BackdropGroup.DESIGNS
+        (it.group == com.prism.music.ui.theme.BackdropGroup.COLOR || it.group == com.prism.music.ui.theme.BackdropGroup.DESIGNS) &&
+            (it.offeredOn(com.prism.music.data.looks.Seasons.today()) || it == current)
     }
-    Label("Picture")
+    Label(tr(R.string.picture))
     androidx.compose.foundation.layout.FlowRow(
         Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         PrismChip(current == com.prism.music.ui.theme.Backdrop.PHOTO, {
             picker.launch(androidx.activity.result.PickVisualMediaRequest(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia.ImageOnly))
-        }, "Your photo", icon = PrismIcons.Photo)
+        }, tr(R.string.your_photo), icon = PrismIcons.Photo)
         designs.forEach { d -> PrismChip(current == d, { c.settings.setHomeHeaderPicture(d.name) }, d.label) }
     }
 }
@@ -343,19 +346,19 @@ private fun SectionNameDialog(cfg: HomeSectionConfig, onDismiss: () -> Unit, onS
     var text by remember { mutableStateOf(cfg.name ?: cfg.title) }
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Rename section") },
+        title = { Text(tr(R.string.rename_section)) },
         text = {
             com.prism.music.ui.components.PrismTextField(
                 text, { text = it.replace('\n', ' ').take(40) }, Modifier.fillMaxWidth(), singleLine = true, placeholder = { Text(cfg.title) },
             )
         },
         confirmButton = {
-            com.prism.music.ui.components.PrismTextButton(onClick = { onSave(text.trim().takeIf { it.isNotEmpty() && it != cfg.title }) }) { Text("Save") }
+            com.prism.music.ui.components.PrismTextButton(onClick = { onSave(text.trim().takeIf { it.isNotEmpty() && it != cfg.title }) }) { Text(tr(R.string.save)) }
         },
         dismissButton = {
             Row {
-                if (cfg.name != null) com.prism.music.ui.components.PrismTextButton(onClick = { onSave(null) }) { Text("Use \"${cfg.title}\"") }
-                com.prism.music.ui.components.PrismTextButton(onClick = onDismiss) { Text("Cancel") }
+                if (cfg.name != null) com.prism.music.ui.components.PrismTextButton(onClick = { onSave(null) }) { Text(tr(R.string.use_2, cfg.title)) }
+                com.prism.music.ui.components.PrismTextButton(onClick = onDismiss) { Text(tr(R.string.cancel)) }
             }
         },
     )
@@ -369,7 +372,7 @@ private fun GreetingField() {
     var text by remember { mutableStateOf(settings.greetingText) }
     val scheme = MaterialTheme.colorScheme
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-        Text("Headline", style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
+        Text(tr(R.string.headline), style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
         BasicTextField(
             text, { text = it; c.settings.setGreetingText(it) },
             Modifier.fillMaxWidth().padding(top = 2.dp),
@@ -377,7 +380,7 @@ private fun GreetingField() {
             textStyle = MaterialTheme.typography.bodyLarge.copy(color = scheme.onSurface, fontWeight = FontWeight.Medium),
             cursorBrush = SolidColor(scheme.primary),
             decorationBox = { inner ->
-                if (text.isEmpty()) Text("Good morning / afternoon / evening", style = MaterialTheme.typography.bodyLarge, color = scheme.onSurfaceVariant.copy(alpha = 0.6f))
+                if (text.isEmpty()) Text(tr(R.string.good_morning_afternoon_evening), style = MaterialTheme.typography.bodyLarge, color = scheme.onSurfaceVariant.copy(alpha = 0.6f))
                 inner()
             },
         )
@@ -387,9 +390,9 @@ private fun GreetingField() {
 @Composable
 private fun Stepper(value: Int, range: IntRange, onChange: (Int) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = { onChange(value - 1) }, enabled = value > range.first, modifier = Modifier.size(36.dp)) { Icon(PrismIcons.Remove, "Fewer") }
-        Text(if (value == 0) "Off" else "$value", style = MaterialTheme.typography.titleSmall, modifier = Modifier.width(32.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-        IconButton(onClick = { onChange(value + 1) }, enabled = value < range.last, modifier = Modifier.size(36.dp)) { Icon(PrismIcons.Add, "More") }
+        IconButton(onClick = { onChange(value - 1) }, enabled = value > range.first, modifier = Modifier.size(36.dp)) { Icon(PrismIcons.Remove, tr(R.string.fewer)) }
+        Text(if (value == 0) tr(R.string.off) else "$value", style = MaterialTheme.typography.titleSmall, modifier = Modifier.width(32.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        IconButton(onClick = { onChange(value + 1) }, enabled = value < range.last, modifier = Modifier.size(36.dp)) { Icon(PrismIcons.Add, tr(R.string.more)) }
     }
 }
 
@@ -403,24 +406,24 @@ private fun AddSectionSheet(available: List<HomeSectionConfig>, notLoaded: Boole
         value = OwnSections.rules(c).filter { r -> settings.homeLayout.none { it.key == r.key } }
     }
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        Text("Add a section", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 8.dp))
+        Text(tr(R.string.add_a_section), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 8.dp))
         val (prism, youtube) = available.partition { !it.key.startsWith(HomeSections.YT_PREFIX) }
         LazyColumn(Modifier.padding(bottom = 24.dp)) {
-            item { SheetLabel("Your own") }
+            item { SheetLabel(tr(R.string.your_own)) }
             items(rules, key = { it.key }) { cfg -> SheetRow(cfg.title) { onAdd(cfg); onDismiss() } }
             item {
                 Text(
-                    "To pin an album, playlist, artist or mix as a section: hold it anywhere in Prism and pick \"Pin to Home\".",
+                    tr(R.string.to_pin_an_album_playlist_artist),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
                 )
             }
-            if (prism.isNotEmpty()) item { SheetLabel("From Prism") }
+            if (prism.isNotEmpty()) item { SheetLabel(tr(R.string.from_prism)) }
             items(prism, key = { it.key }) { cfg -> SheetRow(cfg.title) { onAdd(cfg); onDismiss() } }
-            item { SheetLabel("From YouTube Music") }
+            item { SheetLabel(tr(R.string.from_youtube_music)) }
             if (youtube.isEmpty()) item {
                 Text(
-                    if (notLoaded) "Open Home once to load YouTube Music's sections" else "Everything's already on Home",
+                    if (notLoaded) tr(R.string.open_home_once_to_load_youtube) else tr(R.string.everything_s_already_on_home),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
                 )
@@ -447,15 +450,15 @@ private fun PinPlaylistsSheet(onDismiss: () -> Unit) {
     val youtubeOptions = playlists.filter { it.id !in pinnedIds && mine.none { m -> m.id == it.id } }.map { it.id to it.title }
     val options = pinned + prismOptions + youtubeOptions
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        Text("Pinned playlists", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 24.dp))
+        Text(tr(R.string.pinned_playlists), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 24.dp))
         Text(
-            "Shown as tiles after the shortcuts", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            tr(R.string.shown_as_tiles_after_the_shortcuts), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 8.dp),
         )
         LazyColumn(Modifier.padding(bottom = 24.dp)) {
             if (options.isEmpty()) item {
                 Text(
-                    "Your playlists show up here once your library has loaded", style = MaterialTheme.typography.bodySmall,
+                    tr(R.string.your_playlists_show_up_here_once_2), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
                 )
             }
@@ -468,9 +471,9 @@ private fun PinPlaylistsSheet(onDismiss: () -> Unit) {
                     )
                 }
             }
-            if (pinned.isNotEmpty()) { item { SheetLabel("Pinned") }; row(this, pinned) }
-            if (prismOptions.isNotEmpty()) { item { SheetLabel("Prism playlists") }; row(this, prismOptions) }
-            if (youtubeOptions.isNotEmpty()) { item { SheetLabel("YouTube Music playlists") }; row(this, youtubeOptions) }
+            if (pinned.isNotEmpty()) { item { SheetLabel(tr(R.string.pinned)) }; row(this, pinned) }
+            if (prismOptions.isNotEmpty()) { item { SheetLabel(tr(R.string.prism_playlists)) }; row(this, prismOptions) }
+            if (youtubeOptions.isNotEmpty()) { item { SheetLabel(tr(R.string.youtube_music_playlists)) }; row(this, youtubeOptions) }
         }
     }
 }
@@ -486,8 +489,8 @@ private fun SheetRow(title: String, checked: Boolean? = null, onClick: () -> Uni
     ) {
         Text(title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
         when (checked) {
-            null -> Icon(PrismIcons.Add, "Add", tint = MaterialTheme.colorScheme.primary)
-            true -> Icon(PrismIcons.Check, "Pinned", tint = MaterialTheme.colorScheme.primary)
+            null -> Icon(PrismIcons.Add, tr(R.string.add), tint = MaterialTheme.colorScheme.primary)
+            true -> Icon(PrismIcons.Check, tr(R.string.pinned), tint = MaterialTheme.colorScheme.primary)
             false -> {}
         }
     }

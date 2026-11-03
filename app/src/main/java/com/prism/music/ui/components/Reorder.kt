@@ -1,5 +1,7 @@
 package com.prism.music.ui.components
 
+import com.prism.music.R
+import com.prism.music.tr
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
@@ -233,7 +235,7 @@ private const val MAX_STEP_DP = 18f
 
 /** The grip shown at a reorderable row's end: drag it to move the row straight away. */
 @Composable
-fun DragGrip(modifier: Modifier = Modifier, description: String? = "Drag to move") {
+fun DragGrip(modifier: Modifier = Modifier, description: String? = tr(R.string.drag_to_move)) {
     Icon(
         com.prism.music.ui.theme.PrismIcons.DragHandle, description,
         modifier.size(22.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),

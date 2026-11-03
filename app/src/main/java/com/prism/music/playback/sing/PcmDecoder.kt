@@ -14,7 +14,7 @@ import java.nio.ByteOrder
  * file's own sample rate: mono is doubled, anything beyond two channels is left out. Pieces come about half a second
  * at a time; the decoder is kept fed with every input buffer it has free, and every finished output is taken at once.
  */
-class PcmDecoder(context: Context, uri: Uri) : AutoCloseable {
+class PcmDecoder(context: Context, uri: Uri, /** Which of the file's audio tracks (the first by default). */ audioTrack: Int = 0) : AutoCloseable {
     private val extractor = MediaExtractor()
     private val codec: MediaCodec
     private val info = MediaCodec.BufferInfo()
@@ -33,9 +33,9 @@ class PcmDecoder(context: Context, uri: Uri) : AutoCloseable {
 
     init {
         extractor.setDataSource(context, uri, null)
-        val track = (0 until extractor.trackCount).firstOrNull {
+        val track = (0 until extractor.trackCount).filter {
             extractor.getTrackFormat(it).getString(MediaFormat.KEY_MIME)?.startsWith("audio/") == true
-        } ?: throw IOException("No audio in the file")
+        }.getOrNull(audioTrack) ?: throw IOException("No audio in the file")
         extractor.selectTrack(track)
         val format = extractor.getTrackFormat(track)
         sampleRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE)
@@ -44,6 +44,18 @@ class PcmDecoder(context: Context, uri: Uri) : AutoCloseable {
         codec = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)
         codec.configure(format, null, null, 0)
         codec.start()
+    }
+
+    /** The song frame the first decoded sample is (after [seekTo], wherever the decoder could start: a sync sample). */
+    var firstFrame = -1L
+        private set
+
+    /**
+     * Starts decoding at or just before [us] (the sync sample before it), before the first [read]: Sing separates a
+     * song from where it's playing first (1.8.x). [firstFrame] says exactly where it started.
+     */
+    fun seekTo(us: Long) {
+        extractor.seekTo(us, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
     }
 
     /** The next decoded piece (interleaved stereo, ~0.5 s), or null at the end. */
@@ -105,6 +117,7 @@ class PcmDecoder(context: Context, uri: Uri) : AutoCloseable {
         out.position(info.offset); out.limit(info.offset + info.size)
         val samples = if (floatPcm) info.size / 4 else info.size / 2
         val frames = samples / channels
+        if (firstFrame < 0 && frames > 0) firstFrame = maxOf(0L, Math.round(info.presentationTimeUs * sampleRate / 1e6))
         if ((pendingFrames + frames) * 2 > pending.size) pending = pending.copyOf(maxOf(pending.size * 2, (pendingFrames + frames) * 2))
         var at = pendingFrames * 2
         if (!floatPcm && channels == 2) {

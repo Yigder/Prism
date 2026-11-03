@@ -1,5 +1,7 @@
 package com.prism.music.ui.components
 
+import com.prism.music.R
+import com.prism.music.tr
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -39,7 +41,7 @@ fun LocalCover(song: Song, modifier: Modifier = Modifier) {
             modifier = Modifier.align(Alignment.Center),
         )
         if (size > 120.dp) Text(
-            song.artistText.ifBlank { "On this phone" },
+            song.artistText.ifBlank { tr(R.string.on_this_phone) },
             style = TextStyle(fontSize = (size.value * 0.045f).coerceAtLeast(11f).sp, color = Color.White.copy(alpha = 0.7f)),
             maxLines = 1, overflow = TextOverflow.Ellipsis,
             modifier = Modifier.align(Alignment.BottomStart).padding(start = size * 0.07f, end = size * 0.07f, bottom = size * 0.07f),

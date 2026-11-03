@@ -80,7 +80,8 @@ fun StyledEntries(style: SectionStyle, entries: List<HomeEntry>) {
         SectionStyle.CAROUSEL -> LazyRow(contentPadding = PaddingValues(horizontal = 14.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             items(entries, key = { it.key }) { e -> EntryCard(e, ui.cardWidth) }
         }
-        SectionStyle.GRID -> LazyHorizontalGrid(
+        // Prism's own tiles (mixes, moods) keep the two-row grid for 3 × 3 too: they're drawn, not covers.
+        SectionStyle.GRID, SectionStyle.DIAL -> LazyHorizontalGrid(
             GridCells.Fixed(if (entries.size > 2) 2 else 1), Modifier.height(if (entries.size > 2) GRID_ROW * 2 else GRID_ROW),
             contentPadding = PaddingValues(horizontal = 12.dp),
         ) {
@@ -108,6 +109,8 @@ fun StyledItems(style: SectionStyle, items: List<BrowseItem>, open: (BrowseItem)
     when (style) {
         SectionStyle.CAROUSEL -> ItemCarousel(items, open)
         SectionStyle.HERO -> HeroRow(items, open)
+        // Reddit, 1.7.9.1: "Listen again" and the rest as YouTube Music's 3 × 3 pages, whole square covers.
+        SectionStyle.DIAL -> SpeedDialPages(items, open)
         SectionStyle.GRID -> LazyHorizontalGrid(
             GridCells.Fixed(if (items.size > 2) 2 else 1), Modifier.height(if (items.size > 2) GRID_ROW * 2 else GRID_ROW),
             contentPadding = PaddingValues(horizontal = 12.dp),

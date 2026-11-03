@@ -1,5 +1,7 @@
 package com.prism.music.data.recognize
 
+import com.prism.music.R
+import com.prism.music.tr
 import com.prism.music.data.innertube.arr
 import com.prism.music.data.innertube.obj
 import com.prism.music.data.innertube.str
@@ -68,7 +70,7 @@ class Shazam(http: OkHttpClient) {
             .build()
         http.newCall(req).execute().use { r ->
             if (r.code == 429) return ShazamResult.RateLimited
-            if (!r.isSuccessful) throw java.io.IOException("Shazam answered HTTP ${r.code}")
+            if (!r.isSuccessful) throw java.io.IOException(tr(R.string.shazam_answered_http, r.code))
             return parse(json.parseToJsonElement(r.body.string()).jsonObject)
         }
     }

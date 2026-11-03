@@ -1,5 +1,7 @@
 package com.prism.music.ui.screens
 
+import com.prism.music.R
+import com.prism.music.tr
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.os.Bundle
@@ -56,6 +58,8 @@ import com.prism.music.widget.Widgets
  * from Prism. The preview at the top is the widget itself, drawn from the same views the home screen gets.
  */
 class WidgetConfigActivity : ComponentActivity() {
+    // Prism's language, when picked in Prism (below Android 13; AppLanguage).
+    override fun attachBaseContext(base: android.content.Context) = super.attachBaseContext(com.prism.music.AppLanguage.wrap(base))
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val id = intent?.extras?.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
@@ -89,40 +93,53 @@ private fun WidgetSettingsScreen(id: Int, style: WidgetStyle, onDone: () -> Unit
         Widgets.refresh(context)
     }
     var picking by remember { mutableStateOf(false) }
-    if (picking) com.prism.music.ui.components.ColorPickerSheet("Widget color", o.color, onDismiss = { picking = false }) {
+    if (picking) com.prism.music.ui.components.ColorPickerSheet(tr(R.string.widget_color), o.color, onDismiss = { picking = false }) {
         change(o.copy(background = WidgetBackground.COLOR, color = it))
+    }
+    var pickingButton by remember { mutableStateOf(false) }
+    if (pickingButton) com.prism.music.ui.components.ColorPickerSheet(tr(R.string.play_button), o.buttonColor, onDismiss = { pickingButton = false }) {
+        change(o.copy(buttons = com.prism.music.widget.WidgetButtons.COLOR, buttonColor = it))
     }
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Widget", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
-            PrismButton(onDone) { Text("Done") }
+            Text(tr(R.string.widget), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
+            PrismButton(onDone) { Text(tr(R.string.done)) }
         }
         WidgetPreview(style, o)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-            Group("Background") {
+            Group(tr(R.string.background)) {
                 ChoiceCards(
                     WidgetBackground.entries, o.background, title = { it.label }, detail = { null },
                     onSelect = { b -> if (b == WidgetBackground.COLOR && o.background != b) picking = true else change(o.copy(background = b)) },
                 ) { b -> BackgroundSwatch(b, o) }
-                if (o.background == WidgetBackground.COLOR) Item("Pick the color", null, onClick = { picking = true }) {
+                if (o.background == WidgetBackground.COLOR) Item(tr(R.string.pick_the_color), null, onClick = { picking = true }) {
                     Box(Modifier.size(24.dp).clip(CircleShape).background(Color(o.color)))
                 }
                 if (o.background == WidgetBackground.COLOR || o.background == WidgetBackground.COVER) SliderSetting(
-                    "Opacity", o.opacity, 0.2f..1f, { "${(it * 100).toInt()}%" },
-                    info = "Below Android 12, a see-through or colored widget has square corners.",
+                    tr(R.string.opacity), o.opacity, 0.2f..1f, { "${(it * 100).toInt()}%" },
+                    info = tr(R.string.below_android_12_a_see_through),
                 ) { change(o.copy(opacity = it)) }
             }
-            Group("Text") {
+            Group(tr(R.string.text)) {
                 Chips(WidgetText.entries, o.text, { it.label }) { change(o.copy(text = it)) }
             }
-            Group("Show") {
-                if (style != WidgetStyle.COVER && style != WidgetStyle.DISC) Toggle("Cover", null, o.cover) { change(o.copy(cover = it)) }
-                Toggle("Like", null, o.like) { change(o.copy(like = it)) }
-                Toggle("Previous and next", null, o.skips) { change(o.copy(skips = it)) }
-                if (style != WidgetStyle.APPLE) Toggle("Progress", null, o.progress) { change(o.copy(progress = it)) }
+            // The play button and progress line (Reddit, 1.7.9); "Your light" is how they were.
+            if (com.prism.music.widget.Widgets.hasButtonColor(style)) Group(tr(R.string.play_button)) {
+                Chips(com.prism.music.widget.WidgetButtons.entries, o.buttons, { it.label }) { b ->
+                    if (b == com.prism.music.widget.WidgetButtons.COLOR && o.buttons != b) pickingButton = true else change(o.copy(buttons = b))
+                }
+                if (o.buttons == com.prism.music.widget.WidgetButtons.COLOR) Item(tr(R.string.pick_the_color), null, onClick = { pickingButton = true }) {
+                    Box(Modifier.size(24.dp).clip(CircleShape).background(Color(o.buttonColor)))
+                }
+            }
+            Group(tr(R.string.show)) {
+                if (style != WidgetStyle.COVER && style != WidgetStyle.DISC) Toggle(tr(R.string.cover), null, o.cover) { change(o.copy(cover = it)) }
+                Toggle(tr(R.string.widget_like), null, o.like) { change(o.copy(like = it)) }
+                Toggle(tr(R.string.previous_and_next), null, o.skips) { change(o.copy(skips = it)) }
+                if (style != WidgetStyle.APPLE) Toggle(tr(R.string.progress), null, o.progress) { change(o.copy(progress = it)) }
             }
             if (!o.isDefault) com.prism.music.ui.components.PrismTextButton({ change(WidgetOptions()) }, Modifier.padding(start = 12.dp)) {
-                Text("Back to how it's designed")
+                Text(tr(R.string.back_to_how_it_s_designed))
             }
         }
     }
@@ -146,11 +163,11 @@ fun HomeWidgetsGroup() {
         }
     }
     if (placed.isEmpty()) return
-    Group("Home-screen widgets", info = "Each widget can have its own background, text color and buttons. Holding a widget → Settings opens the same page.") {
+    Group(tr(R.string.home_screen_widgets), info = tr(R.string.each_widget_can_have_its_own)) {
         placed.forEach { (s, id) ->
             val label = remember(id) { runCatching { manager.getAppWidgetInfo(id).loadLabel(context.packageManager) }.getOrNull() ?: s.name }
             val own = !WidgetOptionsStore.get(context, id).isDefault
-            Item(label, if (own) "Your own settings" else "As designed", onClick = {
+            Item(label, if (own) tr(R.string.your_own_settings) else tr(R.string.as_designed), onClick = {
                 context.startActivity(
                     Intent(context, WidgetConfigActivity::class.java).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),

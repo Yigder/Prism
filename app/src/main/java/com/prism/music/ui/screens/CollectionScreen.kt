@@ -1,5 +1,8 @@
 package com.prism.music.ui.screens
 
+import com.prism.music.R
+import com.prism.music.tr
+import com.prism.music.trp
 import com.prism.music.ui.theme.lit
 import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.border
@@ -143,16 +146,16 @@ private suspend fun relatedArtists(c: com.prism.music.AppContainer, s: Song): Li
 }
 
 enum class SortMode(val label: String) {
-    DEFAULT("Original order"), TITLE("Title"), ARTIST("Artist"), GENRE("Genre"), DURATION("Duration"), ALBUM("Album"),
+    DEFAULT(tr(R.string.original_order)), TITLE(tr(R.string.title)), ARTIST(tr(R.string.artist)), GENRE(tr(R.string.genre)), DURATION(tr(R.string.duration)), ALBUM(tr(R.string.album)),
     /** Downloads only: the original order (newest first) the other way round (#77). */
-    OLDEST("Oldest first"),
+    OLDEST(tr(R.string.oldest_first)),
 }
 
 @Composable
 fun CollectionScreen(type: CollectionType, id: String, initialGenre: String?, bottomPadding: Dp) {
     val c = LocalContainer.current
     val liked by c.library.likedShown.collectAsState()
-    val downloads by c.downloads.downloads.collectAsState()
+    val downloads by c.downloadState.collectAsState()
 
     val remote = when (type) {
         CollectionType.ALBUM -> rememberLoad("album:$id") { orSaved(c, id) { LiveCollection(c.ytm.album(id), c.scope, null) } }
@@ -160,11 +163,19 @@ fun CollectionScreen(type: CollectionType, id: String, initialGenre: String?, bo
         CollectionType.PLAYLIST -> rememberLoad("playlist:$id") { orSaved(c, id) { LiveCollection(c.ytm.playlist(id), c.scope, c.ytm::playlistPage) } }
         // Prism's own mixes (Daily Mix, the time-of-day mix, Release Radar): kept on the phone.
         CollectionType.MIX -> rememberLoad("mix:$id") {
+            // A holiday mix (1.8.0): kept for the season, else made now; its cover is Prism's own drawing.
+            com.prism.music.data.seasonal.HolidayMixes.byId(id)?.let { def ->
+                val mix = c.seasonal.mix(id) ?: throw IllegalStateException(
+                    if (def.shownOn(c.seasonal.today())) tr(R.string.this_mix_isn_t_made_yet) else tr(R.string.holiday_mix_out_of_season),
+                )
+                val cover = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { HolidayCovers.file(c.app, def) }
+                return@rememberLoad LiveCollection(CollectionPage(mix.id, CollectionKind.PLAYLIST, mix.title, mix.subtitle, thumbnail = cover ?: mix.covers.firstOrNull(), songs = mix.songs), c.scope, null)
+            }
             // Daily Mixes are kept in the database; mixes from your music are made on the spot (again, if need be).
             val mix = c.forYou.mix(id)
                 ?: c.yourMusic.mix(id)
                 ?: (if (com.prism.music.data.foryou.YourMusic.isLibraryMix(id)) c.yourMusic.sections(!c.network.isOnline()).mixes.firstOrNull { it.id == id } else null)
-                ?: throw IllegalStateException("This mix isn't made yet")
+                ?: throw IllegalStateException(tr(R.string.this_mix_isn_t_made_yet))
             LiveCollection(CollectionPage(mix.id, CollectionKind.PLAYLIST, mix.title, mix.subtitle, thumbnail = mix.covers.firstOrNull(), songs = mix.songs), c.scope, null)
         }
         else -> null
@@ -180,22 +191,22 @@ fun CollectionScreen(type: CollectionType, id: String, initialGenre: String?, bo
     val page: Load<LiveCollection> = when (type) {
         CollectionType.PRISM -> {
             val list = prismLists.firstOrNull { it.id == id }
-            if (list == null) Load.Err("This playlist isn't on this phone any more")
+            if (list == null) Load.Err(tr(R.string.this_playlist_isn_t_on_this))
             else Load.Ok(remember(list) {
                 LiveCollection(
-                    CollectionPage(list.id, CollectionKind.PLAYLIST, list.title, "Prism playlist · on this phone", description = list.description.ifBlank { null },
+                    CollectionPage(list.id, CollectionKind.PLAYLIST, list.title, tr(R.string.prism_playlist_on_this_phone), description = list.description.ifBlank { null },
                         thumbnail = list.songs.firstOrNull()?.thumbnail, songs = list.songs),
                     c.scope, null,
                 )
             })
         }
         CollectionType.LIKED -> Load.Ok(remember(liked) {
-            LiveCollection(CollectionPage("liked", CollectionKind.PLAYLIST, "Liked songs", com.prism.music.data.model.songCount(liked.size), thumbnail = null, songs = liked), c.scope, null)
+            LiveCollection(CollectionPage("liked", CollectionKind.PLAYLIST, tr(R.string.liked_songs), com.prism.music.data.model.songCount(liked.size), thumbnail = null, songs = liked), c.scope, null)
         })
         CollectionType.DOWNLOADS -> {
             val songs = remember(downloads) { c.downloads.completedSongs() }
             Load.Ok(remember(songs) {
-                LiveCollection(CollectionPage("downloads", CollectionKind.PLAYLIST, "Downloads", "Available offline", thumbnail = null, songs = songs), c.scope, null)
+                LiveCollection(CollectionPage("downloads", CollectionKind.PLAYLIST, tr(R.string.downloads), tr(R.string.available_offline), thumbnail = null, songs = songs), c.scope, null)
             })
         }
         else -> remote!!.state
@@ -254,7 +265,7 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
     val scope = rememberCoroutineScope()
     val settings = LocalAppSettings.current
     val current by c.player.currentSong.collectAsState()
-    val downloads by c.downloads.downloads.collectAsState()
+    val downloads by c.downloadState.collectAsState()
     val songs by live.songs.collectAsState()
     val loadingMore by live.loadingMore.collectAsState()
     val page = live.page.copy(songs = songs)
@@ -288,7 +299,11 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
     }
     var sortMenu by remember { mutableStateOf(false) }
     var query by rememberSaveable(page.id) { mutableStateOf("") }
-    val showGenres = type != CollectionType.ALBUM && songs.size > 1
+    // Sorting is there for any list of songs; genres (chips, each song's genre, Group by genre) only while the listener
+    // wants them (1.7.9, Reddit: "some people want that same order of the playlist").
+    val sortable = type != CollectionType.ALBUM && songs.size > 1
+    val showGenres = sortable && settings.behavior.playlistGenres
+    LaunchedEffect(showGenres) { if (!showGenres) { genreFilter = null; if (groupByGenre) toggleGenreGroups() } }
     val showSearch = type != CollectionType.ALBUM || songs.size > 12
 
     // Starting a song waits on its stream (a few seconds through NewPipe), so on Wi-Fi the first track's is fetched
@@ -342,15 +357,20 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
     // The page's own id goes with the queue: exclusions ("leave this playlist out of my taste") and Smart Shuffle's
     // "Add to this playlist" know which playlist is playing.
     val source = QueueSource(
-        if (type == CollectionType.ALBUM) QueueKind.ALBUM else QueueKind.PLAYLIST, page.title + (genreFilter?.let { " · $it" } ?: ""),
+        if (type == CollectionType.ALBUM) QueueKind.ALBUM else QueueKind.PLAYLIST, page.title + (genreFilter?.let { " · ${com.prism.music.data.meta.Genres.shown(it)}" } ?: ""),
         originId = page.playlistId ?: page.id.removePrefix("VL").takeIf { type == CollectionType.PLAYLIST || type == CollectionType.MIX } ?: page.id,
+        page = when (type) {
+            CollectionType.ALBUM -> com.prism.music.data.model.AlbumItem(page.id, page.title, page.subtitle, page.thumbnail, page.playlistId)
+            CollectionType.PLAYLIST, CollectionType.PRISM -> com.prism.music.data.model.PlaylistItem(page.id, page.title, page.subtitle, page.thumbnail)
+            else -> null
+        },
     )
     // Offline (#55): only songs on the phone (downloaded, cached whole, or files) play; the rest show greyed out.
     val online by c.network.online.collectAsState()
     val ready = remember(songs, downloads, online) { if (online) null else songs.filter { c.availableOffline(it.id) }.map { it.id }.toSet() }
     val playable = remember(visible, ready) { if (ready == null) visible else visible.filter { it.id in ready } }
     val playFrom: (List<Song>, Song, QueueSource) -> Unit = { list, s, src ->
-        if (ready != null && s.id !in ready) Toast.makeText(context, "You're offline, and this song isn't downloaded", Toast.LENGTH_SHORT).show()
+        if (ready != null && s.id !in ready) Toast.makeText(context, tr(R.string.you_re_offline_and_this_song), Toast.LENGTH_SHORT).show()
         else {
             val q = if (ready == null) list else list.filter { it.id in ready }
             c.player.playQueue(q, q.indexOfFirst { it.id == s.id }.coerceAtLeast(0), src)
@@ -389,7 +409,7 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                 val done = if (type == CollectionType.ALBUM && now) c.library.removeAlbum(page.id, id) else c.library.setSaved(id, !now)
                 if (!done) {
                     saved = now
-                    Toast.makeText(context, "Couldn't update your library", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, tr(R.string.couldn_t_update_your_library), Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -408,23 +428,23 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
             else c.prismLibrary.savePlaylist(
                 com.prism.music.data.SavedPlaylist(
                     page.id, page.title,
-                    page.subtitle.takeIf { it.isNotBlank() } ?: "Playlist",
+                    page.subtitle.takeIf { it.isNotBlank() } ?: tr(R.string.playlist),
                     page.thumbnail, System.currentTimeMillis(),
                 ),
             )
-            Toast.makeText(context, if (savedHere) "Removed from your library" else "Saved to your library", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, if (savedHere) tr(R.string.removed_from_your_library) else tr(R.string.saved_to_your_library), Toast.LENGTH_SHORT).show()
         } else if (savedHere) {
             c.prismLibrary.unsaveAlbum(page.id)
-            Toast.makeText(context, "Removed from your library", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, tr(R.string.removed_from_your_library), Toast.LENGTH_SHORT).show()
         } else {
             val by = page.artists.joinToString(", ") { it.name }.ifBlank { page.subtitle }
             c.prismLibrary.saveAlbum(
                 com.prism.music.data.SavedAlbum(
-                    page.id, page.title, listOfNotNull(page.releaseKind ?: "Album", by.takeIf { it.isNotBlank() }, page.year?.toString()).joinToString(" • "),
+                    page.id, page.title, listOfNotNull(page.releaseKind ?: tr(R.string.album), by.takeIf { it.isNotBlank() }, page.year?.toString()).joinToString(" • "),
                     page.thumbnail, page.playlistId, System.currentTimeMillis(),
                 ),
             )
-            Toast.makeText(context, "Saved to your library", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, tr(R.string.saved_to_your_library), Toast.LENGTH_SHORT).show()
         }
     }
     val radioId = when (type) {
@@ -436,53 +456,59 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
         radioId?.let { rid ->
             scope.launch {
                 runCatching { c.radio(null, rid) }.onSuccess { r ->
-                    c.player.playQueue(r.songs, 0, QueueSource(QueueKind.RADIO, "${page.title} Radio"))
-                }.onFailure { Toast.makeText(context, "Couldn't start the radio", Toast.LENGTH_SHORT).show() }
+                    c.player.playQueue(r.songs, 0, QueueSource(QueueKind.RADIO, tr(R.string.radio, page.title)))
+                }.onFailure { Toast.makeText(context, tr(R.string.couldn_t_start_the_radio), Toast.LENGTH_SHORT).show() }
             }
         }
     }
     val allDownloaded = downloadedCount == page.songs.size && page.songs.isNotEmpty()
+    // "Delete downloads": what's about to go, and Delete to go ahead.
+    var confirm by remember { mutableStateOf<Pair<String, () -> Unit>?>(null) }
     val toggleDownloads: () -> Unit = {
         if (allDownloaded) {
-            c.downloads.removeMany(page.songs.map { it.id })
-            Toast.makeText(context, "Removed ${page.songs.size} downloads", Toast.LENGTH_SHORT).show()
+            // The same button downloads and removes, so removing asks first (#212: a whole playlist's downloads went
+            // with one tap).
+            val n = page.songs.size
+            confirm = tr(R.string.delete_the_of_from_this_phone, com.prism.music.data.model.songCount(n), page.title) to {
+                c.downloads.removeMany(page.songs.map { it.id })
+                Toast.makeText(context, trp(R.plurals.removed_n_downloads, n), Toast.LENGTH_SHORT).show()
+            }
         } else {
             c.downloads.downloadAll(page.songs)
-            Toast.makeText(context, "Downloading ${com.prism.music.data.model.songCount(page.songs.size - downloadedCount)}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, tr(R.string.downloading, com.prism.music.data.model.songCount(page.songs.size - downloadedCount)), Toast.LENGTH_SHORT).show()
         }
     }
 
     // Owned playlists: a song can be taken out of it.
     val slots by live.setVideoIds.collectAsState()
     fun removeAction(s: Song): List<SheetItem> {
-        if (type == CollectionType.PRISM) return listOf(SheetItem(PrismIcons.PlaylistRemove, "Remove from this playlist") {
+        if (type == CollectionType.PRISM) return listOf(SheetItem(PrismIcons.PlaylistRemove, tr(R.string.remove_from_this_playlist)) {
             c.prismLibrary.remove(page.id, s.id)
-            Toast.makeText(context, "Removed from ${page.title}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, tr(R.string.removed_from, page.title), Toast.LENGTH_SHORT).show()
         })
         val slot = slots[s.id]
         if (type != CollectionType.PLAYLIST || !live.page.owned || slot == null) return emptyList()
-        return listOf(SheetItem(PrismIcons.PlaylistRemove, "Remove from this playlist") {
+        return listOf(SheetItem(PrismIcons.PlaylistRemove, tr(R.string.remove_from_this_playlist)) {
             val before = live.songs.value
             live.songs.value = before.filterNot { it.id == s.id }
             scope.launch {
                 runCatching { c.ytm.removeFromPlaylist(page.id, s.id, slot) }
-                    .onSuccess { Toast.makeText(context, "Removed from ${page.title}", Toast.LENGTH_SHORT).show() }
+                    .onSuccess { Toast.makeText(context, tr(R.string.removed_from, page.title), Toast.LENGTH_SHORT).show() }
                     .onFailure {
                         live.songs.value = before
-                        Toast.makeText(context, "Couldn't remove it: ${it.friendlyMessage()}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, tr(R.string.couldn_t_remove_it, it.friendlyMessage()), Toast.LENGTH_SHORT).show()
                     }
             }
         })
     }
 
-    var confirm by remember { mutableStateOf<Pair<String, () -> Unit>?>(null) }
     confirm?.let { (text, action) ->
         AlertDialog(
             onDismissRequest = { confirm = null },
-            title = { Text("Delete downloads") },
+            title = { Text(tr(R.string.delete_downloads)) },
             text = { Text(text) },
-            confirmButton = { PrismTextButton(onClick = { action(); confirm = null }) { Text("Delete") } },
-            dismissButton = { PrismTextButton(onClick = { confirm = null }) { Text("Cancel") } },
+            confirmButton = { PrismTextButton(onClick = { action(); confirm = null }) { Text(tr(R.string.delete)) } },
+            dismissButton = { PrismTextButton(onClick = { confirm = null }) { Text(tr(R.string.cancel)) } },
         )
     }
     var coverSheet by remember { mutableStateOf(false) }
@@ -499,10 +525,10 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
     val reorder = rememberLazyReorder(listState, songs)
     fun startRearranging() {
         when {
-            loadingMore -> Toast.makeText(context, "Wait a moment: the rest of the songs are still loading", Toast.LENGTH_SHORT).show()
+            loadingMore -> Toast.makeText(context, tr(R.string.wait_a_moment_the_rest_of), Toast.LENGTH_SHORT).show()
             // A song in it twice: which copy moved can't be told apart here.
             type == CollectionType.PLAYLIST && songs.distinctBy { it.id }.size != songs.size ->
-                Toast.makeText(context, "This playlist has a song in it twice, so it can only be rearranged on YouTube Music", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, tr(R.string.this_playlist_has_a_song_in), Toast.LENGTH_LONG).show()
             else -> {
                 if (sort != SortMode.DEFAULT) pickSort(SortMode.DEFAULT)
                 if (groupByGenre) toggleGenreGroups()
@@ -524,7 +550,7 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
         // somewhere else on YouTube than on the page, so it isn't made.
         if (slot == null || successor != null && next == null) {
             live.songs.value = before
-            Toast.makeText(context, "Couldn't move it here. Open the playlist again and retry", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, tr(R.string.couldn_t_move_it_here_open), Toast.LENGTH_SHORT).show()
             return
         }
         scope.launch {
@@ -535,7 +561,7 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                         val k = indexOfFirst { it.id == moved.id }
                         if (k >= 0) { removeAt(k); add(before.indexOfFirst { it.id == moved.id }.coerceIn(0, size), moved) }
                     }
-                    Toast.makeText(context, "Couldn't move it: ${it.friendlyMessage()}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, tr(R.string.couldn_t_move_it, it.friendlyMessage()), Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -547,15 +573,15 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
     var description by remember(page.id) { mutableStateOf(page.description) }
     var pageMenu by remember { mutableStateOf(false) }
     fun shareTarget(): ShareTarget = when (type) {
-        CollectionType.ALBUM -> ShareTarget(title, page.artists.joinToString(", ") { it.name }.ifBlank { page.subtitle }, page.releaseKind ?: "Album", art, ShareLinks.album(page.id))
+        CollectionType.ALBUM -> ShareTarget(title, page.artists.joinToString(", ") { it.name }.ifBlank { page.subtitle }, page.releaseKind ?: tr(R.string.album), art, ShareLinks.album(page.id))
         CollectionType.PLAYLIST -> ShareTarget(
-            title, page.subtitle.removePrefix("Playlist • "), "Playlist", art, ShareLinks.playlist(page.id),
+            title, page.subtitle.removePrefix("Playlist • "), tr(R.string.playlist), art, ShareLinks.playlist(page.id),
             playlistId = page.id.takeIf { live.page.owned }, privacy = privacy.takeIf { live.page.owned },
         )
-        CollectionType.LIKED -> ShareTarget("Liked songs", com.prism.music.data.model.songCount(songs.size), "Playlist", art, null, songs = songs)
-        CollectionType.DOWNLOADS -> ShareTarget("Downloads", com.prism.music.data.model.songCount(songs.size), "Playlist", art, null, songs = songs)
-        CollectionType.MIX -> ShareTarget(title, page.subtitle, "Mix", art, null, songs = songs)
-        CollectionType.PRISM -> ShareTarget(title, com.prism.music.data.model.songCount(songs.size), "Playlist", art, null, songs = songs)
+        CollectionType.LIKED -> ShareTarget(tr(R.string.liked_songs), com.prism.music.data.model.songCount(songs.size), tr(R.string.playlist), art, null, songs = songs)
+        CollectionType.DOWNLOADS -> ShareTarget(tr(R.string.downloads), com.prism.music.data.model.songCount(songs.size), tr(R.string.playlist), art, null, songs = songs)
+        CollectionType.MIX -> ShareTarget(title, page.subtitle, tr(R.string.mix_2), art, null, songs = songs)
+        CollectionType.PRISM -> ShareTarget(title, com.prism.music.data.model.songCount(songs.size), tr(R.string.playlist), art, null, songs = songs)
     }
 
     // A wide landscape window (a tablet on its side) keeps the cover and its details beside the songs, as Apple Music
@@ -626,8 +652,8 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                 }
                 if (ready != null && type != CollectionType.DOWNLOADS) item("offline") {
                     Text(
-                        "You're offline · ${ready.size} of ${songs.size} songs are on this phone and play" +
-                            if (live.offline) " · as it was when you last opened it" else "",
+                        trp(R.plurals.offline_n_of_songs, songs.size, ready.size, songs.size) +
+                            if (live.offline) tr(R.string.as_it_was_when_you_last) else "",
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 6.dp),
                     )
@@ -638,52 +664,53 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                     rearrangeSongs(reorder, onDone = { rearranging = false }, onReorder = ::reorderTo)
                     return@LazyColumn
                 }
-                if (showSearch || showGenres) item(key = "search") {
+                if (showSearch || sortable) item(key = "search") {
                     Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                         if (showSearch) com.prism.music.ui.components.SearchField(
-                            query, if (type == CollectionType.ALBUM) "Search in album" else "Search in $title", { query = it }, Modifier.weight(1f),
+                            query, if (type == CollectionType.ALBUM) tr(R.string.search_in_album) else tr(R.string.search_in, title), { query = it }, Modifier.weight(1f),
                             container = frosted,
                         ) else Spacer(Modifier.weight(1f))
-                        if (showGenres) Box {
+                        if (sortable) Box {
                             IconButton(onClick = { sortMenu = true }) {
                                 Icon(
-                                    PrismIcons.Sort, "Sort",
+                                    PrismIcons.Sort, tr(R.string.sort),
                                     tint = if (sort != SortMode.DEFAULT || groupByGenre) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                             DropdownMenu(sortMenu, { sortMenu = false }) {
-                                SortMode.entries.filter { it != SortMode.OLDEST || type in REVERSIBLE }.forEach { m ->
+                                SortMode.entries.filter { (it != SortMode.OLDEST || type in REVERSIBLE) && (it != SortMode.GENRE || showGenres) }.forEach { m ->
                                     DropdownMenuItem({ Text(sortLabel(m, type, page.owned)) }, { pickSort(m); sortMenu = false }, trailingIcon = { if (m == sort) Icon(PrismIcons.Check, null) })
                                 }
                                 HorizontalDivider()
-                                DropdownMenuItem({ Text("Group by genre") }, { toggleGenreGroups(); sortMenu = false }, trailingIcon = { if (groupByGenre) Icon(PrismIcons.Check, null) })
+                                if (showGenres) DropdownMenuItem({ Text(tr(R.string.group_by_genre)) }, { toggleGenreGroups(); sortMenu = false }, trailingIcon = { if (groupByGenre) Icon(PrismIcons.Check, null) })
+                                DropdownMenuItem({ Text(tr(R.string.show_genres)) }, { c.settings.setPlaylistGenres(!showGenres); sortMenu = false }, trailingIcon = { if (showGenres) Icon(PrismIcons.Check, null) })
                             }
                         }
                     }
                 }
                 if (showGenres && genreCounts.isNotEmpty()) item(key = "genres") {
                     LazyRow(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        item { com.prism.music.ui.components.PrismChip(genreFilter == null, { genreFilter = null }, "All", idle = frosted) }
+                        item { com.prism.music.ui.components.PrismChip(genreFilter == null, { genreFilter = null }, tr(R.string.all), idle = frosted) }
                         items(genreCounts) { (g, n) ->
-                            com.prism.music.ui.components.PrismChip(genreFilter == g, { genreFilter = if (genreFilter == g) null else g }, "$g · $n", idle = frosted)
+                            com.prism.music.ui.components.PrismChip(genreFilter == g, { genreFilter = if (genreFilter == g) null else g }, "${com.prism.music.data.meta.Genres.shown(g)} · $n", idle = frosted)
                         }
                     }
                 }
                 if (visible.isEmpty()) item {
-                    if (query.isNotBlank()) EmptyState(PrismIcons.Search, "No matches", "Nothing in $title matches \"${query.trim()}\"" + if (loadingMore) " yet — more songs are still loading." else ".")
-                    else EmptyState(when (type) { CollectionType.LIKED -> PrismIcons.HeartFilled; CollectionType.DOWNLOADS -> PrismIcons.DownloadDone; else -> PrismIcons.Song }, if (genreFilter != null) "No $genreFilter songs" else "Nothing here yet",
+                    if (query.isNotBlank()) EmptyState(PrismIcons.Search, tr(R.string.no_matches), tr(R.string.nothing_in_matches, title, query.trim()) + if (loadingMore) tr(R.string.yet_more_songs_are_still_loading) else ".")
+                    else EmptyState(when (type) { CollectionType.LIKED -> PrismIcons.HeartFilled; CollectionType.DOWNLOADS -> PrismIcons.DownloadDone; else -> PrismIcons.Song }, genreFilter?.let { tr(R.string.no_songs, com.prism.music.data.meta.Genres.shown(it)) } ?: tr(R.string.nothing_here_yet),
                         when (type) {
-                            CollectionType.LIKED -> "Like songs from the player and they'll show up here."
-                            CollectionType.PRISM -> "Add songs from any song's menu (⋯ or a long press) → Add to playlist."
-                            else -> "Songs you add will show up here."
+                            CollectionType.LIKED -> tr(R.string.like_songs_from_the_player_and)
+                            CollectionType.PRISM -> tr(R.string.add_songs_from_any_song_s)
+                            else -> tr(R.string.songs_you_add_will_show_up)
                         })
                 }
                 if (groupByGenre && showGenres) {
                     // A song with a second genre shows under both.
-                    visible.flatMap { s -> genresOf(s.id).ifEmpty { listOf("Sorting…") }.map { it to s } }
+                    visible.flatMap { s -> genresOf(s.id).ifEmpty { listOf(tr(R.string.sorting)) }.map { it to s } }
                         .groupBy({ it.first }, { it.second }).toList().sortedByDescending { it.second.size }.forEach { (g, songs) ->
                             item(key = "h:$g") {
-                                Text(g, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary,
+                                Text(com.prism.music.data.meta.Genres.shown(g), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.padding(start = 20.dp, top = 18.dp, bottom = 4.dp))
                             }
                             itemsIndexed(songs, key = { i, s -> "g:$g:${s.id}:$i" }) { _, s ->
@@ -704,7 +731,7 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                                 index = if (type == CollectionType.ALBUM) i + 1 else null,
                                 starred = s.id in popular,
                                 playing = current?.id == s.id,
-                                trailingInfo = if (type == CollectionType.ALBUM) formatDuration(s.durationSec) else genreVersion.let { genres[s.id] }?.takeIf { sort == SortMode.GENRE || genreFilter == null && showGenres }?.let { g -> listOfNotNull(s.album?.title, g).joinToString(" • ") },
+                                trailingInfo = if (type == CollectionType.ALBUM) formatDuration(s.durationSec) else genreVersion.let { genres[s.id] }?.takeIf { sort == SortMode.GENRE || genreFilter == null && showGenres }?.let { g -> listOfNotNull(s.album?.title, com.prism.music.data.meta.Genres.shown(g)).joinToString(" • ") },
                                 extraActions = removeAction(s),
                             ) { playFrom(visible, s, source) }
                         }
@@ -714,21 +741,27 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                     Text(
                         listOfNotNull(
                             page.year?.toString(),
-                            "${visible.size} ${if (visible.size == 1) "song" else "songs"}" + (if (totalSec > 0) ", ${durationText(totalSec)}" else ""),
-                            if (downloadedCount > 0) "$downloadedCount downloaded" else null,
-                        ).joinToString(" · ") + if (loadingMore) " · loading more…" else "",
+                            trp(R.plurals.n_songs, visible.size) + (if (totalSec > 0) ", ${durationText(totalSec)}" else ""),
+                            if (downloadedCount > 0) tr(R.string.downloaded_2, downloadedCount) else null,
+                        ).joinToString(" · ") + if (loadingMore) tr(R.string.loading_more) else "",
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 8.dp),
                     )
                 }
                 if (type == CollectionType.ALBUM) {
                     if (live.page.otherVersions.isNotEmpty()) item("versions") {
-                        SectionHeader("Other versions")
+                        SectionHeader(tr(R.string.other_versions))
                         ItemCarousel(rememberTellApart(live.page.otherVersions), { nav.open(it) { s -> c.player.playSingle(s.song) } })
                     }
                     live.page.artists.firstOrNull { it.id != null }?.let { a -> item("moreby") { MoreBy(a.name, a.id!!, page.id) } }
                 }
             }
+
+            // Long playlists get a slider on the right to jump through them (1.7.9, Reddit), saying which song it's at.
+            if (!rearranging && !groupByGenre) com.prism.music.ui.components.FastScroller(
+                listState, Modifier.align(Alignment.CenterEnd).padding(top = statusTop + 60.dp, bottom = bottomPadding),
+                description = tr(R.string.scroll_through_the_songs),
+            ) { f -> visible.takeIf { it.isNotEmpty() }?.let { v -> (f * (v.size - 1)).toInt().coerceIn(0, v.size - 1) + 1 }?.toString() }
 
             // Content melts away under the bar into the page's own frost.
             ScrollEdge({ solid }, statusTop + 60.dp + 34.dp, pageHeight) { m ->
@@ -754,34 +787,36 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
             val excludedLists by c.exclusions.playlists.collectAsState()
             val downloadsItems = if (type == CollectionType.DOWNLOADS) downloadsSheetItems { text, action -> confirm = text to action } else emptyList()
             val items = buildList {
-                if (radioId != null) add(SheetItem(PrismIcons.Radio, "Start radio") { startRadio() })
+                if (radioId != null) add(SheetItem(PrismIcons.Radio, tr(R.string.start_radio)) { startRadio() })
                 if (savableId != null && saved != null) add(
-                    SheetItem(if (saved == true) PrismIcons.LibraryAdded else PrismIcons.LibraryAdd, if (saved == true) "Remove from library" else "Add to library") { toggleSaved() },
+                    SheetItem(if (saved == true) PrismIcons.LibraryAdded else PrismIcons.LibraryAdd, if (saved == true) tr(R.string.remove_from_library) else tr(R.string.add_to_library)) { toggleSaved() },
                 )
                 if (localAlbum) add(
-                    SheetItem(if (savedHere) PrismIcons.LibraryAdded else PrismIcons.LibraryAdd, if (savedHere) "Remove from library" else "Add to library") { toggleSavedHere() },
+                    SheetItem(if (savedHere) PrismIcons.LibraryAdded else PrismIcons.LibraryAdd, if (savedHere) tr(R.string.remove_from_library) else tr(R.string.add_to_library)) { toggleSavedHere() },
                 )
                 if (type != CollectionType.DOWNLOADS) add(
-                    SheetItem(if (allDownloaded) PrismIcons.Delete else PrismIcons.Download, if (allDownloaded) "Remove downloads" else "Download all") { toggleDownloads() },
+                    SheetItem(if (allDownloaded) PrismIcons.Delete else PrismIcons.Download, if (allDownloaded) tr(R.string.remove_downloads) else tr(R.string.download_all)) { toggleDownloads() },
                 )
-                live.page.artists.firstOrNull { it.id != null }?.let { a -> add(SheetItem(PrismIcons.Person, "Go to ${a.name}") { nav.go(Routes.artist(a.id!!)) }) }
+                live.page.artists.firstOrNull { it.id != null }?.let { a -> add(SheetItem(PrismIcons.Person, tr(R.string.go_to, a.name)) { nav.go(Routes.artist(a.id!!)) }) }
                 if (type == CollectionType.LIKED) add(
-                    SheetItem(PrismIcons.PlaylistAdd, if (likedPlaylistId != null) "Playlist · kept up to date" else "Make it a playlist") { likedPlaylistSheet = true },
+                    SheetItem(PrismIcons.PlaylistAdd, if (likedPlaylistId != null) tr(R.string.playlist_kept_up_to_date) else tr(R.string.make_it_a_playlist)) { likedPlaylistSheet = true },
                 )
-                if (coverKey != null) add(SheetItem(PrismIcons.Photo, "Change picture") { coverSheet = true })
-                if ((type == CollectionType.PLAYLIST && live.page.owned) || type == CollectionType.PRISM) add(SheetItem(PrismIcons.Edit, "Edit details") { editing = true })
-                if (canRearrange) add(SheetItem(PrismIcons.SwapVertical, "Rearrange songs") { startRearranging() })
+                if (coverKey != null) add(SheetItem(PrismIcons.Photo, tr(R.string.change_picture)) { coverSheet = true })
+                // A holiday mix: pinned to Home on its own, or kept as a Prism playlist (1.8.0).
+                if (type == CollectionType.MIX) com.prism.music.data.seasonal.HolidayMixes.byId(page.id)?.let { addAll(holidayActions(c, context, it)) }
+                if ((type == CollectionType.PLAYLIST && live.page.owned) || type == CollectionType.PRISM) add(SheetItem(PrismIcons.Edit, tr(R.string.edit_details)) { editing = true })
+                if (canRearrange) add(SheetItem(PrismIcons.SwapVertical, tr(R.string.rearrange_songs)) { startRearranging() })
                 // A sleep or kids' playlist: plays as usual, but doesn't shape recommendations.
                 if (type == CollectionType.PLAYLIST) {
                     val listId = page.playlistId ?: page.id.removePrefix("VL")
                     val out = excludedLists.any { it.id == listId }
-                    add(SheetItem(PrismIcons.Block, if (out) "Back in my taste" else "Leave out of my taste") {
+                    add(SheetItem(PrismIcons.Block, if (out) tr(R.string.back_in_my_taste) else tr(R.string.leave_out_of_my_taste)) {
                         c.exclusions.setPlaylist(com.prism.music.data.foryou.Excluded(listId, title, art), !out)
-                        Toast.makeText(context, if (out) "Its plays count towards your recommendations again" else "Its plays won't shape your recommendations", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, if (out) tr(R.string.its_plays_count_towards_your_recommendations) else tr(R.string.its_plays_won_t_shape_your), Toast.LENGTH_SHORT).show()
                     })
                 }
                 addAll(downloadsItems)
-                if ((type == CollectionType.PLAYLIST && live.page.owned) || type == CollectionType.PRISM) add(SheetItem(PrismIcons.Delete, "Delete playlist", danger = true) { deleting = true })
+                if ((type == CollectionType.PLAYLIST && live.page.owned) || type == CollectionType.PRISM) add(SheetItem(PrismIcons.Delete, tr(R.string.delete_playlist_2), danger = true) { deleting = true })
             }
             // The songs as the page shows them (filtered, sorted; offline only those on the phone).
             val queue = playable
@@ -791,7 +826,7 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
             ) { queue to source }
             com.prism.music.ui.components.PlayActionsSheet(
                 target, items,
-                extraTitle = when (type) { CollectionType.ALBUM -> "This album"; CollectionType.DOWNLOADS -> "Downloads"; else -> "This playlist" },
+                extraTitle = when (type) { CollectionType.ALBUM -> tr(R.string.this_album); CollectionType.DOWNLOADS -> tr(R.string.downloads); else -> tr(R.string.this_playlist) },
             ) { pageMenu = false }
         }
 
@@ -812,15 +847,15 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                 }.onSuccess {
                     title = t; description = d.ifBlank { null }; privacy = p
                     c.library.refreshCollections()
-                    Toast.makeText(context, "Saved", Toast.LENGTH_SHORT).show()
-                }.onFailure { Toast.makeText(context, "Couldn't save: ${it.friendlyMessage()}", Toast.LENGTH_SHORT).show() }
+                    Toast.makeText(context, tr(R.string.saved_2), Toast.LENGTH_SHORT).show()
+                }.onFailure { Toast.makeText(context, tr(R.string.couldn_t_save, it.friendlyMessage()), Toast.LENGTH_SHORT).show() }
             }
         }
     }
     if (deleting) AlertDialog(
         onDismissRequest = { deleting = false },
-        title = { Text("Delete playlist?") },
-        text = { Text(if (type == CollectionType.PRISM) "\"$title\" will be deleted from this phone. The songs in it stay where they are." else "\"$title\" will be deleted from your YouTube Music account.") },
+        title = { Text(tr(R.string.delete_playlist)) },
+        text = { Text(if (type == CollectionType.PRISM) tr(R.string.will_be_deleted_from_this_phone, title) else tr(R.string.will_be_deleted_from_your_youtube, title)) },
         confirmButton = {
             PrismTextButton(onClick = {
                 deleting = false
@@ -828,11 +863,11 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                 scope.launch {
                     c.library.deletePlaylist(PlaylistItem(page.id, title, "", page.thumbnail))
                         .onSuccess { nav.back() }
-                        .onFailure { Toast.makeText(context, "Couldn't delete \"$title\": ${it.friendlyMessage()}", Toast.LENGTH_LONG).show() }
+                        .onFailure { Toast.makeText(context, tr(R.string.couldn_t_delete, title, it.friendlyMessage()), Toast.LENGTH_LONG).show() }
                 }
-            }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            }) { Text(tr(R.string.delete), color = MaterialTheme.colorScheme.error) }
         },
-        dismissButton = { PrismTextButton(onClick = { deleting = false }) { Text("Cancel") } },
+        dismissButton = { PrismTextButton(onClick = { deleting = false }) { Text(tr(R.string.cancel)) } },
     )
     if (sharing) ShareSheet(shareTarget()) { sharing = false }
 }
@@ -841,8 +876,8 @@ private fun durationText(sec: Int): String {
     val h = sec / 3600
     val m = (sec % 3600) / 60
     return when {
-        h > 0 -> "${h} hr ${m} min"
-        else -> "$m min"
+        h > 0 -> tr(R.string.hr_min, h, m)
+        else -> tr(R.string.min, m)
     }
 }
 
@@ -864,7 +899,7 @@ private fun rememberTellApart(items: List<com.prism.music.data.model.BrowseItem>
                 async {
                     runCatching { withContext(Dispatchers.IO) { c.ytm.album(a.id) } }.getOrNull()?.let { p ->
                         a.id to listOfNotNull(
-                            com.prism.music.data.model.songCount(p.songs.size), p.year?.toString(), if (p.explicit) "Explicit" else null,
+                            com.prism.music.data.model.songCount(p.songs.size), p.year?.toString(), if (p.explicit) tr(R.string.explicit) else null,
                         ).joinToString(" • ")
                     }
                 }
@@ -880,8 +915,8 @@ private fun rememberTellApart(items: List<com.prism.music.data.model.BrowseItem>
 @Composable
 private fun PlayShufflePills(enabled: Boolean, onPlay: () -> Unit, onShuffle: () -> Unit) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Pill(PrismIcons.Play, "Play", primary = true, enabled = enabled, modifier = Modifier.weight(1f), onClick = onPlay)
-        Pill(PrismIcons.Shuffle, "Shuffle", primary = false, enabled = enabled, modifier = Modifier.weight(1f), onClick = onShuffle)
+        Pill(PrismIcons.Play, tr(R.string.widget_play), primary = true, enabled = enabled, modifier = Modifier.weight(1f), onClick = onPlay)
+        Pill(PrismIcons.Shuffle, tr(R.string.shuffle), primary = false, enabled = enabled, modifier = Modifier.weight(1f), onClick = onShuffle)
     }
 }
 
@@ -930,7 +965,7 @@ private fun CollectionTopBar(
     val nav = LocalNavigator.current
     Box(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().statusBarsPadding().height(60.dp).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            com.prism.music.ui.components.RoundAction(PrismIcons.ArrowBack, "Back", glass = true) { nav.back() }
+            com.prism.music.ui.components.RoundAction(PrismIcons.ArrowBack, tr(R.string.back), glass = true) { nav.back() }
             Text(
                 title, Modifier.weight(1f).padding(horizontal = 12.dp).graphicsLayer { alpha = solid() },
                 style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -938,13 +973,14 @@ private fun CollectionTopBar(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (downloadIcon != null) {
                     if (downloading) com.prism.music.ui.components.FloatingDisc { ink ->
-                        Box(Modifier.fillMaxSize().clickable(onClickLabel = "Downloading", onClick = onDownload), contentAlignment = Alignment.Center) {
+                        Box(Modifier.fillMaxSize().clickable(onClickLabel = tr(R.string.downloading_2), onClick = onDownload), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator(Modifier.size(20.dp), color = ink, strokeWidth = 2.dp)
                         }
-                    } else com.prism.music.ui.components.RoundAction(downloadIcon, if (downloadIcon == PrismIcons.DownloadDone) "Downloaded" else "Download all", glass = true, onClick = onDownload)
+                    // Named for what a tap does (it removes once everything's downloaded, #212), not for the state it shows.
+                    } else com.prism.music.ui.components.RoundAction(downloadIcon, if (downloadIcon == PrismIcons.DownloadDone) tr(R.string.remove_downloads) else tr(R.string.download_all), glass = true, onClick = onDownload)
                 }
-                com.prism.music.ui.components.RoundAction(PrismIcons.Share, "Share", glass = true, onClick = onShare)
-                com.prism.music.ui.components.RoundAction(PrismIcons.More, "More", glass = true, onClick = onMore)
+                com.prism.music.ui.components.RoundAction(PrismIcons.Share, tr(R.string.share), glass = true, onClick = onShare)
+                com.prism.music.ui.components.RoundAction(PrismIcons.More, tr(R.string.more), glass = true, onClick = onMore)
             }
         }
     }
@@ -959,7 +995,7 @@ private fun Header(type: CollectionType, page: CollectionPage, art: String?, cov
         Modifier.fillMaxWidth().statusBarsPadding().padding(top = 64.dp, start = 24.dp, end = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(Modifier.clip(cover).clickable(enabled = coverKey != null, onClickLabel = "Change picture", onClick = onEditCover)) {
+        Box(Modifier.clip(cover).clickable(enabled = coverKey != null, onClickLabel = tr(R.string.change_picture), onClick = onEditCover)) {
             if (art != null) {
                 Artwork(art, Modifier.size(248.dp).shadow(30.dp, cover), cover, size = 900)
             } else {
@@ -972,7 +1008,7 @@ private fun Header(type: CollectionType, page: CollectionPage, art: String?, cov
                 }
             }
             if (coverKey != null) GlassSurface(Modifier.align(Alignment.BottomEnd).padding(10.dp).size(40.dp), shape = RoundedCornerShape(50), onMedia = true, inPage = true) {
-                Box(contentAlignment = Alignment.Center) { Icon(PrismIcons.Edit, "Change picture", Modifier.size(20.dp)) }
+                Box(contentAlignment = Alignment.Center) { Icon(PrismIcons.Edit, tr(R.string.change_picture), Modifier.size(20.dp)) }
             }
         }
         Spacer(Modifier.height(20.dp))
@@ -1019,10 +1055,10 @@ private fun HeaderDetails(page: CollectionPage, centred: Boolean, privacy: Strin
             if (page.kind == CollectionKind.ALBUM) {
                 page.releaseKind?.let(::add)
                 page.year?.let { add(it.toString()) }
-                if (page.explicit) add("Explicit")
+                if (page.explicit) add(tr(R.string.explicit))
             } else if (page.secondSubtitle.isNotBlank()) add(page.secondSubtitle.replace(" • ", " · "))
         }
-        val privacyLabel = when (privacy) { "PRIVATE" -> "Private"; "UNLISTED" -> "Unlisted"; "PUBLIC" -> "Public"; else -> null }
+        val privacyLabel = when (privacy) { "PRIVATE" -> tr(R.string.private_text); "UNLISTED" -> tr(R.string.unlisted); "PUBLIC" -> tr(R.string.public_text); else -> null }
         if (facts.isNotEmpty() || privacyLabel != null) Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
             if (privacyLabel != null) {
                 Icon(if (privacy == "PUBLIC") PrismIcons.Globe else if (privacy == "UNLISTED") PrismIcons.Link else PrismIcons.Lock, null, Modifier.size(14.dp), tint = scheme.onSurfaceVariant)
@@ -1041,7 +1077,7 @@ private fun HeaderDetails(page: CollectionPage, centred: Boolean, privacy: Strin
             ) {
                 Icon(if (saved) PrismIcons.LibraryAdded else PrismIcons.LibraryAdd, null, Modifier.size(18.dp), tint = scheme.primary)
                 Spacer(Modifier.width(6.dp))
-                Text(if (saved) "In your library" else "Add to library", style = MaterialTheme.typography.labelLarge, color = scheme.onSurface)
+                Text(if (saved) tr(R.string.in_your_library) else tr(R.string.add_to_library), style = MaterialTheme.typography.labelLarge, color = scheme.onSurface)
             }
         }
         page.description?.takeIf { it.isNotBlank() }?.let {
@@ -1111,7 +1147,7 @@ private fun HeroHeader(type: CollectionType, page: CollectionPage, art: String?,
 private fun DownloadedCollections(visible: List<Song>, sort: SortMode, query: String, filtered: Boolean) {
     val c = LocalContainer.current
     val nav = LocalNavigator.current
-    val all by c.downloads.downloads.collectAsState()
+    val all by c.downloadState.collectAsState()
     // Only a finished download changes this (not every progress tick), so the rows aren't worked out again for those.
     val done = remember(all) { all.filterValues { it.state == Download.STATE_COMPLETED }.keys }
     val kept by produceState<List<Pair<String, CollectionPage>>?>(null) {
@@ -1135,7 +1171,7 @@ private fun DownloadedCollections(visible: List<Song>, sort: SortMode, query: St
             .filter { it.size >= 2 }
             .map { songs ->
                 val id = songs.groupingBy { it.album!!.id!! }.eachCount().maxBy { it.value }.key
-                AlbumItem(id, songs.first().album!!.title, listOf(songs.first().primaryArtist, "${songs.size} downloaded").joinToString(" • "), songs.first().thumbnail)
+                AlbumItem(id, songs.first().album!!.title, listOf(songs.first().primaryArtist, tr(R.string.downloaded_2, songs.size)).joinToString(" • "), songs.first().thumbnail)
             }
         val albums = (fromSongs + keptAlbums.map { (id, p) ->
             AlbumItem(id, p.title, listOfNotNull(p.artists.firstOrNull()?.name, com.prism.music.data.model.songCount(p.songs.size)).joinToString(" • "), p.thumbnail)
@@ -1152,14 +1188,14 @@ private fun DownloadedCollections(visible: List<Song>, sort: SortMode, query: St
     if (albums.isEmpty() && playlists.isEmpty()) return
     Column {
         if (albums.isNotEmpty()) {
-            SectionHeader("Albums")
+            SectionHeader(tr(R.string.albums))
             ItemCarousel(albums, { nav.go(Routes.album(it.id)) })
         }
         if (playlists.isNotEmpty()) {
-            SectionHeader("Playlists")
+            SectionHeader(tr(R.string.playlists))
             ItemCarousel(playlists, { nav.go(Routes.playlist(it.id)) })
         }
-        SectionHeader("Songs")
+        SectionHeader(tr(R.string.songs))
     }
 }
 
@@ -1175,7 +1211,7 @@ private fun MoreBy(name: String, artistId: String, albumId: String) {
     }
     val list = items ?: return
     if (list.isEmpty()) return
-    SectionHeader("More by $name", onMore = { nav.go(Routes.artist(artistId)) })
+    SectionHeader(tr(R.string.more_by, name), onMore = { nav.go(Routes.artist(artistId)) })
     ItemCarousel(list, { nav.go(Routes.album(it.id)) })
 }
 
@@ -1187,27 +1223,27 @@ private fun EditPlaylistDialog(title: String, description: String, privacy: Stri
     var p by remember { mutableStateOf(privacy ?: "PRIVATE") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit playlist") },
+        title = { Text(tr(R.string.edit_playlist)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                com.prism.music.ui.components.PrismTextField(t, { t = it.take(150) }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                com.prism.music.ui.components.PrismTextField(d, { d = it.take(5000) }, label = { Text("Description") }, minLines = 2, maxLines = 5, modifier = Modifier.fillMaxWidth())
+                com.prism.music.ui.components.PrismTextField(t, { t = it.take(150) }, label = { Text(tr(R.string.name)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                com.prism.music.ui.components.PrismTextField(d, { d = it.take(5000) }, label = { Text(tr(R.string.description)) }, minLines = 2, maxLines = 5, modifier = Modifier.fillMaxWidth())
                 // A Prism playlist (no [privacy]) is only on this phone: nobody else can open it anyway.
                 if (privacy == null) return@Column
-                Text("Who can open it", style = MaterialTheme.typography.labelLarge)
-                com.prism.music.ui.components.Segmented(listOf("PRIVATE", "UNLISTED", "PUBLIC"), p, { when (it) { "PRIVATE" -> "Private"; "UNLISTED" -> "Unlisted"; else -> "Public" } }) { p = it }
+                Text(tr(R.string.who_can_open_it), style = MaterialTheme.typography.labelLarge)
+                com.prism.music.ui.components.Segmented(listOf("PRIVATE", "UNLISTED", "PUBLIC"), p, { when (it) { "PRIVATE" -> tr(R.string.private_text); "UNLISTED" -> tr(R.string.unlisted); else -> tr(R.string.public_text) } }) { p = it }
                 Text(
                     when (p) {
-                        "PRIVATE" -> "Only you can see it."
-                        "UNLISTED" -> "Anyone with the link can open it; it doesn't show up in search."
-                        else -> "Anyone can find it and open it."
+                        "PRIVATE" -> tr(R.string.only_you_can_see_it)
+                        "UNLISTED" -> tr(R.string.anyone_with_the_link_can_open_2)
+                        else -> tr(R.string.anyone_can_find_it_and_open)
                     },
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         },
-        confirmButton = { PrismTextButton(onClick = { onSave(t.trim().ifBlank { title }, d.trim(), p) }) { Text("Save") } },
-        dismissButton = { PrismTextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { PrismTextButton(onClick = { onSave(t.trim().ifBlank { title }, d.trim(), p) }) { Text(tr(R.string.save)) } },
+        dismissButton = { PrismTextButton(onClick = onDismiss) { Text(tr(R.string.cancel)) } },
     )
 }
 
@@ -1222,18 +1258,18 @@ private fun CoverSheet(key: String, title: String, songs: List<Song>, onDismiss:
     if (making) { CoverMakerSheet(key, title) { making = false; onDismiss() }; return }
     val picker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) scope.launch {
-            if (!c.covers.usePhoto(key, uri)) Toast.makeText(context, "Couldn't use that picture", Toast.LENGTH_SHORT).show()
+            if (!c.covers.usePhoto(key, uri)) Toast.makeText(context, tr(R.string.couldn_t_use_that_picture), Toast.LENGTH_SHORT).show()
             onDismiss()
         }
     }
     val covers = remember(songs) { songs.mapNotNull { it.thumbnail }.distinctBy { hiRes(it, 120) }.take(30) }
     androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.padding(bottom = 28.dp)) {
-            Text("Playlist picture", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 24.dp))
+            Text(tr(R.string.playlist_picture), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 24.dp))
             Spacer(Modifier.height(8.dp))
             androidx.compose.material3.ListItem(
-                headlineContent = { Text("Choose a photo") },
-                supportingContent = { Text("From your phone's photos") },
+                headlineContent = { Text(tr(R.string.choose_a_photo)) },
+                supportingContent = { Text(tr(R.string.from_your_phone_s_photos)) },
                 leadingContent = { Icon(PrismIcons.Photo, null) },
                 colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = Color.Transparent),
                 modifier = Modifier.clickable {
@@ -1242,15 +1278,15 @@ private fun CoverSheet(key: String, title: String, songs: List<Song>, onDismiss:
             )
             // 1.7.6: a cover made here, from its name, two colors and a pattern.
             androidx.compose.material3.ListItem(
-                headlineContent = { Text("Make a cover") },
-                supportingContent = { Text("Its name on your colors and a pattern") },
+                headlineContent = { Text(tr(R.string.make_a_cover)) },
+                supportingContent = { Text(tr(R.string.its_name_on_your_colors_and)) },
                 leadingContent = { Icon(PrismIcons.Palette, null) },
                 colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = Color.Transparent),
                 modifier = Modifier.clickable { making = true },
             )
             if (covers.isNotEmpty()) {
                 Text(
-                    "Or a cover from this playlist", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tr(R.string.or_a_cover_from_this_playlist), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 24.dp, top = 8.dp, bottom = 8.dp),
                 )
                 LazyRow(contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -1263,13 +1299,13 @@ private fun CoverSheet(key: String, title: String, songs: List<Song>, onDismiss:
                 }
             }
             if (c.covers.custom(key) != null) androidx.compose.material3.ListItem(
-                headlineContent = { Text("Use the original picture") },
+                headlineContent = { Text(tr(R.string.use_the_original_picture)) },
                 leadingContent = { Icon(PrismIcons.History, null) },
                 colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = Color.Transparent),
                 modifier = Modifier.padding(top = 8.dp).clickable { c.covers.reset(key); onDismiss() },
             )
             Text(
-                "The picture shows everywhere in Prism, including Android Auto. YouTube Music keeps its own.",
+                tr(R.string.the_picture_shows_everywhere_in_prism),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 12.dp),
             )
@@ -1375,10 +1411,10 @@ private fun androidx.compose.foundation.lazy.LazyListScope.rearrangeSongs(r: Laz
     item("rearrange-head") {
         Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
-                "Hold a song, or drag its grip, to move it", Modifier.weight(1f),
+                tr(R.string.hold_a_song_or_drag_its), Modifier.weight(1f),
                 style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            com.prism.music.ui.components.PrismChip(true, onDone, "Done", icon = PrismIcons.Check)
+            com.prism.music.ui.components.PrismChip(true, onDone, tr(R.string.done), icon = PrismIcons.Check)
         }
     }
     itemsIndexed(r.order, key = { _, s -> LazyReorder.rowKey(s.id) }) { i, s ->
@@ -1415,7 +1451,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.rearrangeSongs(r: Laz
                 Text(s.title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(s.artistText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            com.prism.music.ui.components.DragGrip(Modifier.dragging(afterHold = false).padding(start = 8.dp), "Drag ${s.title}")
+            com.prism.music.ui.components.DragGrip(Modifier.dragging(afterHold = false).padding(start = 8.dp), tr(R.string.drag, s.title))
         }
     }
 }
@@ -1428,43 +1464,43 @@ private val REVERSIBLE = setOf(CollectionType.DOWNLOADS, CollectionType.LIKED, C
  * is in its maker's order, so it's just reversed.
  */
 private fun sortLabel(m: SortMode, type: CollectionType, owned: Boolean = false) = when {
-    m == SortMode.DEFAULT && type == CollectionType.DOWNLOADS -> "Recently added"
-    m == SortMode.OLDEST && (type == CollectionType.PRISM || type == CollectionType.PLAYLIST && owned) -> "Newest first"
-    m == SortMode.OLDEST && type == CollectionType.PLAYLIST -> "Reverse order"
+    m == SortMode.DEFAULT && type == CollectionType.DOWNLOADS -> tr(R.string.recently_added)
+    m == SortMode.OLDEST && (type == CollectionType.PRISM || type == CollectionType.PLAYLIST && owned) -> tr(R.string.newest_first)
+    m == SortMode.OLDEST && type == CollectionType.PLAYLIST -> tr(R.string.reverse_order)
     else -> m.label
 }
 
 private fun sizeText(bytes: Long): String =
-    if (bytes >= 1_073_741_824L) "%.1f GB".format(bytes / 1_073_741_824.0) else "%.0f MB".format(bytes / 1_048_576.0)
+    if (bytes >= 1_073_741_824L) tr(R.string.t_1f_gb).format(bytes / 1_073_741_824.0) else tr(R.string.t_0f_mb).format(bytes / 1_048_576.0)
 
 /** Under the Downloads header: space used, saved lyrics, and anything still downloading. */
 @Composable
 private fun DownloadsInfo(songs: List<Song>, ask: (String, () -> Unit) -> Unit) {
     val c = LocalContainer.current
     val scheme = MaterialTheme.colorScheme
-    val all by c.downloads.downloads.collectAsState()
+    val all by c.downloadState.collectAsState()
     val levels by c.downloads.lyricLevels.collectAsState()
     val working by c.downloads.lyricsWorking.collectAsState()
-    val videos by c.downloads.videos.collectAsState()
+    val videos by c.videoState.collectAsState()
     val active = remember(all) { all.filter { it.value.state != Download.STATE_COMPLETED && it.value.state != Download.STATE_FAILED } }
     val bytes = remember(all) { all.values.filter { it.state == Download.STATE_COMPLETED }.sumOf { it.bytes } }
     Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 6.dp)) {
         Text(
-            "${songs.size} song${if (songs.size == 1) "" else "s"} · ${sizeText(bytes)} on this phone" +
-                if (videos.isNotEmpty()) " (${sizeText(bytes + videos.values.sumOf { it.bytes })} with videos)" else "",
+            trp(R.plurals.n_songs_on_this_phone, songs.size, songs.size, sizeText(bytes)) +
+                if (videos.isNotEmpty()) tr(R.string.with_videos, sizeText(bytes + videos.values.sumOf { it.bytes })) else "",
             style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
         )
         // Saved music videos take far more room than songs, so they get their own line.
         val savedVideos = remember(videos) { videos.values.filter { it.state == Download.STATE_COMPLETED } }
         val videosLoading = remember(videos) { videos.values.count { it.state == Download.STATE_QUEUED || it.state == Download.STATE_DOWNLOADING } }
         if (videos.isNotEmpty()) Text(
-            "${savedVideos.size} music video${if (savedVideos.size == 1) "" else "s"} · ${sizeText(videos.values.sumOf { it.bytes })}" +
-                if (videosLoading > 0) " · $videosLoading downloading" else "",
+            trp(R.plurals.n_music_videos, savedVideos.size, savedVideos.size, sizeText(videos.values.sumOf { it.bytes })) +
+                if (videosLoading > 0) tr(R.string.downloading_3, videosLoading) else "",
             style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
         )
         val lossless = remember(all) { all.count { it.value.lossless } }
         if (lossless > 0) Text(
-            "$lossless lossless from your phone's music files",
+            tr(R.string.lossless_from_your_phone_s_music, lossless),
             style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
         )
         val ids = songs.map { it.id }
@@ -1472,13 +1508,13 @@ private fun DownloadsInfo(songs: List<Song>, ask: (String, () -> Unit) -> Unit) 
             val withLyrics = ids.count { (levels[it] ?: 0) > 0 }
             val karaoke = ids.count { (levels[it] ?: 0) >= 3 }
             Text(
-                "Lyrics for $withLyrics · $karaoke karaoke" + if (working > 0) " · getting more…" else "",
+                tr(R.string.lyrics_for_karaoke, withLyrics, karaoke) + if (working > 0) tr(R.string.getting_more) else "",
                 style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
             )
         }
         if (active.isNotEmpty()) Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Downloading ${active.size}…", style = MaterialTheme.typography.labelMedium, color = scheme.primary)
-            PrismTextButton(onClick = { ask("Cancel ${active.size} downloads that haven't finished?") { c.downloads.removeMany(active.keys) } }) { Text("Cancel") }
+            Text(tr(R.string.downloading_4, active.size), style = MaterialTheme.typography.labelMedium, color = scheme.primary)
+            PrismTextButton(onClick = { ask(trp(R.plurals.cancel_n_downloads, active.size)) { c.downloads.removeMany(active.keys) } }) { Text(tr(R.string.cancel)) }
         }
         val unfinished = remember(all) { all.values.filter { it.state != Download.STATE_COMPLETED } }
         if (unfinished.isNotEmpty()) DownloadQueueStatus(unfinished)
@@ -1486,12 +1522,13 @@ private fun DownloadsInfo(songs: List<Song>, ask: (String, () -> Unit) -> Unit) 
 }
 
 /** How far one download has got, in words: a percentage, or why it isn't moving. */
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 fun downloadStateText(d: com.prism.music.download.DownloadInfo, waitingForNetwork: Boolean): String = when (d.state) {
-    Download.STATE_FAILED -> "Failed"
-    Download.STATE_QUEUED -> if (waitingForNetwork) "Waiting for Wi-Fi" else "Queued"
-    Download.STATE_STOPPED -> "Paused"
-    Download.STATE_RESTARTING -> "Restarting"
-    else -> if (d.percent >= 0) "${d.percent.toInt()}%" else "Starting"
+    Download.STATE_FAILED -> tr(R.string.failed)
+    Download.STATE_QUEUED -> if (waitingForNetwork) tr(R.string.waiting_for_wi_fi) else tr(R.string.queued)
+    Download.STATE_STOPPED -> tr(R.string.paused)
+    Download.STATE_RESTARTING -> tr(R.string.restarting)
+    else -> if (d.percent >= 0) "${d.percent.toInt()}%" else tr(R.string.starting_2)
 }
 
 /**
@@ -1506,16 +1543,16 @@ fun DownloadQueueStatus(unfinished: Collection<com.prism.music.download.Download
     val failed = unfinished.count { it.state == Download.STATE_FAILED }
     val queued = unfinished.count { it.state == Download.STATE_QUEUED }
     if (waiting && queued > 0) Row(verticalAlignment = Alignment.CenterVertically) {
-        Text("$queued waiting for Wi-Fi", style = MaterialTheme.typography.labelMedium, color = scheme.onSurfaceVariant)
+        Text(tr(R.string.waiting_for_wi_fi_2, queued), style = MaterialTheme.typography.labelMedium, color = scheme.onSurfaceVariant)
         // It switches the setting off for good (Settings → Downloads & storage), so it says so.
-        PrismTextButton(onClick = { c.settings.setDownloadWifiOnly(false) }) { Text("Turn off Wi-Fi only") }
+        PrismTextButton(onClick = { c.settings.setDownloadWifiOnly(false) }) { Text(tr(R.string.turn_off_wi_fi_only)) }
     }
     var showFailed by remember { mutableStateOf(false) }
     if (failed > 0) Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(if (failed == 1) "1 download failed" else "$failed downloads failed", style = MaterialTheme.typography.labelMedium, color = scheme.error)
+        Text(trp(R.plurals.n_downloads_failed, failed), style = MaterialTheme.typography.labelMedium, color = scheme.error)
         // Which ones, and why (#98).
-        PrismTextButton(onClick = { showFailed = true }) { Text("See which") }
-        PrismTextButton(onClick = { c.downloads.retryFailed() }) { Text("Try again") }
+        PrismTextButton(onClick = { showFailed = true }) { Text(tr(R.string.see_which)) }
+        PrismTextButton(onClick = { c.downloads.retryFailed() }) { Text(tr(R.string.try_again)) }
     }
     if (showFailed) FailedDownloadsSheet { showFailed = false }
 }
@@ -1529,16 +1566,16 @@ fun FailedDownloadsSheet(onDismiss: () -> Unit) {
     val c = LocalContainer.current
     val scheme = MaterialTheme.colorScheme
     val ui = LocalUi.current
-    val all by c.downloads.downloads.collectAsState()
+    val all by c.downloadState.collectAsState()
     val why by c.downloads.failures.collectAsState()
     val failed = remember(all) { all.filter { it.value.state == Download.STATE_FAILED }.toList().sortedByDescending { it.second.addedAt } }
     // Everything tried again or removed: nothing left to show.
     LaunchedEffect(failed.isEmpty()) { if (failed.isEmpty()) onDismiss() }
     ActionSheet(art = null, onDismiss = onDismiss) { close ->
         Column(Modifier.padding(start = 24.dp, end = 24.dp, bottom = 12.dp)) {
-            Text(if (failed.size == 1) "1 download failed" else "${failed.size} downloads failed", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Light)
+            Text(trp(R.plurals.n_downloads_failed, failed.size), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Light)
             Text(
-                "Prism also tries them again by itself when the phone is back online.",
+                tr(R.string.prism_also_tries_them_again_by),
                 style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
             )
         }
@@ -1549,25 +1586,25 @@ fun FailedDownloadsSheet(onDismiss: () -> Unit) {
                     Artwork(d.song?.thumbnail, Modifier.size(46.dp), ui.art, size = 226)
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(d.song?.title ?: "Unknown song", style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(d.song?.title ?: tr(R.string.unknown_song), style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         d.song?.let { Text(it.artistText, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis) }
                         Text(
-                            why[id] ?: "Failed before Prism kept the reason",
+                            why[id] ?: tr(R.string.failed_before_prism_kept_the_reason),
                             style = MaterialTheme.typography.bodySmall, color = scheme.error, maxLines = 3,
                         )
                     }
-                    IconButton(onClick = { c.downloads.retryFailed(setOf(id)) }) { Icon(PrismIcons.Refresh, "Try again") }
-                    IconButton(onClick = { c.downloads.removeMany(setOf(id)) }) { Icon(PrismIcons.Delete, "Remove") }
+                    IconButton(onClick = { c.downloads.retryFailed(setOf(id)) }) { Icon(PrismIcons.Refresh, tr(R.string.try_again)) }
+                    IconButton(onClick = { c.downloads.removeMany(setOf(id)) }) { Icon(PrismIcons.Delete, tr(R.string.remove)) }
                 }
             }
         }
         if (failed.size > MAX_FAILED_ROWS) Text(
-            "and ${failed.size - MAX_FAILED_ROWS} more",
+            tr(R.string.and_more_2, failed.size - MAX_FAILED_ROWS),
             Modifier.padding(start = 28.dp, top = 8.dp), style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
         )
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
-            PrismTextButton(onClick = { close { c.downloads.removeMany(failed.map { it.first }) } }) { Text("Remove all") }
-            com.prism.music.ui.components.PrismButton(onClick = { close { c.downloads.retryFailed() } }) { Text("Try all again") }
+            PrismTextButton(onClick = { close { c.downloads.removeMany(failed.map { it.first }) } }) { Text(tr(R.string.remove_all)) }
+            com.prism.music.ui.components.PrismButton(onClick = { close { c.downloads.retryFailed() } }) { Text(tr(R.string.try_all_again)) }
         }
     }
 }
@@ -1578,26 +1615,39 @@ private const val MAX_FAILED_ROWS = 60
 @Composable
 private fun downloadsSheetItems(ask: (String, () -> Unit) -> Unit): List<SheetItem> {
     val c = LocalContainer.current
-    val all by c.downloads.downloads.collectAsState()
+    val all by c.downloadState.collectAsState()
     var smartIds by remember { mutableStateOf(emptySet<String>()) }
     LaunchedEffect(all.size) {
         smartIds = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { c.db.songs().smartDownloads().map { it.id }.toSet() }
     }
     val smart = all.filter { it.value.state == Download.STATE_COMPLETED && it.key in smartIds }.keys
-    val videos by c.downloads.videos.collectAsState()
+    val videos by c.videoState.collectAsState()
+    // With Premium quality on: downloads below it (from before it was on, or before 1.7.7.1 made it work) can come down
+    // again in 256 kbps (#149).
+    val settings = com.prism.music.ui.theme.LocalAppSettings.current
+    var below by remember { mutableStateOf(emptyList<String>()) }
+    LaunchedEffect(all.size, settings.premiumStream, settings.isLoggedIn) {
+        below = if (!settings.premiumStream || !settings.isLoggedIn) emptyList()
+        else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { c.downloads.belowPremium() }
+    }
     return buildList {
-        add(SheetItem(PrismIcons.Lyrics, "Get missing lyrics") { c.downloads.backfillLyrics(force = true) })
-        if (smart.isNotEmpty()) add(SheetItem(PrismIcons.Delete, "Delete smart downloads (${smart.size})", danger = true) {
-            ask("Delete the ${com.prism.music.data.model.songCount(smart.size)} smart downloads added? They may come back later if smart downloads stays on.") { c.downloads.removeMany(smart) }
+        add(SheetItem(PrismIcons.Lyrics, tr(R.string.get_missing_lyrics)) { c.downloads.backfillLyrics(force = true) })
+        if (below.isNotEmpty()) add(SheetItem(PrismIcons.Download, tr(R.string.download_again_in_premium_quality, below.size)) {
+            ask(
+                tr(R.string.download_again_in_premium_quality_256_all, com.prism.music.data.model.songCount(below.size))
+            ) { c.downloads.downloadAgain(below) }
         })
-        if (videos.isNotEmpty()) add(SheetItem(PrismIcons.Delete, "Delete music videos (${sizeText(videos.values.sumOf { it.bytes })})", danger = true) {
-            ask("Delete the ${videos.size} saved music videos? The songs stay downloaded.") { videos.keys.forEach(c.downloads::removeVideo) }
+        if (smart.isNotEmpty()) add(SheetItem(PrismIcons.Delete, tr(R.string.delete_smart_downloads, smart.size), danger = true) {
+            ask(tr(R.string.delete_the_smart_downloads_added_they, com.prism.music.data.model.songCount(smart.size))) { c.downloads.removeMany(smart) }
         })
-        add(SheetItem(PrismIcons.Delete, "Delete all downloads", danger = true) {
+        if (videos.isNotEmpty()) add(SheetItem(PrismIcons.Delete, tr(R.string.delete_music_videos, sizeText(videos.values.sumOf { it.bytes })), danger = true) {
+            ask(tr(R.string.delete_the_saved_music_videos_the, videos.size)) { videos.keys.forEach(c.downloads::removeVideo) }
+        })
+        add(SheetItem(PrismIcons.Delete, tr(R.string.delete_all_downloads), danger = true) {
             val lossless = all.count { it.value.lossless }
             ask(
-                "Delete all ${all.size} downloads (${sizeText(c.downloads.totalBytes)})? This frees the space straight away." +
-                    if (lossless > 0) " Your $lossless lossless files stay on the phone; they just leave Downloads." else ""
+                trp(R.plurals.delete_all_n_downloads, all.size, all.size, sizeText(c.downloads.totalBytes)) +
+                    if (lossless > 0) tr(R.string.your_lossless_files_stay_on_the, lossless) else ""
             ) { c.downloads.removeAll() }
         })
     }

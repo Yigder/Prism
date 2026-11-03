@@ -29,6 +29,20 @@ import dev.chrisbanes.haze.glass.hazeGlass
 /** The backdrop that glass surfaces in the current subtree refract. */
 val LocalHazeState = compositionLocalOf<HazeState?> { null }
 
+internal enum class GlassPath { LIQUID, FROSTED, SOLID }
+
+/**
+ * How [GlassSurface] draws: Liquid Glass and Frosted need something behind to sample ([haze]); Liquid Glass also needs
+ * Android 12's blur, without which it fell back to a thin tint and Clear glass showed everything behind it sharp, so
+ * below it Liquid Glass is drawn frosted (1.7.9.2).
+ */
+internal fun glassPath(sdk: Int, liquid: Boolean, frosted: Boolean, haze: Boolean, refract: Boolean = true): GlassPath = when {
+    !haze -> GlassPath.SOLID
+    liquid && refract && sdk >= 31 -> GlassPath.LIQUID
+    liquid || frosted -> GlassPath.FROSTED
+    else -> GlassPath.SOLID
+}
+
 /**
  * A surface that renders as refractive Liquid Glass when enabled in
  * Appearance settings, or as a soft translucent card otherwise.
@@ -48,6 +62,11 @@ fun GlassSurface(
      * Glass on (issue #5): in a page it's frosted with the page's own fill instead.
      */
     inPage: Boolean = false,
+    /**
+     * False for flat, edge-to-edge bars (the docked tab bar): frosted even with Liquid Glass on. As a lens it bent
+     * everything behind it across the tabs and showed its edges at the screen's sides (#273, 1.7.9.3).
+     */
+    refract: Boolean = true,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val settings = LocalAppSettings.current
@@ -66,7 +85,7 @@ fun GlassSurface(
                 ),
             content = content,
         )
-    } else if (settings.liquidGlass && haze != null) {
+    } else if (glassPath(android.os.Build.VERSION.SDK_INT, settings.liquidGlass, settings.frostedGlass, haze != null, refract) == GlassPath.LIQUID) {
         val clear = onMedia || settings.glassKind == GlassKind.CLEAR
         val style = remember(shape, tint, clear, dark) {
             val baseStyle = if (clear) GlassStyle.clear else GlassStyle.regular
@@ -83,12 +102,15 @@ fun GlassSurface(
                 .clip(shape),
             content = content,
         )
-    } else if (settings.frostedGlass && haze != null) {
+    } else if (glassPath(android.os.Build.VERSION.SDK_INT, settings.liquidGlass, settings.frostedGlass, haze != null, refract) == GlassPath.FROSTED) {
         val scheme = MaterialTheme.colorScheme
+        // Below Android 12 there's no blur (1.7.9's check: Clear glass showed Home's tiles sharp through the tab bar
+        // and mini player, as if drawn over them), so the wash carries it alone and is made thick enough to.
+        val noBlur = android.os.Build.VERSION.SDK_INT < 31
         val wash = when {
-            tint.isSpecified -> tint
-            onMedia -> Color.Black.copy(alpha = 0.28f)
-            else -> scheme.surfaceContainerHigh.copy(alpha = if (dark) 0.55f else 0.62f)
+            tint.isSpecified -> if (noBlur) tint.copy(alpha = tint.alpha.coerceAtLeast(0.88f)) else tint
+            onMedia -> Color.Black.copy(alpha = if (noBlur) 0.55f else 0.28f)
+            else -> scheme.surfaceContainerHigh.copy(alpha = if (noBlur) (if (dark) 0.9f else 0.92f) else if (dark) 0.55f else 0.62f)
         }
         val style = remember(wash) {
             HazeBlurStyle {
@@ -113,7 +135,8 @@ fun GlassSurface(
         )
     } else {
         val scheme = MaterialTheme.colorScheme
-        val fill = if (onMedia) Color.Black.copy(alpha = 0.35f) else scheme.surfaceContainerHigh.copy(alpha = 0.97f)
+        // Opaque: with no glass, rows scrolling under the mini player read through even a 3% see-through fill.
+        val fill = if (onMedia) Color.Black.copy(alpha = 0.35f) else scheme.surfaceContainerHigh
         Box(
             modifier
                 .shadow(elevation, shape, ambientColor = Color.Black.copy(alpha = 0.3f), spotColor = Color.Black.copy(alpha = 0.3f))

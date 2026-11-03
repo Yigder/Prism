@@ -1,5 +1,7 @@
 package com.prism.music.ui.theme
 
+import com.prism.music.R
+import com.prism.music.tr
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -95,7 +97,7 @@ object ColorMath {
     }
 
     /** How readable text in one color is on another, by WCAG 2's thresholds for normal-size text. */
-    enum class Readability(val label: String) { AAA("Very easy to read"), AA("Easy to read"), LARGE("OK for big text"), POOR("Hard to read") }
+    enum class Readability(val label: String) { AAA(tr(R.string.very_easy_to_read)), AA(tr(R.string.easy_to_read)), LARGE(tr(R.string.ok_for_big_text)), POOR(tr(R.string.hard_to_read)) }
 
     fun readability(fg: Int, bg: Int): Readability {
         val r = contrast(fg, bg)

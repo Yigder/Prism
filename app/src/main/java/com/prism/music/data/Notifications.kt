@@ -1,5 +1,6 @@
 package com.prism.music.data
 
+import com.prism.music.tr
 import android.Manifest
 import android.app.PendingIntent
 import android.content.Context
@@ -29,12 +30,12 @@ object Notifications {
         // Pairing codes are wanted on screen at once (the other device is waiting for them).
         nm.createNotificationChannel(
             NotificationChannelCompat.Builder(CONNECT, NotificationManagerCompat.IMPORTANCE_HIGH)
-                .setName("Prism Connect").setDescription("Pairing codes when another device wants to play here").build()
+                .setName(tr(R.string.prism_connect)).setDescription(tr(R.string.pairing_codes_when_another_device_wants)).build()
         )
         listOf(
-            Triple(NEW_RELEASES, "New releases", "New music from artists you follow"),
-            Triple(REWIND, "Rewind", "When your year in music is ready"),
-            Triple(RECOGNITION, "Song recognition", "Songs recognized after you were offline"),
+            Triple(NEW_RELEASES, tr(R.string.new_releases), tr(R.string.new_music_from_artists_you_follow)),
+            Triple(REWIND, tr(R.string.rewind_3), tr(R.string.when_your_year_in_music_is)),
+            Triple(RECOGNITION, tr(R.string.song_recognition), tr(R.string.songs_recognized_after_you_were_offline)),
         ).forEach { (id, name, description) ->
             nm.createNotificationChannel(
                 NotificationChannelCompat.Builder(id, NotificationManagerCompat.IMPORTANCE_DEFAULT)

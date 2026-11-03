@@ -1,5 +1,7 @@
 package com.prism.music.ui.theme
 
+import com.prism.music.R
+import com.prism.music.tr
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -41,7 +43,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /** The screens whose background can be changed. */
-enum class BackdropScreen(val label: String) { HOME("Home"), SEARCH("Search"), LIBRARY("Library"), REPLAY("Replay"), SETTINGS("Settings") }
+enum class BackdropScreen(val label: String) { HOME(tr(R.string.home)), SEARCH(tr(R.string.search)), LIBRARY(tr(R.string.library)), REPLAY(tr(R.string.replay_2)), SETTINGS(tr(R.string.settings)) }
 
 /**
  * The player's own background (1.7.4), kept in the same map as the screens' (so Looks keep its photo too), but not a
@@ -66,10 +68,12 @@ enum class BackdropKind {
     DOTS, PAPER, PINSTRIPE, WAVES, RIPPLES, DIAMONDS, ZIGZAG, HALFTONE, CROSSES, SCALES, CONFETTI,
     /** Detailed illustrations in their own palettes ([Design]). */
     CONSTELLATION, CONTOURS, MOSAIC, BOKEH, SILK, HORIZON,
+    /** The seasonal scenes (1.8.0, [SeasonalDesigns]): Thanksgiving's harvest and Christmas. */
+    HARVEST, HOLIDAY,
 }
 
 /** Which row of the picker a background sits in. */
-enum class BackdropGroup(val label: String) { YOURS("Yours"), COLOR("Color"), SIMPLE("Simple"), DESIGNS("Designs") }
+enum class BackdropGroup(val label: String) { YOURS(tr(R.string.yours)), COLOR(tr(R.string.color_2)), SIMPLE(tr(R.string.simple)), DESIGNS(tr(R.string.designs)) }
 
 /**
  * Ready-made backgrounds. Each has a dark and a light version (base color first, then its light
@@ -83,70 +87,82 @@ enum class Backdrop(
     val group: BackdropGroup,
     val dark: List<Long> = emptyList(),
     val light: List<Long> = emptyList(),
+    /** Only offered in this season's month (a seasonal Look's own background); null for always. */
+    val season: com.prism.music.data.looks.Season? = null,
 ) {
     /** Ambient: frost from what's playing (Aura × Spectrum's own look), or the plain page with frosted pages off. */
-    DEFAULT("Ambient", BackdropKind.SPECIAL, BackdropGroup.YOURS),
-    ARTWORK("Now playing", BackdropKind.SPECIAL, BackdropGroup.YOURS),
-    PHOTO("Your photo", BackdropKind.SPECIAL, BackdropGroup.YOURS),
+    DEFAULT(tr(R.string.ambient), BackdropKind.SPECIAL, BackdropGroup.YOURS),
+    ARTWORK(tr(R.string.widget_now_playing), BackdropKind.SPECIAL, BackdropGroup.YOURS),
+    PHOTO(tr(R.string.your_photo), BackdropKind.SPECIAL, BackdropGroup.YOURS),
 
     /** The prism's split light as three slow fields: red, green and violet (1.7). */
-    SPECTRUM("Spectrum", BackdropKind.FIELDS, BackdropGroup.COLOR,
+    SPECTRUM(tr(R.string.spectrum), BackdropKind.FIELDS, BackdropGroup.COLOR,
         listOf(0xFF0B0910, 0xFFFF4D5E, 0xFF3DDC97, 0xFF7C5CFF), listOf(0xFFF8F5F9, 0xFFFF9AA6, 0xFF8FE5C0, 0xFFBBA9FF)),
-    AURORA("Aurora", BackdropKind.FIELDS, BackdropGroup.COLOR,
+    AURORA(tr(R.string.aurora), BackdropKind.FIELDS, BackdropGroup.COLOR,
         listOf(0xFF07122A, 0xFF2EE59D, 0xFF7C5CFF, 0xFF00C2FF), listOf(0xFFEEF6F5, 0xFF7FE6BE, 0xFFB3A3FF, 0xFF8ADDFF)),
-    PRISM("Prism", BackdropKind.FIELDS, BackdropGroup.COLOR,
+    PRISM(tr(R.string.app_name), BackdropKind.FIELDS, BackdropGroup.COLOR,
         listOf(0xFF0E0E12, 0xFFFF7A9C, 0xFFFFD36B, 0xFF6BE3FF), listOf(0xFFFBF8F4, 0xFFFFA9BE, 0xFFFFDE94, 0xFF9AE8FF)),
-    SUNSET("Sunset", BackdropKind.FIELDS, BackdropGroup.COLOR,
+    SUNSET(tr(R.string.sunset), BackdropKind.FIELDS, BackdropGroup.COLOR,
         listOf(0xFF2A0E1A, 0xFFFF6B3D, 0xFFFF3B7F, 0xFFFFC145), listOf(0xFFFFF4EE, 0xFFFFA57D, 0xFFFF8FB3, 0xFFFFD685)),
-    OCEAN("Ocean", BackdropKind.FIELDS, BackdropGroup.COLOR,
+    OCEAN(tr(R.string.ocean), BackdropKind.FIELDS, BackdropGroup.COLOR,
         listOf(0xFF031827, 0xFF0077B6, 0xFF00B4D8, 0xFF48CAE4), listOf(0xFFEEF7FC, 0xFF6DBDEA, 0xFF7ADBEE, 0xFFAAE7F3)),
-    FOREST("Forest", BackdropKind.FIELDS, BackdropGroup.COLOR,
+    FOREST(tr(R.string.forest), BackdropKind.FIELDS, BackdropGroup.COLOR,
         listOf(0xFF07150E, 0xFF2D6A4F, 0xFF52B788, 0xFFB7E4C7), listOf(0xFFF2F7F1, 0xFF8EC3A4, 0xFFA8D9B9, 0xFFDDF0DA)),
-    NEON("Neon", BackdropKind.FIELDS, BackdropGroup.COLOR,
+    NEON(tr(R.string.neon), BackdropKind.FIELDS, BackdropGroup.COLOR,
         listOf(0xFF0A0014, 0xFFFF00E5, 0xFF00F0FF, 0xFF7B2FFF), listOf(0xFFF8F3FF, 0xFFFF8CF2, 0xFF7FF3FF, 0xFFB394FF)),
-    ROSE("Rosé", BackdropKind.FIELDS, BackdropGroup.COLOR,
+    ROSE(tr(R.string.ros), BackdropKind.FIELDS, BackdropGroup.COLOR,
         listOf(0xFF1C0B12, 0xFFF4A3B4, 0xFFE76F8A, 0xFFFFD6A5), listOf(0xFFFFF5F6, 0xFFF8BECB, 0xFFF0A3B6, 0xFFFFE1C0)),
-    MIDNIGHT("Midnight", BackdropKind.FIELDS, BackdropGroup.COLOR,
+    MIDNIGHT(tr(R.string.midnight), BackdropKind.FIELDS, BackdropGroup.COLOR,
         listOf(0xFF04040A, 0xFF1B1F3B, 0xFF3A2E6E, 0xFF0F3460), listOf(0xFFEFF1F8, 0xFFB4BDE6, 0xFFC2B5EC, 0xFFA8C2E0)),
-    EMBER("Ember", BackdropKind.FIELDS, BackdropGroup.COLOR,
+    EMBER(tr(R.string.ember), BackdropKind.FIELDS, BackdropGroup.COLOR,
         listOf(0xFF140604, 0xFFB5361B, 0xFFFF7B00, 0xFF5A0F0F), listOf(0xFFFFF5EF, 0xFFEE9A80, 0xFFFFBC7A, 0xFFE3A0A0)),
-    GRAPHITE("Graphite", BackdropKind.FIELDS, BackdropGroup.COLOR,
+    GRAPHITE(tr(R.string.graphite), BackdropKind.FIELDS, BackdropGroup.COLOR,
         listOf(0xFF111113, 0xFF2C2C31, 0xFF44444C, 0xFF1C1C20), listOf(0xFFF5F5F7, 0xFFDDDDE3, 0xFFD2D2D9, 0xFFE8E8EC)),
 
-    TINT("Soft tint", BackdropKind.TINT, BackdropGroup.SIMPLE),
-    DUSK("Dusk", BackdropKind.BLEND, BackdropGroup.SIMPLE,
+    TINT(tr(R.string.soft_tint), BackdropKind.TINT, BackdropGroup.SIMPLE),
+    DUSK(tr(R.string.dusk), BackdropKind.BLEND, BackdropGroup.SIMPLE,
         listOf(0xFF221338, 0xFF0B1B2E), listOf(0xFFFCE8F1, 0xFFE2ECFF)),
-    SAND("Sand", BackdropKind.BLEND, BackdropGroup.SIMPLE,
+    SAND(tr(R.string.sand), BackdropKind.BLEND, BackdropGroup.SIMPLE,
         listOf(0xFF221D18, 0xFF141210), listOf(0xFFF7F0E6, 0xFFEDE3D3)),
-    MIST("Mist", BackdropKind.BLEND, BackdropGroup.SIMPLE,
+    MIST(tr(R.string.mist), BackdropKind.BLEND, BackdropGroup.SIMPLE,
         listOf(0xFF0F1E22, 0xFF0D1218), listOf(0xFFEAF5F3, 0xFFE6ECF4)),
-    DOTS("Dots", BackdropKind.DOTS, BackdropGroup.SIMPLE),
-    PAPER("Paper", BackdropKind.PAPER, BackdropGroup.SIMPLE),
-    PINSTRIPE("Pinstripe", BackdropKind.PINSTRIPE, BackdropGroup.SIMPLE),
-    WAVES("Waves", BackdropKind.WAVES, BackdropGroup.SIMPLE),
-    RIPPLES("Ripples", BackdropKind.RIPPLES, BackdropGroup.SIMPLE),
-    DIAMONDS("Diamonds", BackdropKind.DIAMONDS, BackdropGroup.SIMPLE),
-    ZIGZAG("Zigzag", BackdropKind.ZIGZAG, BackdropGroup.SIMPLE),
-    HALFTONE("Halftone", BackdropKind.HALFTONE, BackdropGroup.SIMPLE),
-    CROSSES("Crosses", BackdropKind.CROSSES, BackdropGroup.SIMPLE),
-    SCALES("Scales", BackdropKind.SCALES, BackdropGroup.SIMPLE),
-    CONFETTI("Confetti", BackdropKind.CONFETTI, BackdropGroup.SIMPLE),
+    DOTS(tr(R.string.dots), BackdropKind.DOTS, BackdropGroup.SIMPLE),
+    PAPER(tr(R.string.paper), BackdropKind.PAPER, BackdropGroup.SIMPLE),
+    PINSTRIPE(tr(R.string.pinstripe), BackdropKind.PINSTRIPE, BackdropGroup.SIMPLE),
+    WAVES(tr(R.string.waves), BackdropKind.WAVES, BackdropGroup.SIMPLE),
+    RIPPLES(tr(R.string.ripples), BackdropKind.RIPPLES, BackdropGroup.SIMPLE),
+    DIAMONDS(tr(R.string.diamonds), BackdropKind.DIAMONDS, BackdropGroup.SIMPLE),
+    ZIGZAG(tr(R.string.zigzag), BackdropKind.ZIGZAG, BackdropGroup.SIMPLE),
+    HALFTONE(tr(R.string.halftone), BackdropKind.HALFTONE, BackdropGroup.SIMPLE),
+    CROSSES(tr(R.string.crosses), BackdropKind.CROSSES, BackdropGroup.SIMPLE),
+    SCALES(tr(R.string.scales), BackdropKind.SCALES, BackdropGroup.SIMPLE),
+    CONFETTI(tr(R.string.confetti), BackdropKind.CONFETTI, BackdropGroup.SIMPLE),
 
-    CONSTELLATION("Constellation", BackdropKind.CONSTELLATION, BackdropGroup.DESIGNS,
+    CONSTELLATION(tr(R.string.constellation), BackdropKind.CONSTELLATION, BackdropGroup.DESIGNS,
         listOf(0xFF070B1A, 0xFFA9C6FF, 0xFF6B4CFF, 0xFF00C2D1), listOf(0xFFF3F5FC, 0xFF3D4F8A, 0xFFB8A8FF, 0xFF8EE3EA)),
-    CONTOURS("Contours", BackdropKind.CONTOURS, BackdropGroup.DESIGNS,
+    CONTOURS(tr(R.string.contours), BackdropKind.CONTOURS, BackdropGroup.DESIGNS,
         listOf(0xFF0B1414, 0xFF3FD0A0, 0xFF3F8FB0, 0xFFE0B354), listOf(0xFFF4F8F3, 0xFF2E8B6E, 0xFF4F8FA8, 0xFFD9A441)),
-    MOSAIC("Mosaic", BackdropKind.MOSAIC, BackdropGroup.DESIGNS,
+    MOSAIC(tr(R.string.mosaic), BackdropKind.MOSAIC, BackdropGroup.DESIGNS,
         listOf(0xFF120F1E, 0xFF5B3FD9, 0xFFE0457B, 0xFF1FA2C9), listOf(0xFFFAF7F2, 0xFFC4B5FF, 0xFFFFB3C7, 0xFFA8E0F0)),
-    BOKEH("Bokeh", BackdropKind.BOKEH, BackdropGroup.DESIGNS,
+    BOKEH(tr(R.string.bokeh), BackdropKind.BOKEH, BackdropGroup.DESIGNS,
         listOf(0xFF0E0A14, 0xFFFFB347, 0xFFFF5E8A, 0xFF7A6BFF), listOf(0xFFFFF8F1, 0xFFFFB866, 0xFFFF8FB0, 0xFF9C90FF)),
-    SILK("Silk", BackdropKind.SILK, BackdropGroup.DESIGNS,
+    SILK(tr(R.string.silk), BackdropKind.SILK, BackdropGroup.DESIGNS,
         listOf(0xFF0A0E18, 0xFF9C84FF, 0xFF27C4E8, 0xFFFF6B9D), listOf(0xFFF6F4FB, 0xFF7C5CFF, 0xFF1AA6CC, 0xFFE8558A)),
-    HORIZON("Horizon", BackdropKind.HORIZON, BackdropGroup.DESIGNS,
+    HORIZON(tr(R.string.horizon), BackdropKind.HORIZON, BackdropGroup.DESIGNS,
         listOf(0xFF0D0420, 0xFFFFB03D, 0xFFFF2E88, 0xFFB08CFF), listOf(0xFFFFF3EA, 0xFFFFB27A, 0xFFFF86B8, 0xFF9B7BFF)),
+    // Seasonal (1.8.0): base, then the glows' colors; the scenes keep their own inks ([SeasonalDesigns]).
+    HARVEST(tr(R.string.harvest), BackdropKind.HARVEST, BackdropGroup.DESIGNS,
+        listOf(0xFF1A0F09, 0xFFE8892B, 0xFFB8432A, 0xFFE0B04A), listOf(0xFFFBF3E7, 0xFFF0A65A, 0xFFE07F62, 0xFFEBC77A),
+        season = com.prism.music.data.looks.Season.HARVEST),
+    HOLIDAY(tr(R.string.holiday), BackdropKind.HOLIDAY, BackdropGroup.DESIGNS,
+        listOf(0xFF08150F, 0xFFD7263D, 0xFF2E8B57, 0xFFF2C14E), listOf(0xFFF5F8F6, 0xFFE8707C, 0xFF6DB88C, 0xFFEBC66C),
+        season = com.prism.music.data.looks.Season.HOLIDAY),
     ;
 
     fun colors(dark: Boolean): List<Long> = if (dark) this.dark else light
+
+    /** Whether the pickers offer it on [date]: always, or a seasonal one in its month. */
+    fun offeredOn(date: java.time.LocalDate): Boolean = season?.contains(date) ?: true
 
     companion object {
         /** Stored as "NAME" or "PHOTO|/path/to/image". */

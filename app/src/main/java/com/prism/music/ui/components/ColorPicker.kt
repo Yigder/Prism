@@ -1,5 +1,7 @@
 package com.prism.music.ui.components
 
+import com.prism.music.R
+import com.prism.music.tr
 import android.graphics.Bitmap
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -153,18 +155,18 @@ fun ColorPickerSheet(
                 }
                 val starred = color in saved
                 Icon(
-                    if (starred) PrismIcons.StarFilled else PrismIcons.Star, if (starred) "Remove from saved colors" else "Save this color",
+                    if (starred) PrismIcons.StarFilled else PrismIcons.Star, if (starred) tr(R.string.remove_from_saved_colors) else tr(R.string.save_this_color),
                     Modifier.size(44.dp).clip(CircleShape).clickable { c.savedColors.setSaved(color, !starred) }.padding(10.dp),
                     tint = if (starred) scheme.onSurface else scheme.onSurfaceVariant,
                 )
             }
 
             if (preview != null) Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Eyebrow("How it will look")
+                Eyebrow(tr(R.string.how_it_will_look))
                 preview(color)
             }
 
-            Segmented(listOf(0, 1), mode, { if (it == 0) "Wheel" else "Values" }, Modifier.fillMaxWidth()) { mode = it }
+            Segmented(listOf(0, 1), mode, { if (it == 0) tr(R.string.wheel) else tr(R.string.values) }, Modifier.fillMaxWidth()) { mode = it }
             if (mode == 0) ColorWheel(hue, sat, value, Modifier.fillMaxWidth().padding(horizontal = 12.dp)) { h, s, v -> hue = h; sat = s; value = v }
             else ColorValues(color, hue) { set(it) }
 
@@ -172,20 +174,20 @@ fun ColorPickerSheet(
 
             Eyedropper { set(it) }
 
-            Swatches("Prism", AccentSwatches.map { it.toArgb() }, color) { set(it) }
-            if (saved.isNotEmpty()) Swatches("Saved", saved, color) { set(it) }
-            if (recent.isNotEmpty()) Swatches("Recent", recent, color) { set(it) }
+            Swatches(tr(R.string.app_name), AccentSwatches.map { it.toArgb() }, color) { set(it) }
+            if (saved.isNotEmpty()) Swatches(tr(R.string.saved_2), saved, color) { set(it) }
+            if (recent.isNotEmpty()) Swatches(tr(R.string.recent), recent, color) { set(it) }
 
             Readability(color)
             note?.invoke(color)?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant) }
             reset?.let { (label, action) -> PrismTextButton({ close { action() } }, Modifier.fillMaxWidth()) { Text(label) } }
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PrismOutlinedButton({ close {} }, Modifier.weight(1f)) { Text("Cancel") }
+                PrismOutlinedButton({ close {} }, Modifier.weight(1f)) { Text(tr(R.string.cancel)) }
                 PrismButton({
                     c.savedColors.used(color)
                     close { onPick(color) }
-                }, Modifier.weight(1f)) { Text("Use this color") }
+                }, Modifier.weight(1f)) { Text(tr(R.string.use_this_color)) }
             }
         }
     }
@@ -227,7 +229,7 @@ fun ColorWheel(hue: Float, sat: Float, value: Float, modifier: Modifier = Modifi
         }
         Canvas(
             Modifier.size(side)
-                .semantics { contentDescription = "Color wheel" }
+                .semantics { contentDescription = tr(R.string.color_wheel) }
                 .pointerInput(px) { detectTapGestures { handle(it, true) } }
                 .pointerInput(px) {
                     detectDragGestures(onDragStart = { handle(it, true) }, onDragEnd = { dragging = 0 }) { ch, _ -> handle(ch.position, false) }
@@ -315,15 +317,15 @@ private fun HexField(color: Int, onColor: (Int) -> Unit) {
     }
     PrismTextField(
         text, ::take, Modifier.fillMaxWidth(), singleLine = true,
-        label = { Text("Color code") },
+        label = { Text(tr(R.string.color_code)) },
         placeholder = { Text("#3A86FF") },
         isError = bad,
-        supportingText = if (bad) ({ Text("A code is 6 hex digits, like #3A86FF") }) else null,
+        supportingText = if (bad) ({ Text(tr(R.string.a_code_is_6_hex_digits)) }) else null,
         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters, imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { ColorMath.parseHex(text)?.let { onColor(it or (0xFF shl 24)) } }),
         trailingIcon = {
             Icon(
-                PrismIcons.Copy, "Paste a color code",
+                PrismIcons.Copy, tr(R.string.paste_a_color_code),
                 Modifier.size(44.dp).clip(CircleShape).clickable { clipboard.getText()?.text?.let { take(it.trim().take(12)) } }.padding(11.dp),
             )
         },
@@ -353,12 +355,12 @@ private fun Eyedropper(onColor: (Int) -> Unit) {
         if (uri != null) scope.launch { photo = withContext(Dispatchers.IO) { runCatching { loadBitmap(context, uri, 1440) }.getOrNull() } }
     }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Eyebrow("Take a color from")
+        Eyebrow(tr(R.string.take_a_color_from))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            PrismChip(false, { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }, "A photo", icon = PrismIcons.Photo)
+            PrismChip(false, { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }, tr(R.string.a_photo), icon = PrismIcons.Photo)
         }
-        if (cover.isNotEmpty()) SwatchRow("What's playing", cover, onColor)
-        if (wallpaper.isNotEmpty()) SwatchRow("Your wallpaper", wallpaper, onColor)
+        if (cover.isNotEmpty()) SwatchRow(tr(R.string.what_s_playing), cover, onColor)
+        if (wallpaper.isNotEmpty()) SwatchRow(tr(R.string.your_wallpaper), wallpaper, onColor)
     }
     photo?.let { bmp -> PhotoDropper(bmp, onDismiss = { photo = null }) { onColor(it); photo = null } }
 }
@@ -404,12 +406,12 @@ private fun Readability(color: Int) {
     val darkPage = 0xFF0E0E12.toInt()
     val lightPage = 0xFFFAFAFB.toInt()
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        listOf("On dark" to darkPage, "On light" to lightPage).forEach { (label, bg) ->
+        listOf(tr(R.string.on_dark) to darkPage, tr(R.string.on_light) to lightPage).forEach { (label, bg) ->
             val r = ColorMath.readability(color, bg)
             Column(
                 Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(Color(bg)).border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f), RoundedCornerShape(14.dp)).padding(10.dp),
             ) {
-                Text("Aa", color = Color(color), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
+                Text(tr(R.string.aa), color = Color(color), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
                 Text("$label · ${r.label}", color = if (bg == darkPage) Color.White.copy(alpha = 0.75f) else Color.Black.copy(alpha = 0.7f), style = MaterialTheme.typography.labelSmall)
             }
         }
@@ -417,8 +419,8 @@ private fun Readability(color: Int) {
         val onWhite = ColorMath.contrast(0xFFFFFFFF.toInt(), color) >= ColorMath.contrast(0xFF000000.toInt(), color)
         val ink = if (onWhite) 0xFFFFFFFF.toInt() else 0xFF000000.toInt()
         Column(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(Color(color)).padding(10.dp)) {
-            Text("Aa", color = Color(ink), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
-            Text("Text on it · ${ColorMath.readability(ink, color).label}", color = Color(ink).copy(alpha = 0.8f), style = MaterialTheme.typography.labelSmall)
+            Text(tr(R.string.aa), color = Color(ink), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium)
+            Text(tr(R.string.text_on_it, ColorMath.readability(ink, color).label), color = Color(ink).copy(alpha = 0.8f), style = MaterialTheme.typography.labelSmall)
         }
     }
 }
@@ -448,8 +450,8 @@ private fun PhotoDropper(bitmap: Bitmap, onDismiss: () -> Unit, onPick: (Int) ->
     Dialog(onDismiss, DialogProperties(usePlatformDefaultWidth = false)) {
         Column(Modifier.fillMaxSize().background(Color.Black).navigationBarsPadding()) {
             Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                RoundAction(PrismIcons.Close, "Close", glass = true, onClick = onDismiss)
-                Text("Tap or drag to pick a color", Modifier.weight(1f).padding(horizontal = 12.dp), color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                RoundAction(PrismIcons.Close, tr(R.string.close), glass = true, onClick = onDismiss)
+                Text(tr(R.string.tap_or_drag_to_pick_a), Modifier.weight(1f).padding(horizontal = 12.dp), color = Color.White, style = MaterialTheme.typography.bodyMedium)
             }
             Box(
                 Modifier.weight(1f).fillMaxWidth().onSizeChanged { box = it }

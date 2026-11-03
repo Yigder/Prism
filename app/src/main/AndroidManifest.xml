@@ -29,6 +29,13 @@
     <!-- Only to open Android's "uninstall Prism?" prompt when moving to the newly signed Prism. -->
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
 
+    <!-- Prism TV (1.8.0): the same APK on Android TV and Google TV. A TV has no touchscreen, often no Wi-Fi (Ethernet),
+         camera or autofocus; none of them is needed (microphone and camera are declared above). -->
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:name="android.hardware.wifi" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
     <queries>
         <intent>
             <action android:name="android.media.action.DISPLAY_AUDIO_EFFECT_CONTROL_PANEL" />
@@ -44,10 +51,12 @@
     <application
         android:name=".PrismApp"
         android:allowBackup="true"
+        android:banner="@drawable/tv_banner"
         android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
         android:label="${appLabel}"
+        android:localeConfig="@xml/locales_config"
         android:supportsRtl="true"
         android:theme="@style/Theme.Prism"
         tools:targetApi="36">
@@ -78,6 +87,10 @@
             android:supportsPictureInPicture="true"
             android:resizeableActivity="true"
             android:windowSoftInputMode="adjustResize">
+            <!-- Holding the "Prism" Quick Settings tile opens Prism. -->
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
+            </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -97,6 +110,15 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="application/zip" />
+            </intent-filter>
+            <!-- Last.fm's sign-in page sends the browser back here with a token (1.7.8). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="prism" android:host="lastfm" />
+                <!-- A Prism TV's pairing QR code (1.8.0). -->
+                <data android:scheme="prism" android:host="pair" />
             </intent-filter>
         </activity>
 
@@ -151,6 +173,33 @@
             android:enabled="false" android:icon="@mipmap/ic_launcher_gold" android:roundIcon="@mipmap/ic_launcher_gold">
             <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity-alias>
+
+        <!-- Prism TV (1.8.0): the TV launcher's entry, with its own screens for a remote (ui/tv). On a TV the phone's
+             screen above sends itself here. -->
+        <activity
+            android:name=".TvActivity"
+            android:banner="@drawable/tv_banner"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.Prism">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Prism's screensaver (1.8.0), where the TV or phone lets you pick one: the ambient screen. -->
+        <service
+            android:name=".ui.tv.PrismDream"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_DREAM_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.dreams.DreamService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
 
         <!-- "Hey Google, play … on Prism": Assistant / Gemini only offer apps that take this as music sources. -->
         <activity
@@ -418,6 +467,11 @@
             android:name=".widget.WidgetActionReceiver"
             android:exported="false" />
 
+        <!-- The downloads notification's Cancel (1.7.8). -->
+        <receiver
+            android:name=".download.CancelDownloadsReceiver"
+            android:exported="false" />
+
         <!-- Results from Android's installer while Prism updates itself. -->
         <receiver
             android:name=".data.UpdateInstallReceiver"
@@ -441,6 +495,17 @@
             </intent-filter>
         </service>
 
+        <!-- Quick Settings: "Prism" plays or pauses what's lined up (1.7.8). -->
+        <service
+            android:name=".playback.PlayTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_w_play"
+            android:label="@string/tile_play"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
         <!-- Quick Settings: "Recognize song" opens Prism already listening. -->
         <service
             android:name=".data.recognize.RecognizeTileService"

@@ -27,6 +27,13 @@ class ArtistPrefs(context: Context) {
         prefs.all.filterKeys { it.startsWith(SIG) }.mapNotNull { (k, v) -> (v as? String)?.let { k.removePrefix(SIG) to it } }.toMap()
     )
 
+    /** Reads the saved choices again (after "Bring your Prism" merged a phone's into them, 1.8.0). */
+    fun reload() {
+        favorites.value = prefs.getString("favorites", null)?.let { runCatching { InnerTube.json.decodeFromString(listSerializer, it) }.getOrNull() } ?: emptyList()
+        signatures.value = prefs.all.filterKeys { it.startsWith(SIG) }.mapNotNull { (k, v) -> (v as? String)?.let { k.removePrefix(SIG) to it } }.toMap()
+        colors.value = prefs.all.filterKeys { it.startsWith(COL) }.mapNotNull { (k, v) -> (v as? Int)?.let { k.removePrefix(COL) to it } }.toMap()
+    }
+
     fun isFavorite(id: String) = favorites.value.any { it.id == id }
 
     fun setFavorite(artist: FavoriteArtist, on: Boolean) {

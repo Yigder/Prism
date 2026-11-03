@@ -1,5 +1,7 @@
 package com.prism.music.data.foryou
 
+import com.prism.music.R
+import com.prism.music.tr
 import android.content.Context
 import android.util.Log
 import androidx.work.Constraints
@@ -142,9 +144,9 @@ class ReleaseRadar(private val c: AppContainer) {
         if (worth.isNotEmpty() && c.settings.current.releaseNotifications) {
             val names = worth.map { it.artistName }.distinct()
             val title = when (names.size) {
-                1 -> "New from ${names[0]}"
-                2 -> "New from ${names[0]} and ${names[1]}"
-                else -> "New from ${names[0]}, ${names[1]} and ${names.size - 2} more"
+                1 -> tr(R.string.new_from, names[0])
+                2 -> tr(R.string.new_from_and, names[0], names[1])
+                else -> tr(R.string.new_from_and_more, names[0], names[1], names.size - 2)
             }
             val text = worth.take(4).joinToString(" · ") { "${it.title} (${it.kind.lowercase()})" }
             Notifications.post(c.app, Notifications.NEW_RELEASES, NOTIFICATION_ID, title, text, "prism://releases")
@@ -171,8 +173,8 @@ class ReleaseRadar(private val c: AppContainer) {
         }
         val artists = releases.map { it.artistName }.distinct()
         c.forYou.saveMix(
-            MadeForYou.RADAR, "Release Radar",
-            if (songs.isEmpty()) "New music from your artists will show up here" else "New from ${MadeForYou.namesLine(artists)}",
+            MadeForYou.RADAR, tr(R.string.release_radar),
+            if (songs.isEmpty()) tr(R.string.new_music_from_your_artists_will) else tr(R.string.new_from, MadeForYou.namesLine(artists)),
             artists.take(4), RADAR_COLOR, songs,
         )
         prefs.edit().putString(PLAYLIST_WEEK, week).apply()
@@ -194,7 +196,7 @@ class ReleaseRadar(private val c: AppContainer) {
         private suspend fun get(http: okhttp3.OkHttpClient, url: okhttp3.HttpUrl): JsonObject = withContext(Dispatchers.IO) {
             delay(DEEZER_GAP_MS)
             http.newCall(Request.Builder().url(url).build()).execute().use { r ->
-                if (!r.isSuccessful) throw java.io.IOException("Deezer answered HTTP ${r.code}")
+                if (!r.isSuccessful) throw java.io.IOException(tr(R.string.deezer_answered_http, r.code))
                 json.parseToJsonElement(r.body.string()).jsonObject
             }
         }

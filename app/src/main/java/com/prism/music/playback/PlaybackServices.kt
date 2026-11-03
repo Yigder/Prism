@@ -25,6 +25,8 @@ class PlaybackServiceGold : PlaybackService()
 object PlaybackServices {
     /** The playback service class running in this process, if one is. */
     @Volatile var running: Class<out PlaybackService>? = null
+    /** Debug builds only, for the in-app tests: hands the running service a player error, as if the player had one. */
+    @Volatile var failForTest: ((androidx.media3.common.PlaybackException) -> Unit)? = null
 
     fun classFor(icon: AppIcon): Class<out PlaybackService> = when (icon) {
         AppIcon.CLASSIC -> PlaybackService::class.java

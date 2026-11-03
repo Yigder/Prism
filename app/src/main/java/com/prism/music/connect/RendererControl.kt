@@ -1,5 +1,7 @@
 package com.prism.music.connect
 
+import com.prism.music.R
+import com.prism.music.tr
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -36,7 +38,7 @@ class RendererControl(http: OkHttpClient, val renderer: Renderer) : RendererLink
         .retryOnConnectionFailure(false)
         .build()
 
-    private val av = renderer.avTransport ?: throw IllegalArgumentException("${renderer.name} isn't a UPnP renderer")
+    private val av = renderer.avTransport ?: throw IllegalArgumentException(tr(R.string.isn_t_a_upnp_renderer, renderer.name))
 
     suspend fun call(service: UpnpService, action: String, args: List<Pair<String, String>>): Map<String, String> = withContext(Dispatchers.IO) {
         val body = Soap.envelope(service.type, action, args).toRequestBody("text/xml; charset=\"utf-8\"".toMediaType())
@@ -49,9 +51,9 @@ class RendererControl(http: OkHttpClient, val renderer: Renderer) : RendererLink
         client.newCall(request).execute().use { r ->
             val text = r.body?.string().orEmpty()
             when (val parsed = Soap.parse(text)) {
-                is SoapResult.Fault -> throw UpnpException("${renderer.name}: $action failed (${parsed.code} ${parsed.description})".trim(), parsed.code)
-                is SoapResult.Ok -> if (r.isSuccessful) parsed.values else throw UpnpException("${renderer.name}: $action failed (HTTP ${r.code})", r.code)
-                null -> if (r.isSuccessful) emptyMap() else throw UpnpException("${renderer.name}: $action failed (HTTP ${r.code})", r.code)
+                is SoapResult.Fault -> throw UpnpException(tr(R.string.failed_3, renderer.name, action, parsed.code, parsed.description).trim(), parsed.code)
+                is SoapResult.Ok -> if (r.isSuccessful) parsed.values else throw UpnpException(tr(R.string.failed_http, renderer.name, action, r.code), r.code)
+                null -> if (r.isSuccessful) emptyMap() else throw UpnpException(tr(R.string.failed_http, renderer.name, action, r.code), r.code)
             }
         }
     }

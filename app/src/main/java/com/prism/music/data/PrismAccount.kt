@@ -1,5 +1,7 @@
 package com.prism.music.data
 
+import com.prism.music.R
+import com.prism.music.tr
 import android.net.Uri
 import com.prism.music.AppContainer
 import com.prism.music.data.innertube.InnerTube
@@ -111,7 +113,7 @@ class PrismAccount(private val c: AppContainer) {
         var copied = 0
         var failed = 0
         lists.forEachIndexed { i, p ->
-            progress("Playlists: ${i + 1} of ${lists.size}")
+            progress(tr(R.string.playlists_of, i + 1, lists.size))
             val page = runCatching { c.ytm.playlistAll(p.id) }.getOrNull()
             if (page == null) { failed++; return@forEachIndexed }
             val songs = page.songs.filterNot { it.isLive }
@@ -120,11 +122,11 @@ class PrismAccount(private val c: AppContainer) {
                 c.prismLibrary.rename(existing.id, p.title, existing.description)
                 c.prismLibrary.replace(existing.id, songs)
             } else {
-                brought[p.id] = c.prismLibrary.create(p.title, songs, "From YouTube Music")
+                brought[p.id] = c.prismLibrary.create(p.title, songs, tr(R.string.from_youtube_music))
             }
             copied++
         }
-        progress("Albums and artists")
+        progress(tr(R.string.albums_and_artists))
         val now = System.currentTimeMillis()
         val albums = c.library.albums.value.filterIsInstance<AlbumItem>()
         albums.forEach { a ->

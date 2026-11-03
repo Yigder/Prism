@@ -42,16 +42,41 @@ internal fun Design(kind: BackdropKind, colors: List<Color>, dark: Boolean, moti
         BackdropKind.BOKEH -> 60_000
         BackdropKind.HORIZON -> 6_000
         BackdropKind.CONTOURS -> 40_000
+        // Leaves drift down slowly; snow a little faster.
+        BackdropKind.HARVEST -> 48_000
+        BackdropKind.HOLIDAY -> 40_000
         else -> 30_000
     }
     val animated = motion && kind != BackdropKind.MOSAIC
     val t = drift(animated, periodMs, 0.3f)
     val density = LocalDensity.current.density
+    if (kind == BackdropKind.HARVEST || kind == BackdropKind.HOLIDAY) {
+        // The seasonal scenes keep a picture of the page: held while one shows, let go when Prism is put away or Android
+        // asks for memory, and when no seasonal background is on screen any more.
+        val app = androidx.compose.ui.platform.LocalContext.current.applicationContext
+        androidx.compose.runtime.DisposableEffect(Unit) {
+            val trim = object : android.content.ComponentCallbacks2 {
+                override fun onTrimMemory(level: Int) {
+                    if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) SeasonalScenes.release()
+                }
+                override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {}
+                @Deprecated("Deprecated in Java") override fun onLowMemory() = SeasonalScenes.release()
+            }
+            SeasonalScenes.enter()
+            app.registerComponentCallbacks(trim)
+            onDispose { app.unregisterComponentCallbacks(trim); SeasonalScenes.leave() }
+        }
+        Canvas(Modifier.fillMaxSize()) { drawDesign(kind, colors, dark, t.value, density) }
+        return
+    }
     Canvas(Modifier.fillMaxSize().background(base)) { drawDesign(kind, colors, dark, t.value, density) }
 }
 
 /** Draws one design at animation time [t] (0..1); plain drawing, so tests can render it to an image. */
 internal fun DrawScope.drawDesign(kind: BackdropKind, colors: List<Color>, dark: Boolean, t: Float, density: Float) {
+    // The seasonal scenes are built once per size, page color included, and keep their own randoms (nothing made per frame).
+    if (kind == BackdropKind.HARVEST) return harvest(colors, dark, t, density)
+    if (kind == BackdropKind.HOLIDAY) return holiday(colors, dark, t, density)
     val (base, a, b, c) = colors
     drawRect(base)
     // A fresh generator with the same seed every frame: stars and facets stay put.

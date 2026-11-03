@@ -105,11 +105,12 @@ object Wire {
 }
 
 /**
- * Reads lines of at most [Wire.MAX_LINE] characters (UTF-8). Returns null at the end of the
- * stream. An over-long line is skipped whole.
+ * Reads lines of at most [max] bytes (UTF-8). Returns null at the end of the stream. An over-long line is skipped
+ * whole, or ends the reading ([endOnTooLong]: null, as at the end).
  */
-internal class LineReader(private val input: InputStream) {
+internal class LineReader(private val input: InputStream, @Volatile var max: Int = Wire.MAX_LINE) {
     private val buf = java.io.ByteArrayOutputStream()
+    @Volatile var endOnTooLong = false
 
     fun readLine(): String? {
         buf.reset()
@@ -123,7 +124,10 @@ internal class LineReader(private val input: InputStream) {
             }
             if (!tooLong) {
                 buf.write(b)
-                if (buf.size() > Wire.MAX_LINE) { tooLong = true; buf.reset() }
+                if (buf.size() > max) {
+                    if (endOnTooLong) return null
+                    tooLong = true; buf.reset()
+                }
             }
         }
     }

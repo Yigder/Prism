@@ -1,5 +1,8 @@
 package com.prism.music.ui.screens
 
+import com.prism.music.R
+import com.prism.music.tr
+import com.prism.music.trp
 import com.prism.music.data.db.mergeUploads
 import com.prism.music.ui.theme.lit
 import androidx.compose.foundation.border
@@ -78,26 +81,59 @@ import com.prism.music.ui.components.SectionHeader
 import com.prism.music.ui.theme.LocalAppSettings
 import com.prism.music.ui.theme.LocalContainer
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.foundation.layout.heightIn
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
-/** A stretch of Replay: this month, the last 30 days, a calendar year (its Rewind), or everything. */
-internal data class Period(val kind: Kind, val year: Int = 0) {
-    enum class Kind { MONTH, DAYS30, YEAR, ALL }
+/**
+ * A stretch of Replay: today, this week, this month, the last 30 days, a calendar year (its Rewind), everything, or
+ * (1.7.8, #149) any month ([year] + [month], 0–11) or any days ([fromDay]..[toDay], days since 1970 on the phone's clock).
+ */
+internal data class Period(val kind: Kind, val year: Int = 0, val month: Int = 0, val fromDay: Long = 0, val toDay: Long = 0) {
+    enum class Kind { TODAY, WEEK, MONTH, DAYS30, YEAR, ALL, MONTH_OF, DAYS }
 
     val isYear: Boolean get() = kind == Kind.YEAR
-    val label: String get() = when (kind) { Kind.MONTH -> "This month"; Kind.DAYS30 -> "Last 30 days"; Kind.YEAR -> "$year"; Kind.ALL -> "All time" }
-    /** For saving the pick ("y2025", "MONTH"…). */
-    val key: String get() = if (isYear) "y$year" else kind.name
+    val label: String get() = when (kind) {
+        Kind.TODAY -> tr(R.string.today)
+        Kind.WEEK -> tr(R.string.this_week)
+        Kind.MONTH -> tr(R.string.this_month)
+        Kind.DAYS30 -> tr(R.string.last_30_days)
+        Kind.YEAR -> "$year"
+        Kind.ALL -> tr(R.string.all_time)
+        Kind.MONTH_OF -> java.time.YearMonth.of(year, month + 1).let { ym ->
+            ym.month.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.getDefault()) + " ${ym.year}"
+        }
+        Kind.DAYS -> {
+            val fmt = java.time.format.DateTimeFormatter.ofLocalizedDate(java.time.format.FormatStyle.MEDIUM)
+            val a = java.time.LocalDate.ofEpochDay(fromDay)
+            val b = java.time.LocalDate.ofEpochDay(toDay)
+            if (a == b) a.format(fmt) else "${a.format(fmt)} – ${b.format(fmt)}"
+        }
+    }
+    /** For saving the pick ("y2025", "MONTH", "m2026-9", "d20380-20390"…). */
+    val key: String get() = when (kind) {
+        Kind.YEAR -> "y$year"
+        Kind.MONTH_OF -> "m$year-$month"
+        Kind.DAYS -> "d$fromDay-$toDay"
+        else -> kind.name
+    }
 
     companion object {
+        val TODAY = Period(Kind.TODAY)
+        val WEEK = Period(Kind.WEEK)
         val MONTH = Period(Kind.MONTH)
         val DAYS30 = Period(Kind.DAYS30)
         val ALL = Period(Kind.ALL)
         fun year(y: Int) = Period(Kind.YEAR, y)
+        fun monthOf(y: Int, m: Int) = Period(Kind.MONTH_OF, y, m)
+        fun days(from: Long, to: Long) = Period(Kind.DAYS, fromDay = minOf(from, to), toDay = maxOf(from, to))
         fun thisYear() = year(Calendar.getInstance().get(Calendar.YEAR))
-        fun of(key: String): Period = key.removePrefix("y").toIntOrNull()?.takeIf { key.startsWith("y") }?.let(::year)
-            ?: Kind.entries.firstOrNull { it.name == key }?.let { Period(it) } ?: thisYear()
+        fun of(key: String): Period {
+            if (key.startsWith("y")) key.drop(1).toIntOrNull()?.let { return year(it) }
+            if (key.startsWith("m")) key.drop(1).split("-").mapNotNull { it.toIntOrNull() }.takeIf { it.size == 2 }?.let { (y, m) -> return monthOf(y, m) }
+            if (key.startsWith("d")) key.drop(1).split("-").mapNotNull { it.toLongOrNull() }.takeIf { it.size == 2 }?.let { (a, b) -> return days(a, b) }
+            return Kind.entries.firstOrNull { it.name == key && it != Kind.YEAR && it != Kind.MONTH_OF && it != Kind.DAYS }?.let { Period(it) } ?: thisYear()
+        }
     }
 }
 
@@ -123,12 +159,83 @@ internal fun SongPlays.toSong() = Song(
 
 internal fun range(p: Period): Pair<Long, Long> {
     val now = System.currentTimeMillis()
+    val zone = java.time.ZoneId.systemDefault()
+    // Midnight of a day on the phone's clock (whatever daylight saving does).
+    fun startOf(d: java.time.LocalDate) = d.atStartOfDay(zone).toInstant().toEpochMilli()
+    val today = java.time.LocalDate.now(zone)
     return when (p.kind) {
-        Period.Kind.MONTH -> Calendar.getInstance().apply { set(Calendar.DAY_OF_MONTH, 1); set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }.timeInMillis to now
+        Period.Kind.TODAY -> startOf(today) to now
+        // The week as the phone's region starts it (Monday or Sunday).
+        Period.Kind.WEEK -> startOf(today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.temporal.WeekFields.of(java.util.Locale.getDefault()).firstDayOfWeek))) to now
+        Period.Kind.MONTH -> startOf(today.withDayOfMonth(1)) to now
         Period.Kind.DAYS30 -> now - 30L * 86_400_000 to now
         // Midnight to midnight on the phone's clock (whatever daylight saving does), up to now for this year.
         Period.Kind.YEAR -> com.prism.music.data.RewindCalendar.bounds(p.year).let { (a, b) -> a to minOf(b, now) }
         Period.Kind.ALL -> 0L to now
+        Period.Kind.MONTH_OF -> java.time.YearMonth.of(p.year, p.month + 1).let { ym -> startOf(ym.atDay(1)) to minOf(startOf(ym.plusMonths(1).atDay(1)) - 1, now) }
+        Period.Kind.DAYS -> startOf(java.time.LocalDate.ofEpochDay(p.fromDay)) to minOf(startOf(java.time.LocalDate.ofEpochDay(p.toDay + 1)) - 1, now)
+    }
+}
+
+/** The "Other dates…" chip (it opens [ReplayDatesSheet]; never a period itself). */
+private val PICK_DATES = Period(Period.Kind.DAYS, fromDay = -1, toDay = -1)
+
+/** Replay for any month you listened in, or any days (#149): a list of the months, and a calendar for days. */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun ReplayDatesSheet(onPick: (Period) -> Unit, onDismiss: () -> Unit) {
+    val c = LocalContainer.current
+    val months by produceState(emptyList<Period>()) {
+        value = runCatching { c.db.plays().monthly(0, System.currentTimeMillis()) }.getOrDefault(emptyList())
+            .mapNotNull { m -> m.month.split("-").mapNotNull { it.toIntOrNull() }.takeIf { it.size == 2 }?.let { (y, mo) -> Period.monthOf(y, mo - 1) } }
+            .reversed()
+    }
+    var calendar by remember { mutableStateOf(false) }
+    if (calendar) {
+        val now = System.currentTimeMillis()
+        val state = androidx.compose.material3.rememberDateRangePickerState(
+            selectableDates = object : androidx.compose.material3.SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis <= now
+            },
+        )
+        androidx.compose.material3.DatePickerDialog(
+            onDismissRequest = { calendar = false },
+            confirmButton = {
+                com.prism.music.ui.components.PrismTextButton(
+                    onClick = {
+                        // The picker's days are UTC midnights: their day numbers are the calendar days picked.
+                        val a = state.selectedStartDateMillis ?: return@PrismTextButton
+                        val b = state.selectedEndDateMillis ?: a
+                        calendar = false
+                        onPick(Period.days(a / 86_400_000, b / 86_400_000))
+                    },
+                    enabled = state.selectedStartDateMillis != null,
+                ) { Text(tr(R.string.show)) }
+            },
+            dismissButton = { com.prism.music.ui.components.PrismTextButton(onClick = { calendar = false }) { Text(tr(R.string.cancel)) } },
+        ) {
+            androidx.compose.material3.DateRangePicker(state, Modifier.weight(1f), title = { Text(tr(R.string.your_replay_for), Modifier.padding(start = 24.dp, top = 16.dp)) })
+        }
+        return
+    }
+    com.prism.music.ui.components.PrismSheet(onDismiss) { close ->
+        Column(Modifier.padding(bottom = 20.dp)) {
+            Text(tr(R.string.other_dates), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
+            com.prism.music.ui.components.SheetAction(PrismIcons.Calendar, tr(R.string.pick_days_on_a_calendar)) { calendar = true }
+            if (months.isNotEmpty()) Text(
+                tr(R.string.a_month), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 20.dp, top = 12.dp, bottom = 4.dp),
+            )
+            LazyColumn(Modifier.heightIn(max = 420.dp)) {
+                items(months.size) { i ->
+                    val m = months[i]
+                    Text(
+                        m.label, style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.fillMaxWidth().clickable { close { onPick(m) } }.padding(horizontal = 20.dp, vertical = 12.dp),
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -153,7 +260,7 @@ fun ReplayScreen(bottomPadding: Dp) {
         val top = dao.topSongs(from, to, 300).mergeUploads().take(250)
         val songs = top.take(100)
         val genreMap = c.meta.cachedGenres(songs.map { it.toSong() })
-        val genres = songs.groupBy { genreMap[it.songId] ?: "Unknown" }
+        val genres = songs.groupBy { genreMap[it.songId] ?: tr(R.string.unknown) }
             .mapValues { (_, v) -> v.sumOf { it.ms } }
             .filterKeys { it != "Unknown" }.toList().sortedByDescending { it.second }.take(6)
         value = ReplayData(
@@ -170,7 +277,7 @@ fun ReplayScreen(bottomPadding: Dp) {
         if (!storyLoading) scope.launch {
             storyLoading = true
             story = runCatching { loadReplayStory(c, p) }.onFailure { android.util.Log.w("PrismRewind", "story failed", it) }.getOrNull()
-            if (story == null) Toast.makeText(context, if (p.isYear) "Couldn't build your Rewind" else "Couldn't build your Replay", Toast.LENGTH_SHORT).show()
+            if (story == null) Toast.makeText(context, if (p.isYear) tr(R.string.couldn_t_build_your_rewind) else tr(R.string.couldn_t_build_your_replay), Toast.LENGTH_SHORT).show()
             storyLoading = false
         }
     }
@@ -184,6 +291,8 @@ fun ReplayScreen(bottomPadding: Dp) {
         if (c.rewind.isOpen(y)) open(Period.year(y))
     }
     story?.let { ReplayStoryDialog(it) { story = null } }
+    var pickingDates by remember { mutableStateOf(false) }
+    if (pickingDates) ReplayDatesSheet(onPick = { periodKey = it.key; pickingDates = false }) { pickingDates = false }
 
     val list = androidx.compose.foundation.lazy.rememberLazyListState()
     val scrolled by remember { androidx.compose.runtime.derivedStateOf { list.firstVisibleItemIndex > 0 || list.firstVisibleItemScrollOffset > 24 } }
@@ -191,53 +300,56 @@ fun ReplayScreen(bottomPadding: Dp) {
     Box(Modifier.fillMaxSize()) {
     LazyColumn(Modifier.fillMaxSize(), state = list, contentPadding = PaddingValues(bottom = bottomPadding + 24.dp)) {
         item {
-            com.prism.music.ui.components.ScreenHeader("Replay", subtitle = "Your listening, recapped on-device")
+            com.prism.music.ui.components.ScreenHeader(tr(R.string.replay_2), subtitle = tr(R.string.your_listening_recapped_on_device))
         }
         item {
+            // Any dates (#149): today, this week, any month, or the days you pick, beside the usual ones.
+            val presets = listOf(Period.TODAY, Period.WEEK, Period.MONTH, Period.DAYS30) + years.map { Period.year(it) } + Period.ALL
+            val chips = presets + (if (period !in presets) listOf(period) else emptyList()) + PICK_DATES
             com.prism.music.ui.components.ChipRow(
-                listOf(Period.MONTH, Period.DAYS30) + years.map { Period.year(it) } + Period.ALL, { it == period }, { it.label },
+                chips, { it == period }, { if (it == PICK_DATES) tr(R.string.other_dates_2) else it.label },
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-            ) { periodKey = it.key }
+            ) { if (it == PICK_DATES) pickingDates = true else periodKey = it.key }
         }
         val d = data
         if (d == null) { item { LoadingState() }; return@LazyColumn }
         if (d.plays == 0) {
-            item { EmptyState(PrismIcons.ReplayFilled, "Nothing to replay yet", "Listen for a while — songs you play for 10 seconds or more count toward your Replay.") }
+            item { EmptyState(PrismIcons.ReplayFilled, tr(R.string.nothing_to_replay_yet), tr(R.string.listen_for_a_while_songs_you)) }
             return@LazyColumn
         }
         item { HeroCard(d, period, period.isYear && !c.rewind.isOpen(period.year), storyLoading, openStory) }
         item {
             Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 val songs = remember(d) { d.top250.map { it.toSong() } }
-                val replaySource = QueueSource(QueueKind.REPLAY, "Replay · ${period.label}")
+                val replaySource = QueueSource(QueueKind.REPLAY, tr(R.string.replay_3, period.label))
                 PrismButton(onClick = { c.player.playQueue(songs, 0, replaySource) }, Modifier.weight(1f).height(48.dp)) {
-                    Icon(PrismIcons.Play, null); Spacer(Modifier.width(6.dp)); Text("Play")
+                    Icon(PrismIcons.Play, null); Spacer(Modifier.width(6.dp)); Text(tr(R.string.widget_play))
                 }
                 PrismFilledTonalButton(onClick = { c.player.playQueue(songs, 0, replaySource, shuffle = true) }, Modifier.weight(1f).height(48.dp)) {
-                    Icon(PrismIcons.Shuffle, null); Spacer(Modifier.width(6.dp)); Text("Shuffle")
+                    Icon(PrismIcons.Shuffle, null); Spacer(Modifier.width(6.dp)); Text(tr(R.string.shuffle))
                 }
                 if (c.settings.current.isLoggedIn) androidx.compose.material3.FilledTonalIconButton(
                     onClick = {
                         scope.launch {
-                            val name = if (period.isYear) "Top songs of ${period.year}" else "Replay · ${period.label}"
-                            val id = runCatching { c.ytm.createPlaylist(name, songs.take(100).map { it.id }, "Made with Prism Replay") }.getOrNull()
-                            Toast.makeText(context, if (id != null) "Saved \"$name\" to YouTube Music" else "Couldn't create playlist", Toast.LENGTH_SHORT).show()
+                            val name = if (period.isYear) tr(R.string.top_songs_of, period.year) else tr(R.string.replay_3, period.label)
+                            val id = runCatching { c.ytm.createPlaylist(name, songs.take(100).map { it.id }, tr(R.string.made_with_prism_replay)) }.getOrNull()
+                            Toast.makeText(context, if (id != null) tr(R.string.saved_to_youtube_music, name) else tr(R.string.couldn_t_create_playlist), Toast.LENGTH_SHORT).show()
                             if (id != null) nav.go(Routes.playlist(id))
                         }
                     },
                     modifier = Modifier.size(48.dp),
-                ) { Icon(PrismIcons.PlaylistAdd, "Save as a playlist") }
+                ) { Icon(PrismIcons.PlaylistAdd, tr(R.string.save_as_a_playlist)) }
             }
         }
         if (d.months.size > 1) item {
-            SectionHeader(if (LocalAppSettings.current.replayHours) "Hours by month" else "Minutes by month")
+            SectionHeader(if (LocalAppSettings.current.replayHours) tr(R.string.hours_by_month) else tr(R.string.minutes_by_month))
             MonthChart(d.months, Modifier.padding(horizontal = 20.dp).fillMaxWidth().height(160.dp))
         }
         if (d.artists.isNotEmpty()) item {
             // Artist photos, not the cover of whichever of their songs came first.
             val thumbs by c.library.artistThumbs.collectAsState()
             LaunchedEffect(d.artists) { c.library.fetchArtistPhotos(d.artists.map { it.artistId to it.artistName }) }
-            SectionHeader("Top artists")
+            SectionHeader(tr(R.string.top_artists))
             LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 itemsIndexed(d.artists) { i, a ->
                     Column(
@@ -262,7 +374,7 @@ fun ReplayScreen(bottomPadding: Dp) {
             }
         }
         if (d.genres.isNotEmpty()) item {
-            SectionHeader("Top genres")
+            SectionHeader(tr(R.string.top_genres))
             val max = d.genres.maxOf { it.second }.coerceAtLeast(1)
             // The bar runs primary → tertiary; with a pale accent (white) its labels go dark.
             val barInk = inkOn(MaterialTheme.colorScheme.primary)
@@ -275,21 +387,21 @@ fun ReplayScreen(bottomPadding: Dp) {
                         Box(Modifier.fillMaxWidth(anim.value).height(40.dp).background(Brush.horizontalGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary))))
                         // The labels twice: in the page's ink, then in the bar's ink clipped to the bar, so a name
                         // that runs past the end of a short bar changes color where the bar stops.
-                        GenreLabels(g, listenTime(ms), Color.Unspecified, Color.Unspecified, Modifier)
+                        GenreLabels(com.prism.music.data.meta.Genres.shown(g), listenTime(ms), Color.Unspecified, Color.Unspecified, Modifier)
                         GenreLabels(
-                            g, listenTime(ms), barInk, endInk,
+                            com.prism.music.data.meta.Genres.shown(g), listenTime(ms), barInk, endInk,
                             Modifier.drawWithContent { clipRect(right = size.width * anim.value) { this@drawWithContent.drawContent() } },
                         )
                     }
                 }
             }
         }
-        item { SectionHeader("Top songs") }
+        item { SectionHeader(tr(R.string.top_songs_3)) }
         itemsIndexed(d.songs, key = { _, s -> s.songId }) { i, s ->
             val songs = remember(d) { d.songs.map { it.toSong() } }
             val ui = com.prism.music.ui.theme.LocalUi.current
             Row(
-                Modifier.fillMaxWidth().clickable { c.player.playQueue(songs, i, QueueSource(QueueKind.REPLAY, "Replay")) }.padding(horizontal = 16.dp, vertical = ui.gap(6.dp)),
+                Modifier.fillMaxWidth().clickable { c.player.playQueue(songs, i, QueueSource(QueueKind.REPLAY, tr(R.string.replay_2))) }.padding(horizontal = 16.dp, vertical = ui.gap(6.dp)),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -304,7 +416,7 @@ fun ReplayScreen(bottomPadding: Dp) {
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(minutes(s.ms), style = MaterialTheme.typography.labelMedium)
-                    Text("${s.plays} ${if (s.plays == 1) "play" else "plays"}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(trp(R.plurals.n_plays, s.plays), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -334,19 +446,19 @@ private fun HeroCard(d: ReplayData, period: Period, notYet: Boolean, loading: Bo
     ) {
         Column {
             Text(
-                (if (period.isYear) "REWIND ${period.year}" else "REPLAY " + period.label.uppercase()),
+                (if (period.isYear) tr(R.string.rewind_x, period.year) else tr(R.string.replay_x, period.label)).uppercase(),
                 color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium,
             )
             Spacer(Modifier.height(4.dp))
             Column(Modifier.toggleListenUnit()) {
                 Text(total.text(anim.value.toLong()), color = Color.White, style = MaterialTheme.typography.displayLarge, maxLines = 1)
-                Text("${total.unit} listened".trim(),color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.titleMedium)
+                Text(tr(R.string.listened_2, total.unit).trim(),color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.titleMedium)
             }
             Spacer(Modifier.height(18.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
-                Stat("${d.plays}", if (d.plays == 1) "play" else "plays")
-                Stat("${d.songCount}", if (d.songCount == 1) "song" else "songs")
-                Stat("${d.activeDays}", if (d.activeDays == 1) "day" else "days")
+                Stat("${d.plays}", trp(R.plurals.plays_word, d.plays))
+                Stat("${d.songCount}", trp(R.plurals.songs_word, d.songCount))
+                Stat("${d.activeDays}", trp(R.plurals.days_word, d.activeDays))
             }
             if (top != null) {
                 Spacer(Modifier.height(18.dp))
@@ -357,7 +469,7 @@ private fun HeroCard(d: ReplayData, period: Period, notYet: Boolean, loading: Bo
                     Artwork(top.thumbnail, Modifier.size(52.dp), RoundedCornerShape(10.dp), size = 226)
                     Spacer(Modifier.width(12.dp))
                     Column {
-                        Text("Your #1 song", color = Color.White.copy(alpha = 0.75f), style = MaterialTheme.typography.labelMedium)
+                        Text(tr(R.string.your_1_song), color = Color.White.copy(alpha = 0.75f), style = MaterialTheme.typography.labelMedium)
                         Text(top.title, color = Color.White, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text("${minutes(top.ms)} · ${top.artistName}", color = Color.White.copy(alpha = 0.75f), style = MaterialTheme.typography.bodySmall, maxLines = 1)
                     }
@@ -366,7 +478,7 @@ private fun HeroCard(d: ReplayData, period: Period, notYet: Boolean, loading: Bo
             Spacer(Modifier.height(18.dp))
             // The story: Prism's take on Wrapped / Replay. A year's is its Rewind, which opens on 1 December.
             if (notYet) Text(
-                "Your ${period.year} Rewind opens on December 1",
+                tr(R.string.your_rewind_opens_on_december_1, period.year),
                 color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium,
             ) else Row(
                 Modifier.clip(CircleShape).background(Color.White).padding(start = 14.dp, end = 18.dp, top = 10.dp, bottom = 10.dp),
@@ -375,7 +487,7 @@ private fun HeroCard(d: ReplayData, period: Period, notYet: Boolean, loading: Bo
                 if (loading) androidx.compose.material3.CircularProgressIndicator(Modifier.size(18.dp), color = Color.Black, strokeWidth = 2.dp)
                 else Icon(PrismIcons.Play, null, Modifier.size(20.dp), tint = Color.Black)
                 Spacer(Modifier.width(8.dp))
-                Text(if (period.isYear) "Watch your Rewind" else "Watch your Replay", color = Color.Black, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium)
+                Text(if (period.isYear) tr(R.string.watch_your_rewind) else tr(R.string.watch_your_replay), color = Color.Black, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Medium)
             }
         }
     }
@@ -392,15 +504,15 @@ fun listenTime(ms: Long): String = listenTime(ms, LocalAppSettings.current.repla
 fun listenTime(ms: Long, hours: Boolean): String {
     val m = ms / 60_000
     return when {
-        m == 0L && ms > 0 -> "<1 min"
-        !hours || m < 60 -> "%,d min".format(m)
+        m == 0L && ms > 0 -> tr(R.string.t_1_min)
+        !hours || m < 60 -> tr(R.string.d_min).format(m)
         else -> hoursAndMinutes(m)
     }
 }
 
 /** "8h 20m", or "8h" on the hour. */
 fun hoursAndMinutes(totalMinutes: Long): String =
-    if (totalMinutes % 60 == 0L) "%,dh".format(totalMinutes / 60) else "%,dh %dm".format(totalMinutes / 60, totalMinutes % 60)
+    if (totalMinutes % 60 == 0L) "%,dh".format(totalMinutes / 60) else tr(R.string.dh_dm).format(totalMinutes / 60, totalMinutes % 60)
 
 @Composable
 @ReadOnlyComposable
@@ -411,7 +523,7 @@ private fun minutes(ms: Long): String = listenTime(ms)
 fun Modifier.toggleListenUnit(): Modifier {
     val c = LocalContainer.current
     val hours = LocalAppSettings.current.replayHours
-    return clickable(interactionSource = null, indication = null, onClickLabel = if (hours) "Show minutes" else "Show hours") {
+    return clickable(interactionSource = null, indication = null, onClickLabel = if (hours) tr(R.string.show_minutes) else tr(R.string.show_hours)) {
         c.settings.setReplayHours(!hours)
     }
 }

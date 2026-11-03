@@ -1,5 +1,7 @@
 package com.prism.music.ui.screens
 
+import com.prism.music.R
+import com.prism.music.tr
 import com.prism.music.ui.components.PrismButton
 import com.prism.music.ui.components.PrismTextButton
 import com.prism.music.ui.theme.PrismIcons
@@ -62,6 +64,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.platform.testTag
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -95,7 +100,7 @@ fun LoginScreen(onDone: () -> Unit, onBack: () -> Unit, addAccount: Boolean = fa
             val s = c.settings.current
             c.settings.saveIdentity(s.authUser, s.dataSyncId, cookie)
             android.widget.Toast.makeText(
-                c.app, "Account added. Pick its channel under Switch account", android.widget.Toast.LENGTH_LONG,
+                c.app, tr(R.string.account_added_pick_its_channel_under), android.widget.Toast.LENGTH_LONG,
             ).show()
             onBack()
         }
@@ -141,15 +146,15 @@ fun LoginScreen(onDone: () -> Unit, onBack: () -> Unit, addAccount: Boolean = fa
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         TopAppBar(
-            title = { Text("Sign in to YouTube Music") },
-            navigationIcon = { IconButton(onClick = onBack) { Icon(PrismIcons.ArrowBack, "Back") } },
-            actions = { PrismTextButton(onClick = { pasteDialog = true }) { Text("Use cookie") } },
+            title = { Text(tr(R.string.sign_in_to_youtube_music)) },
+            navigationIcon = { IconButton(onClick = onBack) { Icon(PrismIcons.ArrowBack, tr(R.string.back)) } },
+            actions = { PrismTextButton(onClick = { pasteDialog = true }) { Text(tr(R.string.use_cookie)) } },
         )
         if (finishing) {
             Column(Modifier.fillMaxSize().padding(32.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                 com.prism.music.ui.components.PrismSpinner(Modifier.size(30.dp))
                 Spacer(Modifier.height(20.dp))
-                Text("Signing you in to Prism…", style = MaterialTheme.typography.titleMedium)
+                Text(tr(R.string.signing_you_in_to_prism), style = MaterialTheme.typography.titleMedium)
             }
             return@Column
         }
@@ -222,21 +227,21 @@ fun LoginScreen(onDone: () -> Unit, onBack: () -> Unit, addAccount: Boolean = fa
         var text by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { pasteDialog = false },
-            title = { Text("Sign in with a cookie") },
+            title = { Text(tr(R.string.sign_in_with_a_cookie)) },
             text = {
                 Column {
                     Text(
-                        "If Google blocks the embedded sign-in, copy the Cookie header from a signed-in music.youtube.com browser session and paste it here. It's stored only on this device.",
+                        tr(R.string.if_google_blocks_the_embedded_sign),
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Spacer(Modifier.height(10.dp))
-                    com.prism.music.ui.components.PrismTextField(text, { text = it }, Modifier.fillMaxWidth().height(140.dp), placeholder = { Text("SAPISID=…; __Secure-3PAPISID=…; …") })
+                    com.prism.music.ui.components.PrismTextField(text, { text = it }, Modifier.fillMaxWidth().height(140.dp), placeholder = { Text(tr(R.string.sapisid_secure_3papisid)) })
                 }
             },
             confirmButton = {
-                PrismTextButton(enabled = text.contains("SAPISID"), onClick = { pasteDialog = false; complete(text.trim()) }) { Text("Sign in") }
+                PrismTextButton(enabled = text.contains("SAPISID"), onClick = { pasteDialog = false; complete(text.trim()) }) { Text(tr(R.string.sign_in)) }
             },
-            dismissButton = { PrismTextButton(onClick = { pasteDialog = false }) { Text("Cancel") } },
+            dismissButton = { PrismTextButton(onClick = { pasteDialog = false }) { Text(tr(R.string.cancel)) } },
         )
     }
 }
@@ -288,8 +293,8 @@ fun DiscordLoginScreen(onBack: () -> Unit) {
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         TopAppBar(
-            title = { Text("Sign in to Discord") },
-            navigationIcon = { IconButton(onClick = onBack) { Icon(PrismIcons.ArrowBack, "Back") } },
+            title = { Text(tr(R.string.sign_in_to_discord)) },
+            navigationIcon = { IconButton(onClick = onBack) { Icon(PrismIcons.ArrowBack, tr(R.string.back)) } },
         )
         if (progress < 1f && failed == null) com.prism.music.ui.components.PrismProgressBar({ progress }, Modifier.fillMaxWidth(), height = 2.dp)
         Box(Modifier.fillMaxSize()) {
@@ -325,7 +330,7 @@ fun DiscordLoginScreen(onBack: () -> Unit) {
                             }
 
                             override fun onReceivedHttpError(view: WebView, request: android.webkit.WebResourceRequest, response: android.webkit.WebResourceResponse) {
-                                if (request.isForMainFrame && response.statusCode >= 400) failed = "Discord answered HTTP ${response.statusCode}"
+                                if (request.isForMainFrame && response.statusCode >= 400) failed = tr(R.string.discord_answered_http, response.statusCode)
                             }
 
                             // A load the network cut off can end without an error, on an empty page: say so too.
@@ -333,8 +338,8 @@ fun DiscordLoginScreen(onBack: () -> Unit) {
                                 if (done) return
                                 // Listen to Discord's own requests before anyone types: the sign-in answer carries the session.
                                 view.evaluateJavascript(DISCORD_HOOK_JS, null)
-                                view.evaluateJavascript("document.documentElement.innerHTML.length") { len ->
-                                    if ((len.toIntOrNull() ?: 0) < 200 && failed == null) failed = "The page came back empty"
+                                view.evaluateJavascript(tr(R.string.document_documentelement_innerhtml_length)) { len ->
+                                    if ((len.toIntOrNull() ?: 0) < 200 && failed == null) failed = tr(R.string.the_page_came_back_empty)
                                 }
                             }
                         }
@@ -348,11 +353,10 @@ fun DiscordLoginScreen(onBack: () -> Unit) {
                     Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(32.dp),
                     verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text("Couldn't reach Discord", style = MaterialTheme.typography.titleLarge)
+                    Text(tr(R.string.couldn_t_reach_discord), style = MaterialTheme.typography.titleLarge)
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        "Check your connection. Some networks, such as work and school ones, block Discord: try another " +
-                            "Wi-Fi or mobile data.",
+                        tr(R.string.check_your_connection_some_networks_such_all),
                         style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     if (why.isNotBlank()) {
@@ -360,7 +364,7 @@ fun DiscordLoginScreen(onBack: () -> Unit) {
                         Text(why, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Spacer(Modifier.height(20.dp))
-                    PrismButton(onClick = { failed = null; progress = 0f; web?.loadUrl(DISCORD_LOGIN_URL) }) { Text("Try again") }
+                    PrismButton(onClick = { failed = null; progress = 0f; web?.loadUrl(DISCORD_LOGIN_URL) }) { Text(tr(R.string.try_again)) }
                 }
             }
         }
@@ -431,37 +435,43 @@ fun WelcomeScreen(onSignIn: () -> Unit, onAccount: () -> Unit, onSkip: () -> Uni
             }
             drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color(0xFF07060C)), startY = size.height * 0.35f))
         }
-        // A phone's width in the middle on a tablet, rather than buttons stretched across the screen.
+        // A phone's width in the middle on a tablet, rather than buttons stretched across the screen. It scrolls: with
+        // large text or display size the list pushed the buttons off the bottom and new listeners couldn't go on (1.7.9.3,
+        // owner's report). When it doesn't fit, it opens scrolled to the buttons; the rest is a swipe up.
+        val scroll = androidx.compose.foundation.rememberScrollState()
+        LaunchedEffect(scroll.maxValue) { if (scroll.maxValue > 0 && scroll.value == 0) scroll.scrollTo(scroll.maxValue) }
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.align(Alignment.TopCenter).widthIn(max = 480.dp).fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
         Column(
-            Modifier.align(Alignment.TopCenter).widthIn(max = 480.dp).fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(28.dp),
+            Modifier.fillMaxWidth().verticalScroll(scroll).heightIn(min = maxHeight).padding(28.dp).testTag("welcome"),
             verticalArrangement = Arrangement.Bottom,
         ) {
-            Text("Prism", color = Color.White, style = MaterialTheme.typography.displayLarge)
-            Text("Your music, refracted.", color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.titleLarge)
+            Text(tr(R.string.app_name), color = Color.White, style = MaterialTheme.typography.displayLarge)
+            Text(tr(R.string.your_music_refracted), color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(28.dp))
-            Feature(PrismIcons.Lyrics, "Karaoke lyrics, word by word, from ten sources")
-            Feature(PrismIcons.Mic, "Sing: the song with its voice taken out")
-            Feature(PrismIcons.StarFilled, "Made for you: Daily Mixes & Release Radar")
-            Feature(PrismIcons.Equalizer, "DJ mode: your songs mixed in key")
-            Feature(PrismIcons.Recognize, "Name the song playing around you")
-            Feature(PrismIcons.Replay, "Rewind: your year in music")
+            Feature(PrismIcons.Lyrics, tr(R.string.karaoke_lyrics_word_by_word_from))
+            Feature(PrismIcons.Mic, tr(R.string.sing_the_song_with_its_voice))
+            Feature(PrismIcons.StarFilled, tr(R.string.made_for_you_daily_mixes_release))
+            Feature(PrismIcons.Equalizer, tr(R.string.dj_mode_your_songs_mixed_in))
+            Feature(PrismIcons.Recognize, tr(R.string.name_the_song_playing_around_you))
+            Feature(PrismIcons.Replay, tr(R.string.rewind_your_year_in_music))
             Spacer(Modifier.height(32.dp))
             // A Prism Account first: it's all on this phone, no sign-in anywhere. Google's for the YouTube Music library.
-            PrismButton(onClick = onAccount, Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(18.dp)) {
-                Text("Make a Prism Account", style = MaterialTheme.typography.titleMedium)
+            PrismButton(onClick = onAccount, Modifier.fillMaxWidth().heightIn(min = 56.dp), shape = RoundedCornerShape(18.dp)) {
+                Text(tr(R.string.make_a_prism_account), style = MaterialTheme.typography.titleMedium, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
             Text(
-                "Kept on this phone. No email, no password, no server.",
+                tr(R.string.kept_on_this_phone_no_email),
                 color = Color.White.copy(alpha = 0.62f), style = MaterialTheme.typography.bodySmall,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
             )
-            com.prism.music.ui.components.PrismOutlinedButton(onClick = onSignIn, Modifier.fillMaxWidth().padding(top = 12.dp).height(52.dp), shape = RoundedCornerShape(18.dp)) {
-                Text("Sign in with Google", color = Color.White)
+            com.prism.music.ui.components.PrismOutlinedButton(onClick = onSignIn, Modifier.fillMaxWidth().padding(top = 12.dp).heightIn(min = 52.dp), shape = RoundedCornerShape(18.dp)) {
+                Text(tr(R.string.sign_in_with_google), color = Color.White, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
             PrismTextButton(onClick = onSkip, Modifier.fillMaxWidth().padding(top = 4.dp)) {
-                Text("Skip for now", color = Color.White.copy(alpha = 0.8f))
+                Text(tr(R.string.skip_for_now), color = Color.White.copy(alpha = 0.8f))
             }
             WelcomeRestoreButton()
+        }
         }
     }
 }

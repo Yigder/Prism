@@ -1,9 +1,13 @@
 package com.prism.music.data.looks
 
+import com.prism.music.R
+import com.prism.music.tr
 import android.content.Context
+import com.prism.music.data.prefs.FontChoice
 import com.prism.music.data.prefs.LookValue
 import com.prism.music.data.prefs.SettingsRepository
 import com.prism.music.ui.theme.AppFonts
+import com.prism.music.ui.theme.Backdrop
 import com.prism.music.ui.theme.IconPack
 import com.prism.music.ui.theme.IconStyle
 import com.prism.music.ui.theme.IconWeight
@@ -100,7 +104,7 @@ class LookStore(private val app: Context, private val settings: SettingsReposito
     /** The listener's own settings that Day and night put aside ("Before <Look>") go back on. */
     suspend fun bringBackKept() {
         dismissKept()
-        find(BEFORE_ID)?.let { apply(it, "Your own settings back") }
+        find(BEFORE_ID)?.let { apply(it, tr(R.string.your_own_settings_back)) }
     }
 
     private val iconsVersion = MutableStateFlow(0)
@@ -165,7 +169,7 @@ class LookStore(private val app: Context, private val settings: SettingsReposito
         if (font == null) { v.remove(Look.APP_FONT_NAME); if (custom) v.remove(Look.FONT_CHOICE) }
         // The lyrics' own font file stays outside Looks.
         if (LookValue.text(v[Look.LYRICS_FONT]) == "CUSTOM") v.remove(Look.LYRICS_FONT)
-        val look = Look(id, name.trim().take(Look.MAX_NAME).ifBlank { "My Look" }, v, currentIcons(), font, created, note = note)
+        val look = Look(id, name.trim().take(Look.MAX_NAME).ifBlank { tr(R.string.my_look) }, v, currentIcons(), font, created, note = note)
         write(look)
         if (repoint) setBasis(id)
         // The backgrounds now point at the kept photos (not a change to the look: no Undo for it).
@@ -192,7 +196,7 @@ class LookStore(private val app: Context, private val settings: SettingsReposito
         val before = _mine.value.firstOrNull { it.id == look.id } ?: look
         // "Before <Look>"'s note ("from before you picked …") stops being true once it's updated.
         val saved = saveCurrent(before.name, before.id, if (before.id == BEFORE_ID) "" else before.note, created = before.created)
-        _notes.tryEmit(UndoNote("Updated ${before.name}", ++noteId, undo = { scope.launch(Dispatchers.IO) { write(before) } }))
+        _notes.tryEmit(UndoNote(tr(R.string.updated_2, before.name), ++noteId, undo = { scope.launch(Dispatchers.IO) { write(before) } }))
         return saved
     }
 
@@ -200,7 +204,7 @@ class LookStore(private val app: Context, private val settings: SettingsReposito
     fun edits(look: Look): String? {
         val now = settings.lookValues.value
         val saved = settings.lookAfter(resolved(look))
-        return LookLabels.summary((now.keys + saved.keys).filter { now[it] != saved[it] }, look.icons != currentIcons(), lead = "You've changed its")
+        return LookLabels.summary((now.keys + saved.keys).filter { now[it] != saved[it] }, look.icons != currentIcons(), lead = R.string.you_ve_changed_its)
     }
 
     fun rename(id: String, name: String) {
@@ -275,11 +279,14 @@ class LookStore(private val app: Context, private val settings: SettingsReposito
      * as "Before <Look>" in Your Looks ([BEFORE_ID], one, replaced each time), so they're a tap away however many changes
      * later: History only goes back ten.
      */
-    suspend fun apply(look: Look, label: String = "Look → ${look.name}", scheduled: Boolean = false) = withContext(Dispatchers.IO) {
-        if (look.id != BEFORE_ID && lookNow(settings.current) == null) runCatching {
-            val note = if (scheduled) "Your own settings from before Day and night switched to ${look.name}"
-            else "Your own settings from before you picked ${look.name}"
-            saveCurrent("Before ${look.name}", BEFORE_ID, note, repoint = false)
+    suspend fun apply(look: Look, label: String = tr(R.string.look_2, look.name), scheduled: Boolean = false) = withContext(Dispatchers.IO) {
+        val from = lookNow(settings.current)
+        // A seasonal Look remembers the Look the listener had, to go back to when its month ends ([endSeasons]).
+        if (Seasons.of(look.id) != null && Seasons.of(from?.id) == null) prefs.edit().putString(SEASON_FROM, from?.id ?: BEFORE_ID).apply()
+        if (look.id != BEFORE_ID && from == null) runCatching {
+            val note = if (scheduled) tr(R.string.your_own_settings_from_before_day, look.name)
+            else tr(R.string.your_own_settings_from_before_you, look.name)
+            saveCurrent(tr(R.string.before, look.name), BEFORE_ID, note, repoint = false)
             // GitHub #174: the schedule's turn put customizations out of sight, and it looked as if Prism had reset
             // them. They're kept (as above); the next time Prism is open, it says so and where.
             if (scheduled) noteKept(look.name)
@@ -298,6 +305,11 @@ class LookStore(private val app: Context, private val settings: SettingsReposito
         val yours = _mine.value.any { it.id == look.id }
         if (BuiltInLooks.of(look.id) == null && !yours) _other.value = look.copy(id = look.id.ifBlank { "shared" })
         setBasis(if (yours) look.id else null)
+        // Its fonts made here first, off the main thread (G37: a Look in another font froze the screen ~1 s while its
+        // weights were built for the first frame drawn in it).
+        listOf(Look.FONT_CHOICE, "title_font", "lyrics_font").mapNotNull { k -> LookValue.text(values[k])?.let(FontChoice::upgrade) }
+            .mapNotNull { n -> FontChoice.entries.firstOrNull { it.name == n } }
+            .takeIf { it.isNotEmpty() }?.let { runCatching { AppFonts.warm(app, it) } }
         settings.applyLook(values, fontChanged)
         applyIcons(look.icons)
     }
@@ -382,7 +394,7 @@ class LookStore(private val app: Context, private val settings: SettingsReposito
             while (true) {
                 val e = zip.nextEntry ?: break
                 if (e.isDirectory) continue
-                val bytes = readCapped(zip, MAX_FILE + 64 * 1024 - total) ?: error("That Look file is too big")
+                val bytes = readCapped(zip, MAX_FILE + 64 * 1024 - total) ?: error(tr(R.string.that_look_file_is_too_big))
                 total += bytes.size
                 when {
                     e.name == FILE_CODE -> look = decode(bytes.decodeToString())
@@ -390,7 +402,7 @@ class LookStore(private val app: Context, private val settings: SettingsReposito
                 }
             }
         }
-        val l = look ?: error("That file isn't a Prism Look")
+        val l = look ?: error(tr(R.string.that_file_isn_t_a_prism))
         val wanted = (l.photoAssets + listOfNotNull(l.font)).toSet()
         files.filterKeys { it in wanted }.forEach { (h, bytes) ->
             if (sha1(bytes) == h) { assetDir.mkdirs(); File(assetDir, h).writeBytes(bytes) }
@@ -513,7 +525,8 @@ class LookStore(private val app: Context, private val settings: SettingsReposito
                 val id = if (last.to == SunClock.Part.DAY) s.day else s.night
                 val key = "${last.to}@${last.at.epochSecond / 60}|$id"
                 if (key != prefs.getString(LAST_TURN, null)) {
-                    find(id)?.let { apply(it, "${it.name} for the ${if (last.to == SunClock.Part.DAY) "day" else "night"}", scheduled = true) }
+                    // A seasonal Look picked for day or night stays put away outside its month.
+                    find(id)?.takeIf { Seasons.shown(it.id) }?.let { apply(it, tr(if (last.to == SunClock.Part.DAY) R.string.look_for_the_day else R.string.look_for_the_night, it.name), scheduled = true) }
                     prefs.edit().putString(LAST_TURN, key).apply()
                 }
                 // Looked at again by the turn, and at least every 15 minutes (the clock or time zone may change).
@@ -522,7 +535,57 @@ class LookStore(private val app: Context, private val settings: SettingsReposito
         }
     }
 
+    // ---------------------------------------------------------------- Seasons
+
+    /** Whether the look is [look] exactly (its settings and icons), as stored: Performance mode doesn't hide it. */
+    fun isOn(look: Look): Boolean = look.icons == currentIcons() && settings.lookValues.value == settings.lookAfter(resolved(look))
+
+    /**
+     * When a seasonal Look's month is over (once for each turn, so a Look picked afterwards is left alone): a listener on
+     * it goes back to the Look they had before it ([SEASON_FROM], or "Before <Look>" for their own mix), and a listener who
+     * changed it since keeps their changes but loses its background (the screens go back to theirs, or the default).
+     * Returns whether it changed anything.
+     */
+    suspend fun endSeasons(today: java.time.LocalDate = Seasons.today()): Boolean {
+        var changed = false
+        for ((season, key) in Seasons.ended(today)) {
+            val done = prefs.getStringSet(SEASONS_ENDED, emptySet()).orEmpty()
+            if (key in done) continue
+            val look = BuiltInLooks.of(season.lookId)
+            val backdrops = Backgrounds.parse(settings.lookValues.value[Look.BACKDROPS])
+            if (look != null && isOn(look)) {
+                val back = prefs.getString(SEASON_FROM, null)?.let(::find)?.takeIf { Seasons.of(it.id) == null } ?: BuiltInLooks.all.first()
+                apply(back, tr(R.string.season_over_back_to, look.name, back.name))
+                changed = true
+            } else if (backdrops.values.any { Backdrop.parse(it).first.season == season }) {
+                val before = prefs.getString(SEASON_FROM, null)?.let(::find)?.let { Backgrounds.parse(resolved(it)[Look.BACKDROPS]) }.orEmpty()
+                val kept = backdrops.mapNotNull { (screen, v) ->
+                    if (Backdrop.parse(v).first.season != season) screen to v else before[screen]?.let { screen to it }
+                }.toMap()
+                val values = settings.lookValues.value.toMutableMap()
+                if (kept.isEmpty()) values.remove(Look.BACKDROPS) else values[Look.BACKDROPS] = Backgrounds.tag(kept)
+                expect = Expect(settings.lookAfter(values), label = tr(R.string.season_over_backgrounds, look?.name ?: season.name))
+                settings.applyLook(values)
+                changed = true
+            }
+            prefs.edit().putStringSet(SEASONS_ENDED, done + key).apply()
+        }
+        return changed
+    }
+
+    /** Looks at the seasons as Prism starts, and again at each midnight (and at least hourly: the clock or zone may change). */
+    private fun runSeasons() = scope.launch {
+        while (true) {
+            runCatching { endSeasons() }
+            val zone = java.time.ZoneId.systemDefault()
+            val now = java.time.ZonedDateTime.now(zone)
+            val midnight = now.toLocalDate().plusDays(1).atStartOfDay(zone)
+            delay(Duration.between(now, midnight).toMillis().plus(1_000).coerceIn(5_000, 60 * 60_000))
+        }
+    }
+
     init {
+        runSeasons()
         scope.launch {
             var last = settings.lookValues.value
             settings.lookValues.collect { now ->
@@ -547,6 +610,10 @@ class LookStore(private val app: Context, private val settings: SettingsReposito
         private const val SCHEDULE = "schedule.json"
         private const val LAST_TURN = "schedule_last"
         private const val KEPT = "schedule_kept"
+        /** The Look the listener had before a seasonal one. */
+        private const val SEASON_FROM = "season_from"
+        /** The seasons' turns already seen to ("HARVEST:2026"). */
+        private const val SEASONS_ENDED = "seasons_ended"
         private const val MERGE_MS = 4_000L
     }
 }

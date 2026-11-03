@@ -1,5 +1,7 @@
 package com.prism.music.ui.screens
 
+import com.prism.music.R
+import com.prism.music.tr
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.produceState
@@ -42,6 +44,10 @@ object OwnSections {
         else -> null
     }
 
+    /** A holiday mix's own section (1.8.0), under its name. */
+    fun pinOf(mix: com.prism.music.data.seasonal.HolidayMix): HomeSectionConfig =
+        HomeSectionConfig(HomeSections.pinKey(HomeSections.HOLIDAY_PIN, mix.key), tr(mix.name), style = SectionStyle.LIST)
+
     /** Where a pinned section's "more" goes: its own page. */
     fun pageOf(key: String): String? {
         val (kind, id) = key.removePrefix(HomeSections.PIN_PREFIX).split(':', limit = 2).takeIf { it.size == 2 } ?: return null
@@ -49,26 +55,27 @@ object OwnSections {
             "album" -> Routes.album(id)
             "playlist" -> Routes.playlist(id)
             "artist" -> Routes.artist(id)
+            HomeSections.HOLIDAY_PIN -> Routes.mix(com.prism.music.data.seasonal.HolidayMixes.PREFIX + id)
             else -> null
         }
     }
 
     /** What a rule section says about itself under its name. */
     fun strapline(key: String): String? = when {
-        key == HomeSections.LIKED_MONTH -> "Your likes from the last 30 days"
-        key == HomeSections.UNPLAYED_DOWNLOADS -> "On the phone, not played yet"
-        key.startsWith(HomeSections.YEAR_PREFIX) -> "Your most played that year"
-        key.startsWith(HomeSections.PIN_PREFIX) -> "Pinned"
+        key == HomeSections.LIKED_MONTH -> tr(R.string.your_likes_from_the_last_30)
+        key == HomeSections.UNPLAYED_DOWNLOADS -> tr(R.string.on_the_phone_not_played_yet)
+        key.startsWith(HomeSections.YEAR_PREFIX) -> tr(R.string.your_most_played_that_year)
+        key.startsWith(HomeSections.PIN_PREFIX) -> tr(R.string.pinned)
         else -> null
     }
 
     /** The rule sections Customize Home can add (years with plays in them, newest first). */
     suspend fun rules(c: AppContainer): List<HomeSectionConfig> = withContext(Dispatchers.IO) {
         listOf(
-            HomeSectionConfig(HomeSections.LIKED_MONTH, "Liked this month", style = SectionStyle.LIST),
-            HomeSectionConfig(HomeSections.UNPLAYED_DOWNLOADS, "Downloads you haven't played"),
+            HomeSectionConfig(HomeSections.LIKED_MONTH, tr(R.string.liked_this_month), style = SectionStyle.LIST),
+            HomeSectionConfig(HomeSections.UNPLAYED_DOWNLOADS, tr(R.string.downloads_you_haven_t_played)),
         ) + runCatching { c.db.plays().yearsPlayed() }.getOrDefault(emptyList()).take(6)
-            .map { y -> HomeSectionConfig(HomeSections.yearKey(y), "Most played in $y") }
+            .map { y -> HomeSectionConfig(HomeSections.yearKey(y), tr(R.string.most_played_in, y)) }
     }
 
     suspend fun load(c: AppContainer, key: String): List<Song> = withContext(Dispatchers.IO) {
@@ -96,6 +103,8 @@ object OwnSections {
                         "artist" -> c.ytm.artist(id).shelves.firstOrNull { s -> s.items.any { it is SongItem } }
                             ?.items?.filterIsInstance<SongItem>()?.map { it.song }.orEmpty()
                         "mix" -> c.radio(null, id).songs
+                        // One of Prism's holiday mixes (1.8.0): nothing outside its season.
+                        HomeSections.HOLIDAY_PIN -> c.seasonal.mix(com.prism.music.data.seasonal.HolidayMixes.PREFIX + id)?.songs.orEmpty()
                         else -> emptyList()
                     }.take(50)
                 }

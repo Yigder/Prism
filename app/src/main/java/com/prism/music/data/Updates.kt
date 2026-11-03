@@ -1,5 +1,7 @@
 package com.prism.music.data
 
+import com.prism.music.R
+import com.prism.music.tr
 import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -108,7 +110,7 @@ class UpdateChecker(private val context: Context, private val http: OkHttpClient
         val req = Request.Builder().url("https://api.github.com/repos/$REPO/releases/latest")
             .header("Accept", "application/vnd.github+json").header("User-Agent", "Prism/${BuildConfig.VERSION_NAME}").build()
         http.newCall(req).execute().use { r ->
-            if (!r.isSuccessful) error("GitHub answered ${r.code}")
+            if (!r.isSuccessful) error(tr(R.string.github_answered, r.code))
             val json = InnerTube.json.parseToJsonElement(r.body.string())
             val version = json.str("tag_name")?.removePrefix("v")?.trim() ?: error("GitHub's answer had no version")
             val apk = json.arr("assets")?.firstOrNull { it.str("name")?.endsWith(".apk", true) == true }?.str("browser_download_url")
@@ -150,7 +152,7 @@ class UpdateChecker(private val context: Context, private val http: OkHttpClient
             result.exceptionOrNull()?.let { e ->
                 if (!isActive) return@let
                 _progress.value = if (e is SignatureChanged) UpdateProgress.NewSignature(update.version, File(dir, "Prism-${update.version}.apk"))
-                else UpdateProgress.Failed(e.friendlyMessage("The update didn't download"))
+                else UpdateProgress.Failed(e.friendlyMessage(tr(R.string.the_update_didn_t_download)))
             }
         }
     }
@@ -162,7 +164,7 @@ class UpdateChecker(private val context: Context, private val http: OkHttpClient
         val part = File(dir, file.name + ".part")
         val req = Request.Builder().url(update.url).header("User-Agent", "Prism/${BuildConfig.VERSION_NAME}").build()
         http.newCall(req).execute().use { r ->
-            if (!r.isSuccessful) error("GitHub answered ${r.code}")
+            if (!r.isSuccessful) error(tr(R.string.github_answered, r.code))
             val body = r.body
             val total = body.contentLength().takeIf { it > 0 }
             var done = 0L
@@ -180,19 +182,19 @@ class UpdateChecker(private val context: Context, private val http: OkHttpClient
                     }
                 }
             }
-            if (total != null && done != total) error("The download was cut short")
+            if (total != null && done != total) error(tr(R.string.the_download_was_cut_short))
         }
-        if (!part.renameTo(file)) error("Couldn't save the update")
+        if (!part.renameTo(file)) error(tr(R.string.couldn_t_save_the_update))
         return file
     }
 
     /** Only Prism, and only something newer than what's running, is passed on. */
     @Suppress("DEPRECATION")
     private fun verify(apk: File) {
-        val info = context.packageManager.getPackageArchiveInfo(apk.path, 0) ?: error("The downloaded file isn't an app")
-        if (info.packageName != context.packageName) error("The download isn't Prism")
+        val info = context.packageManager.getPackageArchiveInfo(apk.path, 0) ?: error(tr(R.string.the_downloaded_file_isn_t_an))
+        if (info.packageName != context.packageName) error(tr(R.string.the_download_isn_t_prism))
         val code = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else info.versionCode.toLong()
-        if (code <= BuildConfig.VERSION_CODE) error("That's not newer than this Prism")
+        if (code <= BuildConfig.VERSION_CODE) error(tr(R.string.that_s_not_newer_than_this))
         val theirs = signers(context.packageManager.getPackageArchiveInfo(apk.path, signingFlag()))
         val ours = signers(context.packageManager.getPackageInfo(context.packageName, signingFlag()))
         if (theirs.isNotEmpty() && ours.isNotEmpty() && theirs != ours) throw SignatureChanged()
@@ -213,7 +215,7 @@ class UpdateChecker(private val context: Context, private val http: OkHttpClient
 
     /** Copies the downloaded new Prism to [uri] (somewhere that outlives uninstalling this one). */
     suspend fun saveApk(apk: File, uri: Uri) = kotlinx.coroutines.withContext(Dispatchers.IO) {
-        val out = context.contentResolver.openOutputStream(uri, "wt") ?: error("Couldn't open that file")
+        val out = context.contentResolver.openOutputStream(uri, "wt") ?: error(tr(R.string.couldn_t_open_that_file))
         out.use { o -> apk.inputStream().use { it.copyTo(o) } }
     }
 
@@ -310,9 +312,9 @@ class UpdateChecker(private val context: Context, private val http: OkHttpClient
             else -> if (!retryWithoutProfile(status)) _progress.value = UpdateProgress.Failed(
                 when (status) {
                     PackageInstaller.STATUS_FAILURE_CONFLICT, PackageInstaller.STATUS_FAILURE_INCOMPATIBLE ->
-                        "Android wouldn't install it over this Prism (it's signed differently)"
-                    PackageInstaller.STATUS_FAILURE_STORAGE -> "Not enough space to install the update"
-                    else -> intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE) ?: "The update didn't install"
+                        tr(R.string.android_wouldn_t_install_it_over)
+                    PackageInstaller.STATUS_FAILURE_STORAGE -> tr(R.string.not_enough_space_to_install_the)
+                    else -> intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE) ?: tr(R.string.the_update_didn_t_install)
                 }
             )
         }
@@ -329,7 +331,7 @@ class UpdateChecker(private val context: Context, private val http: OkHttpClient
         installing = null
         scope.launch(Dispatchers.IO) {
             runCatching { startSession(apk, withProfile = false) }
-                .onFailure { _progress.value = UpdateProgress.Failed(it.friendlyMessage("The update didn't install")) }
+                .onFailure { _progress.value = UpdateProgress.Failed(it.friendlyMessage(tr(R.string.the_update_didn_t_install))) }
         }
         return true
     }

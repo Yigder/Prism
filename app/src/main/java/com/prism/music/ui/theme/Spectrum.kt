@@ -1,5 +1,7 @@
 package com.prism.music.ui.theme
 
+import com.prism.music.R
+import com.prism.music.tr
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -153,7 +155,8 @@ val ColorScheme.hairline: Color get() = onBackground.copy(alpha = InkLevels.line
  * hues white icons sit on.
  */
 object SpectrumPresets {
-    class Preset(val key: String, val label: String, val colors: List<Color>)
+    /** [season]: a seasonal Look's light (1.8.0), only offered in its month. */
+    class Preset(val key: String, val label: String, val colors: List<Color>, val season: com.prism.music.data.looks.Season? = null)
 
     class Light(
         val colors: List<Pair<Float, Color>>,
@@ -179,19 +182,23 @@ object SpectrumPresets {
     )
 
     val all = listOf(
-        Preset("PRISM", "Prism", PRISM_LIGHT.colors.map { it.second }),
-        Preset("SUNSET", "Sunset", c(0xFFD4418E, 0xFFFF5F6D, 0xFFFF9966, 0xFFFFC371)),
-        Preset("OCEAN", "Ocean", c(0xFF2B59FF, 0xFF2FA8FF, 0xFF2BD9E8, 0xFF7CF5C8)),
-        Preset("AURORA", "Aurora", c(0xFF3DDC97, 0xFF36E2D2, 0xFF5A8BFF, 0xFFB15CFF)),
-        Preset("FOREST", "Forest", c(0xFFB8E986, 0xFF5FD38D, 0xFF2BB673, 0xFF1D9A8A)),
-        Preset("EMBER", "Ember", c(0xFFFF3D3D, 0xFFFF6D00, 0xFFFFAB00, 0xFFFFD54F)),
-        Preset("CANDY", "Candy", c(0xFFFF7EB3, 0xFFFFB86B, 0xFF7CE0FF, 0xFFB79CFF)),
-        Preset("NEON", "Neon", c(0xFFFF2E93, 0xFFFFE600, 0xFF00FFA3, 0xFF00D1FF, 0xFFB026FF)),
-        Preset("ICE", "Ice", c(0xFFE0F7FF, 0xFF9BE3FF, 0xFF5AB8FF, 0xFF8C9EFF)),
-        Preset("GOLD", "Gold", c(0xFFFFE29F, 0xFFFFC75F, 0xFFE8A33D, 0xFFFFD98E)),
-        Preset("SILVER", "Silver", c(0xFFF5F5F7, 0xFFB8B8C0, 0xFF8E8E96, 0xFFD6D6DC)),
+        Preset("PRISM", tr(R.string.app_name), PRISM_LIGHT.colors.map { it.second }),
+        Preset("SUNSET", tr(R.string.sunset), c(0xFFD4418E, 0xFFFF5F6D, 0xFFFF9966, 0xFFFFC371)),
+        Preset("OCEAN", tr(R.string.ocean), c(0xFF2B59FF, 0xFF2FA8FF, 0xFF2BD9E8, 0xFF7CF5C8)),
+        Preset("AURORA", tr(R.string.aurora), c(0xFF3DDC97, 0xFF36E2D2, 0xFF5A8BFF, 0xFFB15CFF)),
+        Preset("FOREST", tr(R.string.forest), c(0xFFB8E986, 0xFF5FD38D, 0xFF2BB673, 0xFF1D9A8A)),
+        Preset("EMBER", tr(R.string.ember), c(0xFFFF3D3D, 0xFFFF6D00, 0xFFFFAB00, 0xFFFFD54F)),
+        Preset("CANDY", tr(R.string.candy), c(0xFFFF7EB3, 0xFFFFB86B, 0xFF7CE0FF, 0xFFB79CFF)),
+        Preset("NEON", tr(R.string.neon), c(0xFFFF2E93, 0xFFFFE600, 0xFF00FFA3, 0xFF00D1FF, 0xFFB026FF)),
+        Preset("ICE", tr(R.string.ice), c(0xFFE0F7FF, 0xFF9BE3FF, 0xFF5AB8FF, 0xFF8C9EFF)),
+        Preset("GOLD", tr(R.string.gold), c(0xFFFFE29F, 0xFFFFC75F, 0xFFE8A33D, 0xFFFFD98E)),
+        Preset("SILVER", tr(R.string.silver), c(0xFFF5F5F7, 0xFFB8B8C0, 0xFF8E8E96, 0xFFD6D6DC)),
         // Okabe & Ito's palette: hues that stay apart for every common kind of color blindness.
-        Preset("CLEAR", "Color-blind safe", c(0xFFF0E442, 0xFFE69F00, 0xFFD55E00, 0xFFCC79A7, 0xFF0072B2, 0xFF56B4E9, 0xFF009E73)),
+        Preset("CLEAR", tr(R.string.color_blind_safe), c(0xFFF0E442, 0xFFE69F00, 0xFFD55E00, 0xFFCC79A7, 0xFF0072B2, 0xFF56B4E9, 0xFF009E73)),
+        // Seasonal (1.8.0): Thanksgiving's cranberry, burnt orange, amber, gold and olive; Christmas as a candy cane meeting a
+        // tree: red, silver white, pine green and gold. (Kept readable on light and dark pages, like every preset.)
+        Preset("HARVEST", tr(R.string.harvest), c(0xFF9B1B30, 0xFFC8642A, 0xFFFFA726, 0xFFE0B04A, 0xFF7A8B2E), com.prism.music.data.looks.Season.HARVEST),
+        Preset("HOLIDAY", tr(R.string.holiday), c(0xFFC62828, 0xFFE3E8EC, 0xFF1E8A4C, 0xFFE6B740), com.prism.music.data.looks.Season.HOLIDAY),
     )
 
     fun preset(key: String): Preset? = all.firstOrNull { it.key == key }
@@ -209,15 +216,16 @@ object SpectrumPresets {
     /** A preset's name, ours included ("From the cover", "Your own"). */
     fun label(key: String): String = when (key) {
         COVER -> COVER_LABEL
-        "CUSTOM" -> "Your own"
-        else -> preset(key)?.label ?: "Prism"
+        "CUSTOM" -> tr(R.string.your_own)
+        else -> preset(key)?.label ?: tr(R.string.app_name)
     }
 
     /**
      * Up to five of a cover's swatches as a light: distinct (none within 28° of hue of another unless far apart in
-     * lightness), colorful enough to be a light, in hue order. Fewer than two: null (the cover has none to give).
+     * lightness), colorful enough to be a light, in hue order. A cover with one color gives shades of it; one with none
+     * (black and white, mostly white: #233 #235) a silver light, never Prism's rainbow, which isn't in the cover.
      */
-    fun fromCover(swatches: List<Int>): List<Int>? {
+    fun fromCover(swatches: List<Int>): List<Int> {
         val picked = ArrayList<Triple<Float, Float, Float>>()
         for (c in swatches) {
             val (h, s, l) = Color(c).toHsl()
@@ -226,9 +234,31 @@ object SpectrumPresets {
             picked += Triple(h, s, l)
             if (picked.size == 5) break
         }
-        if (picked.size < 2) return null
-        return picked.sortedBy { it.first }.map { (h, s, l) -> Color.hsl(h, s, l).toArgb() }
+        if (picked.size >= 2) return picked.sortedBy { it.first }.map { (h, s, l) -> Color.hsl(h, s, l).toArgb() }
+        picked.firstOrNull()?.let { (h, s, l) ->
+            return listOf(Color.hsl(h, s, (l - 0.2f).coerceAtLeast(0.22f)), Color.hsl(h, s, l), Color.hsl(h, s * 0.75f, (l + 0.2f).coerceAtMost(0.86f))).map { it.toArgb() }
+        }
+        return SILVER
     }
+
+    /**
+     * The cover light [t] of the way (0..1) from [from] to [to] (#254, 1.7.9.2: it used to change at once, so with "From
+     * the cover" the progress, Play's ring and the picked cards cut to the next song's colors whatever "Between songs"
+     * said). Both are read as runs and sampled at the longer one's count, so a 3-color light can become a 5-color one.
+     */
+    fun fadeStops(from: List<Int>, to: List<Int>, t: Float): List<Int> {
+        if (from.size < 2 || to.size < 2) return to
+        val n = maxOf(from.size, to.size)
+        fun at(list: List<Int>, i: Int): Color {
+            val p = i / (n - 1).toFloat() * (list.size - 1)
+            val lo = p.toInt().coerceAtMost(list.size - 2)
+            return androidx.compose.ui.graphics.lerp(Color(list[lo]), Color(list[lo + 1]), p - lo)
+        }
+        return (0 until n).map { i -> androidx.compose.ui.graphics.lerp(at(from, i), at(to, i), t.coerceIn(0f, 1f)).toArgb() }
+    }
+
+    /** The light of a cover with no color in it. */
+    val SILVER: List<Int> = listOf(0xFF8E949C.toInt(), 0xFFC9CDD2.toInt(), 0xFFF4F5F7.toInt())
 
     /** The colors [key] (or, for "CUSTOM", [stops]) stands for; Prism's when there's nothing usable. */
     fun colorsFor(key: String, stops: List<Int>): List<Color> =

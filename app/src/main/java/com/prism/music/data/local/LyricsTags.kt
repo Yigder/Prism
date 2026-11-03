@@ -11,21 +11,51 @@ import java.io.RandomAccessFile
  * was. The file is written to [output]; the caller swaps it in once it's whole.
  */
 object LyricsTags {
-    enum class Kind { FLAC, MP3 }
+    enum class Kind { FLAC, MP3, M4A }
 
     fun kindOf(mime: String, name: String = ""): Kind? = when {
         mime.contains("flac", true) || name.endsWith(".flac", true) -> Kind.FLAC
         mime.contains("mpeg", true) || mime.contains("mp3", true) || name.endsWith(".mp3", true) -> Kind.MP3
+        // AAC and ALAC in MP4 (1.7.8, Reddit): a ©lyr atom, as iTunes and most players read it.
+        mime.contains("mp4", true) || mime.contains("m4a", true) || mime.contains("aac", true) || mime.contains("alac", true) ||
+            name.endsWith(".m4a", true) -> Kind.M4A
         else -> null
     }
 
-    /** The lyrics as LRC (one "[mm:ss.xx]line" per line, an empty one for each instrumental break), or plain text. */
-    fun text(l: Lyrics): String {
-        if (!l.synced) return l.lines.joinToString("\n") { it.text }.trim()
-        return l.lines.filter { it.timeMs >= 0 }.joinToString("\n") { line ->
-            val cs = line.timeMs / 10
-            // Western digits whatever the phone's language: players read LRC times as those.
-            "[%02d:%02d.%02d]%s".format(java.util.Locale.ROOT, cs / 6000, cs / 100 % 60, cs % 100, if (line.isGap) "" else line.text)
+    /**
+     * Whether [output] still holds exactly [input]'s audio: for FLAC and MP3 their endings match (the tag is at the
+     * start); for M4A the audio box (mdat) is byte for byte the same, wherever it sits.
+     */
+    fun audioIntact(input: File, output: File, kind: Kind): Boolean = when (kind) {
+        Kind.M4A -> runCatching { mdatDigest(input)?.let { it.contentEquals(mdatDigest(output)) } ?: false }.getOrDefault(false)
+        else -> sameEnding(input, output)
+    }
+
+    private fun sameEnding(a: File, b: File): Boolean {
+        val n = minOf(1L shl 20, a.length(), b.length()).toInt()
+        if (n <= 0) return false
+        fun tail(f: File) = RandomAccessFile(f, "r").use { r -> ByteArray(n).also { r.seek(f.length() - n); r.readFully(it) } }
+        return tail(a).contentEquals(tail(b))
+    }
+
+    /**
+     * The lyrics as LRC (one "[mm:ss.xx]line" per line, an empty one for each instrumental break), or plain text.
+     * [words] (1.7.9.2, Reddit): a word-timed line keeps each word's start, as enhanced LRC ("[00:12.00]<00:12.00>Word
+     * <00:12.48>by"), which karaoke-capable players (Poweramp and others) light word by word. [translations] (one per
+     * line, null where a line has none): each goes under its line, with the same time, as two-language LRC does.
+     */
+    fun text(l: Lyrics, words: Boolean = false, translations: List<String?>? = null): String {
+        fun under(i: Int) = translations?.getOrNull(i)?.takeIf { it.isNotBlank() && it != l.lines[i].text }
+        if (!l.synced) return l.lines.withIndex().joinToString("\n") { (i, line) -> listOfNotNull(line.text, under(i)).joinToString("\n") }.trim()
+        // Western digits whatever the phone's language: players read LRC times as those.
+        fun stamp(ms: Long): String { val cs = ms / 10; return "%02d:%02d.%02d".format(java.util.Locale.ROOT, cs / 6000, cs / 100 % 60, cs % 100) }
+        return l.lines.withIndex().filter { it.value.timeMs >= 0 }.joinToString("\n") { (i, line) ->
+            val text = when {
+                line.isGap -> ""
+                words && line.words.isNotEmpty() -> line.words.joinToString("") { "<${stamp(it.startMs)}>${it.text}" }
+                else -> line.text
+            }
+            "[${stamp(line.timeMs)}]$text" + (under(i)?.let { "\n[${stamp(line.timeMs)}]$it" } ?: "")
         }
     }
 
@@ -34,6 +64,7 @@ object LyricsTags {
         when (kind) {
             Kind.FLAC -> flac(input, output, lyrics)
             Kind.MP3 -> mp3(input, output, lyrics)
+            Kind.M4A -> m4a(input, output, lyrics)
         }
     }.getOrDefault(false).also { if (!it) output.delete() }
 
@@ -166,6 +197,164 @@ object LyricsTags {
         out.write(0); out.write(0)
         out.write(data)
         return out.toByteArray()
+    }
+
+    // ------------------------------------------------------------ M4A (MP4)
+
+    /** One box: its type, where it starts in the file, its whole size, and its header's length (8, or 16 for a 64-bit size). */
+    private class Box(val type: String, val at: Long, val size: Long, val header: Int)
+
+    /** The boxes from [from] to [to] in [f]; null when one is malformed. */
+    private fun boxes(f: RandomAccessFile, from: Long, to: Long): List<Box>? {
+        val out = ArrayList<Box>()
+        var p = from
+        while (p + 8 <= to) {
+            f.seek(p)
+            var size = f.readInt().toLong() and 0xFFFFFFFFL
+            val type = ByteArray(4).also { f.readFully(it) }.toString(Charsets.ISO_8859_1)
+            var header = 8
+            if (size == 1L) { size = f.readLong(); header = 16 } else if (size == 0L) size = to - p
+            if (size < header || p + size > to) return null
+            out += Box(type, p, size, header)
+            p += size
+            if (out.size > 10_000) return null
+        }
+        return out
+    }
+
+    /** The boxes inside a container box held in [b] (bytes), from [start]; null when malformed. */
+    private fun children(b: ByteArray, start: Int, end: Int): List<Triple<String, Int, Int>>? {
+        val out = ArrayList<Triple<String, Int, Int>>()
+        var p = start
+        while (p + 8 <= end) {
+            val size = be(b, p)
+            val type = String(b, p + 4, 4, Charsets.ISO_8859_1)
+            if (size < 8 || p + size > end) return null
+            out += Triple(type, p, size)
+            p += size
+        }
+        return if (p == end) out else null
+    }
+
+    private fun box(type: String, vararg parts: ByteArray): ByteArray {
+        val body = parts.fold(ByteArray(0)) { a, b -> a + b }
+        val size = 8 + body.size
+        return byteArrayOf((size shr 24).toByte(), (size shr 16).toByte(), (size shr 8).toByte(), size.toByte()) + type.toByteArray(Charsets.ISO_8859_1) + body
+    }
+
+    private val CONTAINERS = setOf("trak", "mdia", "minf", "stbl", "edts", "dinf", "udta")
+
+    /**
+     * MP4 with the lyrics in moov/udta/meta/ilst as "©lyr" (made if missing). When moov comes before the audio, every
+     * chunk offset (stco/co64) moves by however much moov grew. Fragmented files (moof) are left alone.
+     */
+    private fun m4a(input: File, output: File, lyrics: String): Boolean {
+        RandomAccessFile(input, "r").use { f ->
+            val top = boxes(f, 0, f.length()) ?: return false
+            if (top.firstOrNull()?.type != "ftyp" || top.any { it.type == "moof" }) return false
+            val moov = top.singleOrNull { it.type == "moov" } ?: return false
+            if (moov.header != 8 || moov.size > 64L shl 20) return false
+            val mdatAfter = top.filter { it.type == "mdat" }.let { m -> m.isNotEmpty() && m.all { it.at > moov.at } }
+            val mdatBefore = top.filter { it.type == "mdat" }.all { it.at < moov.at }
+            if (!mdatAfter && !mdatBefore) return false
+            val old = ByteArray(moov.size.toInt()).also { f.seek(moov.at); f.readFully(it) }
+            val inner = rebuildMoov(old, lyrics) ?: return false
+            val grew = inner.size.toLong() + 8 - moov.size
+            val moved = if (mdatAfter && grew != 0L) shiftOffsets(inner, grew) ?: return false else inner
+            val newMoov = box("moov", moved)
+            output.outputStream().buffered().use { out ->
+                val buf = ByteArray(256 * 1024)
+                fun copy(from: Long, len: Long) {
+                    f.seek(from); var left = len
+                    while (left > 0) { val n = f.read(buf, 0, minOf(buf.size.toLong(), left).toInt()); if (n < 0) break; out.write(buf, 0, n); left -= n }
+                }
+                copy(0, moov.at)
+                out.write(newMoov)
+                copy(moov.at + moov.size, f.length() - moov.at - moov.size)
+            }
+        }
+        return true
+    }
+
+    /** moov's body (without its own header) with the lyrics put in; null when its layout isn't understood. */
+    private fun rebuildMoov(moov: ByteArray, lyrics: String): ByteArray? {
+        val kids = children(moov, 8, moov.size) ?: return null
+        val lyr = box("©lyr", box("data", byteArrayOf(0, 0, 0, 1, 0, 0, 0, 0), lyrics.toByteArray(Charsets.UTF_8)))
+        val udta = kids.firstOrNull { it.first == "udta" }
+        val newUdta = if (udta == null) box("udta", newMeta(null, lyr) ?: return null) else {
+            val (_, at, size) = udta
+            val u = children(moov, at + 8, at + size) ?: return null
+            val meta = u.firstOrNull { it.first == "meta" }
+            val parts = u.filter { it.first != "meta" }.map { (_, a, s) -> moov.copyOfRange(a, a + s) }
+            val newMeta = newMeta(meta?.let { (_, a, s) -> moov.copyOfRange(a, a + s) }, lyr) ?: return null
+            box("udta", *(parts + listOf(newMeta)).toTypedArray())
+        }
+        val body = java.io.ByteArrayOutputStream()
+        kids.forEach { (t, a, s) -> if (t != "udta") body.write(moov, a, s) }
+        body.write(newUdta)
+        return body.toByteArray()
+    }
+
+    /** A meta box ([old], or a new one) whose ilst has [lyr] in place of any lyrics it had. */
+    private fun newMeta(old: ByteArray?, lyr: ByteArray): ByteArray? {
+        // An iTunes metadata handler: version and flags, pre_defined, "mdir", "appl" and 8 reserved bytes, an empty name.
+        val hdlr = box("hdlr", ByteArray(8), "mdirappl".toByteArray(Charsets.ISO_8859_1), ByteArray(9))
+        if (old == null) return box("meta", ByteArray(4), hdlr, box("ilst", lyr))
+        // meta is a full box: four bytes of version and flags before its children.
+        val m = children(old, 12, old.size) ?: return null
+        val ilst = m.firstOrNull { it.first == "ilst" }
+        val items = ilst?.let { (_, a, s) -> children(old, a + 8, a + s) ?: return null }.orEmpty()
+            .filter { it.first != "©lyr" }.map { (_, a, s) -> old.copyOfRange(a, a + s) }
+        val rest = m.filter { it.first != "ilst" }.map { (_, a, s) -> old.copyOfRange(a, a + s) }
+        val withHdlr = if (m.any { it.first == "hdlr" }) rest else listOf(hdlr) + rest
+        val newIlst = box("ilst", *(items + listOf(lyr)).toTypedArray())
+        return box("meta", old.copyOfRange(8, 12), *(withHdlr + listOf(newIlst)).toTypedArray())
+    }
+
+    /** moov's body with every chunk offset (stco, co64) in its tracks moved by [by]; null when one won't fit. */
+    private fun shiftOffsets(body: ByteArray, by: Long): ByteArray? {
+        val b = body.copyOf()
+        fun walk(start: Int, end: Int): Boolean {
+            val kids = children(b, start, end) ?: return false
+            for ((t, a, s) in kids) when (t) {
+                in CONTAINERS -> if (!walk(a + 8, a + s)) return false
+                "stco" -> {
+                    val n = be(b, a + 12)
+                    if (16 + n.toLong() * 4 > s) return false
+                    for (i in 0 until n) {
+                        val at = a + 16 + i * 4
+                        val v = (be(b, at).toLong() and 0xFFFFFFFFL) + by
+                        if (v < 0 || v > 0xFFFFFFFFL) return false
+                        b[at] = (v shr 24).toByte(); b[at + 1] = (v shr 16).toByte(); b[at + 2] = (v shr 8).toByte(); b[at + 3] = v.toByte()
+                    }
+                }
+                "co64" -> {
+                    val n = be(b, a + 12)
+                    if (16 + n.toLong() * 8 > s) return false
+                    for (i in 0 until n) {
+                        val at = a + 16 + i * 8
+                        var v = 0L
+                        for (k in 0 until 8) v = (v shl 8) or (b[at + k].toLong() and 0xFF)
+                        v += by
+                        for (k in 0 until 8) b[at + k] = (v shr (56 - 8 * k)).toByte()
+                    }
+                }
+            }
+            return true
+        }
+        return if (walk(0, b.size)) b else null
+    }
+
+    /** A digest of an MP4 file's audio boxes (mdat), in order; null when it has none or can't be read. */
+    private fun mdatDigest(file: File): ByteArray? = RandomAccessFile(file, "r").use { f ->
+        val mdats = boxes(f, 0, f.length())?.filter { it.type == "mdat" }?.takeIf { it.isNotEmpty() } ?: return null
+        val md = java.security.MessageDigest.getInstance("SHA-256")
+        val buf = ByteArray(256 * 1024)
+        for (m in mdats) {
+            f.seek(m.at + m.header); var left = m.size - m.header
+            while (left > 0) { val n = f.read(buf, 0, minOf(buf.size.toLong(), left).toInt()); if (n < 0) break; md.update(buf, 0, n); left -= n }
+        }
+        md.digest()
     }
 
     // ------------------------------------------------------------ Helpers

@@ -1,5 +1,7 @@
 package com.prism.music.ui.screens
 
+import com.prism.music.R
+import com.prism.music.tr
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.border
 import com.prism.music.ui.components.PrismButton
@@ -73,7 +75,7 @@ import kotlinx.coroutines.launch
 fun TogetherScreen(bottomPadding: Dp) {
     val c = LocalContainer.current
     val state by c.together.state.collectAsState()
-    SubPage("Listen together", bottomPadding, horizontalPadding = 16.dp, spacing = 18.dp, subtitle = "With phones on the same Wi-Fi") {
+    SubPage(tr(R.string.listen_together), bottomPadding, horizontalPadding = 16.dp, spacing = 18.dp, subtitle = tr(R.string.with_phones_on_the_same_wi)) {
         when (val s = state) {
             TogetherState.Idle -> item("idle") { Idle() }
             is TogetherState.Joining -> item("joining") { Joining(s.hostName) }
@@ -99,20 +101,20 @@ private fun Idle() {
     }
     Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
         BigCard(
-            PrismIcons.Radio, "Start a session",
-            "Friends on this Wi-Fi join with a code. They can listen along on their phones or add songs to your queue.",
-            "Start", onClick = { c.together.host() },
+            PrismIcons.Radio, tr(R.string.start_a_session),
+            tr(R.string.friends_on_this_wi_fi_join),
+            tr(R.string.start), onClick = { c.together.host() },
         )
-        Group("Sessions nearby") {
+        Group(tr(R.string.sessions_nearby)) {
             if (nearby.isEmpty()) Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 com.prism.music.ui.components.PrismSpinner(Modifier.size(18.dp), stroke = 2.dp)
                 Spacer(Modifier.width(12.dp))
-                Text("Looking on this network…", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(tr(R.string.looking_on_this_network), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             nearby.forEach { n ->
-                Item(n.name, "Tap to join with their code", onClick = { joinTarget = n }, icon = PrismIcons.Groups)
+                Item(n.name, tr(R.string.tap_to_join_with_their_code), onClick = { joinTarget = n }, icon = PrismIcons.Groups)
             }
-            Item("Join with an address", "If a session doesn't show up here", onClick = { manual = true })
+            Item(tr(R.string.join_with_an_address), tr(R.string.if_a_session_doesn_t_show), onClick = { manual = true })
         }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = 8.dp)) }
     }
@@ -122,7 +124,7 @@ private fun Idle() {
             scope.launch { error = c.together.join(n.host, n.port, code, n.name) }
         }
     }
-    if (manual) JoinDialog("a session", askAddress = true, onDismiss = { manual = false }) { address, code ->
+    if (manual) JoinDialog(tr(R.string.a_session), askAddress = true, onDismiss = { manual = false }) { address, code ->
         manual = false
         val host = address.substringBefore(':').trim()
         val port = address.substringAfter(':', "").trim().toIntOrNull() ?: Together.PORT
@@ -136,21 +138,21 @@ private fun JoinDialog(name: String, askAddress: Boolean, onDismiss: () -> Unit,
     var code by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Join $name") },
+        title = { Text(tr(R.string.join, name)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (askAddress) com.prism.music.ui.components.PrismTextField(
-                    address, { address = it.trim() }, label = { Text("Address on the host's screen") }, placeholder = { Text("192.168.1.20") },
+                    address, { address = it.trim() }, label = { Text(tr(R.string.address_on_the_host_s_screen)) }, placeholder = { Text("192.168.1.20") },
                     singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri), modifier = Modifier.fillMaxWidth(),
                 )
                 com.prism.music.ui.components.PrismTextField(
-                    code, { code = it.filter(Char::isDigit).take(4) }, label = { Text("Session code") }, singleLine = true,
+                    code, { code = it.filter(Char::isDigit).take(4) }, label = { Text(tr(R.string.session_code)) }, singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword), modifier = Modifier.fillMaxWidth(),
                 )
             }
         },
-        confirmButton = { PrismTextButton(onClick = { onJoin(address, code) }, enabled = code.length == 4 && (!askAddress || address.isNotBlank())) { Text("Join") } },
-        dismissButton = { PrismTextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { PrismTextButton(onClick = { onJoin(address, code) }, enabled = code.length == 4 && (!askAddress || address.isNotBlank())) { Text(tr(R.string.join_2)) } },
+        dismissButton = { PrismTextButton(onClick = onDismiss) { Text(tr(R.string.cancel)) } },
     )
 }
 
@@ -159,7 +161,7 @@ private fun Joining(name: String) {
     Row(Modifier.fillMaxWidth().padding(24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
         com.prism.music.ui.components.PrismSpinner(Modifier.size(22.dp), stroke = 2.dp)
         Spacer(Modifier.width(14.dp))
-        Text("Joining $name…", style = MaterialTheme.typography.titleMedium)
+        Text(tr(R.string.joining, name), style = MaterialTheme.typography.titleMedium)
     }
 }
 
@@ -175,34 +177,34 @@ private fun Hosting(s: TogetherState.Hosting) {
             Modifier.fillMaxWidth().featurePane(ui.card).padding(22.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Eyebrow("Session code", color = ink.copy(alpha = 0.8f))
+            Eyebrow(tr(R.string.session_code), color = ink.copy(alpha = 0.8f))
             Text(
                 s.code.toCharArray().joinToString(" "), color = ink,
                 style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Light, letterSpacing = 0.08.em, brush = com.prism.music.ui.theme.PrismTokens.spectrum(com.prism.music.ui.theme.LocalIsDark.current)),
             )
             Text(
-                "Friends open Listen together in Prism on the same Wi-Fi, tap your session and enter this code.",
+                tr(R.string.friends_open_listen_together_in_prism),
                 style = MaterialTheme.typography.bodySmall, color = ink.copy(alpha = 0.85f), textAlign = TextAlign.Center,
             )
             s.address?.let {
                 Text(
-                    "Not showing up for them? They can join with " + if (s.port == Together.PORT) it else "$it:${s.port}",
+                    tr(R.string.not_showing_up_for_them_they) + if (s.port == Together.PORT) it else "$it:${s.port}",
                     style = MaterialTheme.typography.labelMedium, color = ink.copy(alpha = 0.7f), textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 8.dp),
                 )
             }
         }
-        NowPlayingCard(song, if (song == null) "Play something and everyone hears it" else "Everyone in the session hears this")
-        Group("Listening (${s.guests.size})") {
-            if (s.guests.isEmpty()) Note("No one yet.")
+        NowPlayingCard(song, if (song == null) tr(R.string.play_something_and_everyone_hears_it) else tr(R.string.everyone_in_the_session_hears_this))
+        Group(tr(R.string.listening_2, s.guests.size)) {
+            if (s.guests.isEmpty()) Note(tr(R.string.no_one_yet))
             s.guests.forEach { g -> Item(g, null, onClick = {}, icon = PrismIcons.Headphones) }
-            Toggle("Guests can control playback", "Play, pause and skip from their phones too. They can always add songs.", s.guestsControl) { c.together.setGuestsControl(it) }
+            Toggle(tr(R.string.guests_can_control_playback), tr(R.string.play_pause_and_skip_from_their), s.guestsControl) { c.together.setGuestsControl(it) }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             PrismFilledTonalButton(onClick = { nav.go(Routes.SEARCH) }, Modifier.weight(1f)) {
-                Icon(PrismIcons.Search, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Find songs")
+                Icon(PrismIcons.Search, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(tr(R.string.find_songs))
             }
-            PrismOutlinedButton(onClick = { c.together.leave() }, Modifier.weight(1f)) { Text("End session") }
+            PrismOutlinedButton(onClick = { c.together.leave() }, Modifier.weight(1f)) { Text(tr(R.string.end_session)) }
         }
     }
 }
@@ -213,29 +215,29 @@ private fun GuestView(s: TogetherState.Guest) {
     val nav = LocalNavigator.current
     val now = s.now
     Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
-        NowPlayingCard(now?.songs?.firstOrNull(), "${s.hostName}'s session" + (now?.guests?.size?.takeIf { it > 1 }?.let { " · $it listening" } ?: ""))
+        NowPlayingCard(now?.songs?.firstOrNull(), tr(R.string.s_session, s.hostName) + (now?.guests?.size?.takeIf { it > 1 }?.let { tr(R.string.listening_3, it) } ?: ""))
         if (now?.canControl == true) HostControls(now)
-        Group("On this phone") {
+        Group(tr(R.string.on_this_phone)) {
             Toggle(
-                "Play here too", "The same music plays on this phone, in step with ${s.hostName}'s. Off: just add songs to their queue.",
+                tr(R.string.play_here_too), tr(R.string.the_same_music_plays_on_this, s.hostName),
                 s.listenHere,
             ) { c.together.setListenHere(it) }
             if (s.listenHere && !s.inSync) Item(
-                "Out of step", "You paused or played something else here. Tap to catch up with ${s.hostName}.",
+                tr(R.string.out_of_step), tr(R.string.you_paused_or_played_something_else, s.hostName),
                 onClick = { c.together.resync() }, icon = PrismIcons.Sync,
             )
         }
         val upcoming = now?.songs?.drop(1).orEmpty()
-        if (upcoming.isNotEmpty()) Group("Up next") {
+        if (upcoming.isNotEmpty()) Group(tr(R.string.up_next)) {
             upcoming.take(8).forEach { song -> QueueLine(song) }
-            if (upcoming.size > 8) Note("…and ${upcoming.size - 8} more")
+            if (upcoming.size > 8) Note(tr(R.string.and_more_3, upcoming.size - 8))
         }
-        Note("Add songs from any song's ⋯ menu: they go to ${s.hostName}'s queue.")
+        Note(tr(R.string.add_songs_from_any_song_s_2, s.hostName))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             PrismButton(onClick = { nav.go(Routes.SEARCH) }, Modifier.weight(1f)) {
-                Icon(PrismIcons.Search, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Add songs")
+                Icon(PrismIcons.Search, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(tr(R.string.add_songs))
             }
-            PrismOutlinedButton(onClick = { c.together.leave() }, Modifier.weight(1f)) { Text("Leave") }
+            PrismOutlinedButton(onClick = { c.together.leave() }, Modifier.weight(1f)) { Text(tr(R.string.leave)) }
         }
     }
 }
@@ -245,17 +247,17 @@ private fun GuestView(s: TogetherState.Guest) {
 private fun HostControls(now: Msg.State) {
     val c = LocalContainer.current
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = { c.together.control("previous") }) { Icon(PrismIcons.Previous, "Previous", Modifier.size(30.dp)) }
+        IconButton(onClick = { c.together.control("previous") }) { Icon(PrismIcons.Previous, tr(R.string.widget_previous), Modifier.size(30.dp)) }
         Spacer(Modifier.width(18.dp))
         Box(
             Modifier.size(58.dp).clip(CircleShape).background(MaterialTheme.colorScheme.onSurface).border(1.5.dp, com.prism.music.ui.theme.PrismTokens.spectrumRing(), CircleShape)
                 .clickable { c.together.control(if (now.playing) "pause" else "play") },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(if (now.playing) PrismIcons.Pause else PrismIcons.Play, if (now.playing) "Pause" else "Play", Modifier.size(32.dp), tint = MaterialTheme.colorScheme.surface)
+            Icon(if (now.playing) PrismIcons.Pause else PrismIcons.Play, if (now.playing) tr(R.string.widget_pause) else tr(R.string.widget_play), Modifier.size(32.dp), tint = MaterialTheme.colorScheme.surface)
         }
         Spacer(Modifier.width(18.dp))
-        IconButton(onClick = { c.together.control("next") }) { Icon(PrismIcons.Next, "Next", Modifier.size(30.dp)) }
+        IconButton(onClick = { c.together.control("next") }) { Icon(PrismIcons.Next, tr(R.string.widget_next), Modifier.size(30.dp)) }
     }
 }
 
@@ -270,7 +272,7 @@ private fun NowPlayingCard(song: Song?, caption: String) {
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Eyebrow(caption)
-            Text(song?.title ?: "Nothing playing yet", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(song?.title ?: tr(R.string.nothing_playing_yet), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
             song?.let { Text(it.artistText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         }
     }
@@ -307,11 +309,11 @@ private fun BigCard(icon: androidx.compose.ui.graphics.vector.ImageVector, title
 
 @Composable
 private fun HowItWorks() {
-    Group("How it works") {
-        Note("• Everyone needs Prism on the same Wi-Fi, or on one phone's hotspot.")
-        Note("• Each phone streams the music itself, so guests use their own data or Wi-Fi.")
-        Note("• Phones talk to each other directly. There's no Prism server, and nothing is shared once the session ends.")
-        Note("• Some public and work Wi-Fi keeps phones apart; a hotspot works there.")
+    Group(tr(R.string.how_it_works)) {
+        Note(tr(R.string.everyone_needs_prism_on_the_same))
+        Note(tr(R.string.each_phone_streams_the_music_itself))
+        Note(tr(R.string.phones_talk_to_each_other_directly))
+        Note(tr(R.string.some_public_and_work_wi_fi))
         Spacer(Modifier.height(6.dp))
     }
 }

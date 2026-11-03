@@ -1,5 +1,7 @@
 package com.prism.music.ui.components
 
+import com.prism.music.R
+import com.prism.music.tr
 import com.prism.music.ui.theme.PrismIcons
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -105,7 +107,7 @@ fun ShareSheet(target: ShareTarget, onDismiss: () -> Unit) {
         scope.launch {
             val text = link?.let { "$message\n$it" } ?: message
             if (!shareLayer(context, card, "prism-share.png", text, chooserTitle)) {
-                Toast.makeText(context, "Couldn't make the picture to share", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, tr(R.string.couldn_t_make_the_picture_to), Toast.LENGTH_SHORT).show()
             }
             busy = false
         }
@@ -113,7 +115,7 @@ fun ShareSheet(target: ShareTarget, onDismiss: () -> Unit) {
 
     PrismSheet(onDismiss = onDismiss) { close ->
         Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Share ${target.kind.lowercase()}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(tr(R.string.share_2, target.kind.lowercase()), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(14.dp))
 
             // The card, as it'll be sent. It's recorded at 1080 px wide whatever its size here.
@@ -131,33 +133,33 @@ fun ShareSheet(target: ShareTarget, onDismiss: () -> Unit) {
                     if (ok) {
                         privacy = "UNLISTED"
                         c.library.refreshCollections()
-                        Toast.makeText(context, "Anyone with the link can now open it", Toast.LENGTH_SHORT).show()
-                    } else Toast.makeText(context, "Couldn't change who can see it", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, tr(R.string.anyone_with_the_link_can_now), Toast.LENGTH_SHORT).show()
+                    } else Toast.makeText(context, tr(R.string.couldn_t_change_who_can_see), Toast.LENGTH_SHORT).show()
                 }
             }
 
             Spacer(Modifier.height(18.dp))
             Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
                 if (target.url != null) {
-                    ShareAction(PrismIcons.Copy, "Copy link") {
+                    ShareAction(PrismIcons.Copy, tr(R.string.copy_link)) {
                         copy(context, link!!)
                         close {}
                     }
-                    ShareAction(PrismIcons.Link, "Send link") {
-                        close { sendText(context, "$message\n$link", "Share ${target.kind.lowercase()}") }
+                    ShareAction(PrismIcons.Link, tr(R.string.send_link)) {
+                        close { sendText(context, "$message\n$link", tr(R.string.share_2, target.kind.lowercase())) }
                     }
                 } else if (target.songs.isNotEmpty()) {
-                    ShareAction(PrismIcons.Queue, "Track list") {
-                        close { sendText(context, trackList(target), "Share ${target.title}") }
+                    ShareAction(PrismIcons.Queue, tr(R.string.track_list)) {
+                        close { sendText(context, trackList(target), tr(R.string.share_2, target.title)) }
                     }
                 }
-                ShareAction(PrismIcons.Photo, if (busy) "Preparing…" else "Share image") { shareImage("Share ${target.kind.lowercase()}") }
-                ShareAction(PrismIcons.More, "More") {
-                    close { sendText(context, link?.let { "$message\n$it" } ?: trackList(target), "Share ${target.kind.lowercase()}") }
+                ShareAction(PrismIcons.Photo, if (busy) tr(R.string.preparing) else tr(R.string.share_image)) { shareImage(tr(R.string.share_2, target.kind.lowercase())) }
+                ShareAction(PrismIcons.More, tr(R.string.more)) {
+                    close { sendText(context, link?.let { "$message\n$it" } ?: trackList(target), tr(R.string.share_2, target.kind.lowercase())) }
                 }
             }
             if (target.url == null) Text(
-                "${target.title} lives in Prism, so there's no link to it. The picture and the track list share what's in it.",
+                tr(R.string.lives_in_prism_so_there_s, target.title),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
                 modifier = Modifier.padding(start = 28.dp, end = 28.dp, top = 14.dp),
             )
@@ -176,11 +178,11 @@ private fun PrivateNotice(changing: Boolean, onMakeShareable: () -> Unit) {
         Icon(PrismIcons.Lock, null, Modifier.size(20.dp), tint = scheme.onSurfaceVariant)
         Spacer(Modifier.width(12.dp))
         Text(
-            "This playlist is private, so its link only works for you.",
+            tr(R.string.this_playlist_is_private_so_its),
             Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
         )
         if (changing) com.prism.music.ui.components.PrismSpinner(Modifier.padding(horizontal = 14.dp).size(18.dp), stroke = 2.dp)
-        else PrismTextButton(onClick = onMakeShareable) { Text("Make unlisted") }
+        else PrismTextButton(onClick = onMakeShareable) { Text(tr(R.string.make_unlisted)) }
     }
 }
 
@@ -233,7 +235,7 @@ private fun ShareCard(target: ShareTarget, frost: FrostImage?, palette: ArtPalet
             )
             Spacer(Modifier.weight(1f))
             Text(
-                if (target.url != null) (if (com.prism.music.ui.theme.LocalAppSettings.current.shareYoutubeLinks && com.prism.music.data.ShareLinks.asYouTube(target.url) != target.url) "Listen on YouTube" else "Listen on YouTube Music") else com.prism.music.data.model.songCount(target.songs.size), color = Color.White.copy(alpha = 0.7f),
+                if (target.url != null) (if (com.prism.music.ui.theme.LocalAppSettings.current.shareYoutubeLinks && com.prism.music.data.ShareLinks.asYouTube(target.url) != target.url) tr(R.string.listen_on_youtube) else tr(R.string.listen_on_youtube_music)) else com.prism.music.data.model.songCount(target.songs.size), color = Color.White.copy(alpha = 0.7f),
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
             )
             Spacer(Modifier.height(2.dp))
@@ -247,7 +249,7 @@ private fun trackList(t: ShareTarget): String = buildString {
     if (t.subtitle.isNotBlank()) append(" · ").append(t.subtitle)
     append('\n')
     t.songs.take(50).forEachIndexed { i, s -> append("${i + 1}. ${s.title} — ${s.artistText}\n") }
-    if (t.songs.size > 50) append("…and ${t.songs.size - 50} more\n")
+    if (t.songs.size > 50) append(tr(R.string.and_more, t.songs.size - 50))
 }.trim()
 
 private fun sendText(context: Context, text: String, title: String) {
@@ -256,13 +258,13 @@ private fun sendText(context: Context, text: String, title: String) {
 }
 
 private fun copy(context: Context, text: String) {
-    context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("Link", text))
+    context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText(tr(R.string.link), text))
     // Android 13 and up confirm copies themselves.
-    if (Build.VERSION.SDK_INT < 33) Toast.makeText(context, "Link copied", Toast.LENGTH_SHORT).show()
+    if (Build.VERSION.SDK_INT < 33) Toast.makeText(context, tr(R.string.link_copied), Toast.LENGTH_SHORT).show()
 }
 
 /** The share target for a song. */
-fun Song.shareTarget() = ShareTarget(title, artistText, when { isEpisode -> "Episode"; isVideo -> "Video"; else -> "Song" }, thumbnail, com.prism.music.data.ShareLinks.song(id))
+fun Song.shareTarget() = ShareTarget(title, artistText, when { isEpisode -> tr(R.string.episode); isVideo -> tr(R.string.video); else -> tr(R.string.song) }, thumbnail, com.prism.music.data.ShareLinks.song(id))
 
 /** The share target for a card ([art]: the picture shown for it, e.g. a custom playlist cover). */
 fun com.prism.music.data.model.BrowseItem.shareTarget(art: String? = thumbnail): ShareTarget {
@@ -271,11 +273,13 @@ fun com.prism.music.data.model.BrowseItem.shareTarget(art: String? = thumbnail):
     return when (this) {
         is com.prism.music.data.model.SongItem -> song.shareTarget()
         is com.prism.music.data.model.AlbumItem -> {
-            val kind = parts.firstOrNull { it in setOf("Album", "Single", "EP") } ?: "Album"
-            ShareTarget(title, parts.filter { it != kind && !it.matches(Regex("\\d{4}")) }.joinToString(", "), kind, art, url)
+            // YouTube's kinds as Prism reads them (English, Parser.canonical) or already in Prism's language; shown translated.
+            val found = parts.firstOrNull { it in com.prism.music.data.model.RELEASE_KINDS || it == tr(R.string.album) || it == tr(R.string.single) }
+            val kind = found?.let { f -> com.prism.music.data.model.kindName(f) ?: f } ?: tr(R.string.album)
+            ShareTarget(title, parts.filter { it != found && !it.matches(Regex("\\d{4}")) }.joinToString(", "), kind, art, url)
         }
-        is com.prism.music.data.model.ArtistItem -> ShareTarget(title, parts.filter { it != "Artist" }.joinToString(" · "), "Artist", art, url, round = true)
-        is com.prism.music.data.model.PodcastItem -> ShareTarget(title, subtitle, "Podcast", art, url)
-        else -> ShareTarget(title, parts.filter { it != "Playlist" }.joinToString(" · "), "Playlist", art, url)
+        is com.prism.music.data.model.ArtistItem -> ShareTarget(title, parts.filter { it != "Artist" }.joinToString(" · "), tr(R.string.artist), art, url, round = true)
+        is com.prism.music.data.model.PodcastItem -> ShareTarget(title, subtitle, tr(R.string.podcast), art, url)
+        else -> ShareTarget(title, parts.filter { it != "Playlist" }.joinToString(" · "), tr(R.string.playlist), art, url)
     }
 }

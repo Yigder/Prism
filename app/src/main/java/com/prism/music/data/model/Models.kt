@@ -51,7 +51,11 @@ sealed interface BrowseItem {
     val thumbnail: String?
 }
 
-data class SongItem(val song: Song) : BrowseItem {
+/**
+ * A song or video in a list. [plays]: how often it's been played, as a search result says ("189M plays", a video's
+ * "120M views"), in any language; null where nothing says (1.8.0: search ranks songs of the same title by it).
+ */
+data class SongItem(val song: Song, val plays: Long? = null) : BrowseItem {
     override val id get() = song.id
     override val title get() = song.title
     override val subtitle get() = song.artistText
@@ -150,17 +154,22 @@ data class Shelf(
  * Home's Quick picks. Its title is in the account's language ("Selección rápida", "Schnellauswahl"…), so after the
  * English title it's known by its shape: the first carousel of song rows. (Matched by title alone, Home showed your
  * recent plays in its place for anyone using YouTube in another language.) Shelves of your own recent plays ("Listen
- * again", "Speed dial", in any language) are never taken for it.
+ * again", "Speed dial", in any language: they carry your name, [owner]) are never taken for it.
  */
-fun List<Shelf>.quickPicks(): Shelf? = firstOrNull { it.title.equals("Quick picks", true) }
-    ?: firstOrNull { s -> s.rows && s.title.lowercase() !in RECENT_SHELVES && s.items.count { it is SongItem } * 2 > s.items.size }
+fun List<Shelf>.quickPicks(owner: String? = null): Shelf? = firstOrNull { it.title.equals("Quick picks", true) }
+    ?: firstOrNull { s -> s.rows && s.title.lowercase() !in RECENT_SHELVES && !s.yours(owner) && s.items.count { it is SongItem } * 2 > s.items.size }
 
 /**
  * YouTube's own Speed dial (or, where it isn't offered, "Listen again"): what Home's Speed dial section starts from.
- * In another language (#131: "Marcación rápida") it's known by its shape, cards stacked a few per column.
+ * In another language (#131: "Marcación rápida", #163: "Vuelve a escucharlo") it's the shelf headed with your name
+ * ([owner], the account's), as YouTube Music heads it in every language; else by its old shape, cards stacked a few
+ * per column (YouTube stopped stacking Listen again by 2026-10).
  */
-fun List<Shelf>.speedDial(): Shelf? = firstOrNull { it.title.equals("Speed dial", true) } ?: firstOrNull { it.title.equals("Listen again", true) }
-    ?: firstOrNull { it.stacked && !it.rows }
+fun List<Shelf>.speedDial(owner: String? = null): Shelf? = firstOrNull { it.title.equals("Speed dial", true) } ?: firstOrNull { it.title.equals("Listen again", true) }
+    ?: firstOrNull { it.yours(owner) && !it.rows } ?: firstOrNull { it.stacked && !it.rows }
+
+/** Headed with the account's own name: a shelf of your history (#163). */
+private fun Shelf.yours(owner: String?) = !owner.isNullOrBlank() && strapline?.trim().equals(owner.trim(), ignoreCase = true)
 
 /** Home shelves that are your own history, by their English titles. */
 private val RECENT_SHELVES = setOf("listen again", "speed dial", "recently played", "keep listening")
@@ -268,6 +277,8 @@ data class NextResult(
     val counterparts: Map<String, String>,
     /** The other half of each pairing (the song for a music video, and the reverse), by the panel item's id. */
     val counterpartSongs: Map<String, Song> = emptyMap(),
+    /** The song's "Related" tab (you might also like, similar artists), to read with [com.prism.music.data.innertube.YouTubeMusic.related]. */
+    val relatedBrowseId: String? = null,
 ) {
     /**
      * The queue as songs (#39): a music video that YouTube pairs with its song is swapped for the song (the video stays
@@ -328,7 +339,7 @@ private val GOOGLE_SIZE = Regex("=(w\\d+-h\\d+|s\\d+)[^/]*$")
 private val YTIMG_NAME = Regex("/[a-z0-9_]+default\\.jpg.*$")
 
 /** "1 song", "12 songs". */
-fun songCount(n: Int): String = if (n == 1) "1 song" else "$n songs"
+fun songCount(n: Int): String = com.prism.music.trp(com.prism.music.R.plurals.n_songs, n)
 
 fun formatDuration(sec: Int): String {
     if (sec <= 0) return ""
@@ -349,3 +360,34 @@ fun parseDuration(text: String?): Int {
     if (parts.isEmpty()) return 0
     return parts.fold(0) { acc, p -> acc * 60 + p }
 }
+
+/**
+ * YouTube's word for what an item is, first in its subtitle ("Album • Artist • 2024"): kept in English so code can read
+ * it ([com.prism.music.data.innertube.Parser] turns the listener's language back into it), shown in their language.
+ */
+fun shownKinds(subtitle: String): String {
+    val first = subtitle.substringBefore(" • ")
+    val name = kindName(first) ?: return subtitle
+    return name + subtitle.substring(first.length)
+}
+
+/** YouTube's release kinds, in the English Prism reads them in ([com.prism.music.data.innertube.Parser]), never shown as they are. */
+val RELEASE_KINDS = setOf("Album", "Single", "EP")
+
+fun kindName(kind: String): String? = when (kind) {
+    "Song" -> com.prism.music.R.string.kind_song
+    "Video" -> com.prism.music.R.string.kind_video
+    "Album" -> com.prism.music.R.string.kind_album
+    "Single" -> com.prism.music.R.string.kind_single
+    "EP" -> com.prism.music.R.string.kind_ep
+    "Artist" -> com.prism.music.R.string.kind_artist
+    "Playlist" -> com.prism.music.R.string.kind_playlist
+    "Episode" -> com.prism.music.R.string.kind_episode
+    "Podcast" -> com.prism.music.R.string.kind_podcast
+    "Profile" -> com.prism.music.R.string.kind_profile
+    "Station" -> com.prism.music.R.string.kind_station
+    else -> null
+}?.let { com.prism.music.tr(it) }
+
+/** A song's Related tab (1.7.9): songs YouTube Music puts beside it, and artists like its own. */
+data class Related(val songs: List<Song>, val artists: List<ArtistItem>)

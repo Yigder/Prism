@@ -1,5 +1,7 @@
 package com.prism.music.ui.screens
 
+import com.prism.music.R
+import com.prism.music.tr
 import com.prism.music.ui.components.PrismSlider
 import com.prism.music.ui.components.PrismSwitch
 import com.prism.music.ui.theme.PrismIcons
@@ -98,12 +100,12 @@ fun MoreOptions(groups: List<String>, content: @Composable () -> Unit) {
     val ui = LocalUi.current
     Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(22.dp)) {
         Row(
-            Modifier.fillMaxWidth().clip(ui.card).pane(ui.card).clickable(onClickLabel = if (open) "Show fewer options" else "Show more options") { open = !open }
+            Modifier.fillMaxWidth().clip(ui.card).pane(ui.card).clickable(onClickLabel = if (open) tr(R.string.show_fewer_options) else tr(R.string.show_more_options)) { open = !open }
                 .padding(horizontal = 16.dp, vertical = ui.gap(14.dp)),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
-                Text(if (open) "Fewer options" else "More options", style = MaterialTheme.typography.bodyLarge)
+                Text(if (open) tr(R.string.fewer_options) else tr(R.string.more_options), style = MaterialTheme.typography.bodyLarge)
                 if (!open) Text(groups.joinToString(", "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Icon(if (open) PrismIcons.ChevronUp else PrismIcons.ChevronDown, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -141,7 +143,7 @@ fun Note(text: String) {
 @Composable
 fun InfoMark(open: Boolean, about: String, onClick: () -> Unit) {
     Icon(
-        PrismIcons.Info, if (open) "Hide details" else "More about $about",
+        PrismIcons.Info, if (open) tr(R.string.hide_details) else tr(R.string.more_about, about),
         Modifier.padding(start = 6.dp).size(28.dp).clip(androidx.compose.foundation.shape.CircleShape)
             .clickable(onClick = onClick).padding(6.dp),
         tint = if (open) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.ink3,
@@ -219,7 +221,7 @@ fun ShowChips(options: List<ShowOption>) {
             com.prism.music.ui.components.PrismChip(
                 o.on, { o.onChange(!o.on) }, o.label,
                 icon = if (o.on) PrismIcons.Check else null,
-                modifier = androidx.compose.ui.Modifier.semantics { role = androidx.compose.ui.semantics.Role.Checkbox; stateDescription = if (o.on) "Shown" else "Hidden" },
+                modifier = androidx.compose.ui.Modifier.semantics { role = androidx.compose.ui.semantics.Role.Checkbox; stateDescription = if (o.on) tr(R.string.shown) else tr(R.string.hidden) },
             )
         }
     }
@@ -291,6 +293,12 @@ fun SliderSetting(
         PrismSlider(v, { v = it }, enabled = enabled, valueRange = range, steps = steps, onValueChangeFinished = { onSave(v) })
     }
 }
+
+/**
+ * A slider's value as a word and its number ("Airy · 140%"): the word says what it does, the number lets you come back
+ * to exactly the same place (#209: some sliders only said "Balanced").
+ */
+fun worded(word: String, v: Float) = "$word · ${kotlin.math.round(v * 100).toInt()}%"
 
 /**
  * A round tick: filled in ink with a check when on, an empty hairline circle when off (the Tabs list). The 48 dp row

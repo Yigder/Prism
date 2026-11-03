@@ -1,5 +1,7 @@
 package com.prism.music.ui.components
 
+import com.prism.music.R
+import com.prism.music.tr
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -49,25 +51,39 @@ import kotlin.math.roundToInt
 fun SwipeToQueue(song: Song, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     val c = LocalContainer.current
     val context = LocalContext.current
-    val haptics = rememberHaptics()
     val together by c.together.state.collectAsState()
+    SwipeToQueue({ next ->
+        val guest = (together as? com.prism.music.playback.together.TogetherState.Guest)?.takeIf { !song.isLocal }
+        val text = if (guest != null) {
+            c.together.suggest(song, next = next)
+            tr(R.string.sent_to, guest.hostName)
+        } else {
+            if (next) c.player.playNext(song) else c.player.addToQueue(song)
+            if (next) tr(R.string.playing_next) else tr(R.string.added_to_queue)
+        }
+        android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_SHORT).show()
+    }, modifier, content)
+}
+
+/** An album's or playlist's row swiped the same way: all its songs play next or go on the end of the queue (#248). */
+@Composable
+fun SwipeToQueue(item: com.prism.music.data.model.BrowseItem, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val c = LocalContainer.current
+    val context = LocalContext.current
+    val target = item.playable() ?: return content()
+    SwipeToQueue({ next -> queuePlayable(c, context, target, item.title, next) }, modifier, content)
+}
+
+/** The swipe itself: [onQueue] with true to the right (play next), false to the left (end of the queue). */
+@Composable
+fun SwipeToQueue(onQueue: (next: Boolean) -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val haptics = rememberHaptics()
     val density = LocalDensity.current
     val mark = with(density) { 84.dp.toPx() }
     val reach = with(density) { 150.dp.toPx() }
     var offset by remember { mutableFloatStateOf(0f) }
     val scheme = MaterialTheme.colorScheme
-
-    fun queue(next: Boolean) {
-        val guest = (together as? com.prism.music.playback.together.TogetherState.Guest)?.takeIf { !song.isLocal }
-        val text = if (guest != null) {
-            c.together.suggest(song, next = next)
-            "Sent to ${guest.hostName}"
-        } else {
-            if (next) c.player.playNext(song) else c.player.addToQueue(song)
-            if (next) "Playing next" else "Added to queue"
-        }
-        android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_SHORT).show()
-    }
+    fun queue(next: Boolean) = onQueue(next)
 
     Box(modifier.fillMaxWidth().clipToBounds()) {
         // What the swipe uncovers, in the gap it opens: tinted once letting go would do it.
@@ -94,7 +110,7 @@ fun SwipeToQueue(song: Song, modifier: Modifier = Modifier, content: @Composable
                     if (abs(x) > mark * 0.7f) {
                         if (next) Spacer(Modifier.width(8.dp))
                         Text(
-                            if (next) "Play next" else "Add to queue", color = ink, style = MaterialTheme.typography.labelLarge,
+                            if (next) tr(R.string.play_next) else tr(R.string.add_to_queue), color = ink, style = MaterialTheme.typography.labelLarge,
                             maxLines = 1, overflow = TextOverflow.Clip,
                         )
                         if (!next) Spacer(Modifier.width(8.dp))

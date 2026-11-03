@@ -79,9 +79,16 @@ class LocalMusic(private val context: Context, private val scope: CoroutineScope
             MediaStore.Audio.Media.ALBUM, MediaStore.Audio.Media.ALBUM_ID, MediaStore.Audio.Media.DURATION,
             MediaStore.Audio.Media.TRACK, MediaStore.Audio.Media.YEAR, MediaStore.Audio.Media.DATE_ADDED,
             MediaStore.Audio.Media.MIME_TYPE, MediaStore.Audio.Media.SIZE,
+            // The folder: Android names an untagged song's album after it (#143).
+            if (android.os.Build.VERSION.SDK_INT >= 29) MediaStore.Audio.Media.RELATIVE_PATH else @Suppress("DEPRECATION") MediaStore.Audio.Media.DATA,
         )
-        // Music only (not ringtones, recordings or podcasts' downloads), and long enough to be a song.
-        val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0 AND ${MediaStore.Audio.Media.DURATION} >= ?"
+        val folders = HashMap<Long, String>()
+        // Music only (not ringtones, recordings or podcasts' downloads), and long enough to be a song. Some FLACs come in
+        // with no length or not marked as music (Reddit, 1.7.6): FLAC is never a ringtone or a recording, so it's taken
+        // either way, and a file with no length has it read from the file below.
+        val flac = "${MediaStore.Audio.Media.MIME_TYPE} IN ('audio/flac', 'audio/x-flac')"
+        val selection = "(${MediaStore.Audio.Media.IS_MUSIC} != 0 OR $flac) AND " +
+            "(${MediaStore.Audio.Media.DURATION} >= ? OR ${MediaStore.Audio.Media.DURATION} IS NULL OR ${MediaStore.Audio.Media.DURATION} = 0)"
         // Whether each album has artwork, looked at once per album (asking for art that isn't there fails every time the
         // notification or a list asks, so songs without any get none).
         val art = HashMap<Long, String?>()
@@ -98,21 +105,30 @@ class LocalMusic(private val context: Context, private val scope: CoroutineScope
                     val id = c.getLong(0)
                     val title = c.getString(1)?.takeIf { it.isNotBlank() } ?: continue
                     val albumId = c.getLong(4)
+                    val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)
+                    val lengthMs = c.getLong(5).takeIf { it > 0 } ?: lengthOf(uri, "$id:${c.getLong(10)}") ?: continue
+                    if (lengthMs < MIN_DURATION_MS) continue
                     val song = Song(
                         id = Song.LOCAL_PREFIX + id,
                         title = title,
                         artists = artistsOf(c.getString(2)),
                         album = c.getString(3)?.takeIf { it.isNotBlank() && it != UNKNOWN }?.let { AlbumRef(it) },
-                        durationSec = (c.getLong(5) / 1000).toInt(),
+                        durationSec = (lengthMs / 1000).toInt(),
                     )
                     out += Track(
-                        song, ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id), albumId,
+                        song, uri, albumId,
                         // MediaStore's TRACK is disc × 1000 + track.
                         c.getInt(6) % 1000, c.getInt(7), c.getLong(8) * 1000, c.getString(9) ?: "", c.getLong(10),
                     )
+                    folderName(c.getString(11))?.let { folders[id] = it }
                 }
             }
         }.onFailure { Log.w(TAG, "scan failed", it) }
+        // Songs whose "album" is only their folder's name (no album tag): shown without an album, and never given
+        // another file's cover as "the album's" (#143: M4As in a "Quick Share" folder all showing one song's cover).
+        untagged(out, folders).takeIf { it.isNotEmpty() }?.let { ids ->
+            out.replaceAll { t -> if (t.song.id in ids) t.copy(song = t.song.copy(album = null)) else t }
+        }
         // The list shows as soon as the files are known; covers follow (opening every album's artwork took long
         // enough on a big library that the page sat on its spinner).
         publish(out)
@@ -139,6 +155,50 @@ class LocalMusic(private val context: Context, private val scope: CoroutineScope
     private fun publish(tracks: List<Track>) {
         byId = tracks.associateBy { it.song.id }
         _tracks.value = tracks
+    }
+
+    private val albumTags by lazy { context.getSharedPreferences("local_album_tags", Context.MODE_PRIVATE) }
+    private val lengths by lazy { context.getSharedPreferences("local_lengths", Context.MODE_PRIVATE) }
+
+    /** A file's length when Android doesn't know it (some FLACs), read from the file once and remembered; 0: unreadable. */
+    private fun lengthOf(uri: Uri, key: String): Long? {
+        if (lengths.contains(key)) return lengths.getLong(key, 0).takeIf { it > 0 }
+        val ms = runCatching {
+            val r = android.media.MediaMetadataRetriever()
+            try {
+                r.setDataSource(context, uri)
+                r.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()
+            } finally { r.release() }
+        }.getOrNull() ?: 0L
+        lengths.edit().putLong(key, ms).apply()
+        return ms.takeIf { it > 0 }
+    }
+
+    /**
+     * Ids of songs with no album tag of their own: of the [untaggedCandidates], the ones whose file has no album in it,
+     * read once per file (by id and size) and remembered.
+     */
+    private fun untagged(tracks: List<Track>, folders: Map<Long, String>): Set<String> {
+        val out = HashSet<String>()
+        val learned = HashMap<String, Boolean>()
+        var reads = 0
+        for (t in untaggedCandidates(tracks, folders)) {
+            val key = "${t.song.id.removePrefix(Song.LOCAL_PREFIX)}:${t.size}"
+            val tagged = if (albumTags.contains(key)) albumTags.getBoolean(key, true) else {
+                if (reads >= MAX_COVER_READS) continue
+                reads++
+                runCatching {
+                    val r = android.media.MediaMetadataRetriever()
+                    try {
+                        r.setDataSource(context, t.uri)
+                        !r.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_ALBUM).isNullOrBlank()
+                    } finally { r.release() }
+                }.getOrDefault(true).also { learned[key] = it }
+            }
+            if (!tagged) out += t.song.id
+        }
+        if (learned.isNotEmpty()) albumTags.edit().apply { learned.forEach { (k, v) -> putBoolean(k, v) } }.apply()
+        return out
     }
 
     private val artDir by lazy { java.io.File(context.filesDir, "artwork/local").apply { mkdirs() } }
@@ -194,6 +254,27 @@ class LocalMusic(private val context: Context, private val scope: CoroutineScope
                     songs.mapTo(HashSet()) { it.song.album?.title?.trim()?.lowercase() }.size > 1 ||
                     songs.mapTo(HashSet()) { it.song.artists.firstOrNull()?.name?.trim()?.lowercase() }.size > 1)
             }.keys
+
+        /**
+         * Songs that may have no album tag (#143): Android then names the album after the song's folder ("Quick Share",
+         * "Download"), so an album named exactly like the folder, on a song with no track number and no year (an
+         * untagged file has neither), is checked against the file itself. A tagged album in a folder of its own name
+         * nearly always has track numbers, so it's rarely read at all.
+         */
+        internal fun untaggedCandidates(tracks: List<Track>, folders: Map<Long, String>): List<Track> = tracks.filter { t ->
+            val album = t.song.album?.title ?: return@filter false
+            val folder = folders[t.song.id.removePrefix(Song.LOCAL_PREFIX).toLongOrNull()] ?: return@filter false
+            t.trackNumber <= 0 && t.year <= 0 && album.trim().equals(folder.trim(), ignoreCase = true)
+        }
+
+        /** The last folder of a MediaStore RELATIVE_PATH ("Download/Quick Share/") or file path (".../Quick Share/a.m4a"). */
+        internal fun folderName(path: String?): String? {
+            if (path.isNullOrBlank()) return null
+            val parts = path.trimEnd('/').split('/')
+            // A file path ends with the file's name; a relative path ends with the folder.
+            val folder = if (path.endsWith("/")) parts.lastOrNull() else parts.getOrNull(parts.size - 2)
+            return folder?.takeIf { it.isNotBlank() }
+        }
 
         /** "A; B" or "A / B" in a tag are several artists; "<unknown>" is none. */
         fun artistsOf(tag: String?): List<ArtistRef> {

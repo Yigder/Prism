@@ -1,5 +1,7 @@
 package com.prism.music.playback
 
+import com.prism.music.R
+import com.prism.music.tr
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
@@ -45,6 +47,8 @@ class MediaTree(private val c: AppContainer) {
         const val DJ = "dj:"
         /** A Prism playlist's folder ("pp:" + its "prism:…" id). */
         const val PRISM_LIST = "pp:"
+        /** A holiday mix's folder ("hm:" + its "season:…" id). */
+        const val HOLIDAY = "hm:"
         /** How many of each Home section's items show as tiles in the car. */
         private const val HOME_TILES = 8
     }
@@ -100,20 +104,20 @@ class MediaTree(private val c: AppContainer) {
         putString(androidx.media3.session.MediaConstants.EXTRAS_KEY_CONTENT_STYLE_GROUP_TITLE, title)
     }
 
-    fun root(): MediaItem = folder(ROOT, "Prism")
+    fun root(): MediaItem = folder(ROOT, tr(R.string.app_name))
 
     /** The root's own hints for the car: lists of songs, folders as cover tiles (when the grid's on). */
     fun rootExtras(): android.os.Bundle? = styled(browsableGrid = true, playableGrid = false)
 
-    fun recentRoot(): MediaItem = folder(RECENT, "Recently played", type = MediaMetadata.MEDIA_TYPE_PLAYLIST)
+    fun recentRoot(): MediaItem = folder(RECENT, tr(R.string.recently_played), type = MediaMetadata.MEDIA_TYPE_PLAYLIST)
 
     suspend fun children(parentId: String): List<MediaItem> = when {
         // Four tabs, as cars show a root's first four folders along the top (Liked songs and Downloads open Library).
         parentId == ROOT -> listOf(
-            folder(HOME, "Home", extras = styled(browsableGrid = true, playableGrid = true)),
-            folder(MADE_FOR_YOU, "Made for you", type = MediaMetadata.MEDIA_TYPE_FOLDER_PLAYLISTS, extras = styled(browsableGrid = true, playableGrid = false)),
-            folder(RECENT, "Recents", type = MediaMetadata.MEDIA_TYPE_PLAYLIST),
-            folder(LIBRARY, "Library", type = MediaMetadata.MEDIA_TYPE_FOLDER_PLAYLISTS, extras = styled(browsableGrid = true, playableGrid = false)),
+            folder(HOME, tr(R.string.home), extras = styled(browsableGrid = true, playableGrid = true)),
+            folder(MADE_FOR_YOU, tr(R.string.made_for_you), type = MediaMetadata.MEDIA_TYPE_FOLDER_PLAYLISTS, extras = styled(browsableGrid = true, playableGrid = false)),
+            folder(RECENT, tr(R.string.recents), type = MediaMetadata.MEDIA_TYPE_PLAYLIST),
+            folder(LIBRARY, tr(R.string.library), type = MediaMetadata.MEDIA_TYPE_FOLDER_PLAYLISTS, extras = styled(browsableGrid = true, playableGrid = false)),
         )
         // Home: every section's albums, playlists and songs as tiles under its heading (with the grid), like Spotify's
         // home; without the grid, the sections as folders, as before.
@@ -136,20 +140,26 @@ class MediaTree(private val c: AppContainer) {
         parentId == MADE_FOR_YOU -> {
             // What's kept is listed straight away (the car waits for nothing); anything due is made behind it.
             c.scope.launch { runCatching { c.forYou.refresh() } }
-            c.forYou.mixes.filterNotNull().first().filter { it.songs.isNotEmpty() }.map { m ->
+            // The season's holiday mixes first, in November and December (1.8.0), each made when it's opened.
+            val holiday = c.seasonal.shown().map { m ->
+                val cover = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { com.prism.music.ui.screens.HolidayCovers.file(c.app, m) }
+                folder(HOLIDAY + m.id, tr(m.name), tr(m.blurb), cover, MediaMetadata.MEDIA_TYPE_PLAYLIST)
+            }
+            holiday + c.forYou.mixes.filterNotNull().first().filter { it.songs.isNotEmpty() }.map { m ->
                 folder("fy:${m.id}", m.title, m.subtitle, m.covers.firstOrNull(), MediaMetadata.MEDIA_TYPE_PLAYLIST)
             }
         }
         parentId.startsWith("fy:") -> c.forYou.mix(parentId.removePrefix("fy:"))?.let { songList(parentId, it.title, it.songs) } ?: emptyList()
-        parentId == LIKED -> songList(parentId, "Liked songs", c.library.likedShown.value)
-        parentId == RECENT -> songList(parentId, "Recently played", c.library.recent.value)
-        parentId == DOWNLOADS -> songList(parentId, "Downloads", c.downloads.completedSongs())
+        parentId.startsWith(HOLIDAY) -> c.seasonal.mix(parentId.removePrefix(HOLIDAY))?.let { songList(parentId, it.title, it.songs) } ?: emptyList()
+        parentId == LIKED -> songList(parentId, tr(R.string.liked_songs), c.library.likedShown.value)
+        parentId == RECENT -> songList(parentId, tr(R.string.recently_played), c.library.recent.value)
+        parentId == DOWNLOADS -> songList(parentId, tr(R.string.downloads), c.downloads.completedSongs())
         parentId == LIBRARY -> {
             var playlists = c.library.playlists.value
             if (playlists.isEmpty() && c.settings.current.isLoggedIn) playlists = runCatching { c.ytm.libraryPlaylists() }.getOrDefault(emptyList())
             listOf(
-                folder(LIKED, "Liked songs", art = c.covers.custom("liked"), type = MediaMetadata.MEDIA_TYPE_PLAYLIST, fallback = "ic_auto_liked"),
-                folder(DOWNLOADS, "Downloads", type = MediaMetadata.MEDIA_TYPE_PLAYLIST, fallback = "ic_auto_downloads"),
+                folder(LIKED, tr(R.string.liked_songs), art = c.covers.custom("liked"), type = MediaMetadata.MEDIA_TYPE_PLAYLIST, fallback = "ic_auto_liked"),
+                folder(DOWNLOADS, tr(R.string.downloads), type = MediaMetadata.MEDIA_TYPE_PLAYLIST, fallback = "ic_auto_downloads"),
             ) +
                 // Prism's own playlists (kept on the phone), as in the app's Library.
                 c.prismLibrary.lists.value.map { l ->
@@ -170,7 +180,7 @@ class MediaTree(private val c: AppContainer) {
             val parts = parentId.removePrefix("mix:").split('|')
             c.radio(parts.getOrNull(1)?.ifBlank { null }, parts[0], parts.getOrNull(2)?.ifBlank { null }, keepFirst = true)
         }.getOrNull()
-            ?.let { r -> songList(parentId, "Mix", r.songs) } ?: emptyList()
+            ?.let { r -> songList(parentId, tr(R.string.mix_2), r.songs) } ?: emptyList()
         parentId.startsWith("ar:") -> runCatching { c.ytm.artist(parentId.removePrefix("ar:")) }.getOrNull()
             ?.let { a -> songList(parentId, a.name, a.shelves.flatMap { s -> s.items.filterIsInstance<SongItem>().map { it.song } }.distinctBy { it.id }) }
             ?: emptyList()
@@ -190,8 +200,8 @@ class MediaTree(private val c: AppContainer) {
         folders[id] = title to list
         // "Shuffle play" and "Play as a DJ set" rows first, as in the phone app (the car has no buttons of its own for them).
         val top = if (list.size > 1) listOf(
-            startItem(SHUFFLE, id, "Shuffle play", com.prism.music.data.model.songCount(list.size), "ic_auto_shuffle"),
-            startItem(DJ, id, "Play as a DJ set", "In the order that blends best, mixed", "ic_auto_dj"),
+            startItem(SHUFFLE, id, tr(R.string.shuffle_play), com.prism.music.data.model.songCount(list.size), "ic_auto_shuffle"),
+            startItem(DJ, id, tr(R.string.play_as_a_dj_set), tr(R.string.in_the_order_that_blends_best), "ic_auto_dj"),
         ) else emptyList()
         return top + list.map(::playable)
     }
@@ -295,7 +305,10 @@ class ArtworkProvider : ContentProvider() {
         if (url.startsWith("file:")) {
             val file = File(Uri.parse(url).path ?: return null)
             val covers = File(ctx.filesDir, "covers").canonicalPath
-            if (!file.canonicalPath.startsWith(covers + File.separator) || !file.exists()) return null
+            // ...or a holiday mix's cover, drawn by Prism (1.8.0).
+            val holiday = File(ctx.filesDir, "seasonal").canonicalPath
+            val path = file.canonicalPath
+            if (!(path.startsWith(covers + File.separator) || path.startsWith(holiday + File.separator)) || !file.exists()) return null
             return ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
         }
         // A local song's album art (Library → On this phone), passed on from Android's media store; nothing else there.
@@ -335,7 +348,7 @@ class ArtworkProvider : ContentProvider() {
      * a JPEG, as [getType] says: YouTube's own mixes and "Liked Music" come as PNGs, and those were left blank.
      */
     private fun cached(ctx: android.content.Context, key: String, make: () -> ByteArray?): ParcelFileDescriptor? {
-        val name = MessageDigest.getInstance("SHA-1").digest(key.toByteArray()).joinToString("") { "%02x".format(it) }
+        val name = MessageDigest.getInstance(tr(R.string.sha_1)).digest(key.toByteArray()).joinToString("") { "%02x".format(it) }
         val dir = File(ctx.cacheDir, "auto_art2").apply { mkdirs() }
         val file = File(dir, "$name.jpg")
         if (!file.exists()) {
@@ -381,4 +394,4 @@ internal fun asJpeg(bytes: ByteArray): ByteArray? {
 private fun mixOrPlaylistId(item: PlaylistItem): String =
     if (!item.isMix) "pl:${item.id}"
     else if (item.seedVideoId == null && item.params == null) "mix:${item.id}"
-    else "mix:${item.id}|${item.seedVideoId.orEmpty()}|${item.params.orEmpty()}"
+    else tr(R.string.mix_3, item.id, item.seedVideoId.orEmpty(), item.params.orEmpty())

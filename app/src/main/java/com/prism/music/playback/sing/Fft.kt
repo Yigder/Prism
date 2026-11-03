@@ -7,15 +7,20 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
- * An in-place radix-2 complex FFT of a fixed size [n] (a power of two), with its twiddles and bit reversal worked out
- * once. Real and imaginary parts are separate arrays.
+ * An in-place complex FFT of a fixed size [n] (a power of two), with its twiddles and bit reversal worked out once.
+ * Real and imaginary parts are separate arrays.
+ *
+ * Radix 4 (1.8.x): each pass combines four transforms a quarter of the size, so a 4096-point one takes 6 passes over
+ * the data instead of radix 2's 12, and a quarter fewer multiplications; Sing's separation runs two of these for every
+ * 23 ms of song, and on a TV they took half as long as the network itself.
  */
 class Fft(val n: Int) {
     init { require(n >= 2 && n and (n - 1) == 0) { "FFT size must be a power of two" } }
 
     private val levels = Integer.numberOfTrailingZeros(n)
-    private val cosT = DoubleArray(n / 2) { cos(2 * PI * it / n) }
-    private val sinT = DoubleArray(n / 2) { sin(2 * PI * it / n) }
+    private val half = n / 2
+    private val cosT = DoubleArray(half) { cos(2 * PI * it / n) }
+    private val sinT = DoubleArray(half) { sin(2 * PI * it / n) }
     private val rev = IntArray(n) { Integer.reverse(it) ushr (32 - levels) }
 
     /** Forward transform (e^-i), or the inverse ([inverse], e^+i, scaled by 1/n). */
@@ -28,27 +33,53 @@ class Fft(val n: Int) {
             }
         }
         val sign = if (inverse) 1.0 else -1.0
-        var size = 2
-        while (size <= n) {
-            val half = size / 2
+        // An odd number of levels: one radix-2 pass first (pairs, no twiddles), the rest radix 4.
+        var quarter = 1
+        if (levels % 2 == 1) {
+            var i = 0
+            while (i < n) {
+                val r = re[i + 1]; val m = im[i + 1]
+                re[i + 1] = re[i] - r; im[i + 1] = im[i] - m
+                re[i] += r; im[i] += m
+                i += 2
+            }
+            quarter = 2
+        }
+        // After bit reversal, a block's four quarters are the transforms of samples 4k, 4k+2, 4k+1 and 4k+3.
+        while (quarter * 4 <= n) {
+            val size = quarter * 4
             val step = n / size
             var i = 0
             while (i < n) {
-                var k = 0
-                for (j in i until i + half) {
-                    val l = j + half
-                    val c = cosT[k]; val s = sign * sinT[k]
-                    val tr = re[l] * c - im[l] * s
-                    val ti = re[l] * s + im[l] * c
-                    re[l] = re[j] - tr; im[l] = im[j] - ti
-                    re[j] += tr; im[j] += ti
-                    k += step
+                for (k in 0 until quarter) {
+                    val a = i + k; val b = a + quarter; val c = b + quarter; val d = c + quarter
+                    // W^k on samples 4k+1, W^2k on 4k+2, W^3k on 4k+3 (W = e^∓2πi/size).
+                    val k1 = k * step
+                    val c1 = cosT[k1]; val s1 = sign * sinT[k1]
+                    val k2 = 2 * k1
+                    val c2 = cosT[k2]; val s2 = sign * sinT[k2]
+                    val k3 = 3 * k1
+                    val c3: Double; val s3: Double
+                    if (k3 < half) { c3 = cosT[k3]; s3 = sign * sinT[k3] } else { c3 = -cosT[k3 - half]; s3 = -sign * sinT[k3 - half] }
+                    val t0r = re[a]; val t0i = im[a]
+                    val t1r = re[c] * c1 - im[c] * s1; val t1i = re[c] * s1 + im[c] * c1
+                    val t2r = re[b] * c2 - im[b] * s2; val t2i = re[b] * s2 + im[b] * c2
+                    val t3r = re[d] * c3 - im[d] * s3; val t3i = re[d] * s3 + im[d] * c3
+                    val ar = t0r + t2r; val ai = t0i + t2i
+                    val br = t0r - t2r; val bi = t0i - t2i
+                    val cr = t1r + t3r; val ci = t1i + t3i
+                    // ∓i·(t1 − t3): forward −i, inverse +i.
+                    val dr = -sign * (t1i - t3i); val di = sign * (t1r - t3r)
+                    re[a] = ar + cr; im[a] = ai + ci
+                    re[b] = br + dr; im[b] = bi + di
+                    re[c] = ar - cr; im[c] = ai - ci
+                    re[d] = br - dr; im[d] = bi - di
                 }
                 i += size
             }
-            size *= 2
+            quarter = size
         }
-        if (inverse) for (i in 0 until n) { re[i] /= n; im[i] /= n }
+        if (inverse) { val s = 1.0 / n; for (i in 0 until n) { re[i] *= s; im[i] *= s } }
     }
 }
 

@@ -15,7 +15,7 @@ A free, open-source YouTube Music client for Android, with word-by-word lyrics, 
 
 ### [⬇ Download Prism.apk](../../releases/latest/download/Prism.apk)
 
-[What's new in 1.7.7](../../releases/tag/v1.7.7) · [Changelog](CHANGELOG.md) · [Watch the film](../../releases/download/v1.7.0/Prism-1.7-film.mp4)
+[What's new in 1.8.0](../../releases/tag/v1.8.0) · [Changelog](CHANGELOG.md) · [Watch the film](../../releases/download/v1.7.0/Prism-1.7-film.mp4)
 
 <a href="../../releases/download/v1.7.0/Prism-1.7-film.mp4"><img src="docs/screenshots/preview.gif" width="720" alt="Prism 1.7: word-by-word lyrics on the player. Click to watch the full film."></a>
 
@@ -29,13 +29,46 @@ A free, open-source YouTube Music client for Android, with word-by-word lyrics, 
 > [!NOTE]
 > Prism is an independent, unofficial app. It is not affiliated with, endorsed by, or connected to Google, YouTube or YouTube Music.
 
-## New in 1.7.7: shapes, icons, type and widgets your way
+## New in 1.8.0: Prism TV, and Settings made clearer
+
+The first 1.8 update: Prism on your TV, with your phone as its remote, and every Settings page gone through so each choice is in one place. Nothing you had set changes on the update.
+
+- **Prism TV:** the same app on Android TV and Google TV, with screens made for a remote: Home, Search (with the remote's microphone), your Library, and a full-screen player with big word-by-word lyrics, the queue, music videos and Sing. When music plays and the remote is put down, the TV dims to the song and its lyrics.
+- **Your phone as the TV's remote:** pair them once over your Wi-Fi (an encrypted link), and your phone can sign the TV in to YouTube Music, control it, add songs, send it your Look and bring it your history, likes and playlists. Pick the TV in Play on and the two stay in sync, as casting does.
+- **The TV your way:** every Home row the phone has, arranged with the remote; lyrics word by word in your style, a timing control, lyrics over music videos; Sing on mid-range TVs too.
+- **For the holidays:** Harvest and Holiday Looks with their own illustrations and colors, only in their month (Holiday Mode asks once), and holiday mixes from Prism on Home in season.
+- **Getting Prism onto a TV:** type code **8986606** into the Downloader app on the TV, or turn on Settings → Speakers, TVs & browser → **Share Prism with a TV** and type the address it shows.
+- **Settings, made clearer:** settings that worked together are one choice now (what plays when the queue ends, music videos, Crossfade, Trim silence, Glass, how screens change…), and search still finds them by their old names.
+- **The player, your way:** a drawing of your player where you tap any part to hide it, and a ⋯ menu in groups that you can rearrange with Edit this menu.
+- **Lyrics in four parts (#253):** start from one of six looks, then pick the animation, text, background and effects on their own.
+- **Also:** desk mode while the phone charges (#265), the tab bar's place on tablets (#264), a smaller download (#268), and better sound (#210): the same loudness for very quiet songs, silence trimmed only at a song's ends, crossfades that never repeat a moment. See the [changelog](CHANGELOG.md).
+
+## 1.7.9: Prism in your language
+
+The last of the 1.7.x updates: Prism in 31 languages, recommendations that keep finding new music, and your requests from GitHub and Reddit. New options start off, so nothing changes until you pick it.
+
+- **31 languages (#105):** Spanish, Portuguese, French, German, Italian, Dutch, Swedish, Polish, Czech, Romanian, Hungarian, Greek, Russian, Ukrainian, Turkish, Arabic, Persian, Hebrew, Hindi, Bengali, Urdu, Indonesian, Malay, Vietnamese, Thai, Filipino, Japanese, Korean and Chinese, plus English. Prism follows your phone's language or the one you pick, right to left where the language is, with dates, counts and YouTube's own words to match. Translated with AI (Claude): corrections are welcome (see [Contributing](CONTRIBUTING.md)).
+- **Recommendations that keep changing:** Daily Mixes that are half new every day, new music from YouTube Music's radio, "You might also like" and similar artists, no artist taking over, skipped suggestions resting for two months, and radio that sounds like radio.
+- **Play a different version:** a song playing as the wrong recording can be swapped for the right one, and stays swapped.
+- **You asked for it:** a slider on long playlists, genres off on playlists, the lyrics' source beside Sing, search in Local files (#225), fades between screens off (#227), sliders with their number (#209), Unlimited room for sung songs (#238), the widget's play button in another color, and more.
+- **Fixes:** "Response code: 400" at the end of songs (#206), updating with the Home tab off (#201), Load ahead offline (#213), music videos jumping ahead (#203), colors from the cover (#233, #235, #236), widgets (#217), backups between copies (#204) and more. See the [changelog](CHANGELOG.md).
+
+## 1.7.8: sound and listening, your way
+
+The seventh of the 1.7.x customization updates, Prism 1.6's look back as a choice, and a long list of your requests from GitHub and Reddit.
+
+- **Speed & pitch:** 0.5× to 2× and up to 12 semitones up or down, each on its own, with Slowed and Sped up a tap away, for now or every time Prism opens.
+- **Crossfade your way:** four curves (Smooth, Straight, Gentle, DJ cut), a mark on the progress bar where the next song comes in, and covers that blend into each other with the music.
+- **Volume and EQ:** Normalize volume at the level you like (-8 to -23 LUFS), albums kept as they are, your own equalizer presets shared as codes, and a preset of its own for the car, your earbuds or the speaker.
+- **Fades and silence:** the sleep timer fades out, pause and play can fade, and podcasts get their own Skip silence.
+- **Sing, simpler:** one microphone button by the lyrics; tap it for Sing, hold and slide for how much of the voice stays in.
+- **Classic Prism (#155):** Prism 1.6's look as a Look of its own, or just its icons, its bold type, its plain controls or the player's buttons apart.
+- **You asked for it:** Last.fm scrobbling (#133, #160), Replay for any dates (#149), choose what goes in a backup (#149), a queue made for editing (pick several, move or remove them, lock the order, #159), the player's controls over lyrics and the queue your way (#193, #197), swipe up for the queue (#200), the cover flying into the player (#199), Apple Lossless files (#135), lyrics into M4A files, a Prism Quick Settings tile, lock to portrait (#190), pause when muted (#157), Recently played as albums (#196), and more.
+- **Fixes:** other apps' play, pause and skip work again (#178, #187), Premium quality on phones where it failed (#179), translations that stopped (#198), a song that wouldn't play after a quality change, closing Prism from its notification, local covers (#143), the ⋯ menu's over-scroll (#147) and more. See the [changelog](CHANGELOG.md).
+
+## 1.7.7: shapes, icons, type and widgets your way
 
 The sixth of the 1.7.x customization updates, plus your requests from GitHub and Reddit.
-
-<img src="docs/screenshots/cover-shapes.jpg" width="32%" alt="Library's albums with flower-shaped covers">
-<img src="docs/screenshots/icon-packs.jpg" width="32%" alt="Icons & shapes: outline, duotone or filled icons, the tab's color, and the Prism, Cupertino, Facet and Dots packs">
-<img src="docs/screenshots/fonts.jpg" width="32%" alt="Text: every font as a card, with Legible and Dyslexia-friendly">
 
 - **Covers' shapes:** songs, albums and playlists, artists and the player's cover, each in its own shape (rounded, square, circle, squircle, flower, cookie, arch or slanted), corners as a slider, and buttons as a pill, rounded or square.
 - **Icons:** outline, duotone or filled, two new packs (**Facet** and **Dots**), and six more app icons (Dusk, Paper, Neon, Pastel, Line and Gold).
@@ -128,7 +161,7 @@ Ten lyric sources, karaoke timing first: Apple Music's timed lyrics (via Better 
 <td>
 
 ### Sing and DJ mode
-**Sing** separates the voice from the music on your phone (Deezer's Spleeter model, a one-time download), so you can sing over the real song. Keep a little of the lead or none, and shift the key up to six semitones.
+**Sing** separates the voice from the music on your phone (Deezer's Spleeter model, a one-time download), so you can sing over the real song. One button by the lyrics: tap for Sing, hold and slide to keep a little of the lead or none; shift the key up to six semitones.
 
 **DJ mode** finds each song's key and tempo and orders the queue around the Camelot wheel, with long blends where keys sit together. Pick Steady, Build up or Wind down. Works in Android Auto too.
 
@@ -150,7 +183,7 @@ Daily Mixes, a mix for this time of day, **Release Radar** for your artists' new
 <td>
 
 ### Replay and Rewind
-Minutes, top songs, artists and genres for this month, the last 30 days, any year or all time, worked out on the device. Each year gets a **Rewind** story (opening December 1), with shareable slides. Home leads with a Replay card in nine styles.
+Minutes, top songs, artists and genres for today, this week, this month, the last 30 days, any year, any month or days you pick, or all time, worked out on the device. Each year gets a **Rewind** story (opening December 1), with shareable slides. Home leads with a Replay card in nine styles.
 
 </td>
 </tr>
@@ -160,7 +193,7 @@ Minutes, top songs, artists and genres for this month, the last 30 days, any yea
 <td>
 
 ### Recognize, podcasts and more
-**Song Recognition** from Search, a Quick Settings tile or a home-screen widget; only an audio fingerprint is sent. **Podcasts** with search, 15/30-second skips, speed and resume. **Blend** makes a shared playlist with a friend from one QR code.
+**Song Recognition** from Search, a Quick Settings tile or a home-screen widget; only an audio fingerprint is sent. A **Prism** tile plays and pauses from Quick Settings. **Podcasts** with search, 15/30-second skips, speed and resume. **Blend** makes a shared playlist with a friend from one QR code.
 
 </td>
 </tr>
@@ -182,20 +215,20 @@ A **Prism Account** is just a name and picture on your phone: no email, no passw
 |---|---|
 | **Play anywhere** | Prism Connect casts to Chromecast, Google TV and DLNA/UPnP speakers, TVs and receivers (no Google SDK), controls Prism from any browser on your Wi-Fi, and hands playback to another phone or tablet. |
 | **Listen together** | Phones on the same Wi-Fi play in step, or friends add songs to your queue. No account, no server. |
-| **Sound** | 10-band EQ, headphone correction for about 9,000 models (AutoEq), loudness normalization to -14 LUFS, Prism Spatial, Crossfade with beat matching, and lossless playback of your FLAC files. |
+| **Sound** | 10-band EQ with your own presets (shared as codes, one per output), headphone correction for about 9,000 models (AutoEq), loudness normalization at the level you pick (albums kept as they are), Prism Spatial, Crossfade with four curves and beat matching, speed and pitch, fades, and lossless playback of your FLAC and ALAC files. |
 | **Offline** | Downloads with saved lyrics and covers, Smart Downloads (songs you'll likely play next, fetched ahead), and your own music files. |
 | **Music videos** | Switch any song to its official video in one tap, lyrics still in sync, full screen in landscape. |
 | **Best part** | Jump straight to the part listeners replay most, or set your own. |
-| **Make it yours** | Looks you save, share and switch (by day and night too), community Looks, customize by tapping, a full color picker, fonts (or your own), corners, glass, backgrounds, tab bar and mini player styles, icon weight, six app icons and an optional Cupertino icon pack. |
+| **Make it yours** | Looks you save, share and switch (by day and night too), community Looks, customize by tapping, a full color picker, fonts (or your own), cover and button shapes, glass, backgrounds, tab bar and mini player styles, icon packs (Prism, Classic, Cupertino, Facet, Dots), twelve app icons, and the Classic Look for Prism 1.6's style. |
 | **Tablets and foldables** | A side rail, the player beside its lyrics or queue, and a tabletop layout for half-open foldables. |
 | **Android Auto** | Your library, Made for you, Shuffle play and Play as a DJ set, extra buttons, and lyrics on the car screen. |
-| **Share** | Story cards and links for songs, albums, playlists and artists, and "Play in Prism" for YouTube links. Discord status with album covers (optional). |
+| **Share** | Story cards and links for songs, albums, playlists and artists, and "Play in Prism" for YouTube links. Discord status with album covers and Last.fm scrobbling (both optional). |
 | **Voice** | "Hey Google, play … on Prism" with Google Assistant and Gemini. |
 
 <img src="docs/screenshots/android-auto-lyrics.jpg" width="600" alt="Prism on Android Auto, the sung line shown in place of the song title">
 
 > [!WARNING]
-> **Android Auto lyrics are for passengers and for use while parked only.** Do not read lyrics while driving. You can turn car lyrics off in Settings → Car & devices → Android Auto, or with the lyrics button on the car's player.
+> **Android Auto lyrics are for passengers and for use while parked only.** Do not read lyrics while driving. You can turn car lyrics off in Settings → Devices & connections → Android Auto, or with the lyrics button on the car's player.
 
 ## Install
 

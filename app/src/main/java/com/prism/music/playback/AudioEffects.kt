@@ -37,6 +37,29 @@ object EqPresets {
         "Late Night" to listOf(-3f, -2f, -1f, 0f, 1f, 2f, 1f, 0f, -2f, -4f),
         "Loudness" to listOf(5f, 3f, 0f, 0f, -2f, 0f, -1f, -4f, 4f, 1f),
     )
+
+    /**
+     * A preset's name in the listener's language (1.7.9). The stored name stays English, it's the choice itself; the
+     * listener's own presets keep the names they gave them.
+     */
+    fun label(name: String): String = when (name) {
+        "Flat" -> com.prism.music.R.string.eq_flat
+        "Bass Boost" -> com.prism.music.R.string.eq_bass_boost
+        "Bass Reducer" -> com.prism.music.R.string.eq_bass_reducer
+        "Treble Boost" -> com.prism.music.R.string.eq_treble_boost
+        "Vocal" -> com.prism.music.R.string.eq_vocal
+        "Pop" -> com.prism.music.R.string.eq_pop
+        "Rock" -> com.prism.music.R.string.eq_rock
+        "Hip-Hop" -> com.prism.music.R.string.eq_hip_hop
+        "Electronic" -> com.prism.music.R.string.eq_electronic
+        "Jazz" -> com.prism.music.R.string.eq_jazz
+        "Classical" -> com.prism.music.R.string.eq_classical
+        "Acoustic" -> com.prism.music.R.string.eq_acoustic
+        "Late Night" -> com.prism.music.R.string.eq_late_night
+        "Loudness" -> com.prism.music.R.string.eq_loudness
+        "Custom" -> com.prism.music.R.string.eq_custom
+        else -> null
+    }?.let { com.prism.music.tr(it) } ?: name
 }
 
 data class SpatialInfo(

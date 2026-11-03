@@ -1,10 +1,13 @@
 package com.prism.music.data
 
+import com.prism.music.R
+import com.prism.music.tr
 import com.prism.music.data.innertube.InnerTube
 import com.prism.music.data.model.AlbumItem
 import com.prism.music.data.model.PlaylistItem
 import com.prism.music.data.model.Song
 import com.prism.music.data.model.songCount
+import com.prism.music.playback.together.fromPeer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -22,7 +25,7 @@ data class PrismList(
     val createdAt: Long,
     val updatedAt: Long,
 ) {
-    fun item() = PlaylistItem(id, title, "Prism playlist · ${songCount(songs.size)}", songs.firstOrNull()?.thumbnail)
+    fun item() = PlaylistItem(id, title, tr(R.string.prism_playlist, songCount(songs.size)), songs.firstOrNull()?.thumbnail)
 }
 
 /** An album saved to the library on the phone (the bookmark on an album page, without an account). */
@@ -88,7 +91,7 @@ class PrismLibrary(private val dir: File) {
         val id = "folder:" + UUID.randomUUID().toString().replace("-", "").take(10)
         change { lib ->
             val out = lib.folders.map { f -> f.copy(playlists = f.playlists.filterNot { p -> playlistId != null && samePlaylist(p, playlistId) }) }
-            lib.copy(folders = out + PlaylistFolder(id, name.trim().ifBlank { "Folder" }, listOfNotNull(playlistId), System.currentTimeMillis()))
+            lib.copy(folders = out + PlaylistFolder(id, name.trim().ifBlank { tr(R.string.folder) }, listOfNotNull(playlistId), System.currentTimeMillis()))
         }
         return id
     }
@@ -123,7 +126,7 @@ class PrismLibrary(private val dir: File) {
     fun create(title: String, songs: List<Song> = emptyList(), description: String = ""): String {
         val now = System.currentTimeMillis()
         val id = PREFIX + UUID.randomUUID().toString().replace("-", "").take(12)
-        change { it.copy(lists = listOf(PrismList(id, title.trim().ifBlank { "My playlist" }, description, songs.distinctBy { s -> s.id }, now, now)) + it.lists) }
+        change { it.copy(lists = listOf(PrismList(id, title.trim().ifBlank { tr(R.string.my_playlist) }, description, songs.distinctBy { s -> s.id }, now, now)) + it.lists) }
         return id
     }
 
@@ -160,6 +163,65 @@ class PrismLibrary(private val dir: File) {
     fun savePlaylist(p: SavedPlaylist) = change { it.copy(playlists = listOf(p) + it.playlists.filterNot { s -> samePlaylist(s.id, p.id) }) }
     fun unsavePlaylist(id: String) = change { it.copy(playlists = it.playlists.filterNot { s -> samePlaylist(s.id, id) }) }
 
+    /**
+     * The library for another of the listener's devices ("Bring your Prism", 1.8.0), in this file's own format: the
+     * phone's files leave their playlists (their names never go).
+     */
+    fun forBringing(): String {
+        val lib = data.value
+        val out = lib.copy(lists = lib.lists.map { l -> l.copy(songs = l.songs.filterNot { it.isLocal }) })
+        return InnerTube.json.encodeToString(PrismLibraryFile.serializer(), out)
+    }
+
+    /**
+     * Another device's library ([forBringing]) merged into this one: playlists by id (one on both keeps the copy changed
+     * last), saved albums and playlists added if missing, folders by id (their playlists joined). Nothing here goes.
+     * Songs only from YouTube ([com.prism.music.playback.together.fromPeer]). How many playlists and albums came.
+     */
+    fun mergeFrom(text: String): Pair<Int, Int> {
+        val theirs = runCatching { InnerTube.json.decodeFromString(PrismLibraryFile.serializer(), text) }.getOrNull() ?: return 0 to 0
+        var lists = 0
+        var albums = 0
+        change { mine ->
+            val byId = mine.lists.associateBy { it.id }.toMutableMap()
+            for (l in theirs.lists.take(MAX_BROUGHT)) {
+                if (!isPrismList(l.id) || l.id.length > 80) continue
+                val have = byId[l.id]
+                if (have != null && have.updatedAt >= l.updatedAt) continue
+                val songs = l.songs.filterNot { it.isLocal }.mapNotNull { it.fromPeer() }.distinctBy { it.id }.take(MAX_SONGS)
+                byId[l.id] = l.copy(title = l.title.take(200), description = l.description.take(2_000), songs = songs)
+                if (have == null) lists++
+            }
+            val outAlbums = mine.albums.toMutableList()
+            for (a in theirs.albums.take(MAX_BROUGHT)) if (a.id.length <= 80 && outAlbums.none { it.id == a.id }) {
+                outAlbums += a.copy(title = a.title.take(300), subtitle = a.subtitle.take(300), thumbnail = a.thumbnail?.takeIf { it.startsWith("https://") })
+                albums++
+            }
+            val outPlaylists = mine.playlists.toMutableList()
+            for (p in theirs.playlists.take(MAX_BROUGHT)) if (p.id.length <= 120 && outPlaylists.none { samePlaylist(it.id, p.id) }) {
+                outPlaylists += p.copy(title = p.title.take(300), subtitle = p.subtitle.take(300), thumbnail = p.thumbnail?.takeIf { it.startsWith("https://") })
+            }
+            // A playlist sits in one folder at most: one already in a folder here stays where it is.
+            val placed = mine.folders.flatMapTo(HashSet()) { it.playlists }
+            val outFolders = mine.folders.toMutableList()
+            for (f in theirs.folders.take(MAX_BROUGHT)) {
+                if (f.id.length > 80) continue
+                val i = outFolders.indexOfFirst { it.id == f.id }
+                val fresh = f.playlists.filter { p -> p.length <= 120 && placed.none { samePlaylist(it, p) } }
+                placed += fresh
+                if (i >= 0) outFolders[i] = outFolders[i].copy(playlists = outFolders[i].playlists + fresh)
+                else outFolders += f.copy(name = f.name.take(100), playlists = fresh)
+            }
+            mine.copy(
+                lists = byId.values.sortedByDescending { it.updatedAt },
+                albums = outAlbums.sortedByDescending { it.savedAt },
+                playlists = outPlaylists.sortedByDescending { it.savedAt },
+                folders = outFolders,
+            )
+        }
+        return lists to albums
+    }
+
     private fun edit(id: String, f: (PrismList) -> PrismList) = change { lib ->
         val l = lib.lists.firstOrNull { it.id == id } ?: return@change lib
         val changed = f(l).copy(updatedAt = System.currentTimeMillis())
@@ -193,6 +255,9 @@ class PrismLibrary(private val dir: File) {
     companion object {
         /** Prism playlists' ids start with this. */
         const val PREFIX = "prism:"
+        /** The most playlists, albums or folders, and songs in one playlist, another device's library brings. */
+        private const val MAX_BROUGHT = 5_000
+        private const val MAX_SONGS = 20_000
         fun isPrismList(id: String) = id.startsWith(PREFIX)
 
         /** A playlist's browse id ("VLPL…") and its plain id ("PL…") are the same playlist. */

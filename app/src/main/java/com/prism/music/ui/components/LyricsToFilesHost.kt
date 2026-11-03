@@ -1,5 +1,8 @@
 package com.prism.music.ui.components
 
+import com.prism.music.R
+import com.prism.music.tr
+import com.prism.music.trp
 import android.Manifest
 import android.app.Activity
 import android.content.pm.PackageManager
@@ -36,25 +39,25 @@ fun LyricsToFilesHost() {
         val n = c.lyricsToFiles.write(items)
         toast(
             when {
-                n == items.size -> if (n == 1) "Lyrics saved into the file" else "Lyrics saved into $n files"
-                n == 0 -> "Couldn't save the lyrics into the files"
-                else -> "Lyrics saved into $n of ${items.size} files"
+                n == items.size -> trp(R.plurals.lyrics_saved_into_n_files, n)
+                n == 0 -> tr(R.string.couldn_t_save_the_lyrics_into)
+                else -> trp(R.plurals.lyrics_saved_n_of_files, items.size, n, items.size)
             }
         )
     }
     val consent = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { r ->
-        if (r.resultCode == Activity.RESULT_OK) write(pending) else toast("Nothing was changed")
+        if (r.resultCode == Activity.RESULT_OK) write(pending) else toast(tr(R.string.nothing_was_changed))
     }
     val legacy = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) write(pending) else toast("Prism needs permission to change your music files")
+        if (granted) write(pending) else toast(tr(R.string.prism_needs_permission_to_change_your))
     }
     LaunchedEffect(Unit) {
         c.lyricsToFiles.requests.collect { songs ->
             val targets = c.lyricsToFiles.targets(songs)
-            if (targets.isEmpty()) { toast("No FLAC or MP3 files to save lyrics into"); return@collect }
-            if (targets.size > 1) toast("Getting lyrics for ${targets.size} files…")
+            if (targets.isEmpty()) { toast(tr(R.string.no_flac_mp3_or_m4a_files)); return@collect }
+            if (targets.size > 1) toast(trp(R.plurals.getting_lyrics_for_n_files, targets.size))
             val items = c.lyricsToFiles.prepare(targets).take(MAX_FILES)
-            if (items.isEmpty()) { toast(if (targets.size == 1) "No lyrics found for this song" else "No lyrics found for these songs"); return@collect }
+            if (items.isEmpty()) { toast(if (targets.size == 1) tr(R.string.no_lyrics_found_for_this_song) else tr(R.string.no_lyrics_found_for_these_songs)); return@collect }
             pending = items
             when {
                 Build.VERSION.SDK_INT >= 30 -> c.lyricsToFiles.writeRequest(items)?.let { consent.launch(IntentSenderRequest.Builder(it).build()) }

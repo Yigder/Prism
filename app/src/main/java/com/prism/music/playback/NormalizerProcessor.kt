@@ -47,8 +47,33 @@ class NormalizerProcessor : BaseAudioProcessor() {
          */
         @Volatile var appVolume = 1f
 
+        /** The sleep timer's fade-out (1.7.8, A5), on top of [appVolume]: 1 except while it fades. */
+        @Volatile var fadeVolume = 1f
+
         /** A slider's place (0 … 1) as a volume: squared, so the slider's middle sounds like half as loud. */
         fun volumeFor(slider: Float): Float = slider.coerceIn(0f, 1f).let { it * it }
+
+        /**
+         * The gain (dB) that brings a song measured at [lufs] to the [target] level; [peakDb]: its loudest sample (dBFS).
+         * #210 (1.8.0): a quiet song is lifted as far as its peaks have room (up to the limiter's -1 dB ceiling) plus the
+         * [LIMITED_DB] the limiter may take off them, so a quiet recording ends up as loud as a loud master and a soft
+         * passage with loud hits isn't flattened; without a peak figure, [LIMITED_DB] at most, as before 1.8.0 (when every
+         * song was lifted 6 dB at most and lowered 12 at most, which left big gaps).
+         */
+        fun gainFor(target: Float, lufs: Float, peakDb: Float? = null): Float {
+            val want = target - lufs
+            if (want <= 0f) return want.coerceAtLeast(-MAX_CUT_DB)
+            val room = peakDb?.let { CEILING_DB - it + LIMITED_DB } ?: LIMITED_DB
+            return minOf(want, room, MAX_LIFT_DB).coerceAtLeast(0f)
+        }
+
+        /** The limiter's ceiling (dBFS): 0.89, as [queueInput] has it. */
+        private const val CEILING_DB = -1f
+        /** How much the limiter may take off a lifted song's peaks. */
+        private const val LIMITED_DB = 6f
+        /** At most this much up (a very quiet recording's hiss stays down) or down. */
+        private const val MAX_LIFT_DB = 20f
+        private const val MAX_CUT_DB = 24f
     }
 
     override fun onConfigure(inputAudioFormat: AudioProcessor.AudioFormat): AudioProcessor.AudioFormat {
@@ -66,7 +91,7 @@ class NormalizerProcessor : BaseAudioProcessor() {
         if (bytes == 0) return
         val out = replaceOutputBuffer(bytes)
         val target = targetGain
-        val volTarget = appVolume
+        val volTarget = appVolume * fadeVolume
         if (target == 1f && volTarget == 1f && abs(gain - 1f) < 1e-4f && abs(vol - 1f) < 1e-4f && env < 0.89f) {
             gain = 1f
             vol = 1f

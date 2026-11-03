@@ -1,5 +1,7 @@
 package com.prism.music.connect
 
+import com.prism.music.R
+import com.prism.music.tr
 import android.util.Log
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -207,7 +209,7 @@ class GoogleCastLink(
         connectLock.withLock {
             if (socket?.isClosed == false && reader?.isActive == true) return
             dropConnection()
-            val host = renderer.host ?: throw IOException("${renderer.name} has no address")
+            val host = renderer.host ?: throw IOException(tr(R.string.has_no_address, renderer.name))
             val port = renderer.port.takeIf { it > 0 } ?: 8009
             val s = withContext(Dispatchers.IO) { open(host, port) }
             socket = s
@@ -240,7 +242,7 @@ class GoogleCastLink(
         } finally {
             if (socket === s) {
                 runCatching { s.close() }
-                pending.values.forEach { it.completeExceptionally(IOException("Lost the connection to ${renderer.name}")) }
+                pending.values.forEach { it.completeExceptionally(IOException(tr(R.string.lost_the_connection_to, renderer.name))) }
                 pending.clear()
             }
         }
@@ -300,7 +302,7 @@ class GoogleCastLink(
     }
 
     private fun send(namespace: String, destination: String, build: JsonObjectBuilder.() -> Unit) {
-        val o = out ?: throw IOException("Not connected to ${renderer.name}")
+        val o = out ?: throw IOException(tr(R.string.not_connected_to, renderer.name))
         val payload = buildJsonObject(build).toString()
         synchronized(writeLock) { CastWire.write(o, CastMessage(CastNs.SENDER, destination, namespace, payload)) }
     }
@@ -312,7 +314,7 @@ class GoogleCastLink(
         pending[id] = answer
         try {
             withContext(Dispatchers.IO) { send(namespace, destination) { put("requestId", id); build() } }
-            return withTimeoutOrNull(timeoutMs) { answer.await() } ?: throw IOException("${renderer.name} didn't answer")
+            return withTimeoutOrNull(timeoutMs) { answer.await() } ?: throw IOException(tr(R.string.didn_t_answer, renderer.name))
         } finally {
             pending.remove(id)
         }
@@ -329,7 +331,7 @@ class GoogleCastLink(
         app = findApp(status)
         if (app == null) {
             status = request(CastNs.RECEIVER, CastNs.PLATFORM, timeoutMs = 20_000) { put("type", "LAUNCH"); put("appId", CastNs.DEFAULT_RECEIVER) }
-            if (status.str("type") == "LAUNCH_ERROR") throw IOException("${renderer.name} wouldn't open its player (${status.str("reason") ?: "error"})")
+            if (status.str("type") == "LAUNCH_ERROR") throw IOException(tr(R.string.wouldn_t_open_its_player, renderer.name, status.str("reason") ?: tr(R.string.error_word)))
             app = findApp(status)
             // Some devices answer the launch before the app is up: asked again for a few seconds.
             var tries = 0
@@ -338,8 +340,8 @@ class GoogleCastLink(
                 app = findApp(request(CastNs.RECEIVER, CastNs.PLATFORM) { put("type", "GET_STATUS") })
             }
         }
-        val a = app ?: throw IOException("${renderer.name} didn't open its player")
-        val transport = a.str("transportId") ?: throw IOException("${renderer.name}'s player has no transport")
+        val a = app ?: throw IOException(tr(R.string.didn_t_open_its_player, renderer.name))
+        val transport = a.str("transportId") ?: throw IOException(tr(R.string.s_player_has_no_transport, renderer.name))
         appSession = a.str("sessionId")
         foreign = false
         send(CastNs.CONNECTION, transport) { put("type", "CONNECT") }
@@ -361,11 +363,11 @@ class GoogleCastLink(
 
     private suspend fun media(type: String, extra: JsonObjectBuilder.() -> Unit = {}): JsonObject {
         // Never takes the TV back from whatever's on it now: casting ends instead.
-        if (foreign) throw UpnpException("${renderer.name} is playing something else now")
+        if (foreign) throw UpnpException(tr(R.string.is_playing_something_else_now, renderer.name))
         val transport = ensurePlayer()
-        val session = mediaSession ?: throw UpnpException("${renderer.name} has no song loaded")
+        val session = mediaSession ?: throw UpnpException(tr(R.string.has_no_song_loaded, renderer.name))
         val answer = request(CastNs.MEDIA, transport) { put("type", type); put("mediaSessionId", session); extra() }
-        answer.str("type")?.takeIf { it != "MEDIA_STATUS" }?.let { throw UpnpException("${renderer.name}: $type failed ($it)") }
+        answer.str("type")?.takeIf { it != "MEDIA_STATUS" }?.let { throw UpnpException(tr(R.string.failed_2, renderer.name, type, it)) }
         return answer
     }
 
@@ -396,14 +398,14 @@ class GoogleCastLink(
         when (answer.str("type")) {
             "MEDIA_STATUS" -> { contentId = url; currentMs = 0; durationMs = media.durationMs.takeIf { it > 0 } }
             // 714 is UPnP's "illegal MIME type": Cast tries the other kind of PCM the same way a renderer would.
-            "LOAD_FAILED", "LOAD_CANCELLED" -> throw UpnpException("${renderer.name} couldn't load the song", 714)
-            else -> throw UpnpException("${renderer.name}: load failed (${answer.str("type")} ${answer.str("reason").orEmpty()})".trim())
+            "LOAD_FAILED", "LOAD_CANCELLED" -> throw UpnpException(tr(R.string.couldn_t_load_the_song, renderer.name), 714)
+            else -> throw UpnpException(tr(R.string.load_failed, renderer.name, answer.str("type"), answer.str("reason").orEmpty()).trim())
         }
     }
 
     /** Cast's queue could do this, but one song at a time is what Prism needs: [Cast] then sends each as it comes. */
     override suspend fun loadNext(url: String, didl: String, media: CastMedia) {
-        throw UpnpException("${renderer.name}: one song at a time", 401)
+        throw UpnpException(tr(R.string.one_song_at_a_time, renderer.name), 401)
     }
 
     override suspend fun play(): Unit = io { media("PLAY") }

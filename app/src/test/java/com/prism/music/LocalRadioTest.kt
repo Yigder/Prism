@@ -47,6 +47,18 @@ class LocalRadioTest {
         assertEquals("stranger", picks.last().song.id)
     }
 
+    /** Reddit (after 1.7.8): an opera or rock radio kept bringing back the listener's most played pop. */
+    @Test
+    fun besideYouTubeOnlyWhatBelongsWithTheSeed() {
+        val seed = song("aria", "Maria Callas")
+        val opera = song("opera", "Maria Callas")
+        val favourite = song("bye", "NSYNC")
+        val pool = LocalRadio.Pool(listOf(favourite, opera), emptyMap(), affinity = { if (it.id == "bye") 1.0 else 0.2 }, genreOf = { null })
+        val picks = LocalRadio.pick(listOf(seed), pool, emptySet(), 5)
+        assertEquals(listOf("opera"), LocalRadio.besideYouTube(picks, onlyYours = false).map { it.song.id })
+        assertEquals("with nothing else to play, the favourite still fills in", 2, LocalRadio.besideYouTube(picks, onlyYours = true).size)
+    }
+
     @Test
     fun picksAreVariedAndLeaveOutWhatTheyShould() {
         val seed = song("seed", "A")

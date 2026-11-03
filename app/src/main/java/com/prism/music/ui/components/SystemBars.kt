@@ -5,6 +5,7 @@ import android.view.View
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.prism.music.data.prefs.AppSettings
 
 /**
  * The system bars as Prism's settings want them (GitHub #115): the status bar hidden when "Hide the status bar" is on (a
@@ -12,6 +13,12 @@ import androidx.core.view.WindowInsetsControllerCompat
  * both while they're up and come back to this when they close.
  */
 object SystemBars {
+    /** The full player is up (with its lyrics or queue): "Hide it on the player" hides the status bar then. */
+    @Volatile var playerUp = false
+
+    /** Whether [s] hides the status bar now: everywhere, or only while the player is up (Reddit, 1.7.9.1). */
+    fun hidden(s: AppSettings): Boolean = s.hideStatusBar || (s.hideStatusBarPlayer && playerUp)
+
     fun apply(view: View, hideStatus: Boolean) {
         val window = (view.context as? Activity)?.window ?: return
         apply(WindowCompat.getInsetsController(window, view), hideStatus)

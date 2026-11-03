@@ -2,6 +2,481 @@
 
 What changed in each release. Older releases are described on the [Releases page](https://github.com/Yigder/Prism/releases).
 
+## 1.8.0
+
+### Prism TV
+
+- **Prism on Android TV and Google TV**, in the same app: install it on the TV and it opens with screens made for a
+  remote. Home's rows, Search (with the remote's microphone), your Library, album, playlist and artist pages, and a
+  full-screen player with big word-by-word lyrics, the queue, music videos and Sing (on TVs fast enough for it).
+- **Your phone signs the TV in and becomes its remote.** Scan the TV's code with your phone (or type the code shown):
+  the two pair over your Wi-Fi with an encrypted link, your phone offers to sign the TV in to YouTube Music (it asks
+  first, and only sends to the TV you paired), and from then on the phone's device list has a remote for the TV: play,
+  pause, skip, seek, volume, add songs. Your phone can send the TV your Look, too.
+- **Playing on the TV from your phone stays in sync**, as casting does: pick the TV under Prism devices in Play on and
+  the phone stays connected. Its player shows the TV's song, place and play / pause ("Playing on" the TV), and
+  everything on the phone acts on the TV: play, pause, skip, seek, any song, album, playlist or radio, Play next, Add
+  to queue, shuffle, repeat, volume. What's done on the TV (its remote, a song ending, a pick from its queue) shows on
+  the phone. Pick This phone (or Stop casting) and the music comes back to the phone where the TV was, still playing;
+  if the TV goes (switched off, Wi-Fi gone) the phone pauses there and says so. Moving music between two phones is as
+  before.
+- **Ambient screen**: after a few minutes without the remote while music plays, the TV dims to the song, its cover and
+  its lyrics, drifting slowly so it doesn't burn in. Also there as a screensaver ("Prism") where the TV lets you pick one.
+- **Lyrics over a music video**: the video plays on under them, smoothly (it goes straight to the TV's video layer, so
+  the lyrics over it are drawn again only when they move), and the song's title, progress and Timing fade a couple of
+  seconds after the last key while it plays; any key brings them back.
+- **Getting Prism onto a TV**: type code **8986606** into the Downloader app on the TV for the newest Prism, or turn on
+  Settings → Speakers, TVs & browser → **Share Prism with a TV** and type the address it shows: your phone hands the TV
+  its own copy over Wi-Fi (only while that page is open). After that, updates come to the TV like on a phone.
+- **Bring your Prism to the TV**: from your phone, send the TV your listening history, likes and Prism playlists
+  (and your Look, if you like), so its Home, Replay and mixes know you from the first day.
+- **Make the TV's Home yours**: every row the phone's Home has (Quick picks, Speed dial, Prism's mixes, your own pinned
+  rows…) can be on the TV too; Settings → Home → Customize Home shows, hides and moves them with the remote.
+- **Prism's look on a TV**: the frost of what's playing behind every screen, glass panels and the split light round
+  what has focus, drawn so a mid-range TV stays smooth; Settings → Colors offers White light for plain monochrome
+  highlights.
+- **Lyrics on the TV like the phone's**: word by word, the sung word growing bolder, lines settling smoothly; a Timing
+  control right on the lyrics, "Back to now" after looking around, and Settings → Lyrics → **Lyrics style** with the
+  phone's six styles and a live example of each.
+- **Sing on more TVs**: Prism times Sing on the TV once and picks the best way it keeps up with; on slower TVs it
+  starts at once with a quick version while the full one gets ready, beginning where the song is playing.
+- **The screen stays on** while a music video or Sing plays on the TV (the ambient screen is for music only).
+- Devices paired for handoff before 1.8.0 pair once more (the link is encrypted now).
+
+### For the holidays
+
+- **Harvest (November) and Holiday (December) Looks**: Prism dressed for the season, with its own illustrations
+  (leaves, acorns, pumpkins, pies, a turkey; snow, stars, trees, ornaments, lights) and colors (warm browns and golds; red and green), only in
+  their month. The first time you open Prism in each, it asks once whether to turn on **Holiday Mode**; "No" means not
+  again that year, and Looks → For the season has it any time.
+- **Holiday mixes from Prism**: in November Thanksgiving Dinner, Friendsgiving, Football Sunday, Fall Jazz, Autumn
+  Lo-fi and more; in December Christmas Classics, Christmas Jazz, R&B, Hip-Hop, Rock and Country Christmas, Navidad
+  Latina, Kids' Christmas, Merry Lo-fi, New Year's Eve Party and more. A Home row appears by itself in season (phone,
+  TV and the car), and the mixes are made on Wi-Fi ahead of time, so they open at once.
+
+### Search and playing
+
+- **Search finds the song a title is known for**: "upside down" leads with Jack Johnson, "yesterday" with the Beatles
+  and "halo" with Beyoncé, by how much each is played, not with a soundtrack, tribute or cover of the same name.
+- **Play on lists your Prism devices first**, so picking your TV plays in Prism there rather than in the TV's own Cast
+  player (which is listed only while Prism isn't open on the TV).
+
+### Settings, made clearer
+
+- **Every Settings page was gone through**: settings that worked together are one choice now, and each lives in one
+  place. What plays when the queue ends, music videos (play them / songs in radios / songs everywhere), Crossfade (Off ·
+  Automatic · Fixed length), Trim silence, the same loudness for every song, Glass (Off · Frosted · Liquid), how screens
+  change, the buttons at the top of Home, and the light-mode accent are each a single choice. Nothing you had set
+  changes on the update, and Settings search still finds a setting by its old name. Two switches are gone: the cast
+  mark now always shows while you cast, and the lyrics look is the same on the player's lyric line and in immersive
+  mode as on the lyrics page.
+- **The player, your way**: Customize Prism → Player → **What's on the player** is a drawing of your player: tap any
+  part to hide it (cover, title, artist, like, buttons, progress bar, times, volume, device line…), tap it again to bring
+  it back. Only play / pause always stays, and nothing hidden is gone: its action moves into the ⋯ menu.
+- **The player's ⋯ menu** is in groups (This song, Lyrics, Playing, Help) with four quick tiles at the top, and
+  **Edit this menu** lets you pin up to four tiles and fold the rest away under More. With the defaults it has exactly
+  the actions it had.
+- **Lyrics in four parts** (#253): Customize Prism → Lyrics starts from one of the six looks, then Animation, Text,
+  Background and Effects are each chosen on their own, with your look shown live. Karaoke and Bold card animate more
+  smoothly (they take well under half the work per frame they did).
+- **Desk mode** (#265, off unless you turn it on; Customize Prism → Player): while the phone charges and music plays,
+  the TV's ambient screen instead of the phone going to sleep.
+- **Tablets: choose where the tabs sit** (#264): down the side as before, or along the bottom.
+- **A smaller download** (#268): 1.7.9's 31 languages had made Prism 32.6 MB; they're stored compressed now, and the
+  whole app, TV included, is about 26 MB.
+
+### Sound (#210)
+
+- **Same loudness evens out big jumps**: a quiet recording is lifted as far as its own peaks allow (it used to stop at
+  6 dB, leaving some songs far quieter than the one before). Songs measured before 1.8.0 are measured once more.
+- **Trim silence only touches a song's start and end** (renamed from Skip silence): pauses inside a song stay whole
+  (they used to be shortened everywhere); a quiet intro of more than 10 seconds plays whole. Podcasts still have every
+  pause shortened.
+- **A crossfade that matches tempo never repeats a moment of the song** (it could replay half a beat while lining the
+  beats up).
+
+### Fixes
+
+- Settings were saved one change at a time but not always in order: two quick taps could end on the wrong choice.
+- Hiding the status bar no longer moves the whole player up; only the bar goes.
+- With shuffle on, Undo after taking a song out of the queue puts it back where it was in the order.
+- The Looks page offers each season's Look only in its own month.
+- Back from Last.fm's sign-in opens Last.fm's page.
+
+## 1.7.9.3
+
+### Fixes
+
+- **Songs only your account can play stopped after about a minute again** (#260): YouTube began answering the older
+  TV app Prism asks for them "The page needs to be reloaded" for most songs, so they came from the web app, whose
+  links stop after the first megabyte. Prism now asks the way yt-dlp does for signed-in users (the older TV app as a
+  Samsung TV, then YouTube's embedded player), and asks the older TV app twice before giving up on it.
+- **New listeners with large text couldn't get past the welcome screen**: with a large font or display size its list
+  pushed the buttons off the bottom, and the page didn't scroll. It scrolls now, opens on its buttons when it doesn't
+  fit, and the buttons grow with their words instead of cutting them off.
+- **A cleared or edited queue could come back after a restart**: the queue was only saved when the song changed, on
+  play / pause, shuffle or repeat, and the last save as Prism closed could be dropped. Every change to what's lined up is
+  kept now, and the last save always lands.
+- **The full-bleed cover jumped on every new song** (#244): it dropped to the square cover while the next picture
+  loaded, then grew back. It stays full now, showing the last picture until the new one is in.
+- **"Shrink when paused" did nothing in Performance mode** (Reddit): Performance mode turns Reduce motion on, which
+  took the shrink with it; it only follows your own Reduce motion now. With full-bleed artwork (where the banner hides
+  the shrinking cover) the switch says so.
+- **Sonos speakers didn't show up to play on** (#239, Reddit): Sonos answers as a "ZonePlayer" with its renderer inside,
+  which Prism didn't ask for. It does now, and names the speaker by its room.
+- **Prism could take seconds to show Home on slower phones**: the first screen waited for the downloads to read their
+  list and cache from storage (3.4 s on a slow phone in 1.7.8's check). They start in the background now, and screens
+  show what's downloaded as soon as it's read.
+- **Home's date and greeting stayed as they were when it opened**: left open overnight, it still said "Friday …
+  Good evening" on Saturday morning. They're checked again when Prism comes back and each minute it's on screen.
+- **Speed dial's last page could hold a single tile** (#267): its pages are whole now.
+- **Tab icons were a little smaller with labels "Selected"** (#272): they're the same size in every label style.
+- **The docked tab bar bent what was behind it** (#273): with Liquid Glass on, the flat docked bar worked like a lens,
+  smearing the page across the tabs and showing its edges at the screen's sides. It's frosted glass now (the floating
+  bars keep Liquid Glass).
+
+## 1.7.9.2
+
+### Requests
+
+- **Lyrics saved into your music files can keep their word timings and the translation** (Reddit): Settings → Lyrics &
+  Sing → Your music files has two new switches, both off. "Keep word timings" saves karaoke lyrics as enhanced LRC
+  (Poweramp and other karaoke players light them word by word); "Include the translation" puts each line's
+  translation under it, in your translation language.
+- **Search's chips in your order** (#224): Search → Arrange Search (at the bottom) → Chips. Hold one to move it; Search opens on the
+  first, so "On this phone" (or Songs, or any other) can be where it starts.
+- **The mini player's progress, your way** (#231): Customize Prism → Tabs & mini player → Mini player has a progress
+  bar color (your light as before, your accent, plain, or the cover's color) and, with Fill, how strong the fill is,
+  up to nearly solid on frosted glass.
+- **The playing song in the album's color** (Reddit): Customize Prism → Color → Artist & album pages → "Playing song
+  in the page's color" (off by default). On album, playlist and artist pages, the playing song's bars and title take
+  the color of the page's picture instead of your light.
+- **Swipe a new release into the queue** (#248): on New from your artists' page, swipe a release right to play it
+  next or left to add it to the end of the queue, as with songs.
+- **Slide between screens** (#208): Customize Prism → Glass & backgrounds → Motion has a new switch (off by default,
+  under "Fades between screens"). On, a new page slides in from the side and Back (and the back gesture) slides it
+  away, mirrored in right-to-left languages.
+- **A smaller player over the lyrics and the queue** (#230): Customize Prism → Player → Lyrics and the queue has a new
+  choice, Small: the progress bar, a smaller play row and the buttons stay, so the list keeps most of the screen
+  ("Full screen" already hides them, with a bar at the bottom to bring them back).
+- **Gestures anywhere on the player** (#259): Settings → Controls & gestures → Gestures has a new switch (off by
+  default). On, your swipes, double tap and long press work below the title too, in the space around the buttons and
+  bars (which keep their own taps).
+- **The ring around the player's play button can go** (#231): Customize Prism → Player → Look → "Ring on the play button".
+
+### Fixes
+
+- **Speed dial showed only your own plays in other languages** (#163): YouTube's own Speed dial ("Listen again") was
+  found by its English title or an old layout YouTube has dropped, so in Spanish it was never found and "Speed dial:
+  YouTube Music's only" did nothing. It's now the shelf headed with your name, in any language.
+- **Quick picks went missing now and then** (#162): Home stopped after three pages, and YouTube puts Quick picks
+  anywhere from the first to the fourth. Home now reads on until it has Quick picks and Speed dial (when they're on
+  Home), and a shelf of your own history is never taken for Quick picks.
+- **"Between songs" didn't fade the light "From the cover"** (#254): with your light taking the cover's colors, the
+  progress bar, Play's ring and the picked cards changed to the next song's colors at once, so Fade and Slow fade
+  looked like a cut. The light now fades with the accent (at once with Reduce motion or Performance mode).
+- **Glass on Android 9 to 11 showed what was behind it sharp**: Liquid Glass needs Android 12's blur, so the tab bar
+  and mini player looked like Home's tiles were drawn over them. Below Android 12 the glass is frosted now, with a
+  wash thick enough to read through.
+- **"Play next" and "Add to queue" on an album or playlist said so in English** in every language: translated now.
+- **Search's chips were in English in every language** (Top results, Songs, Videos, Albums…): they're translated now.
+
+## 1.7.9.1
+
+### Fixes
+
+- **Customize Prism → Icons & shapes closed Prism in every language but English** (#255): its examples asked for
+  Prism's drawings by their translated names ("Inicio"). Two smaller slips of the same kind are fixed too: an artist's
+  releases could show "Album" where the artist's name goes, and a shared single could say "Album", outside English.
+- **Japanese lyrics romanized as Chinese** (#256): when Google's romanization was busy (it rests after many requests,
+  translations included), Prism fell back to Android's own, which reads kanji as Chinese and leaves kana as they are
+  ("xīn の zàng"), and kept that. A line Google doesn't answer now waits for the next try instead, one refusal no longer
+  spoils the whole song, a word the Japanese dictionary doesn't know sends its line to Google, and songs spelled the old
+  way are spelled again.
+- **Repeat stays on after the song is swiped away** (#241): swiping the song off the mini player and closing Prism turned
+  repeat (and shuffle) off.
+- **A video in landscape can go back to the player** (#245): turned sideways, a music video fills the screen, and its
+  exit (or Back) put it straight back in full screen, with no way out but turning the phone. Now it goes back to the
+  player (the video in the cover's place, with every control) until the phone turns or the video is switched off.
+- **The lyrics glide to the next line** (#258): on slower phones a line change looked like a jump (the move barely
+  started, then rushed through in a few frames). It now starts at once and eases out over half a second.
+- **The song playing is marked in Home's lists** (#242), Quick picks among them, as in a playlist; TalkBack says
+  "Now Playing" on it.
+
+### Options (Reddit and GitHub)
+
+Each is off until you pick it, so nothing changes otherwise.
+
+- **Keep an album's songs whole** (#247): Settings → Playback & sound → Crossfade. An album playing through never blended;
+  this also keeps two of its songs whole when a playlist or shuffle puts them side by side.
+- **No dark band behind the navigation buttons** (#250): Customize Prism → Player → Show on the player → untick "Band
+  behind the navigation buttons" (three-button navigation), and the player shows through.
+- **Albums or singles in Library → Albums** (Reddit): All, Albums, or Singles & EPs, when the library has both.
+- **Any Home section as a 3 × 3 grid** (Reddit): Customize Home → a section → 3 × 3 shows it as YouTube Music's Speed
+  dial does, pages of nine square covers, uncropped ("Listen again" among them).
+
+- **The volume bar like the progress bar**: Customize Prism → Player → "Volume bar like the progress bar" gives the volume
+  bar the progress bar's style and thickness (it kept its own height).
+- **No grey handle on the player**: Customize Prism → Player → Show on the player → untick "Handle at the top". A swipe down
+  still closes the player.
+- **Hide the status bar only on the player**: Customize Prism → Tabs & mini player → "Hide it only on the player". The
+  status bar goes while the player, its lyrics or the queue are open, and comes back on Home and the other tabs.
+
+## 1.7.9
+
+### Prism in 31 languages
+
+All of Prism (every screen, setting, menu, notification, widget and the car) is now in Spanish, Portuguese (Brazil
+and Portugal), French, German, Italian, Dutch, Swedish, Polish, Czech, Romanian, Hungarian, Greek, Russian, Ukrainian,
+Turkish, Arabic, Persian, Hebrew, Hindi, Bengali, Urdu, Indonesian, Malay, Vietnamese, Thai, Filipino, Japanese,
+Korean and Chinese (Simplified and Traditional), as well as English.
+
+- **It follows your phone's language**, or pick one in Settings → Language (on Android 13 and up also in the phone's
+  Settings → Apps → Prism → Language). Prism restarts in the language you pick.
+- **Right to left:** in Arabic, Persian, Hebrew and Urdu the whole of Prism is laid out mirrored.
+- **Dates, times, counts and genres** follow the language too ("3 nov.", "1 canción / 5 canciones", Arabic's six
+  plural forms), and long words break with a hyphen instead of mid-word.
+- The translations were made by Claude, an AI, so a word here and there may read oddly: corrections are very
+  welcome on GitHub (CONTRIBUTING.md → Translations explains how).
+
+### Recommendations that keep changing
+
+Reddit: "the radio always plays the same music", "the Daily Mixes play the same songs". Mixes, radio and Quick picks
+were rebuilt so they keep finding music around what you play, and stop going round in circles.
+
+- **Daily Mixes change every day.** Each mix is now half songs you know and half new ones (it was mostly the same
+  favourites). The songs you know are drawn from everything that fits the mix, not the same top 30 each time, and
+  what was in the last few days' mixes, or what you've had on repeat this week, rests for a while. In a simulated week
+  of listening, tested against the old way: what's left from the day before went from 100% to under 5%, and a week
+  brings five times as many different songs.
+- **New music from more places.** New songs come from a few of the day's songs, a different few each day, through
+  YouTube Music's radio of them, their Related tab ("You might also like") and their similar artists' top songs. A song
+  several of them agree on comes first. Nothing you've played in the last 90 days counts as new.
+- **No artist takes over.** A mix takes its artists in turn, never plays one twice in a row, and keeps each to a few
+  songs (a one-artist mix gives that artist more).
+- **Skips count.** A suggestion (from a mix, radio, autoplay or Smart Shuffle) skipped within its first moments isn't
+  suggested again for two months (one you know, after two skips); heard through, it's welcome again. An artist whose
+  suggestions you keep skipping comes up less. Settings → Recommendations & Replay → "Forget skipped suggestions"
+  starts over.
+- **Radio sounds like radio.** With Autoplay from "Both", Prism Music's radio now leads, and only your own songs that
+  belong with what's playing come in between (your favourites with nothing to do with it no longer do: rock or opera
+  no longer brings NSYNC). Nothing heard in the last four hours is added again, and each batch spreads its artists.
+- **Quick picks, the time-of-day mix and the mixes from your music** rotate the same way, with Quick picks' new songs
+  coming from three of your main artists that change day to day.
+
+### Playlists and versions (Reddit)
+
+- **Play a different version.** A song playing as the wrong recording (someone's cover in place of the album track)
+  can be swapped: a song's menu and the player's ⋯ → "Play a different version" lists the other recordings YouTube has
+  of that title, with album and length (slowed and sped-up edits last). The one you pick plays for that song from then
+  on, everywhere, downloads included; the song keeps its own lyrics, likes and history. "Original" goes back.
+- **A slider on long playlists.** Scrolling a playlist of 60 songs or more shows a slider on the right edge: drag it to
+  jump through the playlist, with the song's number beside your finger.
+- **Genres can be turned off on playlists**: the sort menu's "Show genres", or Settings → Customize Prism → Home & Library →
+  "Genres on playlists". Off, a playlist has no genre chips or genre labels and keeps its own order.
+- **The lyrics' source beside Sing again, as an option**: Customize Prism → Lyrics → Look → "Lyrics source button". With the lyrics open, a glass button at their lower left, the size of Sing's, says where they come from
+  ("LRCLIB · Karaoke") and opens the Lyrics source sheet. Off by default; the line at the lyrics' end stays either way.
+
+### Small requests (GitHub)
+
+- **Search in Local files** (#225): a search box above the sections; every word typed has to turn up in the title,
+  the artists or the album, as on playlists. Play and Shuffle at the top play what it found.
+- **"Room for sung songs" can be Unlimited** (#238): one step past 4 GB.
+- **A gesture set to Nothing doesn't move anything** (#222): the mini player stays still when swiped toward a way with
+  no gesture, and the player's cover too (it used to slide and spring back).
+- **Fades between screens can be turned off** (#227, Customize Prism → Glass & backgrounds → Motion): pages then change
+  at once, so a tap can't land on the page that's fading out. On by default, as before.
+
+### Fixes
+
+- **"Response code: 400" at the end of a song** (#206, Reddit): when the player asked for a song's stream from its very
+  last byte, YouTube answered with an error instead of "nothing left", so the song buffered, showed the 400 and the
+  next one was slow to start. Prism now answers that itself as the end of the song.
+- **The widget's play button can take another color** (Reddit): hold a Prism widget → Settings (or Customize Prism →
+  Icons & shapes → Home-screen widgets) → Play button: your light (as before), white, the cover's color or one of
+  yours, for the play button and the progress line. Android 12 and later.
+- **Settings → Lyrics' examples come to rest**: they play their line three times when the page opens or a setting
+  changes, then hold part-way through. Looping for as long as the page was open, they kept a screen reader from ever
+  settling there on Android 9 (and kept the phone drawing).
+- **Back to a song's own version, it plays again**: with "Play a different version", both recordings were kept under
+  the song in the song cache, and switching back while the other one was still loading mixed the two, so the song gave
+  a playback error on every tap. Each version now keeps its own cached part, a download still coming down is never read
+  mid-song (picking a version starts a song's unfinished download over too), and a cached part or download Prism can't
+  read is cleared and the song streamed afresh at once (which also mends a song this already happened to).
+- **The accent from the cover is the cover's color** (Reddit): a few pixels of another color no longer decide it (a deep
+  blue night with two pink lights gave a pink accent). A color now has to fill a real part of the picture. A
+  black-and-white cover gives a grey accent, as it looks (its slight tint used to turn into a color); "Always colorful"
+  still gives one a color.
+- **Removing a playlist's downloads asks first** (#212): the download button on a playlist or album whose songs are
+  all downloaded removes them, so it now says how many and waits for Delete. TalkBack names it "Remove downloads".
+- **Update from Settings** (#201): Settings → Backup & about → Check for updates shows the new version right there,
+  ready to install, so updating works with the Home tab turned off.
+- **Scrolling up the lyrics can leave the controls away** (#214): Settings → Player → Lyrics and the queue →
+  "Scrolling up shows the controls" (on, as before). Off, going back to an earlier chorus keeps the whole screen; a tap
+  or the bar at the bottom brings them. With "Full screen" a scroll never brings them.
+- **Widgets show the new song at once** (#217): they waited for its cover to load, and every update meanwhile started
+  that over, so the old song stayed up for a while. The title changes straight away; the cover follows.
+- **Backups move between Prism copies** (#204): a backup restores into any Prism, whatever its app id (the test copy,
+  or a copy renamed so a phone's media island shows it). It used to say it was "from a different app".
+- **A music video no longer jumps ahead** (#203): switching to the video before Prism knew how far it's shifted from
+  the song, the video was moved to the matching moment once that was worked out, even half a minute later, which
+  sounded like a skip. Now that only happens right after switching; later the video plays on and the lyrics follow it.
+- **Music videos show their album cover** (Reddit): a music video playing as a song showed a still from the video as
+  its cover. It now takes its song's album cover (the same title by the same artist, even when the video is an edit of
+  a different length), on the player, the notification, widgets and in the car, without the music pausing.
+- **Songs loaded ahead play offline** (#213): with Load ahead on, the next songs were saved whole but not marked as
+  whole, so going offline Prism still asked the network for them and they didn't play. They're marked now.
+- **"Songs, not videos → Everywhere" finds more songs** (#202): an artist's video may now run a minute and a half past
+  its song (A$AP Rocky's "Punk Rocky" runs 62 s over), and a label channel's 'Artist - "Song" Label' upload finds the
+  artist's song. A video of two songs still plays as it is.
+- **Sliders show their number** (#209): the ones that only said a word ("Balanced", "Airy") now say both
+  ("Airy · 140%"), and Backgrounds' Softness shows one too, so you can come back to exactly the same place.
+- **Long tab names fit the floating bar** (#237): "Liked songs" on a floating bar with labels got cut off; a name now
+  gets a little smaller to fit its tab, and keeps its full height with big text.
+- **"From the cover" is the cover's colors** (#233 #235 #236): a black-and-white or mostly white cover gave Prism's
+  rainbow light; it now gives a silver one, and a cover with one color gives shades of it. A speck of color on a small
+  part of the picture no longer counts.
+- **YouTube's words in Prism's language** (#234): song credits' headings and other text YouTube writes came in the
+  phone's language while Prism was in English. They now follow the language Prism is in (Settings → Language).
+- **Opening a mix from Home the first time** (#228) is in Prism's startup profile now, so it's ready instead of being
+  worked out on the spot; "Fades between screens" off makes opening and closing pages lighter still.
+
+## 1.7.8
+
+### Sound, your way
+
+Settings → Playback & sound. Every default sounds as 1.7.7 did.
+
+- **Speed & pitch** (Reddit): the Speed button under the player (and the player's ⋯) opens a sheet with speed from 0.5×
+  to 2× and pitch up to 12 semitones up or down, each on its own, plus quick picks: Slowed, Sped up, A little faster.
+  "Start like this every time" keeps them for when Prism opens (also in Settings). Podcasts keep their own speed; live
+  streams and casting play as they are. Sing's key change comes on top.
+- **How songs cross in a crossfade**: Smooth (equal power, as before), Straight, Gentle (an S-curve) or DJ cut (both at
+  full, then a quick swap halfway), each drawn on its card.
+- **Crossfade mark and blending covers** (Reddit): a mark on the progress bar where the next song will come in, and the
+  player's cover dissolving into the next one's over the crossfade instead of switching at its start.
+- **Normalize volume's level**: Loud (-8 LUFS), Louder (-11), Standard (-14, as before), Quieter (-16, like Apple Music)
+  or Broadcast (-23). **Albums as they are**: an album playing through gets one volume change for all its songs, so a
+  quiet interlude stays quiet next to the single.
+- **Your own equalizer presets**: save the equalizer under a name, send one to a friend as a code and paste theirs in,
+  and pick a preset for whatever plays the music now (the car, your earbuds): Prism switches to it whenever that output
+  plays.
+- **Fades**: the sleep timer can fade the music out over up to a minute, and pausing and playing can fade instead of cut.
+- **Skip silence for podcasts on its own**: songs and episodes each have their switch (episodes start where the one
+  switch was).
+
+### Sing, simpler
+
+- **One button** (after Apple Music): with the lyrics open, a small glass button with the microphone at their lower right.
+  Tap it for Sing on or off. Hold it (or slide straight away) and it grows into a tall slider for how much of the voice
+  stays in, with a tick at none, half and full. A ring of light runs round it while the song is being got ready, and a
+  word under the progress bar says what happened ("Sing", "Sing off", "Voice 62%").
+- The glass bar under the lyrics is gone: where they come from is a line at their end (tap it to pick another source),
+  and the key is in the player's ⋯ → Sing, with the voice level and the switch.
+
+### Classic Prism
+
+For everyone who liked 1.6's look (#155). Nothing is taken away; each part is a choice of its own.
+
+- **The Classic Look** (Customize Prism → Looks): Prism 1.6's icons, bold type, plain controls and color, no glass,
+  docked tab bar, filled play button, on today's screens with everything 1.7 added.
+- **Classic icons** (Icons & shapes → Pack): 1.6's hand-drawn icons with their heavier line; Weight and Rounded work on
+  them as they did then. Icons that came after 1.6 keep today's drawing at Classic's line.
+- **Classic type** (Text → Type): 1.6's bold, tight headings instead of today's light titles.
+- **Classic controls** (Icons & shapes → Buttons): Android's own switches, sliders and buttons in your accent.
+- **Player buttons apart** (Player → Buttons): the row under the controls as separate buttons, as in 1.6, instead of
+  one glass capsule.
+
+### Your requests
+
+Every one of these is a choice; nothing changes until you pick it.
+
+- **Lyrics and the queue, your way** (#193, #197): Customize Prism → Player → Lyrics and the queue: the player's controls
+  hide after a moment (as before), always stay, or start hidden so the lyrics and the queue get the whole screen. The
+  queue's headings ("Played", "Now Playing", "Up next") can go, for one continuous list.
+- **A queue made for editing** (Reddit, #159): hold a song to pick several, then move them up next, to the end, add them
+  to a playlist or take them out together. Each song has a ⋯ with the same (and "Clear everything after this"). The
+  lock at the top keeps the order still while you scroll (no drag handles, no swiping away), and the player's controls
+  step aside while you drag a song.
+- **No duplicates in your YouTube playlists** (#159): adding a song that's already there says so instead of adding it
+  twice.
+- **Swipe up for the queue** (#200, #197): Settings → Controls & gestures: swipe up on the player's controls for the queue
+  (from their right half) or the lyrics (left half); swipe down there to close them. Made for one hand.
+- **Hide the controls over videos** (#166): while a music video plays, the controls go after a few seconds; a tap on the
+  video brings them back.
+- **Video in immersive mode** (#170): a playing music video shows behind the lyrics instead of the cover.
+- **Full-bleed artwork, whole** (#175): Fill the screen (as before) or Whole cover, the square cover uncropped on a
+  blurred copy of itself.
+- **The cover flies into place** (#199): opening the player, the mini player's cover grows into the player's while it
+  fades in, instead of the whole player sliding up (Player → Show on the player).
+- **Picture-in-picture only with its button** (#167), **Lock to portrait** (#190), **Pause when muted** (#157: the phone's
+  media volume all the way down pauses, up again plays on).
+- **Replay for any dates** (#149): Today, This week and This month beside the usual ones, and "Other dates…" for any
+  month you listened in or any days on a calendar, each with its own story.
+- **Choose what goes in a backup** (#149, Reddit): Settings & Looks, Library, Listening history & Replay, Accounts and
+  Downloaded songs, each one ticked or not, so you can share your settings without your listening or your sign-in.
+  Restoring replaces only what the file holds and says what that is first. (Backups from earlier versions restore as
+  before; Prism before 1.7.8 asks to be updated before restoring a new one.)
+- **Last.fm scrobbling** (#133, #160): Settings → Devices & connections → Last.fm, beside Discord (the Car & devices page, renamed). Connect your account on
+  Last.fm's own page (Prism never sees your password); songs count once you've heard half of them or four minutes,
+  "Now playing" shows as each starts, and scrobbles made offline are sent later. Options: send only a song's first
+  artist (#160), and love songs on Last.fm when you like them here.
+- **ALAC (Apple Lossless)** (#135): with the lossless add-on, your ALAC files (.m4a) play in place of songs as FLAC
+  files do. A phone without an ALAC decoder says so on a file of your own rather than skipping it, and plays the
+  song's stream instead of a matched ALAC file.
+- **Lyrics into M4A files** (Reddit): "Save lyrics into your files" now also writes AAC and ALAC files (.m4a), beside
+  FLAC and MP3, keeping everything else in them; the audio is checked to be exactly the same before the file is
+  changed.
+- **Recently played as albums and playlists** (#196): Customize Prism → Home & Library → Recently played shows.
+- **Library → Songs** has search, Shuffle and Play, as the Liked songs page does (#184).
+- **Downloads take a music video's song** (#186), with "Songs, not videos" on: the audio, not the video's sound (the
+  video's sound when it has no song).
+- **Hide the cast mark** after your phone's name under the player (#149).
+- **Downloads notification** (#149): says how many songs are coming down, which one now and how far, and has a Cancel
+  button (finished downloads stay).
+- **Download again in Premium quality** (#149, #148): with Premium quality on, Downloads' ⋯ offers to fetch again the
+  songs that came down below 256 kbps.
+
+### Fixes
+
+- **A song that stopped playing with "Element 134 must be in a TrackEntry"** (Reddit): part of it was saved from an
+  earlier play in another format (another quality, Premium, or another of YouTube's answers), and today's stream was
+  joined onto it. Prism now remembers each saved song's format and drops what was saved when it changes; a song that
+  still can't be read has its saved part cleared and plays afresh.
+- **Closing Prism from its notification** (Reddit): swiping the paused song's notification away (or Hide on the media
+  card) now closes Prism properly. The notification doesn't come back until something plays, and Prism no longer stays
+  in Android's list of active apps.
+- **A "Prism" Quick Settings tile** (Reddit): play or pause from the Quick Settings panel, with the song's name under
+  it; with nothing lined up it opens Prism, and holding it opens Prism too.
+- **Premium quality on phones where it still failed** (#179): on some phones the small sandbox Prism unlocks YouTube's
+  links in ran out of memory reading YouTube's newest player, so every Premium song (and its download) failed and fell
+  back to its music video's sound. It now gets the memory it needs, and if a Premium link still can't be unlocked, the
+  song plays at once in normal quality instead.
+- **Other apps can pause and skip again** (#178, #187): KDE Connect, "dynamic island" apps and launcher widgets
+  showed the song but their play, pause and skip did nothing. The media library Prism uses (Media3 1.11) only lets apps
+  it doesn't recognize read what's playing; Prism now lets every app that can reach its media session control it, as
+  music players do. Playback diagnostics also list each command another app sends and where it went.
+- **Lyric translations stopping after a while** (#198): Google stops answering a network that asks for many songs in a
+  short time. Translations are now kept on the phone (a song is translated once per language); when Google's main
+  service refuses, Prism asks its second one; and when both are resting, the lyrics say "Translation unavailable right
+  now" and Prism tries again later instead of showing nothing.
+- **Wrong covers on local songs without an album tag** (#143): Android names such a song's album after its folder
+  ("Quick Share", "Download"), so Prism took the folder for an album and gave songs with no cover of their own another
+  song's. A song whose album is only its folder's name is now checked against the file once: with no album tag, it's
+  shown without an album and only ever with its own cover.
+- **The player's ⋯ menu jumping when flung up** (#147): a fast fling past the end of the menu pushed the whole sheet up
+  under the status bar and it bounced back. The menu now keeps that fling to itself.
+- **Centered lyrics** (#158, #164): the instrumental "…" on the lyrics page follows the lyrics' alignment (it stayed on
+  the left), and the lyric line on the player is centered on its words alone (the arrow after it pushed it left).
+  New: Customize Prism → Lyrics → Instrumental breaks can show a music note instead of the dots.
+- **Local files' title at the top again** (#156): as a tab, the page's title sits beside Shuffle and Play, as in 1.6.9.
+- **FLAC files missing from Local files** (Reddit): files Android had no length for, or hadn't marked as music, are
+  listed now (their length is read from the file once).
+- **Switching to a Look in another font no longer freezes the screen for a second**: its font is made beforehand, off
+  the screen's thread.
+- **App icon picker** (#194): the icons fill the page in an even grid (with larger text there was an empty column at
+  the side) and names like "Spectrum" are no longer cut short.
+
 ## 1.7.7.1
 
 Fixes only.

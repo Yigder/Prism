@@ -10,6 +10,9 @@ import org.junit.Test
  * a version sees only steps added since; and no step is dated after the build it ships in (it could never be marked
  * seen, and would come back at every start).
  */
+// Robolectric: the tour's words come from strings.xml (1.7.9).
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+@org.robolectric.annotation.Config(sdk = [34], application = android.app.Application::class)
 class TourTest {
     @Test
     fun newInstallsSeeTheWholeTour() {

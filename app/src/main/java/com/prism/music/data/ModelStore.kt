@@ -1,5 +1,7 @@
 package com.prism.music.data
 
+import com.prism.music.R
+import com.prism.music.tr
 import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,32 +30,32 @@ class ModelStore(private val context: Context, private val http: OkHttpClient) {
         /** Kuromoji's IPADIC dictionary (Apache-2.0 / IPADIC licence): readings for Japanese lyrics' kanji. */
         JAPANESE(
             "ja-ipadic", "ja-ipadic-0.9.0.zip",
-            "286c372433219548c20fed47f813a84b334a68a7eb694787369789d8008f0b2a", 13_331_021, "Japanese kanji readings", 33_443_143,
+            "286c372433219548c20fed47f813a84b334a68a7eb694787369789d8008f0b2a", 13_331_021, tr(R.string.japanese_kanji_readings), 33_443_143,
         ),
         /** Deezer's Spleeter, 2 stems, as sherpa-onnx exported it (fp16): Sing's vocal separation. */
         SING_MODEL(
             "sing-spleeter", "sing-spleeter-2stems-fp16.zip",
-            "58d3320c8161d28d70e28b0cb10d05ff5c15a5c806a3581fb720a52c41cfccb1", 36_366_462, "Sing's voice separation", 39_362_285,
+            "58d3320c8161d28d70e28b0cb10d05ff5c15a5c806a3581fb720a52c41cfccb1", 36_366_462, tr(R.string.sing_s_voice_separation), 39_362_285,
         ),
         /** ONNX Runtime's native libraries (Microsoft, MIT), which Sing runs Spleeter on, one per kind of processor. */
         SING_RUNTIME_ARM64(
             "onnxruntime-arm64-v8a", "onnxruntime-1.31.0-arm64-v8a.zip",
-            "4e18871c3336a30adae8f6e7aad85b144337654c859b9e62bce2c449bcfb9995", 12_888_058, "Sing's engine", 34_208_828,
+            "4e18871c3336a30adae8f6e7aad85b144337654c859b9e62bce2c449bcfb9995", 12_888_058, tr(R.string.sing_s_engine), 34_208_828,
         ),
         SING_RUNTIME_ARMV7(
             "onnxruntime-armeabi-v7a", "onnxruntime-1.31.0-armeabi-v7a.zip",
-            "009139aff7b881ead3dd67127e2655791424c18c0e7d7f14775d8621adb05369", 11_640_311, "Sing's engine", 24_182_160,
+            "009139aff7b881ead3dd67127e2655791424c18c0e7d7f14775d8621adb05369", 11_640_311, tr(R.string.sing_s_engine), 24_182_160,
         ),
         SING_RUNTIME_X86_64(
             "onnxruntime-x86_64", "onnxruntime-1.31.0-x86_64.zip",
-            "3627836c2fdc6837d4f6e5d32abfbbc2b0c3ee565ab249f8bb2c3aaa7b788bfa", 14_993_395, "Sing's engine", 40_828_092,
+            "3627836c2fdc6837d4f6e5d32abfbbc2b0c3ee565ab249f8bb2c3aaa7b788bfa", 14_993_395, tr(R.string.sing_s_engine), 40_828_092,
         ),
         ;
 
         companion object {
             /** "49 MB download, 74 MB on the phone": the same words wherever the size of [models] is told. */
             fun sizeText(vararg models: Model): String =
-                "${models.sumOf { it.bytes } / 1_000_000} MB download, ${models.sumOf { it.unpacked } / 1_000_000} MB on the phone"
+                tr(R.string.mb_download_mb_on_the_phone, models.sumOf { it.bytes } / 1_000_000, models.sumOf { it.unpacked } / 1_000_000)
 
             /** The engine build for this phone's processor (null on one Sing can't run on). */
             fun singRuntime(): Model? {
@@ -99,7 +101,7 @@ class ModelStore(private val context: Context, private val http: OkHttpClient) {
             if (ready(m)) return@withLock true.also { set(m, State.Ready) }
             set(m, State.Downloading(0f))
             val result = runCatching { fetch(m) }
-            set(m, if (ready(m)) State.Ready else State.Failed(result.exceptionOrNull()?.message ?: "Download failed"))
+            set(m, if (ready(m)) State.Ready else State.Failed(result.exceptionOrNull()?.message ?: tr(R.string.download_failed)))
             ready(m)
         }
     }.await()
@@ -121,7 +123,7 @@ class ModelStore(private val context: Context, private val http: OkHttpClient) {
         val part = File(root, m.file + ".part")
         val req = Request.Builder().url("$BASE/${m.file}").build()
         http.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) throw IOException("The download answered HTTP ${resp.code}")
+            if (!resp.isSuccessful) throw IOException(tr(R.string.the_download_answered_http, resp.code))
             val body = resp.body
             val total = body.contentLength().takeIf { it > 0 } ?: m.bytes
             val digest = MessageDigest.getInstance("SHA-256")
@@ -142,7 +144,7 @@ class ModelStore(private val context: Context, private val http: OkHttpClient) {
                 }
             }
             val sha = digest.digest().joinToString("") { "%02x".format(it) }
-            if (sha != m.sha256) { part.delete(); throw IOException("The download didn't check out (it may have been cut short)") }
+            if (sha != m.sha256) { part.delete(); throw IOException(tr(R.string.the_download_didn_t_check_out)) }
         }
         install(m, part)
     }

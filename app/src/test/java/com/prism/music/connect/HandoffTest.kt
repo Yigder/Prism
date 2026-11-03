@@ -109,14 +109,48 @@ class HandoffTest {
         // Cancelled at the code box.
         assertEquals(HandoffResult.Cancelled, session(tablet) { link -> HandoffPeer(phone).call(link, HandoffCommand.MOVE) { null } })
 
-        // Paired, then the tablet forgets the phone: the phone's key is refused and it forgets too (to pair again).
+        // Paired, then the tablet forgets the phone: the phone's key is refused. It keeps it (that "no" isn't proved)
+        // until pairing again with the code replaces it.
         assertTrue(session(tablet) { link -> HandoffPeer(phone).call(link, HandoffCommand.MOVE) { tablet.code } } is HandoffResult.Done)
         tablet.secrets.clear()
+        val kept = phone.secrets["tablet-1"]
         assertEquals(HandoffResult.Unpaired, session(tablet) { link -> HandoffPeer(phone).call(link, HandoffCommand.MOVE) { null } })
-        assertTrue(phone.secrets.isEmpty())
+        assertEquals(kept, phone.secrets["tablet-1"])
+        val again = session(tablet) { link -> HandoffPeer(phone).request(link, HandoffRequest.Move, HandoffExpect(repair = true)) { tablet.code } }
+        assertTrue("$again", again is HandoffResult.Done)
+        assertEquals(tablet.secrets["phone-1"], phone.secrets["tablet-1"])
+        assertTrue(kept != phone.secrets["tablet-1"])
         // A made-up key gets nowhere either.
-        phone.secrets["tablet-1"] = HandoffKeys.newSecret()
+        phone.secrets["tablet-1"] = LinkKeys.hex(LinkKeys.nonce() + LinkKeys.nonce())
         assertEquals(HandoffResult.Unpaired, session(tablet) { link -> HandoffPeer(phone).call(link, HandoffCommand.PULL) { null } })
+    }
+
+    /**
+     * A whole queue moves (2,000 songs, sealed: far past the old line limit), and only what can play there is sent:
+     * files here stay, names and all (here, 3,000 of them with long names: sent, they'd be too much to pass).
+     */
+    @Test
+    fun aWholeQueueMovesAndFilesStayBehind() {
+        val yt = (0 until HandoffSnapshot.MAX_SONGS).map { i -> song("v" + i.toString().padStart(10, '0'), "Song $i ".repeat(8)) }
+        val files = (0 until 3_000).map { i -> Song("local:$i", "A file on this phone $i ".repeat(80)) }
+        val phone = Device("Phone", "phone-1").apply { playing = HandoffSnapshot(songs = yt + files, index = 5, positionMs = 1_000, playing = true) }
+        val tablet = Device("Tablet", "tablet-1")
+        val r = session(tablet) { link -> HandoffPeer(phone).call(link, HandoffCommand.MOVE) { tablet.code } }
+        assertTrue("$r", r is HandoffResult.Done && r.note != null)
+        val got = tablet.took.single().first
+        assertEquals(HandoffSnapshot.MAX_SONGS, got.songs.size)
+        assertEquals(yt[5].id, got.songs[got.index].id)
+        assertTrue(got.songs.none { it.id.startsWith("local:") })
+    }
+
+    /** Pulling from a device playing files too: they stay there (never sent), and how many is said. */
+    @Test
+    fun aPullLeavesTheOtherDevicesFilesThere() {
+        val phone = Device("Phone", "phone-1")
+        val tablet = Device("Tablet", "tablet-1").apply { playing = queue() }
+        val r = session(tablet) { link -> HandoffPeer(phone).call(link, HandoffCommand.PULL) { tablet.code } }
+        assertEquals(HandoffResult.Done("1 song stayed on Tablet"), r)
+        assertEquals(listOf(ids[0], ids[1], ids[2], ids[3]), phone.took.single().first.songs.map { it.id })
     }
 
     @Test
@@ -176,17 +210,5 @@ class HandoffTest {
         assertTrue(answers.dropLast(1).all { it == HandoffResult.Cancelled })
         assertEquals(HandoffResult.Failed("Too many pairing tries. Wait a minute."), answers.last())
         now += 61_000
-    }
-
-    @Test
-    fun macsTieTheKeyToTheChallengeAndTheCaller() {
-        val k = HandoffKeys.newSecret()
-        val n = HandoffKeys.newNonce()
-        assertEquals(HandoffKeys.mac(k, n, "a"), HandoffKeys.mac(k, n, "a"))
-        assertTrue(HandoffKeys.mac(k, n, "a") != HandoffKeys.mac(k, n, "b"))
-        assertTrue(HandoffKeys.mac(k, n, "a") != HandoffKeys.mac(k, HandoffKeys.newNonce(), "a"))
-        assertTrue(HandoffKeys.mac(k, n, "a") != HandoffKeys.mac(HandoffKeys.newSecret(), n, "a"))
-        assertEquals(64, k.length)
-        assertTrue(HandoffKeys.newCode().let { it.length == 6 && it.all(Char::isDigit) })
     }
 }

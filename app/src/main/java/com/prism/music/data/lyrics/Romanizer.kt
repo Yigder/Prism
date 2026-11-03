@@ -1,5 +1,7 @@
 package com.prism.music.data.lyrics
 
+import com.prism.music.R
+import com.prism.music.tr
 import android.os.Build
 import com.prism.music.data.ModelStore
 import com.prism.music.data.db.RomanizedDao
@@ -119,8 +121,8 @@ class Romanizer(
                 val main = wanted(line.text)
                 val back = bg?.let { wanted(it.text) }.orEmpty()
                 if (main.isEmpty() && back.isEmpty()) continue
-                val localMain = if (main.isEmpty()) null else localPieces(line, main, japaneseSong)
-                val localBack = if (back.isEmpty() || bg == null) null else localPieces(bg, back, japaneseSong)
+                val localMain = if (main.isEmpty()) null else localPieces(line, main, japaneseSong, network)
+                val localBack = if (back.isEmpty() || bg == null) null else localPieces(bg, back, japaneseSong, network)
                 if ((main.isEmpty() || localMain != null) && (back.isEmpty() || localBack != null)) {
                     out[i] = Stored(
                         t = localMain?.first ?: line.text, w = localMain?.second,
@@ -135,9 +137,15 @@ class Romanizer(
 
             if (online.isNotEmpty()) {
                 val texts = online.flatMap { i -> listOf(lines[i].text, lines[i].backgroundLine?.text.orEmpty()) }
-                val romanized = (if (network) runCatching { google(texts) }.onFailure {
+                val fromGoogle = if (network) runCatching { google(texts) }.onFailure {
                     android.util.Log.w("PrismRoman", "Google's romanization failed: $it")
-                }.getOrNull() else null) ?: texts.map { t -> if (t.isBlank()) "" else device(t) }
+                }.getOrNull() else null
+                // Android's own transliterator for what Google didn't spell out, but never in a Japanese song: it reads kanji
+                // as Chinese and leaves kana as they are (#256, "jūn の zhōng" under a RADWIMPS song). Such a line stays as
+                // it is and is asked for again next time.
+                val romanized = texts.mapIndexed { k, t ->
+                    fromGoogle?.getOrNull(k)?.takeIf { it.isNotBlank() } ?: if (t.isBlank() || japaneseSong) "" else device(t)
+                }
                 for ((k, i) in online.withIndex()) {
                     val main = romanized.getOrNull(2 * k)?.takeIf { it.isNotBlank() }
                     val back = romanized.getOrNull(2 * k + 1)?.takeIf { it.isNotBlank() }
@@ -159,7 +167,15 @@ class Romanizer(
      * The line spelled out on the phone, if every script it needs has an engine here: its text, and each word's
      * spelling (lined up with [LyricLine.words]) for a word-timed line.
      */
-    private suspend fun localPieces(line: LyricLine, scripts: Set<Script>, japaneseSong: Boolean): Pair<String, List<String>?>? {
+    private suspend fun localPieces(line: LyricLine, scripts: Set<Script>, japaneseSong: Boolean, network: Boolean): Pair<String, List<String>?>? {
+        val spelled = localSpelling(line, scripts, japaneseSong) ?: return null
+        // A word the Japanese dictionary doesn't know keeps its kanji (#256: 臓 on its own): Google spells that line out
+        // whole when it can be asked.
+        if (network && japaneseSong && (Script.HAN in Script.foreignIn(spelled.first) || Script.KANA in Script.foreignIn(spelled.first))) return null
+        return spelled
+    }
+
+    private suspend fun localSpelling(line: LyricLine, scripts: Set<Script>, japaneseSong: Boolean): Pair<String, List<String>?>? {
         val japanese = if (japaneseSong && (Script.KANA in scripts || Script.HAN in scripts)) japaneseReader() else null
         val engine: ((String) -> List<String>)? = when {
             japanese != null && scripts.all { it == Script.KANA || it == Script.HAN } -> japanese::pieces
@@ -218,7 +234,9 @@ class Romanizer(
                 // The lines came back run together (Google does that with some languages): one at a time instead.
                 for (v in wanted) {
                     if (single++ >= MAX_SINGLE) break
-                    out[v.index] = clean(v.value, request(listOf(v.value.trim())).joinToString(" "))
+                    // One line refused (Google resting after many requests, or no romanization in its answer) no longer
+                    // sinks the whole song (#256): that line is left for next time.
+                    out[v.index] = runCatching { clean(v.value, request(listOf(v.value.trim())).joinToString(" ")) }.getOrDefault("")
                 }
             }
         }
@@ -233,14 +251,14 @@ class Romanizer(
             .post(FormBody.Builder().add("q", texts.joinToString("\n")).build())
             .build()
         http.newCall(req).execute().use { resp ->
-            if (!resp.isSuccessful) throw IOException("Translate returned HTTP ${resp.code}")
+            if (!resp.isSuccessful) throw IOException(tr(R.string.translate_returned_http, resp.code))
             val root = Json.parseToJsonElement(resp.body.string()).jsonArray
             // The romanization of what was sent is the 4th field of an entry with no translation in it.
             val text = (root.getOrNull(0) as? JsonArray).orEmpty().mapNotNull { seg ->
                 (seg as? JsonArray)?.takeIf { it.getOrNull(0) !is JsonPrimitive || (it[0] as JsonPrimitive).contentOrNull == null }
                     ?.getOrNull(3)?.let { (it as? JsonPrimitive)?.contentOrNull }
             }.joinToString("")
-            if (text.isBlank()) throw IOException("No romanization in the answer")
+            if (text.isBlank()) throw IOException(tr(R.string.no_romanization_in_the_answer))
             return text.trimEnd('\n').split("\n")
         }
     }
@@ -266,7 +284,8 @@ class Romanizer(
 
     companion object {
         /** Bumped when an engine changes, so songs romanized the old way are romanized again. */
-        private const val VERSION = 2
+        // 3 (1.7.9.1, #256): Japanese songs spelled by Android's transliterator as Chinese are spelled again.
+        private const val VERSION = 3
         private const val RELEASE_AFTER_MS = 3 * 60_000L
         /** Line-by-line requests are only made for this many lines (a long song's worth). */
         private const val MAX_SINGLE = 80

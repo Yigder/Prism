@@ -1,5 +1,8 @@
 package com.prism.music.ui.screens
 
+import com.prism.music.R
+import com.prism.music.tr
+import com.prism.music.trp
 import com.prism.music.ui.components.PrismButton
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -73,18 +76,18 @@ import kotlinx.coroutines.launch
  * Artist and Album keep each album's songs in track order within them.
  */
 private enum class SongKey(val label: String, val dirs: Pair<String, String> = AZ) {
-    TITLE("Title"), ARTIST("Artist"), ALBUM("Album"), ADDED("Date added", NEWEST), YEAR("Year", NEWEST),
-    DURATION("Length", "Longest first" to "Shortest first"), SIZE("File size", "Largest first" to "Smallest first"),
+    TITLE(tr(R.string.title)), ARTIST(tr(R.string.artist)), ALBUM(tr(R.string.album)), ADDED(tr(R.string.date_added), NEWEST), YEAR(tr(R.string.year), NEWEST),
+    DURATION(tr(R.string.length), tr(R.string.longest_first) to tr(R.string.shortest_first)), SIZE(tr(R.string.file_size), tr(R.string.largest_first) to tr(R.string.smallest_first)),
 }
 private enum class AlbumKey(val label: String, val dirs: Pair<String, String> = AZ) {
-    TITLE("Title"), ARTIST("Artist"), YEAR("Year", NEWEST), ADDED("Date added", NEWEST), SONGS("Number of songs", MOST),
+    TITLE(tr(R.string.title)), ARTIST(tr(R.string.artist)), YEAR(tr(R.string.year), NEWEST), ADDED(tr(R.string.date_added), NEWEST), SONGS(tr(R.string.number_of_songs), MOST),
 }
 private enum class ArtistKey(val label: String, val dirs: Pair<String, String> = AZ) {
-    NAME("Name"), SONGS("Number of songs", MOST), ALBUMS("Number of albums", MOST),
+    NAME(tr(R.string.name)), SONGS(tr(R.string.number_of_songs), MOST), ALBUMS(tr(R.string.number_of_albums), MOST),
 }
-private val AZ = "A to Z" to "Z to A"
-private val NEWEST = "Newest first" to "Oldest first"
-private val MOST = "Most first" to "Fewest first"
+private val AZ = tr(R.string.a_to_z) to tr(R.string.z_to_a)
+private val NEWEST = tr(R.string.newest_first) to tr(R.string.oldest_first)
+private val MOST = tr(R.string.most_first) to tr(R.string.fewest_first)
 
 /** One list's order: what by, and whether it's the other way round from usual ([SongKey.dirs]' second). */
 private data class Order<K>(val key: K, val reversed: Boolean = false)
@@ -94,7 +97,7 @@ private data class Order<K>(val key: K, val reversed: Boolean = false)
  * #35 it held the songs' order alone ("TITLE", "ADDED", "ARTIST", "ALBUM"), which still reads.
  */
 private data class LocalOrders(val songs: Order<SongKey>, val albums: Order<AlbumKey>, val artists: Order<ArtistKey>) {
-    fun encode() = "songs:${songs.key}:${if (songs.reversed) 1 else 0}|albums:${albums.key}:${if (albums.reversed) 1 else 0}|" +
+    fun encode() = tr(R.string.songs_albums, songs.key, if (songs.reversed) 1 else 0, albums.key, if (albums.reversed) 1 else 0) +
         "artists:${artists.key}:${if (artists.reversed) 1 else 0}"
 
     companion object {
@@ -179,7 +182,7 @@ private fun inTrackOrder(tracks: List<LocalMusic.Track>) =
 
 private fun albumsOf(tracks: List<LocalMusic.Track>): List<LocalAlbum> = tracks.groupBy { it.albumId }.map { (id, t) ->
     val artist = t.groupingBy { it.song.primaryArtist }.eachCount().maxByOrNull { it.value }?.key.orEmpty()
-    LocalAlbum(id, t.firstNotNullOfOrNull { it.song.album?.title?.takeIf(String::isNotBlank) } ?: "Unknown album", artist, t.maxOf { it.year }, inTrackOrder(t))
+    LocalAlbum(id, t.firstNotNullOfOrNull { it.song.album?.title?.takeIf(String::isNotBlank) } ?: tr(R.string.unknown_album), artist, t.maxOf { it.year }, inTrackOrder(t))
 }.sortedWith(compareBy<LocalAlbum> { it.title == "Unknown album" }.thenBy { it.title.lowercase() })
 
 /**
@@ -233,13 +236,13 @@ fun LocalMusicScreen(bottomPadding: Dp) {
     }
     val liked by c.library.likedIds.collectAsState()
     val recentIds by c.library.recentLocalIds.collectAsState()
-    val dls by c.downloads.downloads.collectAsState()
+    val dls by c.downloadState.collectAsState()
 
     val albums = remember(tracks) { albumsOf(tracks) }
     val artists = remember(tracks, albums) {
         tracks.groupBy { artistKey(it.song.primaryArtist) }.map { (key, t) ->
             val ids = t.map { it.albumId }.toSet()
-            LocalArtist(key, t.first().song.primaryArtist.ifBlank { "Unknown artist" }, t, albums.filter { it.id in ids })
+            LocalArtist(key, t.first().song.primaryArtist.ifBlank { tr(R.string.unknown_artist) }, t, albums.filter { it.id in ids })
         }.sortedWith(compareBy<LocalArtist> { it.key == "￿" }.thenBy { it.name.lowercase().removePrefix("the ") })
     }
     val album = openAlbum?.let { id -> albums.firstOrNull { it.id == id } }
@@ -255,31 +258,45 @@ fun LocalMusicScreen(bottomPadding: Dp) {
         val byId = tracks.associateBy { it.song.id }
         recentIds.mapNotNull { byId[it]?.song }
     }
+    // Search in Local files (#225): every word typed has to turn up in the title, the artists or the album, as on playlists.
+    var query by rememberSaveable { mutableStateOf("") }
+    val found = remember(tracks, sort, query) {
+        val words = query.trim().lowercase().split(Regex("\\s+")).filter { it.isNotEmpty() }
+        if (words.isEmpty()) emptyList()
+        else sorted(tracks, sort).map { it.song }.filter { s -> "${s.title} ${s.artistText} ${s.album?.title.orEmpty()}".lowercase().let { hay -> words.all { it in hay } } }
+    }
     val section = sections.getOrNull(pager.currentPage)
     fun playable(): Pair<List<Song>, String> = when {
+        query.isNotBlank() && album == null && artist == null && !openRecent -> found to tr(R.string.local_files)
         album != null -> album.tracks.map { it.song } to album.title
         artist != null -> artist.albums.flatMap { a -> a.tracks.filter { t -> t in artist.tracks } }.map { it.song } to artist.name
-        openRecent -> recent to "Recently played"
+        openRecent -> recent to tr(R.string.recently_played)
         else -> when (section) {
-            LocalSection.FAVOURITES -> favourites to "Favorites"
-            LocalSection.ADDED_SONGS -> addedSongs to "Recently added"
-            LocalSection.ADDED_ALBUMS -> addedAlbums.flatMap { a -> a.tracks.map { it.song } } to "Added albums"
-            LocalSection.DOWNLOADS -> downloads to "Downloads"
-            else -> songsSorted to "Local files"
+            LocalSection.FAVOURITES -> favourites to tr(R.string.favorites)
+            LocalSection.ADDED_SONGS -> addedSongs to tr(R.string.recently_added)
+            LocalSection.ADDED_ALBUMS -> addedAlbums.flatMap { a -> a.tracks.map { it.song } } to tr(R.string.added_albums)
+            LocalSection.DOWNLOADS -> downloads to tr(R.string.downloads)
+            else -> songsSorted to tr(R.string.local_files)
         }
     }
 
     Column(Modifier.fillMaxSize()) {
-        // Back and the buttons on a bar at the top, the title under them, as on Prism's other pages.
+        // As a tab of its own (Settings → Layout & navigation) the top level has nothing to go back to.
+        val isTab = com.prism.music.data.prefs.NavTab.LOCAL in settings.navTabs
+        val inside = openAlbum != null || openArtist != null || openRecent
+        val title = album?.title ?: artist?.name ?: (if (openRecent) tr(R.string.recently_played) else tr(R.string.local_files))
+        // With no Back, the title takes its place at the very top, beside the buttons (#156, as in 1.6.9); with Back,
+        // the buttons are on a bar at the top and the title under them, as on Prism's other pages.
+        val titleOnTop = isTab && !inside
         Row(
-            Modifier.fillMaxWidth().statusBarsPadding().height(60.dp).padding(horizontal = 12.dp),
+            Modifier.fillMaxWidth().statusBarsPadding().height(60.dp).padding(start = if (titleOnTop) 20.dp else 12.dp, end = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // As a tab of its own (Settings → Layout & navigation) the top level has nothing to go back to.
-            val isTab = com.prism.music.data.prefs.NavTab.LOCAL in settings.navTabs
-            val inside = openAlbum != null || openArtist != null || openRecent
+            if (titleOnTop) {
+                Text(title, style = pageTitleStyle(), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(end = 8.dp))
+            }
             if (!isTab || inside) {
-                RoundAction(PrismIcons.ArrowBack, "Back") {
+                RoundAction(PrismIcons.ArrowBack, tr(R.string.back)) {
                     when {
                         openAlbum != null -> openAlbum = null
                         openArtist != null -> openArtist = null
@@ -288,32 +305,32 @@ fun LocalMusicScreen(bottomPadding: Dp) {
                     }
                 }
             }
-            Spacer(Modifier.weight(1f))
+            if (!titleOnTop) Spacer(Modifier.weight(1f))
             // Recently played, Shuffle and Play at the top (#29), for whatever the page is showing.
             if (allowed && tracks.isNotEmpty()) {
                 if (!inside) {
-                    RoundAction(PrismIcons.History, "Recently played") { openRecent = true }
+                    RoundAction(PrismIcons.History, tr(R.string.recently_played)) { openRecent = true }
                     Spacer(Modifier.width(8.dp))
                 }
-                RoundAction(PrismIcons.Shuffle, "Shuffle") {
+                RoundAction(PrismIcons.Shuffle, tr(R.string.shuffle)) {
                     val (list, title) = playable()
                     if (list.isNotEmpty()) c.player.playQueue(list, 0, source(title), shuffle = true)
                 }
                 Spacer(Modifier.width(8.dp))
-                RoundAction(PrismIcons.Play, "Play") {
+                RoundAction(PrismIcons.Play, tr(R.string.widget_play)) {
                     val (list, title) = playable()
                     if (list.isNotEmpty()) c.player.playQueue(list, 0, source(title))
                 }
             }
         }
         Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 10.dp)) {
-            Text(album?.title ?: artist?.name ?: (if (openRecent) "Recently played" else "Local files"), style = pageTitleStyle(), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if (!titleOnTop) Text(title, style = pageTitleStyle(), maxLines = 2, overflow = TextOverflow.Ellipsis)
             // The count sits under the title (#29), where "Music files on this phone" was.
             val sub = when {
                 album != null -> listOfNotNull(album.artist.ifBlank { null }, album.year.takeIf { it > 0 }?.toString(), songCount(album.tracks.size)).joinToString(" · ")
-                artist != null -> listOf(songCount(artist.tracks.size), if (artist.albums.size == 1) "1 album" else "${artist.albums.size} albums").joinToString(" · ")
+                artist != null -> listOf(songCount(artist.tracks.size), trp(R.plurals.n_albums, artist.albums.size)).joinToString(" · ")
                 openRecent -> songCount(recent.size)
-                allowed && tracks.isNotEmpty() -> listOf(songCount(tracks.size), if (albums.size == 1) "1 album" else "${albums.size} albums").joinToString(" · ")
+                allowed && tracks.isNotEmpty() -> listOf(songCount(tracks.size), trp(R.plurals.n_albums, albums.size)).joinToString(" · ")
                 else -> null
             }
             if (sub != null) Text(sub, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -321,32 +338,41 @@ fun LocalMusicScreen(bottomPadding: Dp) {
 
         when {
             !allowed -> Column(Modifier.fillMaxWidth().padding(top = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                EmptyState(PrismIcons.Phone, "Your music files", "Play the songs on your phone (MP3, M4A, FLAC, OGG, WAV…) in Prism. They stay where they are; Prism only reads them.")
-                PrismButton(onClick = { allow.launch(LocalLossless.permission) }) { Text("Allow access to music files") }
+                EmptyState(PrismIcons.Phone, tr(R.string.your_music_files), tr(R.string.play_the_songs_on_your_phone))
+                PrismButton(onClick = { allow.launch(LocalLossless.permission) }) { Text(tr(R.string.allow_access_to_music_files)) }
             }
             tracks.isEmpty() -> Column(Modifier.fillMaxWidth().padding(top = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                if (scanned) EmptyState(PrismIcons.Phone, "No music files found", "Songs you copy onto your phone, or download with another app, show up here.")
+                if (scanned) EmptyState(PrismIcons.Phone, tr(R.string.no_music_files_found), tr(R.string.songs_you_copy_onto_your_phone))
                 else com.prism.music.ui.components.PrismSpinner(Modifier.padding(32.dp).size(30.dp))
             }
             album != null -> TrackList(album.tracks.map { it.song }, album.title, bottomPadding, numbered = true)
             artist != null -> ArtistPage(artist, bottomPadding) { openAlbum = it.id }
-            openRecent -> if (recent.isEmpty()) EmptyState(PrismIcons.History, "Nothing played yet", "Songs from your phone that you play show up here.")
-                else TrackList(recent, "Recently played", bottomPadding)
+            openRecent -> if (recent.isEmpty()) EmptyState(PrismIcons.History, tr(R.string.nothing_played_yet), tr(R.string.songs_from_your_phone_that_you))
+                else TrackList(recent, tr(R.string.recently_played), bottomPadding)
             else -> {
-                SectionChips(sections, pager) { editing = true }
-                // Sideways swipes on a song queue it (SwipeToQueue), so the sections change from the chips.
-                HorizontalPager(pager, Modifier.weight(1f), userScrollEnabled = false) { page ->
-                    when (sections.getOrNull(page)) {
-                        LocalSection.SONGS -> SongsPage(songsSorted, sort, { saveOrders(orders.copy(songs = it)) }, "Local files", bottomPadding)
-                        LocalSection.FAVOURITES -> if (favourites.isEmpty()) EmptyState(PrismIcons.Heart, "No favorites yet", "Like songs from your phone (♥ on the player or in a song's menu) and they gather here.")
-                            else SongsPage(favourites, sort, { saveOrders(orders.copy(songs = it)) }, "Favorites", bottomPadding)
-                        LocalSection.ARTISTS -> ArtistsPage(sortedArtists(artists, orders.artists), bottomPadding, orders.artists, { saveOrders(orders.copy(artists = it)) }) { openArtist = it.key }
-                        LocalSection.ALBUMS -> AlbumsPage(sortedAlbums(albums, orders.albums), bottomPadding, orders.albums, { saveOrders(orders.copy(albums = it)) }) { openAlbum = it.id }
-                        LocalSection.ADDED_SONGS -> TrackList(addedSongs, "Recently added", bottomPadding)
-                        LocalSection.ADDED_ALBUMS -> AlbumsPage(addedAlbums, bottomPadding) { openAlbum = it.id }
-                        LocalSection.DOWNLOADS -> if (downloads.isEmpty()) EmptyState(PrismIcons.DownloadDone, "No downloads yet", "Songs you download in Prism show up here too.")
-                            else TrackList(downloads, "Downloads", bottomPadding)
-                        null -> {}
+                com.prism.music.ui.components.SearchField(
+                    query, tr(R.string.search_in_local_files), { query = it },
+                    Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 4.dp),
+                )
+                if (query.isNotBlank()) {
+                    if (found.isEmpty()) EmptyState(PrismIcons.Search, tr(R.string.no_matches), tr(R.string.nothing_in_matches, tr(R.string.local_files), query.trim()) + ".")
+                    else TrackList(found, tr(R.string.local_files), bottomPadding)
+                } else {
+                    SectionChips(sections, pager) { editing = true }
+                    // Sideways swipes on a song queue it (SwipeToQueue), so the sections change from the chips.
+                    HorizontalPager(pager, Modifier.weight(1f), userScrollEnabled = false) { page ->
+                        when (sections.getOrNull(page)) {
+                            LocalSection.SONGS -> SongsPage(songsSorted, sort, { saveOrders(orders.copy(songs = it)) }, tr(R.string.local_files), bottomPadding)
+                            LocalSection.FAVOURITES -> if (favourites.isEmpty()) EmptyState(PrismIcons.Heart, tr(R.string.no_favorites_yet), tr(R.string.like_songs_from_your_phone_on))
+                                else SongsPage(favourites, sort, { saveOrders(orders.copy(songs = it)) }, tr(R.string.favorites), bottomPadding)
+                            LocalSection.ARTISTS -> ArtistsPage(sortedArtists(artists, orders.artists), bottomPadding, orders.artists, { saveOrders(orders.copy(artists = it)) }) { openArtist = it.key }
+                            LocalSection.ALBUMS -> AlbumsPage(sortedAlbums(albums, orders.albums), bottomPadding, orders.albums, { saveOrders(orders.copy(albums = it)) }) { openAlbum = it.id }
+                            LocalSection.ADDED_SONGS -> TrackList(addedSongs, tr(R.string.recently_added), bottomPadding)
+                            LocalSection.ADDED_ALBUMS -> AlbumsPage(addedAlbums, bottomPadding) { openAlbum = it.id }
+                            LocalSection.DOWNLOADS -> if (downloads.isEmpty()) EmptyState(PrismIcons.DownloadDone, tr(R.string.no_downloads_yet), tr(R.string.songs_you_download_in_prism_show))
+                                else TrackList(downloads, tr(R.string.downloads), bottomPadding)
+                            null -> {}
+                        }
                     }
                 }
             }
@@ -366,7 +392,7 @@ private fun SectionChips(sections: List<LocalSection>, pager: androidx.compose.f
         items(sections.size) { i ->
             PrismChip(pager.currentPage == i, { scope.launch { pager.animateScrollToPage(i) } }, sections[i].label)
         }
-        item { PrismChip(false, onEdit, "Edit", icon = PrismIcons.Customize) }
+        item { PrismChip(false, onEdit, tr(R.string.edit), icon = PrismIcons.Customize) }
     }
 }
 
@@ -375,9 +401,9 @@ private fun SectionChips(sections: List<LocalSection>, pager: androidx.compose.f
 private fun SectionsEditor(sections: List<LocalSection>, onDismiss: () -> Unit) {
     val prefs = LocalContainer.current.settings
     com.prism.music.ui.components.PrismSheet(onDismiss = onDismiss) {
-        Text("Sections", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium, modifier = Modifier.padding(horizontal = 20.dp))
+        Text(tr(R.string.sections), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium, modifier = Modifier.padding(horizontal = 20.dp))
         Text(
-            "Tick the sections you want; hold one (or its grip) to move it.", style = MaterialTheme.typography.bodyMedium,
+            tr(R.string.tick_the_sections_you_want_hold), style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 8.dp),
         )
         @Composable
@@ -389,13 +415,13 @@ private fun SectionsEditor(sections: List<LocalSection>, onDismiss: () -> Unit) 
                     color = if (on) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant)
                 if (on && !held) {
                     androidx.compose.material3.IconButton(onClick = { prefs.setLocalSections(sections.toMutableList().apply { add(i - 1, removeAt(i)) }) }, enabled = i > 0) {
-                        androidx.compose.material3.Icon(PrismIcons.ChevronUp, "Move ${s.label} up")
+                        androidx.compose.material3.Icon(PrismIcons.ChevronUp, tr(R.string.move_up_2, s.label))
                     }
                     androidx.compose.material3.IconButton(onClick = { prefs.setLocalSections(sections.toMutableList().apply { add(i + 1, removeAt(i)) }) }, enabled = i < sections.lastIndex) {
-                        androidx.compose.material3.Icon(PrismIcons.ChevronDown, "Move ${s.label} down")
+                        androidx.compose.material3.Icon(PrismIcons.ChevronDown, tr(R.string.move_down_2, s.label))
                     }
                 }
-                if (grip != null) com.prism.music.ui.components.DragGrip(grip.padding(start = 4.dp), "Drag ${s.label}")
+                if (grip != null) com.prism.music.ui.components.DragGrip(grip.padding(start = 4.dp), tr(R.string.drag, s.label))
             }
         }
         com.prism.music.ui.components.ReorderList(sections, { it }, { prefs.setLocalSections(it) }) { s, i, held, mod -> SectionRow(s, i, mod, Modifier.dragHandle(), held) }
@@ -427,7 +453,7 @@ private fun SongsPage(songs: List<Song>, sort: Order<SongKey>, onSort: (Order<So
     val current by c.player.currentSong.collectAsState()
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 0.dp, bottom = bottomPadding + 16.dp)) {
         item {
-            SortRow(songCount(songs.size), "Sort songs", SongKey.entries, sort, { it.label }, { it.dirs }, onSort)
+            SortRow(songCount(songs.size), tr(R.string.sort_songs), SongKey.entries, sort, { it.label }, { it.dirs }, onSort)
         }
         itemsIndexed(songs, key = { _, s -> "l" + s.id }) { i, s ->
             SwipeToQueue(s) {
@@ -442,7 +468,7 @@ private fun ArtistsPage(artists: List<LocalArtist>, bottomPadding: Dp, sort: Ord
     val ui = LocalUi.current
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 0.dp, bottom = bottomPadding + 16.dp)) {
         item {
-            SortRow(if (artists.size == 1) "1 artist" else "${artists.size} artists", "Sort artists", ArtistKey.entries, sort, { it.label }, { it.dirs }, onSort)
+            SortRow(trp(R.plurals.n_artists, artists.size), tr(R.string.sort_artists), ArtistKey.entries, sort, { it.label }, { it.dirs }, onSort)
         }
         items(artists, key = { "a" + it.key }) { a ->
             Row(
@@ -454,7 +480,7 @@ private fun ArtistsPage(artists: List<LocalArtist>, bottomPadding: Dp, sort: Ord
                 Column(Modifier.weight(1f)) {
                     Text(a.name, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(
-                        listOf(songCount(a.tracks.size), if (a.albums.size == 1) "1 album" else "${a.albums.size} albums").joinToString(" · "),
+                        listOf(songCount(a.tracks.size), trp(R.plurals.n_albums, a.albums.size)).joinToString(" · "),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -473,7 +499,7 @@ private fun AlbumsPage(
         contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = if (sort != null) 0.dp else 4.dp, bottom = bottomPadding + 16.dp),
     ) {
         if (sort != null) item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-            SortRow(if (albums.size == 1) "1 album" else "${albums.size} albums", "Sort albums", AlbumKey.entries, sort, { it.label }, { it.dirs }, onSort, inset = 4.dp)
+            SortRow(trp(R.plurals.n_albums, albums.size), tr(R.string.sort_albums), AlbumKey.entries, sort, { it.label }, { it.dirs }, onSort, inset = 4.dp)
         }
         items(albums, key = { "b" + it.id }) { a -> AlbumTile(a) { onOpen(a) } }
     }
@@ -588,7 +614,7 @@ private fun ArtistPage(artist: LocalArtist, bottomPadding: Dp, onOpenAlbum: (Loc
                         Text(album.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         album.year.takeIf { it > 0 }?.let { Text("$it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     }
-                    androidx.compose.material3.Icon(PrismIcons.ChevronRight, "Open album", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    androidx.compose.material3.Icon(PrismIcons.ChevronRight, tr(R.string.open_album), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             itemsIndexed(songs, key = { i, s -> "s" + album.id + ":" + s.id + ":" + i }) { _, s ->

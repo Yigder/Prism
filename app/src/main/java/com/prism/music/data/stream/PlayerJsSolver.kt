@@ -102,13 +102,26 @@ class PlayerJsSolver(private val context: Context, private val http: OkHttpClien
         } catch (e: ExecutionException) {
             throw IOException("Couldn't start the JavaScript sandbox", e.cause)
         }.also { sandbox = it }
-        val iso = sb.createIsolate(IsolateStartupParameters())
+        // A heap of its own, set outright: left to the sandbox's default, it was killed for running out of memory while
+        // EJS parsed YouTube's 2.5 MB player (GitHub #179, a OnePlus on Android 16: "isolate exceeded its heap memory
+        // limit", every Premium and account-only song failed). Phones with little memory get less.
+        val iso = sb.createIsolate(IsolateStartupParameters().apply {
+            if (sb.isFeatureSupported(JavaScriptSandbox.JS_FEATURE_ISOLATE_MAX_HEAP_SIZE)) setMaxHeapSizeBytes(heapBytes())
+        })
         isolate = iso
         loadedId = null
         val lib = context.assets.open("ejs/yt.solver.lib.min.js").use { it.readBytes().decodeToString() }
         val core = context.assets.open("ejs/yt.solver.core.min.js").use { it.readBytes().decodeToString() }
         evaluate(iso, "$LOCALE_GUARD\n$lib\nvar meriyah = lib.meriyah, astring = lib.astring;\n$core\n$GLUE", LOAD_TIMEOUT_S)
         return iso
+    }
+
+    /** The solver's heap: 512 MB, or 256 MB on a phone with under 4 GB of memory or marked low-RAM. */
+    private fun heapBytes(): Long {
+        val am = context.getSystemService(android.app.ActivityManager::class.java)
+        val info = android.app.ActivityManager.MemoryInfo().also { am?.getMemoryInfo(it) }
+        val small = am?.isLowRamDevice == true || info.totalMem in 1 until 4L * 1024 * 1024 * 1024
+        return (if (small) 256L else 512L) * 1024 * 1024
     }
 
     /** The player is ~2.5 MB, past the binder limit older sandboxes have, so it goes through a file there. */

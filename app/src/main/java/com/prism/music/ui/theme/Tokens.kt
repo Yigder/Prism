@@ -1,5 +1,7 @@
 package com.prism.music.ui.theme
 
+import com.prism.music.R
+import com.prism.music.tr
 import android.graphics.Typeface
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Shapes
@@ -34,6 +36,8 @@ data class PrismUi(
     val albumShape: com.prism.music.data.prefs.CoverShape = com.prism.music.data.prefs.CoverShape.ROUNDED,
     val artistShape: com.prism.music.data.prefs.CoverShape = com.prism.music.data.prefs.CoverShape.CIRCLE,
     val buttonShape: com.prism.music.data.prefs.ButtonShape = com.prism.music.data.prefs.ButtonShape.PILL,
+    /** Prism 1.6's switches, sliders and buttons: Material's, in the accent (1.7.8, Classic controls). */
+    val classicControls: Boolean = false,
 ) {
     /** A corner radius designed at [base] for the default "Round" setting. */
     fun r(base: Dp): Dp = base * corner
@@ -79,6 +83,7 @@ data class PrismUi(
             albumShape = s.shapes.albums,
             artistShape = s.shapes.artists,
             buttonShape = s.shapes.button,
+            classicControls = s.shapes.classicControls,
         )
     }
 }
@@ -160,6 +165,21 @@ object AppFonts {
         else -> bundledFamily(choice, weights) ?: FontFamily.Default
     }
 
+    /**
+     * Makes [choices]' typefaces now, at every weight the UI uses (and their weight axis for the lyrics' sweep), so the
+     * first frame drawn in them finds them made (G37: a Look in another font froze the screen ~1 s while they were
+     * built there). Compose's font resolvers share one cache, so a resolver made here fills it for the screen's. Call
+     * off the main thread.
+     */
+    fun warm(context: android.content.Context, choices: Collection<FontChoice>) {
+        val resolver = androidx.compose.ui.text.font.createFontFamilyResolver(context)
+        for (choice in choices.distinct()) {
+            val f = family(choice)
+            for (w in weights) runCatching { resolver.resolve(f, FontWeight(w), FontStyle.Normal) }
+            axis(choice)?.let { a -> for (w in 200..700 step 20) runCatching { resolver.resolve(a, FontWeight(w), FontStyle.Normal) } }
+        }
+    }
+
     /** Whether [choice] can be used: the bundled typefaces always; Your font once one is imported. */
     fun available(choice: FontChoice): Boolean = when (choice) {
         FontChoice.CUSTOM -> customFile(FontSlot.APP) != null
@@ -203,19 +223,19 @@ object AppFonts {
         val target = File(context.filesDir, "fonts").apply { mkdirs() }
         val tmp = File(target, slot.fileName + ".new")
         context.contentResolver.openInputStream(uri)?.use { input -> tmp.outputStream().use { input.copyTo(it) } }
-            ?: error("Couldn't open that file")
+            ?: error(tr(R.string.couldn_t_open_that_file))
         val ok = runCatching {
             if (android.os.Build.VERSION.SDK_INT >= 29) { android.graphics.fonts.Font.Builder(tmp).build(); true }
             else Typeface.createFromFile(tmp) != null
         }.getOrDefault(false)
-        if (!ok || tmp.length() < 1024) { tmp.delete(); error("That isn't a font file Android can use (pick a .ttf or .otf)") }
+        if (!ok || tmp.length() < 1024) { tmp.delete(); error(tr(R.string.that_isn_t_a_font_file)) }
         val out = File(target, slot.fileName)
         out.delete()
-        if (!tmp.renameTo(out)) { tmp.delete(); error("Couldn't save the font") }
+        if (!tmp.renameTo(out)) { tmp.delete(); error(tr(R.string.couldn_t_save_the_font)) }
         val name = context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
             if (c.moveToFirst()) c.getString(0) else null
         }
-        return name?.substringBeforeLast('.')?.takeIf { it.isNotBlank() } ?: "Your font"
+        return name?.substringBeforeLast('.')?.takeIf { it.isNotBlank() } ?: tr(R.string.your_font_2)
     }
 
     fun remove(slot: FontSlot) {
