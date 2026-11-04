@@ -82,3 +82,9 @@ val LocalPlayerCover = staticCompositionLocalOf { PlayerCover() }
  * else, the player itself included, and in the settings' previews.
  */
 val LocalHiddenByPlayer = compositionLocalOf<() -> Boolean> { { false } }
+
+/**
+ * Whether the music is playing now (MainActivity reads it from the player): the playing bars beside the current song
+ * bounce only then and stand still while it's paused (#302). Elsewhere (the settings' previews) they move.
+ */
+val LocalMusicPlaying = compositionLocalOf<() -> Boolean> { { true } }

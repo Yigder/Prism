@@ -130,7 +130,7 @@ private val lineShadow = Shadow(Color.Black.copy(alpha = 0.45f), androidx.compos
 private fun immersiveLook(song: Song): LyricsLook {
     val s = com.prism.music.ui.theme.LocalAppSettings.current
     // There's no card under immersive lyrics: Bold card keeps its bold type, on the cover.
-    return rememberLyricsLook(s, song.thumbnail).withoutCard(s.lyricsOthersAlpha)
+    return rememberLyricsLook(s, com.prism.music.data.PlaylistCovers.artOf(song)).withoutCard(s.lyricsOthersAlpha)
 }
 
 /** The lyrics' typeface on its weight axis, so the sung words thicken as on the lyrics page; null for System / imported fonts. */
@@ -200,7 +200,7 @@ fun ImmersivePlayer(
     var drag by remember { mutableFloatStateOf(0f) }
     // Sideways, the cover follows the finger a little; past the mark, letting go changes the song.
     var swipe by remember { mutableFloatStateOf(0f) }
-    val blurred = rememberFullArtworkBlur(song.thumbnail)
+    val blurred = rememberFullArtworkBlur(com.prism.music.data.PlaylistCovers.artOf(song))
     Box(
         Modifier
             .fillMaxSize()
@@ -249,7 +249,7 @@ fun ImmersivePlayer(
         // A playing music video takes the cover's place, cropped to fill the screen (#170).
         if (video) MusicVideoSurface(Modifier.fillMaxSize().graphicsLayer { translationX = swipe * 0.35f }, fill = true)
         val coverShown = !video && (ground == com.prism.music.data.prefs.LyricsBackground.PLAYER || ground == com.prism.music.data.prefs.LyricsBackground.CANVAS)
-        if (!coverShown && !video) LyricsBackdrop(ground, settings, song.thumbnail, blurred, null, canvasSaved, isPlaying, Modifier.fillMaxSize())
+        if (!coverShown && !video) LyricsBackdrop(ground, settings, com.prism.music.data.PlaylistCovers.artOf(song), blurred, null, canvasSaved, isPlaying, Modifier.fillMaxSize())
 
         // ---- Behind a zoomed-out cover, the cover blurred, so it still fills the screen.
         if (coverShown && art != ImmersiveArt.FILL) FullArtworkBlurBackdrop(blurred, scrim = 0.8f)
@@ -266,7 +266,7 @@ fun ImmersivePlayer(
                     .graphicsLayer { translationX = swipe * 0.35f },
             ) {
                 AsyncImage(
-                    hiRes(song.thumbnail, 1200), null, contentScale = ContentScale.Crop,
+                    hiRes(com.prism.music.data.PlaylistCovers.artOf(song), 1200), null, contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer { alpha = 1f - canvasCover; compositingStrategy = CompositingStrategy.Offscreen }

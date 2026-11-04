@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
@@ -53,6 +54,69 @@ import kotlin.math.roundToInt
 import kotlin.random.Random
 
 val PlayerFallbackBackdrop = Color(0xFF060609)
+
+/** #320 (1.8.1): the White player background (a soft white, so a white cover still has an edge). */
+val PlayerWhiteBackdrop = Color(0xFFF7F7F9)
+
+/**
+ * #320 (1.8.1): the player's type and controls are drawn white for its dark backgrounds; over the White one they're
+ * drawn through this, which turns light into dark and dark into light while keeping each color's hue (an inversion
+ * with the hue turned back round): white type reads near-black, a white play button turns black with a white
+ * glyph, the split light keeps its colors. [light] is set by the player while it shows the White background (not over
+ * the lyrics or the queue, which keep their dark blurred cover).
+ */
+object PlayerInk {
+    var light by androidx.compose.runtime.mutableStateOf(false)
+
+    /** Inverts lightness (255 − c), then turns hue round 180° (W3C's hue matrix at 180°), so hues stay. */
+    internal val matrix = floatArrayOf(
+        0.574f, -1.43f, -0.144f, 0f, 255f,
+        -0.426f, -0.43f, -0.144f, 0f, 255f,
+        -0.426f, -1.43f, 0.856f, 0f, 255f,
+        0f, 0f, 0f, 1f, 0f,
+    )
+    private val paint by lazy {
+        androidx.compose.ui.graphics.Paint().apply {
+            colorFilter = androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix(matrix))
+        }
+    }
+
+    /** What [color] reads as over the White background. */
+    fun over(color: Color): Color {
+        val m = matrix
+        val r = color.red * 255; val g = color.green * 255; val b = color.blue * 255
+        fun ch(i: Int) = ((m[i] * r + m[i + 1] * g + m[i + 2] * b + m[i + 4]) / 255f).coerceIn(0f, 1f)
+        return Color(ch(0), ch(5), ch(10), color.alpha)
+    }
+
+    /**
+     * Draws what's in it as it reads over the White background while [on] (read as it draws, so a change only redraws).
+     * Shadows and glows a little outside it are kept.
+     */
+    fun Modifier.inked(on: () -> Boolean = { light }): Modifier = this.drawWithContent {
+        if (!on()) { drawContent(); return@drawWithContent }
+        val reach = 96.dp.toPx()
+        drawContext.canvas.saveLayer(androidx.compose.ui.geometry.Rect(-reach, -reach, size.width + reach, size.height + reach), paint)
+        drawContent()
+        drawContext.canvas.restore()
+    }
+}
+
+/**
+ * #309 (1.8.1): "Show background" goes below what it could before, on down to a fully dark player. Stored values from
+ * 0 to 1 draw exactly as they always did; from 0 down to this one a black veil comes over the background, solid here.
+ * The slider shows the whole stretch as 0-100%, so its 0% is fully dark.
+ */
+const val BACKDROP_SHOW_MIN = -0.25f
+
+/** How much of the black veil a stored "Show background" [show] puts over the player's background (0 = none, 1 = solid). */
+fun backdropBlackout(show: Float): Float = (show / BACKDROP_SHOW_MIN).coerceIn(0f, 1f)
+
+/** Where on the slider (0..1) a stored "Show background" [show] sits. */
+fun backdropShowOnSlider(show: Float): Float = ((show - BACKDROP_SHOW_MIN) / (1f - BACKDROP_SHOW_MIN)).coerceIn(0f, 1f)
+
+/** The stored "Show background" for a place [at] (0..1) on the slider. */
+fun backdropShowFromSlider(at: Float): Float = BACKDROP_SHOW_MIN + at.coerceIn(0f, 1f) * (1f - BACKDROP_SHOW_MIN)
 
 /** The cover reduced to a tiny, smoothly interpolated color field. */
 @Immutable
@@ -139,10 +203,10 @@ fun ArtworkMeshBackdrop(
     }
     // The drift moves the drawn layer only (scaled up a little so its edges never show): what's drawn and blurred
     // inside it stays as it is, so it costs the GPU a transform a frame, not a redraw.
-    val still = speed <= 0.01f || com.prism.music.ui.theme.LocalUi.current.reduceMotion
-    val drift = if (still) null else rememberInfiniteTransition(label = "meshDrift").animateFloat(
+    val move = meshDrift(speed).takeUnless { com.prism.music.ui.theme.LocalUi.current.reduceMotion }
+    val drift = if (move == null) null else rememberInfiniteTransition(label = "meshDrift").animateFloat(
         0f, (2 * Math.PI).toFloat(),
-        infiniteRepeatable(tween((48_000 / speed.coerceIn(0.1f, 1f)).roundToInt(), easing = LinearEasing)),
+        infiniteRepeatable(tween(move.loopMs, easing = LinearEasing)),
         label = "drift",
     )
     val tone = remember(intensity) {
@@ -155,10 +219,11 @@ fun ArtworkMeshBackdrop(
             .background(PlayerFallbackBackdrop)
             .graphicsLayer {
                 val t = drift?.value ?: return@graphicsLayer
-                val s = 1.12f + 0.04f * kotlin.math.sin(t * 2)
+                val m = move ?: return@graphicsLayer
+                val s = m.scale + 0.04f * kotlin.math.sin(t * 2)
                 scaleX = s; scaleY = s
-                translationX = size.width * 0.04f * kotlin.math.cos(t)
-                translationY = size.height * 0.03f * kotlin.math.sin(t)
+                translationX = size.width * m.reachX * kotlin.math.cos(t)
+                translationY = size.height * m.reachY * kotlin.math.sin(t)
             }
             .then(if (liveBlur && Build.VERSION.SDK_INT >= 31) Modifier.blur(32.dp * blur.coerceIn(0.3f, 2f)) else Modifier),
     ) {
@@ -168,6 +233,28 @@ fun ArtworkMeshBackdrop(
         // Aura × Spectrum (1.7): the cover's colors glow, deepening under the controls so the white type reads.
         drawRect(Brush.verticalGradient(0f to Color.Black.copy(alpha = 0.08f), 0.55f to Color.Black.copy(alpha = 0.22f), 1f to Color.Black.copy(alpha = 0.42f)))
     }
+}
+
+/**
+ * How the color mesh drifts at [speed] (0 still … 1 lively): one loop in [loopMs], reaching [reachX] / [reachY] of the
+ * screen to the sides and up and down, drawn [scale] times its size (breathing a little round it) so its edges never
+ * show. Null holds it still.
+ */
+internal data class MeshDrift(val loopMs: Int, val reachX: Float, val reachY: Float, val scale: Float)
+
+/**
+ * #284 (1.8.1): at 100% one loop took 48 s and went 4% of the way across, too slow and small to see as movement. Every
+ * step of the slider is now three times as quick (16 s a loop at 100%), and the livelier it is the farther it goes (up
+ * to 9% across).
+ */
+internal fun meshDrift(speed: Float): MeshDrift? {
+    if (speed <= 0.01f) return null
+    val v = speed.coerceIn(0.1f, 1f)
+    val reachX = 0.04f + 0.05f * v
+    val reachY = 0.03f + 0.04f * v
+    // Twice the farthest reach plus the breathing (±0.04) and a little more, so the drifted layer still covers the screen.
+    val scale = 1f + 2f * maxOf(reachX, reachY) + 0.08f
+    return MeshDrift((16_000 / v).roundToInt(), reachX, reachY, scale)
 }
 
 /**

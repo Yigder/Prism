@@ -40,20 +40,24 @@ class Rewinds(private val c: AppContainer) {
     fun isOpen(year: Int, now: Long = System.currentTimeMillis()) = RewindCalendar.isOpen(year, now, early = early)
 
     /** Years with listening, newest first. */
-    suspend fun years(): List<Int> = RewindCalendar.years(c.db.plays().firstEvent(), System.currentTimeMillis())
+    suspend fun years(): List<Int> = RewindCalendar.years(c.imports.replay().firstEvent(), System.currentTimeMillis())
 
     private fun finished(year: Int, now: Long = System.currentTimeMillis()) = now > RewindCalendar.bounds(year).second + FINISHED_AFTER_MS
 
     /** The year still under way, worked out lately (watching it twice in a row needn't work it out twice). */
     @Volatile private var recent: RewindSnapshot? = null
+    @Volatile private var recentSources: List<com.prism.music.data.imports.ImportSource> = emptyList()
 
     /** [year]'s Rewind: as kept, or worked out now (and kept, once the year's over). */
     suspend fun snapshot(year: Int): RewindSnapshot = withContext(Dispatchers.IO) {
-        store.load(year)?.let { return@withContext it }
-        recent?.takeIf { it.year == year && System.currentTimeMillis() - it.frozenAt < RECENT_MS }?.let { return@withContext it }
-        val s = build(year)
-        if (finished(year) && s.plays > 0) runCatching { store.save(s) }.onFailure { Log.w(TAG, "couldn't keep Rewind $year", it) }
-        else recent = s
+        // Kept Rewinds are Prism's own plays: with an imported history counted (1.8.1) the year is worked out afresh.
+        val stats = c.imports.replay()
+        val prismOnly = stats.sources.isEmpty()
+        if (prismOnly) store.load(year)?.let { return@withContext it }
+        recent?.takeIf { it.year == year && System.currentTimeMillis() - it.frozenAt < RECENT_MS && recentSources == stats.sources }?.let { return@withContext it }
+        val s = build(year, stats)
+        if (prismOnly && finished(year) && s.plays > 0) runCatching { store.save(s) }.onFailure { Log.w(TAG, "couldn't keep Rewind $year", it) }
+        else { recent = s; recentSources = stats.sources }
         s
     }
 
@@ -72,13 +76,13 @@ class Rewinds(private val c: AppContainer) {
         album = albumTitle?.let { AlbumRef(it) }, durationSec = durationSec, thumbnail = thumbnail,
     )
 
-    suspend fun build(year: Int): RewindSnapshot = withContext(Dispatchers.IO) {
+    suspend fun build(year: Int, dao: com.prism.music.data.imports.PlayStats = c.imports.replay()): RewindSnapshot = withContext(Dispatchers.IO) {
         // The slow, network-bound pieces (a lyric line, the top artist's photo) go first, alongside the counting.
         val (from0, end0) = RewindCalendar.bounds(year)
-        val topNow = c.db.plays().topSongs(from0, minOf(end0, System.currentTimeMillis()), 20).mergeUploads().firstOrNull()
+        val topNow = dao.topSongs(from0, minOf(end0, System.currentTimeMillis()), 20).mergeUploads().firstOrNull()
         val lyricJob = async { topNow?.let { lyricLine(it) } }
         val imageJob = async {
-            c.db.plays().topArtists(from0, minOf(end0, System.currentTimeMillis()), 1).firstOrNull()?.artistId?.let { id ->
+            dao.topArtists(from0, minOf(end0, System.currentTimeMillis()), 1).firstOrNull()?.artistId?.let { id ->
                 withTimeoutOrNull(5_000) { runCatching { c.ytm.artist(id).thumbnail }.getOrNull() }
             }
         }
@@ -86,7 +90,6 @@ class Rewinds(private val c: AppContainer) {
         val now = System.currentTimeMillis()
         val (from, end) = RewindCalendar.bounds(year, zone)
         val to = minOf(end, now)
-        val dao = c.db.plays()
         val songs = dao.topSongs(from, to, 150).mergeUploads().take(100)
         val artists = dao.topArtists(from, to, 20)
         val totalMs = dao.totalMs(from, to)

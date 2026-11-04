@@ -41,7 +41,7 @@ class TasteRepository(private val c: AppContainer) {
     private suspend fun buildProfile(): Map<String, Double> {
         val now = System.currentTimeMillis()
         val weights = LinkedHashMap<String, Double>()
-        c.db.plays().tasteTopSongs(now - 90L * 86_400_000, now, 120).forEach { weights.merge(it.songId, it.plays.toDouble(), Double::plus) }
+        c.imports.taste.tasteTopSongs(now - 90L * 86_400_000, now, 120).forEach { weights.merge(it.songId, it.plays.toDouble(), Double::plus) }
         c.db.songs().liked().take(200).forEach { weights.merge(it.id, 0.6, Double::plus) }
         c.library.recent.value.take(30).forEach { weights.merge(it.id, 0.8, Double::plus) }
         if (weights.isEmpty()) return emptyMap()

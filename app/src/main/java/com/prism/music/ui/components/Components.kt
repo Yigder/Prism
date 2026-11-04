@@ -2,6 +2,7 @@ package com.prism.music.ui.components
 
 import com.prism.music.R
 import com.prism.music.tr
+import com.prism.music.download.forRow
 import com.prism.music.ui.theme.lit
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
@@ -163,25 +164,59 @@ fun SongRow(
     starred: Boolean = false,
     /** More rows for the song's menu (e.g. "Remove from this playlist"). */
     extraActions: List<SheetItem> = emptyList(),
+    /** The album's name after the artist when there's no [trailingInfo] (#310: Downloads can leave it out). */
+    showAlbum: Boolean = true,
     onClick: () -> Unit,
 ) {
-    val c = LocalContainer.current
-    val likedIds = c.library.likedIds.collectAsState()
-    val downloads = c.downloadState.collectAsState()
-    val videos = c.videoState.collectAsState()
+    // The likes, downloads and saved videos, collected once for the whole app (PrismRoot) rather than by each row: a
+    // row coming into view during a fling started four collectors of its own (1.8.1).
+    val marks = LocalRowMarks.current ?: LocalContainer.current.let { c ->
+        rememberRowMarks(c.library.likedIds, c.downloadState, c.downloadStandIns, c.videoState)
+    }
     var menu by remember { mutableStateOf(false) }
     val done = androidx.media3.exoplayer.offline.Download.STATE_COMPLETED
     // Each row recomposes only when its own marks change, not every time any download, like or video changes anywhere
     // (a list on screen while Smart Downloads ran was rebuilt row by row at each step).
-    val liked by remember(song.id) { derivedStateOf { song.id in likedIds.value } }
-    val downloaded by remember(song.id) { derivedStateOf { downloads.value[song.id]?.state == done } }
-    val videoSaved by remember(song.id) { derivedStateOf { videos.value[song.id]?.state == done } }
+    val liked by remember(song.id, marks) { derivedStateOf { song.id in marks.liked.value } }
+    // A music video downloaded as its song shows as downloaded (#315).
+    val downloaded by remember(song.id, marks) { derivedStateOf { marks.downloads.value.forRow(song.id, marks.standIns.value)?.state == done } }
+    val videoSaved by remember(song.id, marks) { derivedStateOf { marks.videos.value[song.id]?.state == done } }
     SongRowLayout(
         song, modifier, index, playing, trailingInfo, starred,
-        liked = liked, downloaded = downloaded, videoSaved = videoSaved,
+        liked = liked, downloaded = downloaded, videoSaved = videoSaved, showAlbum = showAlbum,
         onLongClick = onLongClick ?: { menu = true }, onMore = { menu = true }, onClick = onClick,
     )
     if (menu) SongActionsSheet(song, extraActions) { menu = false }
+}
+
+/**
+ * What every [SongRow] marks: the liked songs, the downloads (+ the videos downloaded as their song, #315) and the saved
+ * music videos, as states. Only their values are read, inside each row's own derivedStateOf.
+ */
+@androidx.compose.runtime.Stable
+class RowMarks(
+    val liked: androidx.compose.runtime.State<Set<String>>,
+    val downloads: androidx.compose.runtime.State<Map<String, com.prism.music.download.DownloadInfo>>,
+    val standIns: androidx.compose.runtime.State<Map<String, String>>,
+    val videos: androidx.compose.runtime.State<Map<String, com.prism.music.download.VideoDownload>>,
+)
+
+/** The app's [RowMarks], provided once at its root; null (a TV, a test) makes each row collect its own. */
+val LocalRowMarks = androidx.compose.runtime.staticCompositionLocalOf<RowMarks?> { null }
+
+/** The four flows collected here, once, as [RowMarks]. */
+@Composable
+fun rememberRowMarks(
+    liked: kotlinx.coroutines.flow.StateFlow<Set<String>>,
+    downloads: kotlinx.coroutines.flow.StateFlow<Map<String, com.prism.music.download.DownloadInfo>>,
+    standIns: kotlinx.coroutines.flow.StateFlow<Map<String, String>>,
+    videos: kotlinx.coroutines.flow.StateFlow<Map<String, com.prism.music.download.VideoDownload>>,
+): RowMarks {
+    val l = liked.collectAsState()
+    val d = downloads.collectAsState()
+    val s = standIns.collectAsState()
+    val v = videos.collectAsState()
+    return remember(l, d, s, v) { RowMarks(l, d, s, v) }
 }
 
 /** [SongRow]'s look, given what it shows (so it can be drawn without the app around it: the Design gallery, tests). */
@@ -197,6 +232,7 @@ fun SongRowLayout(
     liked: Boolean = false,
     downloaded: Boolean = false,
     videoSaved: Boolean = false,
+    showAlbum: Boolean = true,
     onLongClick: (() -> Unit)? = null,
     onMore: () -> Unit = {},
     onClick: () -> Unit = {},
@@ -225,7 +261,8 @@ fun SongRowLayout(
                 )
             }
         }
-        Artwork(song.thumbnail, Modifier.size(48.dp), art, size = 226)
+        // The cover picked for it or its album (#305), else its own.
+        Artwork(com.prism.music.data.PlaylistCovers.artOf(song), Modifier.size(48.dp), art, size = 226)
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             // The playing song's title is written in split light (deeper on light backgrounds), beside the spectrum bars;
@@ -247,7 +284,7 @@ fun SongRowLayout(
                 if (downloaded) Icon(PrismIcons.DownloadDone, tr(R.string.downloaded), mark, tint = scheme.ink3)
                 if (videoSaved) Icon(PrismIcons.Video, tr(R.string.video_saved), mark, tint = scheme.ink3)
                 Text(
-                    listOfNotNull(song.artistText, trailingInfo ?: song.album?.title).joinToString(" · "),
+                    listOfNotNull(song.artistText, trailingInfo ?: song.album?.title?.takeIf { showAlbum }).joinToString(" · "),
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
                 )
@@ -263,14 +300,14 @@ fun SongRowLayout(
 
 /**
  * Three bouncing bars: what's playing. [spectrum]: Spectrum's mark, the bars in the split light (red, green, violet)
- * instead of [color]. Still with reduced motion.
+ * instead of [color]. Still with reduced motion, and while the music is paused ([playing], #302: they bounced on).
  */
 @Composable
-fun PlayingBars(modifier: Modifier = Modifier, color: Color = Color.White, spectrum: Boolean = false) {
-    val still = com.prism.music.ui.theme.LocalUi.current.reduceMotion
+fun PlayingBars(modifier: Modifier = Modifier, color: Color = Color.White, spectrum: Boolean = false, playing: Boolean = LocalMusicPlaying.current()) {
+    val still = com.prism.music.ui.theme.LocalUi.current.reduceMotion || !playing
     val colors = if (spectrum && !com.prism.music.ui.theme.PrismTokens.white) listOf(Color(0xFFFF6B5E), Color(0xFF3DDC97), Color(0xFF7C8CFF)) else listOf(color, color, color)
     // With reduced motion there's no animation running at all (it used to tick every frame and just not show it); nor
-    // while the full player hides the list it's in.
+    // while the full player hides the list it's in, nor while the song is paused.
     val hidden = LocalHiddenByPlayer.current()
     val heights: List<androidx.compose.runtime.State<Float>> = if (still || hidden) STILL_BARS else {
         val t = rememberInfiniteTransition(label = "bars")
@@ -581,7 +618,8 @@ fun SongActionsSheet(song: Song, extra: List<SheetItem> = emptyList(), onDismiss
     var versions by remember { mutableStateOf(false) }
     val picks by c.versions.picks.collectAsState()
     val isLiked = song.id in liked
-    val dl = downloads[song.id]
+    val standIns by c.downloadStandIns.collectAsState()
+    val dl = downloads.forRow(song.id, standIns)
     val downloaded = dl?.state == androidx.media3.exoplayer.offline.Download.STATE_COMPLETED
     val together by c.together.state.collectAsState()
     // A file on the phone isn't on YouTube: no radio, download, sharing, YouTube playlists, or sending it to a session.
@@ -594,6 +632,9 @@ fun SongActionsSheet(song: Song, extra: List<SheetItem> = emptyList(), onDismiss
     if (sharing) { ShareSheet(song.shareTarget()) { sharing = false; onDismiss() }; return }
     if (credits) { SongCreditsSheet(song) { credits = false; onDismiss() }; return }
     if (versions) { SongVersionsSheet(song) { versions = false; onDismiss() }; return }
+    // #305: the song's own cover.
+    var cover by remember { mutableStateOf(false) }
+    if (cover) { CoverPickSheet(CoverFor.OfSong(song, c.covers.songKey(song.id))) { cover = false; onDismiss() }; return }
 
     // In someone's Listen Together session, songs go into their queue.
     val quick = listOf(
@@ -627,6 +668,9 @@ fun SongActionsSheet(song: Song, extra: List<SheetItem> = emptyList(), onDismiss
         // Another recording of it in its place (Reddit 1.7.9: an album song played as someone's cover).
         if (song.isEpisode || local || song.isLive || guest != null) null
         else ActionItem(PrismIcons.SwapVertical, tr(R.string.play_a_different_version), active = song.id in picks, keepOpen = true) { versions = true },
+        // #305: a cover of your choosing (a photo, another version's, or back to its own).
+        if (song.isEpisode || song.isLive) null
+        else ActionItem(PrismIcons.Photo, tr(R.string.change_cover), active = c.covers.custom(c.covers.songKey(song.id)) != null, keepOpen = true) { cover = true },
         if (song.isEpisode || local) null else videoDownloadAction(song, videos[song.id]),
         if (song.isEpisode) null else if (song.id in disliked) ActionItem(PrismIcons.ThumbDownFilled, tr(R.string.not_for_me), active = true, keepOpen = true) { c.library.setDisliked(song, false) }
         else ActionItem(PrismIcons.ThumbDown, tr(R.string.not_for_me)) { c.library.setDisliked(song, true); toast(tr(R.string.got_it_prism_will_steer_clear)) },
@@ -640,9 +684,10 @@ fun SongActionsSheet(song: Song, extra: List<SheetItem> = emptyList(), onDismiss
         },
     )
 
-    ActionSheet(song.thumbnail, onDismiss) { close ->
+    val songArt = c.covers.art(song)
+    ActionSheet(songArt, onDismiss) { close ->
         ActionHeader(
-            song.thumbnail, song.title,
+            songArt, song.title,
             listOfNotNull(song.artistText, formatDuration(song.durationSec).takeIf { it.isNotEmpty() }).joinToString(" · "),
             placeholderIcon = PrismIcons.Song,
         ) {
@@ -713,7 +758,7 @@ fun PlaylistPicker(songs: List<Song>, what: String, onDismiss: () -> Unit) {
                 // A long list (Liked songs, a big playlist) goes in 50 at a time after the first: one request with
                 // thousands of songs could be refused.
                 val id = runCatching {
-                    c.ytm.createPlaylist(name, ids.take(50), privacy = privacy)?.also { if (ids.size > 50) c.ytm.addAllToPlaylist(it, ids.drop(50)) }
+                    c.ytm.createPlaylist(name, ids.take(50), privacy = privacy)?.also { if (ids.size > 50) runCatching { c.ytm.addAllToPlaylist(it, ids.drop(50)) } }
                 }.getOrNull()
                 toast(if (id != null) tr(R.string.added_to, name) else tr(R.string.couldn_t_make_the_playlist))
                 if (id != null) c.library.refreshCollections()
@@ -724,6 +769,15 @@ fun PlaylistPicker(songs: List<Song>, what: String, onDismiss: () -> Unit) {
     val mine = prismLists.map { it.item() } +
         (if (signedIn) playlists.filterIsInstance<PlaylistItem>().filter { !it.id.startsWith("LM") && !it.isMix } else emptyList())
     val shown = if (query.isBlank()) mine else mine.filter { it.title.contains(query.trim(), ignoreCase = true) }
+    // #246 (1.8.1): the playlists that already have it, from what's on the phone (Prism playlists, the kept copies of
+    // playlists opened before, what was added since): nothing is asked from YouTube for the marks.
+    val holds by androidx.compose.runtime.produceState(emptyMap<String, Int>(), mine.map { it.id }, prismLists, ids) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val prism = prismLists.associate { l -> l.id to l.songs.map { it.id } }
+            val known = com.prism.music.data.PlaylistMembership.known(mine, prism) { id -> c.offline.page(id)?.songs?.map { it.id } }
+            com.prism.music.data.PlaylistMembership.counts(ids, known)
+        }
+    }
     PrismSheet(onDismiss = onDismiss) { close ->
         Column(Modifier.padding(bottom = 20.dp)) {
             Text(tr(R.string.add_to_playlist), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium, modifier = Modifier.padding(horizontal = 20.dp))
@@ -755,14 +809,13 @@ fun PlaylistPicker(songs: List<Song>, what: String, onDismiss: () -> Unit) {
                                     return@close
                                 }
                                 c.scope.launch(kotlinx.coroutines.Dispatchers.Main) {
-                                    val added = runCatching { if (many) { c.ytm.addAllToPlaylist(p.id, ids); true } else c.ytm.addToPlaylist(p.id, ids.single()) }
-                                    toast(
-                                        when {
-                                            added.isFailure -> tr(R.string.couldn_t_add_to, p.title)
-                                            added.getOrNull() == false -> tr(R.string.already_in, p.title)
-                                            else -> tr(R.string.added_to, p.title)
-                                        },
-                                    )
+                                    // Only what YouTube says went in is called added (Reddit, 1.7.9: "Added" for songs
+                                    // that never got there).
+                                    val result = runCatching { c.ytm.addSongsToPlaylist(p.id, ids) }
+                                    toast(addedMessage(result.getOrNull(), p.title, many))
+                                    // #246: the next time the sheet opens it says they're in, though the kept copy predates them.
+                                    result.getOrNull()?.takeIf { it.added + it.alreadyThere > 0 }?.let { com.prism.music.data.PlaylistMembership.noteAdded(p.id, ids) }
+                                    if ((result.getOrNull()?.added ?: 0) > 0) c.library.playlistChanged(p.id)
                                 }
                             }
                         }.padding(horizontal = 20.dp, vertical = 8.dp),
@@ -772,13 +825,40 @@ fun PlaylistPicker(songs: List<Song>, what: String, onDismiss: () -> Unit) {
                         Spacer(Modifier.width(14.dp))
                         Column(Modifier.weight(1f)) {
                             Text(p.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            if (p.subtitle.isNotBlank()) Text(p.subtitle.removePrefix("Playlist • "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            val has = holds[p.id] ?: 0
+                            // #246: says when it's in there already (or how many of several are).
+                            val line = when {
+                                has == 0 -> p.subtitle.removePrefix("Playlist • ").takeIf { it.isNotBlank() }
+                                !many -> tr(R.string.already_has_this_song)
+                                has >= ids.distinct().size -> tr(R.string.already_has_all_of_these)
+                                else -> tr(R.string.already_has_n_of_these, has, ids.distinct().size)
+                            }
+                            if (line != null) Text(
+                                line, style = MaterialTheme.typography.bodySmall,
+                                color = if (has > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            )
                         }
+                        if ((holds[p.id] ?: 0) > 0) Icon(
+                            PrismIcons.Check, tr(R.string.already_in, p.title),
+                            Modifier.padding(start = 8.dp).size(20.dp).testTag("inPlaylist:${p.id}"), tint = MaterialTheme.colorScheme.onSurface,
+                        )
                     }
                 }
             }
         }
     }
+}
+
+/**
+ * What to say after adding to the playlist [title]: only songs YouTube took count as added ([result] null = it failed).
+ * Several songs say how many went in, so a partly refused album doesn't read as all of it.
+ */
+internal fun addedMessage(result: com.prism.music.data.innertube.YouTubeMusic.PlaylistAdd?, title: String, many: Boolean): String = when {
+    result == null || (result.added == 0 && result.alreadyThere == 0) -> tr(R.string.couldn_t_add_to, title)
+    result.added == 0 -> tr(R.string.already_in, title)
+    many || result.added > 1 -> tr(R.string.added_to_2, com.prism.music.data.model.songCount(result.added), title)
+    else -> tr(R.string.added_to, title)
 }
 
 /** Name a new playlist: a YouTube Music one (and who can open it), or with [local] a Prism one kept on this phone. */
@@ -864,6 +944,20 @@ fun openableArtists(song: Song): List<com.prism.music.data.model.ArtistRef> =
     if (song.isLocal) emptyList()
     else song.artists.filter { it.name.isNotBlank() }.distinctBy { it.id ?: com.prism.music.data.innertube.SearchRank.norm(it.name) }
 
+/**
+ * #289 (1.8.1): where each of [artists] is written in [text] (the song's "A, B & C"), in order, so each name can open its
+ * own page. Null when a name isn't there as written (the text then stays one link, which asks which artist).
+ */
+fun artistSpans(text: String, artists: List<com.prism.music.data.model.ArtistRef>): List<Pair<IntRange, com.prism.music.data.model.ArtistRef>>? {
+    if (artists.size < 2) return null
+    var from = 0
+    return artists.map { a ->
+        val at = text.indexOf(a.name, from).takeIf { it >= 0 } ?: return null
+        from = at + a.name.length
+        (at until from) to a
+    }
+}
+
 /** "Go to …" for each of a song's artists (#42): a song with features lists every one, not only the first. */
 fun goToArtists(song: Song, go: (String) -> Unit): List<ActionItem> =
     openableArtists(song).take(5).map { a -> ActionItem(PrismIcons.Person, tr(R.string.go_to, a.name)) { go(com.prism.music.ui.Routes.artist(a)) } }
@@ -874,5 +968,23 @@ fun <T> SortBar(count: String, options: List<T>, selected: T, label: (T) -> Stri
     Row(modifier.fillMaxWidth().padding(start = 8.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(count, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
         SortButton(options, selected, label, onSelect = onSelect)
+    }
+}
+
+/**
+ * Keeps the list [state] scrolls at its top while rows come in above the one it shows, until the listener scrolls it
+ * themselves (#279). A lazy list holds on to the first row in view by its key: when a page's sections load in one by one
+ * and only the last row was there at first, the page opened scrolled to its bottom.
+ */
+@Composable
+fun KeepAtTopUntilScrolled(state: androidx.compose.foundation.lazy.LazyListState) {
+    var scrolled by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(state) {
+        state.interactionSource.interactions.collect { if (it is androidx.compose.foundation.interaction.DragInteraction.Start) scrolled = true }
+    }
+    LaunchedEffect(state) {
+        androidx.compose.runtime.snapshotFlow { state.layoutInfo.totalItemsCount }.collect {
+            if (!scrolled && (state.firstVisibleItemIndex != 0 || state.firstVisibleItemScrollOffset != 0)) state.scrollToItem(0)
+        }
     }
 }

@@ -173,6 +173,44 @@ class TvSettingsTests {
         compose.awaitFocusOn(hasTestTag("$TAG_SETTINGS/setting/0"))
         TvFixture.ok()
         compose.waitUntil(10_000) { compose.onAllNodes(hasTestTag(com.prism.music.ui.tv.TAG_PAIR), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+        // 1.8.1 (Reddit: "I had to stop and think about how to finish"): where on the phone, in its own words (a tap on
+        // the line under the player's controls, then Remote beside this TV), and what to tap once paired.
+        val tvName = Fixture.container.handoff.name
+        for (step in listOf(tr(R.string.tv_pair_step_where, tvName), tr(R.string.tv_pair_step_sign_in))) {
+            compose.waitUntil(5_000) { compose.onAllNodes(androidx.compose.ui.test.hasText(step), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+        }
+        assertTrue(tr(R.string.tv_pair_step_where, tvName).contains(tr(R.string.tv_remote)))
+        assertTrue(tr(R.string.tv_pair_step_sign_in).contains(tr(R.string.tv_sign_in_here)))
+    }
+
+    /**
+     * Reddit (1.8.1): "options on TV to change background opacity, especially in lyrics mode". Settings → Lyrics →
+     * Background darkness: as it comes until picked; picked from the remote, it's kept.
+     */
+    @Test fun theBackgroundsDarknessIsPickedInLyricsSettings() {
+        Fixture.ready()
+        val settings = Fixture.container.settings
+        assertEquals(0, settings.current.tv.backdropDim)
+        try {
+            TvFixture.launch()
+            goTo(TvSection.SETTINGS)
+            compose.awaitFocusOn(hasTestTag("$TAG_SETTINGS/group/0"), 10_000)
+            for (g in 1..3) { TvFixture.down(); compose.awaitFocusOn(hasTestTag("$TAG_SETTINGS/group/$g")) }
+            TvFixture.right()
+            compose.awaitFocusOn(hasTestTag("$TAG_SETTINGS/setting/0"))
+            // Size, style, then the background.
+            repeat(2) { i -> TvFixture.down(); compose.awaitFocusOn(hasTestTag("$TAG_SETTINGS/setting/${i + 1}")) }
+            compose.onNode(androidx.compose.ui.test.hasText(tr(R.string.tv_backdrop_as_it_comes)), useUnmergedTree = true).assertExists()
+            TvFixture.ok()
+            // Lighter, As it comes, Darker…: down to Darker.
+            compose.awaitFocusOn(hasTestTag("${com.prism.music.ui.tv.TAG_ACTIONS}/0"), 10_000)
+            repeat(2) { i -> TvFixture.down(); compose.awaitFocusOn(hasTestTag("${com.prism.music.ui.tv.TAG_ACTIONS}/${i + 1}")) }
+            TvFixture.ok()
+            compose.waitUntil(5_000) { settings.current.tv.backdropDim == 1 }
+            compose.waitUntil(5_000) { compose.onAllNodes(androidx.compose.ui.test.hasText(tr(R.string.tv_backdrop_darker)), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+        } finally {
+            settings.setTvBackdropDim(0)
+        }
     }
 
     /**

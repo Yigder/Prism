@@ -137,6 +137,13 @@ internal val standIns = listOf(
     listOf(Color(0xFF4A2E10), Color(0xFFFFC75F)),
 )
 
+/** The small player's veil over its background for a stored "Show background" [show], fully dark at its slider's start (#309). */
+internal fun previewVeil(show: Float): Float {
+    val veil = 1f - 0.55f * show.coerceIn(0f, 1f)
+    val black = com.prism.music.ui.player.backdropBlackout(show)
+    return (veil + (1f - veil) * black).coerceIn(0f, 1f)
+}
+
 /** The player as [c]'s settings draw it: its background, the cover's size and corners, the title, progress bar and controls. */
 @Composable
 fun MiniPlayerScreen(c: ThemeColors, song: Song?) {
@@ -149,14 +156,15 @@ fun MiniPlayerScreen(c: ThemeColors, song: Song?) {
             PlayerBackground.MESH -> Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(hues[0].copy(alpha = 0.85f), hues[1].copy(alpha = 0.55f), Color.Black))))
             PlayerBackground.BLUR -> {
                 StandIn(song, Modifier.fillMaxSize().blur(60.dp), RoundedCornerShape(0.dp), hues)
-                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 1f - 0.55f * s.playerBackdropShow)))
+                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = previewVeil(s.playerBackdropShow))))
             }
             PlayerBackground.APPEARANCE -> {
                 PageGround(c, Modifier.fillMaxSize(), player = true)
-                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 1f - 0.55f * s.playerBackdropShow)))
+                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = previewVeil(s.playerBackdropShow))))
             }
             PlayerBackground.THEME -> Box(Modifier.fillMaxSize().background(c.scheme.background))
             PlayerBackground.BLACK -> {}
+            PlayerBackground.WHITE -> Box(Modifier.fillMaxSize().background(com.prism.music.ui.player.PlayerWhiteBackdrop))
         }
         // Settings → Player (1.7.4): the layout, the title, the parts under it in their order, the buttons.
         val layout = s.playerLayout
@@ -209,7 +217,9 @@ fun MiniPlayerScreen(c: ThemeColors, song: Song?) {
                     }
                 }
             } else StandIn(song, Modifier.padding(horizontal = side.coerceAtLeast(0.dp)).fillMaxWidth().aspectRatio(1f), coverShape, hues)
-            Column(Modifier.padding(horizontal = 28.dp).padding(top = 28.dp)) {
+            // #320: the title and controls dark over the White background, as the player draws them.
+            val inked = with(com.prism.music.ui.player.PlayerInk) { Modifier.inked { s.playerBackground == PlayerBackground.WHITE } }
+            Column(Modifier.padding(horizontal = 28.dp).padding(top = 28.dp).then(inked)) {
                 title()
                 when (layout) {
                     com.prism.music.data.prefs.PlayerLayout.COVER -> {}

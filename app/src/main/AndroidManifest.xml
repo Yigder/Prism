@@ -51,6 +51,8 @@
     <application
         android:name=".PrismApp"
         android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
         android:banner="@drawable/tv_banner"
         android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher"
@@ -117,6 +119,8 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="prism" android:host="lastfm" />
+                <!-- Back from Spotify's authorize page (1.8.1): its loopback answer sends the browser here. -->
+                <data android:scheme="prism" android:host="spotify" />
                 <!-- A Prism TV's pairing QR code (1.8.0). -->
                 <data android:scheme="prism" android:host="pair" />
             </intent-filter>
@@ -201,14 +205,17 @@
             </intent-filter>
         </service>
 
-        <!-- "Hey Google, play … on Prism": Assistant / Gemini only offer apps that take this as music sources. -->
+        <!-- "Hey Google, play … on Prism": Assistant / Gemini only offer apps that take this as music sources. It runs
+             over the lock screen (the phone sits locked in the car), where it shows nothing and closes at once. -->
         <activity
             android:name=".playback.VoicePlayActivity"
             android:exported="true"
             android:excludeFromRecents="true"
             android:noHistory="true"
+            android:showWhenLocked="true"
             android:taskAffinity=""
-            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            tools:targetApi="27">
             <intent-filter>
                 <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />
                 <category android:name="android.intent.category.DEFAULT" />

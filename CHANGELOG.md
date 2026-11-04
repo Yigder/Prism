@@ -2,6 +2,217 @@
 
 What changed in each release. Older releases are described on the [Releases page](https://github.com/Yigder/Prism/releases).
 
+## 1.8.1
+
+### Bring your history
+
+- **Bring your Spotify history and library, no Spotify sign-in needed.** Request your data on Spotify's Privacy page
+  (Account data, or Extended streaming history for every play since you joined) and pick the zip it comes in, or the
+  files in it: Settings → Recommendations & Replay → Bring your history. Prism shows what's in it (plays, songs, the
+  dates, Liked Songs, playlists, saved albums, followed artists) and you choose what to bring: your plays, Liked Songs
+  (liked in Prism; signed in, a switch also likes them on your YouTube Music account, off unless you turn it on, and
+  syncing your library leaves them liked either way), playlists (as Prism playlists), saved albums (into your library) and followed artists (starred).
+- **Your YouTube Music history from Google Takeout** (watch-history.json) and **your Last.fm scrobbles** (through the
+  Last.fm account you connected) come in the same way. Plays Prism itself sent to YouTube or Last.fm aren't counted twice.
+- **Each song is found on YouTube Music** in the background, on Wi-Fi unless you allow mobile data, a few at a time
+  with a quiet notification. A sure match counts at once; one Prism isn't sure of (another length, a live or remixed
+  version) waits in **Needs a look**, where you play the top three and pick, or pass it over. Nothing found is tried
+  again weekly. Every match is remembered, so nothing is looked up twice and your picks stay.
+- **Replay and Rewind count Prism's own plays only, unless you say so**: "Count history from" has a switch per history
+  you brought in. With them off, Replay is exactly as before; with one on, Replay and its story say "Includes Spotify".
+- **Imported plays shape your mixes, radio and Quick picks** (turned on by your first import, a switch of its own), so
+  a long history helps from the first day.
+- Everything is read on your phone and kept there (it's in backups with your history); the only requests are the song
+  searches matching needs and Last.fm's own. Remove a history any time: its plays leave Replay and your mixes, and
+  what it added to your library stays.
+- **Keep it current: bring a newer download any time, and only what's new comes in.** The page says so before you
+  bring it ("312 new plays since your last import (Oct 3)", with the download's dates and how many plays are already
+  here); the same or an older download says "Nothing new in this download". Plays already brought in are passed over,
+  even between Spotify's two histories (the same song within about a minute is the same play, also when one names a
+  featured artist the other leaves out, while two songs that only share a title stay two plays; and an Extended play
+  takes the place of the Account data one), and only songs Prism hasn't seen are matched: your matches and picks stay.
+  Newly liked songs are liked, newly saved albums and followed artists come in, and a playlist brought before gets its
+  new songs added to the same Prism playlist (songs removed from it on Spotify stay in Prism's copy; none is made
+  twice, even after removing a history and bringing it again). Last.fm asks only for scrobbles since the last import.
+  Afterwards Prism says what came in ("Added 3 liked songs and 12 playlist songs."), also when no plays were new.
+- **"Last Spotify import: Oct 3 (31 days ago)"** on the page, with **Request a fresh download** (Spotify's Privacy
+  page, or Google Takeout), and a gentle reminder to bring a fresh one every 1, 3 or 6 months (3 unless you change it,
+  or Off): a quiet notification, only once you've imported Spotify or YouTube Music history, never for anyone else.
+- **YouTube Music (live): keep your YouTube Music history in step** (signed in, off unless you turn it on in Bring
+  your history). Every few hours Prism reads your account's History page and counts the songs played since its last
+  look, in the YouTube Music app, on the website, on a speaker, as their own source; Prism's own plays (which it reports
+  to that history) and plays a Takeout already brought are left out. It starts when you turn it on (Takeout brings the
+  past); times are approximate, a song played twice between two looks may count once, and Takeout stays the complete
+  history (one brought later takes the live plays it has out). Signing out stops it; five failures running pause it for
+  a day. **"Count history from" now lists every source**: the ones you haven't brought in are greyed, with Bring it in
+  (or Turn on for the live ones).
+
+### Spotify (optional, your own key)
+
+- **Connect Spotify through its official Web API, with a developer app of your own.** Not a regular "Sign in with
+  Spotify" but a workaround: a developer app can only be connected by five people until Spotify approves it for full
+  access, which only large companies get, so Prism can't have one Spotify login for everyone. Spotify lets a developer app in
+  Development Mode have only five users, and its owner needs Spotify Premium, so each listener makes one for themselves
+  (free, about three minutes): Settings → Devices & connections → Spotify walks you through it (the dashboard link,
+  the redirect address to copy), then you paste its Client ID and sign in on Spotify's own page. Prism never sees your
+  password and has no secret of its own; the access stays on this phone, sealed by a key only it holds, never in
+  backups. Off unless you connect, and every feature below has its own switch, off too.
+- **Recent plays**: what you play in Spotify comes into your history every few hours as its own source, "Spotify
+  (live)", with its own switch under Count history from and its own Remove. Plays your data download already brought
+  aren't counted twice.
+- **Top songs and artists**: Spotify's own measure of your last four weeks, six months and year shapes your mixes,
+  radio and Quick picks (read on connecting, then weekly; Replay doesn't count it).
+- **Your Spotify playlists in Library**, marked Spotify, playing through their YouTube Music matches (Spotify's ISRCs
+  make the matches surer). **Keep in step** reads one again when you open it, and all daily on Wi-Fi.
+- **Playlists you follow or saved show too** (Lofi Girl's, Spotify's own "Made for you" ones), greyed after yours with
+  "Not shared by Spotify": Spotify keeps their songs from developer apps. Tap one for the way to bring it (in Spotify,
+  ⋯ → Add to other playlist → New playlist, then Refresh now) or the simpler TuneMyMusic move (Library → Import
+  playlists), Open in Spotify, or Hide from Library.
+- **Liked Songs both ways** (off until you've seen its counts: "42 to like here, 17 to like on Spotify"): each like is
+  carried over once, unliking never is, and likes you brought from a data download stay out of it.
+- **Quiet when Spotify is**: a feature Spotify doesn't answer says so and the rest of Prism carries on; a "too many
+  requests" is waited out, and five failures running pause that feature for a day. Only Spotify's own addresses are
+  asked. Spotify no longer gives developer apps its mixes (Discover Weekly, Daily Mixes), editorial playlists, new
+  releases or the songs of playlists you only follow, so those aren't offered.
+
+### New
+
+- **Your own MP3, AAC and Ogg files can play in place of the stream** (#314). Turn on Downloads, storage & data →
+  "Use your own song files" (off by default; it doesn't need lossless playback): files on your phone that are surely
+  the same song (same title, artist and length) play from the file and show in Downloads as "MP3 · 320 kbps, from your
+  file", as on the player. A lossless file of the same song still comes first, and a file worse than the stream (under
+  128 kbps, 96 for Opus, or under 44.1 kHz) is left alone. Your files are never changed; turn it off and those songs
+  stream again at once.
+- **The progress bar can take the crossfade's shape** (Customize Prism → Player → Progress bar, off unless turned on).
+  With Crossfade on, the end of a song's bar tapers the way its volume falls in the blend, and the next song's bar
+  grows in the way its volume rises: Smooth rounds off, Straight is a wedge, Gentle an S, DJ cut stays full and then
+  drops. Its length is the real blend's (an automatic one shows once the blend is planned); the knob rides the shape.
+  The waveform and Ribbons keep the crossfade mark; nothing changes where songs don't blend (an album's tracks,
+  casting, episodes, live streams).
+- **"Show background" goes all the way to dark** (#309): the player's Show background slider (Blurred cover and Your
+  background) now runs from a fully dark player at 0% to the brightest background at 100%. Whatever you had set looks
+  exactly as before (only its percent moved along the longer slider).
+- **Album names in Downloads can go** (#310): Customize Prism → Home & Library → "Album names in Downloads", or Downloads'
+  sort menu → Show album names. Off, each download shows just its artist under the title. On unless you turn it off.
+- **Each artist's name on the player can open their page** (#289): Customize Prism → Player → Title and times →
+  Artists' names → "Each name opens its artist". With more than one artist, a tap on a name goes straight to that
+  artist; a tap between the names still asks which. Off unless you pick it.
+- **The "Now playing" background can fade between songs** (#283): with a screen on the Now playing background,
+  Backgrounds has "Now playing fades between songs", which fades the cover into the next song's at the pace your colors
+  change between songs. Off unless you turn it on (and off with Reduce motion).
+- **Add to playlist says which playlists already have it** (#246): a check and "Already has this song" (or "Already
+  has 3 of these 12" for an album) beside each playlist that holds it. Prism goes by what's on the phone: your Prism
+  playlists, every playlist you've opened (Prism keeps a copy for offline), and what you add from the sheet, so nothing
+  extra is asked from YouTube; a playlist never opened in Prism has no mark until you open it.
+- **New releases from your favorite artists only** (#311): the New releases page has a "Favorite artists only" chip
+  (the artists you've starred; Home's New releases follows it too) and a row of your artists, the ones you play most
+  first, to see one artist's releases at a time. Starred artists' new releases already come with a notification
+  (Settings → Recommendations & Replay), and Customize Home can move New releases to the top of Home.
+- **An explicit filter** (#216): Settings → Playback & sound → What plays next → Explicit songs. **Show them** is as before;
+  **Skip them** keeps explicit songs (YouTube Music's "E") in lists but never plays them: radios, autoplay and mixes leave
+  them out, a tapped one gives way to the next clean song, and the queue passes over any that got in; **Hide them** also
+  leaves them out of search, Home and album, playlist, Liked songs and Downloads lists. It goes by YouTube Music's own
+  mark, so songs kept on the phone without it (older likes, your own files) still play.
+- **Change a song's or an album's cover** (#305, and Reddit): a song's menu (or the player's ⋯) → Change cover, and an
+  album's menu or its page's ⋯. Pick a photo, one of the covers of the song's other versions (a lyric video's
+  thumbnail swapped for the album's), or **Use the original** to go back. An album's cover shows on its songs too. It's
+  used wherever the song shows: lists, the player and mini player, the notification and lock screen, widgets and
+  Android Auto. Kept on your phone and in backups (with your library); nothing changes on YouTube Music.
+- **A White player background** (#320): Customize Prism → Player → Look → Background → White, for the light theme.
+  The player turns white with dark type and controls (the split light keeps its colors, a white play button turns
+  black), and the status bar's icons go dark over it. With the lyrics or the queue open it turns to the dark blurred
+  cover, as Color mesh does; a tablet's or a turned phone's wide player keeps the color mesh. Only when picked.
+- **A font installed on your phone** (#318): Customize Prism → Text → "A font installed on your phone" (and one for the
+  lyrics) lists the phone's own fonts, each written in itself, no file needed (Android 10 and later; fonts with Latin
+  letters). Fonts a phone adds from its own font store (Samsung's) aren't listed to apps by Android: the System font
+  is the font picked for the phone.
+- **Pause your history** (#296): Settings → Recommendations & Replay → History → Pause history, for 1 hour, 1 day or
+  until you turn it back on. Meanwhile nothing you play or search is kept: no plays for Replay, Rewind and History, no
+  recent searches, nothing sent to your YouTube Music history and, like Spotify's private session, no Last.fm scrobbles;
+  skipped suggestions aren't learned from either. What's already kept stays, and likes still count. Replay says when
+  history is paused, with a button to turn it back on.
+- **Choose when a song counts as played** (#263): "Counts as a play after" at once, 5, 10 (as always), 30 seconds or a
+  minute, for Replay, Rewind and History. Signed in, "Same for your YouTube Music history" (off by default) makes your
+  account's history wait for it too, so a song skipped at once is in neither.
+- **Replay graphs a day by its hours, a week or a month by its days**, and up to half a year by weeks (#287, #286):
+  until now only a stretch of more than a month had a graph. Each says its busiest hour, day, week or month.
+- **Home's Replay card can show the last 14 days or the last 12 weeks** instead of this year's months (#286):
+  Customize Prism → Home & Library → Replay card → "Bars on the card" (Months unless changed).
+- **Replay and Rewind stories in your font** (#287, #269): Recommendations & Replay → Replay → Story type, "Your font"
+  sets the stories in the font you picked for Prism instead of the poster type (Poster type unless changed).
+- **Last.fm: see what's there before bringing it.** Tapping Last.fm now shows how many scrobbles there are and their
+  dates ("4,210 scrobbles, Mar 3, 2019 to Nov 1, 2026", or the new ones since your last import), from two small
+  requests, then Bring them.
+
+### Fixes
+
+- **Edge-to-edge cover and edge-to-edge video are two switches again.** 1.8.0 made them one, so the button on a playing
+  video also turned the cover's edge-to-edge look on and off. Customize Prism → Player → Cover has a switch for each, and
+  the video's button changes only the video.
+- **Your own photo background stays in Performance mode** (Reddit: "only a black background now"). Performance mode
+  drew every screen plain, your photo too; a still picture costs next to nothing, so it stays now (the drawn and moving
+  backgrounds still pause). The Backgrounds page also says when Performance mode is why a pick doesn't show.
+- **Your sign-ins stay out of Android's own backup.** Android's backup (to Google, or copied to a new phone) took your
+  Discord and Last.fm connections and Prism Connect's pairings along; they're left out now. Your YouTube Music sign-in
+  travels with your settings, so a copy restored onto a new phone signs out of it once: sign in again there. Prism's
+  own backups are as before.
+- **Add to playlist only says "Added" when the songs got there.** It took an unclear answer from YouTube Music as
+  success and never checked a whole album's or queue's add; now it counts what went in ("12 songs added to …"), says
+  "Already in …" or "Couldn't add to …" otherwise, and the playlist's page shows the new songs when you open it.
+- **Add to playlist from a long press on an album's cover** works when one of the album's songs can't go in (the others
+  still do), and uses the album kept on the phone when YouTube can't be reached.
+- **"Couldn't add to library" on some albums** (from a long press, or on the album's page): an album is now saved the way
+  its own page's library button does it.
+- **New from your artists missed releases** from artists you play a lot when you follow many: your starred and most
+  played artists are always looked at, and the others take turns.
+- **Podcasts' "New episodes" opened empty** though it showed a count and a length: its episodes are listed now.
+- **Songs played from Speed dial have their album** (to go to, and "From the album") (#312).
+- **"Songs, not videos": a playlist's music videos downloaded as their songs show as downloaded** (#315).
+- **Quick picks change once at most after Prism opens** (#297): they come in when they're ready and stay until you pull
+  to refresh.
+- **YouTube's sections on Home stay when YouTube's language changes** (#277): a section kept by its English title is
+  found again under its Spanish one, where YouTube gives it a link to more.
+- **Speed dial fills its last page** from what you play instead of leaving it out (#295); "YouTube Music's only" still
+  shows whole pages of YouTube's own.
+- **Speed dial keeps YouTube's songs** (#266): a song tile that starts another kind of radio was taken for a station,
+  and of several sections headed with your name, the one with songs in it is now taken for Speed dial (it had only
+  playlists and albums for some). A diagnostics log's Home line now says what's in each section.
+- **Pull down on Liked songs** to bring in likes made elsewhere (#306).
+- **The update banner shows sooner** (Prism looks for a new version every hour, not every six), and a second tap while
+  an update is downloading or waiting for Android's installer doesn't start another (#278).
+- **Swiping Prism away while it's paused** takes its notification with it (#274).
+- **"Hey Google, play … on Prism" plays what you asked for, in the car too** (Reddit: Android Auto's voice button did
+  nothing). Everything used to be looked up as one song: now an artist plays their top songs, an album the album, "my
+  road trip playlist" your own playlist by name, "my liked songs" and "my downloads" yours, "shuffle …" shuffles, a song
+  its radio, and anything else plays Search's top result. When nothing is found, what was playing keeps playing (it
+  used to stop) and the car says Prism couldn't find it. The car's search button lists your own playlists and liked
+  songs first, then Search's top results, songs, albums, artists and playlists. With the phone locked, the phone's
+  voice request plays too.
+- **Word-by-word lyrics line up with the singing more often** (#301). Their timings (Better Lyrics, LyricsPlus and the
+  other word sources are Apple Music's) are made for Apple's copy of a song, and some of YouTube's start a little sooner
+  or later. When the song's line-by-line lyrics (YouTube Music's own, or LRCLIB's) put every line the same amount
+  earlier or later, the words are moved by it, once per song. Word timings that can't be the singing (every word the
+  same length, or outside their own line) show as line-by-line lyrics instead, so a source with real ones comes first.
+  The lyrics' timing sheet still moves a song's lyrics by hand.
+- **Tapping a lyric line while the song is paused** moves the lyrics there too (the music moved, the lyrics stayed) (#308).
+- **The play button's triangle sits in the middle of its circle** (it looked a little to the right) (#313).
+- **The playing bars beside the current song stand still while it's paused** (#302).
+- **Karaoke-style lyrics: no pale edge round the sung words**: the words still to come aren't drawn under them any more
+  (#303). For a softer fill, pick your own color (a soft grey, say) for "The line being sung" under Lyrics → Text.
+- **The color mesh behind the player visibly moves at Motion 100%** (a loop is three times as quick and goes farther),
+  and the setting says when Performance mode or the phone's animations switch hold it still (#284).
+- **Search no longer opens scrolled to the bottom** the first time after Prism starts (#279).
+- **Player cover**: Full width meets the screen's sides in the Standard layout too (on a phone too short for a square
+  that wide, its top and bottom are cropped a little), it no longer shrinks when paused, and a swipe down anywhere
+  around the cover closes the player (in the Cover and Minimal layouts the room above the cover took nothing) (#276).
+- **Tab bar**: the docked bar no longer shows bright lines at the screen's sides with Frosted or Liquid glass (#290),
+  and with Labels "Selected" the current tab's name sits under its icon, as with "Always" (#291).
+- **Smart Shuffle's "Add to …"** says "Already in …" when the song is in the playlist already, as Add to playlist does.
+- **Start radio on the song that's playing** keeps it playing where it is and lines the radio up after it (it started
+  the song again) (#292).
+- **New option**: Customize Prism → Tabs & mini player → Mini player → "Play/pause button", to leave play / pause off
+  the mini player (on by default; a tap still opens the player).
+
 ## 1.8.0
 
 ### Prism TV

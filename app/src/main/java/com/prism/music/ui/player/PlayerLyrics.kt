@@ -37,6 +37,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -340,7 +342,10 @@ fun rememberLyricClock(active: Boolean = true): State<Long> {
         } else onDispose { }
     }
     val shift by pc.lyricShift.collectAsState()
-    LaunchedEffect(active, shift) {
+    // Every seek starts it again from the new place: a paused song's clock isn't running ([active] is false), so a line
+    // tapped while paused moved the music but not the lyrics (#308; the TV had the same, fixed in 1.8.0).
+    val jumps by pc.jumps.collectAsState()
+    LaunchedEffect(active, shift, jumps) {
         var shown = pc.lyricPosition.toDouble()
         clock.longValue = shown.toLong()
         if (!active) return@LaunchedEffect
@@ -408,7 +413,7 @@ fun CurrentLyricStrip(state: LyricsState, isPlaying: Boolean, onClick: () -> Uni
     val instead = romanizeMode(state.song.id) == com.prism.music.data.prefs.RomanizeMode.INSTEAD
     // As the lyrics page draws them (1.8.0: always; "Same look everywhere" is gone).
     val settings = LocalAppSettings.current
-    val look = rememberLyricsLook(settings, state.song.thumbnail)
+    val look = rememberLyricsLook(settings, com.prism.music.data.PlaylistCovers.artOf(state.song))
     val lines = remember(state.lines, roman, instead, look.uppercase) {
         (if (instead && roman != null) state.lines.mapIndexed { i, l -> roman.getOrNull(i) ?: l } else state.lines).map(look::shown)
     }
@@ -555,21 +560,46 @@ fun SweptLine(
     // (~5 ms a frame for Karaoke and Bold card, ~10 for Glow, on the CPU alone). A fill that's a gradient itself (your
     // light) can only be faded by another gradient on the GPU from Android 9; below that it keeps the layer. So does a
     // line with a shadow: a text shadow ignores the fill's fade, and would lie under the words still to come too.
+    val dim = dimColor ?: Color.White.copy(alpha = dimAlpha)
     if ((glow ?: style.shadow) == null && (litBrush == null || litBrush is SolidColor || Build.VERSION.SDK_INT >= 28)) {
         Box(modifier) {
             Text(
                 line.text, wide.drawWithContent {
-                    drawContent()
-                    val l = layout ?: return@drawWithContent
-                    drawSung(l, line, offsets, clock.value, litBrush ?: SolidColor(Color.White), style, glow ?: style.shadow)
+                    // #303 (1.8.1): the words still to come are drawn only where nothing's sung yet, fading out as the sung
+                    // part fades in. Drawn whole under the sung part, their soft edges showed round its letters as a pale
+                    // fringe (a colored fill over white words still to come, Karaoke's).
+                    val l = layout ?: return@drawWithContent drawContent()
+                    drawSweep(l, line, offsets, clock.value, litBrush ?: SolidColor(Color.White), dim, style, glow ?: style.shadow)
                 },
-                style = style, color = dimColor ?: Color.White.copy(alpha = dimAlpha), maxLines = maxLines, overflow = TextOverflow.Ellipsis, onTextLayout = { layout = it },
+                style = style, color = dim, maxLines = maxLines, overflow = TextOverflow.Ellipsis, onTextLayout = { layout = it },
             )
         }
         return
     }
     Box(modifier) {
-        Text(line.text, wide, style = style, color = dimColor ?: Color.White.copy(alpha = dimAlpha), maxLines = maxLines, overflow = TextOverflow.Ellipsis, onTextLayout = { layout = it })
+        // As above (#303): the words to come are taken away where the line's been sung, so none of them shows round the
+        // sung letters (in a layer of their own, as the sung copy is).
+        Text(
+            line.text,
+            wide.then(
+                if (dim.alpha <= 0f) Modifier else Modifier
+                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                    .drawWithContent {
+                        drawContent()
+                        val l = layout ?: return@drawWithContent
+                        val sung = sungChars(line, offsets, clock.value)
+                        if (sung <= 0f) return@drawWithContent
+                        forEachSweptRow(l, line, sung) { top, bottom, part, from, to, rtlLine ->
+                            val rowSize = androidx.compose.ui.geometry.Size(size.width, bottom - top)
+                            when (part) {
+                                ROW_SUNG -> drawRect(Color.Black, Offset(0f, top), rowSize, blendMode = BlendMode.DstOut)
+                                ROW_SINGING -> drawRect(fadedAt(SolidColor(Color.Black), from, to, rtlLine), Offset(0f, top), rowSize, blendMode = BlendMode.DstOut)
+                            }
+                        }
+                    },
+            ),
+            style = style, color = dim, maxLines = maxLines, overflow = TextOverflow.Ellipsis, onTextLayout = { layout = it },
+        )
         Text(
             line.text, style = style.copy(brush = litBrush, shadow = glow ?: style.shadow), color = if (litBrush != null) Color.Unspecified else Color.White,
             maxLines = maxLines, overflow = TextOverflow.Ellipsis,
@@ -626,36 +656,60 @@ private fun sungChars(line: LyricLine, offsets: List<Pair<Int, Int>>, now: Long)
     return sung
 }
 
+/** A row of a swept line: still to come, being sung (its soft edge between from and to), or sung through. */
+private const val ROW_TO_COME = 0
+private const val ROW_SINGING = 1
+private const val ROW_SUNG = 2
+
 /**
- * [SweptLine]'s sung part over the line [l] was laid out as: each row sung through drawn in [lit], the row being sung
- * drawn up to the singing point with a soft edge (the fill fading out over [lit] itself, so no layer is needed).
+ * Each row of [l] (the swept [line], [sung] characters in): its top and bottom, which part it is ([ROW_TO_COME],
+ * [ROW_SINGING], [ROW_SUNG]), where the singing point's soft edge runs (from → to, only for the row being sung), and
+ * whether the row reads right to left (what's still to come then lies to the left).
  */
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSung(
-    l: TextLayoutResult, line: LyricLine, offsets: List<Pair<Int, Int>>, now: Long, lit: Brush, style: TextStyle, shadow: androidx.compose.ui.graphics.Shadow?,
+private inline fun androidx.compose.ui.graphics.drawscope.DrawScope.forEachSweptRow(
+    l: TextLayoutResult, line: LyricLine, sung: Float, row: (top: Float, bottom: Float, part: Int, from: Float, to: Float, rtl: Boolean) -> Unit,
 ) {
-    val sung = sungChars(line, offsets, now)
-    if (sung <= 0f) return
     val feather = size.height.coerceAtMost(l.getLineBottom(0) - l.getLineTop(0)) * 0.55f
     val textLen = line.text.length
     for (li in 0 until l.lineCount) {
         val ls = l.getLineStart(li)
         val le = l.getLineEnd(li, visibleEnd = true)
-        if (sung <= ls) break
         val top = l.getLineTop(li)
         val bottom = l.getLineBottom(li)
-        val brush = if (sung >= le) lit else {
-            val ci = sung.toInt().coerceIn(0, textLen - 1)
-            val box = l.getBoundingBox(ci)
-            // A right-to-left letter is read from its right edge; what's still to come lies after x (to its left in a
-            // right-to-left line).
-            val rtlChar = l.getBidiRunDirection(ci) == androidx.compose.ui.text.style.ResolvedTextDirection.Rtl
-            val x = if (rtlChar) box.right - box.width * (sung - ci) else box.left + box.width * (sung - ci)
-            val rtlLine = l.getParagraphDirection(ls) == androidx.compose.ui.text.style.ResolvedTextDirection.Rtl
-            fadedAt(lit, x - feather / 2, x + feather / 2, rtlLine)
+        when {
+            sung >= le -> row(top, bottom, ROW_SUNG, 0f, 0f, false)
+            sung <= ls -> row(top, bottom, ROW_TO_COME, 0f, 0f, false)
+            else -> {
+                val ci = sung.toInt().coerceIn(0, textLen - 1)
+                val box = l.getBoundingBox(ci)
+                // A right-to-left letter is read from its right edge; what's still to come lies after x (to its left in a
+                // right-to-left line).
+                val rtlChar = l.getBidiRunDirection(ci) == androidx.compose.ui.text.style.ResolvedTextDirection.Rtl
+                val x = if (rtlChar) box.right - box.width * (sung - ci) else box.left + box.width * (sung - ci)
+                val rtlLine = l.getParagraphDirection(ls) == androidx.compose.ui.text.style.ResolvedTextDirection.Rtl
+                row(top, bottom, ROW_SINGING, x - feather / 2, x + feather / 2, rtlLine)
+            }
         }
+    }
+}
+
+/**
+ * [SweptLine] over the line [l] was laid out as, with no layer: each row sung through drawn in [lit], each row still to
+ * come in [dim], and the row being sung in both, meeting at the singing point with a soft edge: [lit] fading out as
+ * [dim] fades in, so neither lies under the other (#303).
+ */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSweep(
+    l: TextLayoutResult, line: LyricLine, offsets: List<Pair<Int, Int>>, now: Long, lit: Brush, dim: Color, style: TextStyle, shadow: androidx.compose.ui.graphics.Shadow?,
+) {
+    val sung = sungChars(line, offsets, now)
+    val dimFill = SolidColor(dim)
+    forEachSweptRow(l, line, sung) { top, bottom, part, from, to, rtlLine ->
+        val litPart = when (part) { ROW_SUNG -> lit; ROW_SINGING -> fadedAt(lit, from, to, rtlLine); else -> null }
+        val dimPart = when { dim.alpha <= 0f -> null; part == ROW_TO_COME -> dimFill; part == ROW_SINGING -> fadedAt(dimFill, from, to, !rtlLine); else -> null }
         clipRect(0f, top, size.width, bottom) {
             // alpha 1: left unset, the paint keeps the dim copy's alpha and the sung words came out half see-through.
-            drawText(l, brush, alpha = 1f, shadow = shadow, textDecoration = style.textDecoration, drawStyle = style.drawStyle)
+            if (dimPart != null) drawText(l, dimPart, alpha = 1f, shadow = shadow, textDecoration = style.textDecoration, drawStyle = style.drawStyle)
+            if (litPart != null) drawText(l, litPart, alpha = 1f, shadow = shadow, textDecoration = style.textDecoration, drawStyle = style.drawStyle)
         }
     }
 }
@@ -841,7 +895,7 @@ fun LyricsPanel(
     val c = LocalContainer.current
     val settings by c.settings.flow.collectAsState()
     // How the lines are drawn (Settings → Lyrics, 1.7.5): style, colors, weight, spacing and the rest.
-    val look = rememberLyricsLook(settings, state.song.thumbnail).let { if (lyricsGround) it else it.withoutCard(settings.lyricsOthersAlpha) }
+    val look = rememberLyricsLook(settings, com.prism.music.data.PlaylistCovers.artOf(state.song)).let { if (lyricsGround) it else it.withoutCard(settings.lyricsOthersAlpha) }
     val lines = state.lines
     val synced = remember(lines) { lines.any { it.timeMs >= 0 } }
     val clock = rememberLyricClock(isPlaying)
@@ -1019,6 +1073,8 @@ fun LyricsPanel(
                     }
                     .blur(blur, BlurredEdgeTreatment.Unbounded)
                     .clip(RoundedCornerShape(10.dp))
+                    // The line being sung reads as selected (TalkBack, and the tests: #308).
+                    .semantics { selected = isActive }
                     .clickable(enabled = synced && !hidden) { c.player.seekToLyric(line.timeMs); browsing = false }
                     .padding(vertical = 9.dp * look.spacing, horizontal = 2.dp),
             ) {

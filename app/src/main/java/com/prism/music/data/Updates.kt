@@ -86,9 +86,12 @@ class UpdateChecker(private val context: Context, private val http: OkHttpClient
         return AppUpdate(v, url).takeIf { isNewer(v, BuildConfig.VERSION_NAME) && v != prefs.getString("dismissed", null) }
     }
 
-    /** The background check Home runs; does nothing if GitHub was asked in the last six hours. */
+    /**
+     * The background check Home runs; does nothing if GitHub was asked in the last hour (#278: six hours until 1.8.1,
+     * so a new release could take most of a day to show; an unchanged answer is a cheap "nothing new" now, see [fetch]).
+     */
     fun check() {
-        if (checking || System.currentTimeMillis() - prefs.getLong("checked_at", 0) < 6 * 3_600_000L) return
+        if (checking || !dueToCheck(System.currentTimeMillis(), prefs.getLong("checked_at", 0))) return
         checking = true
         scope.launch(Dispatchers.IO) {
             runCatching { fetch() }
@@ -108,9 +111,15 @@ class UpdateChecker(private val context: Context, private val http: OkHttpClient
 
     private fun fetch() {
         val req = Request.Builder().url("https://api.github.com/repos/$REPO/releases/latest")
-            .header("Accept", "application/vnd.github+json").header("User-Agent", "Prism/${BuildConfig.VERSION_NAME}").build()
+            .header("Accept", "application/vnd.github+json").header("User-Agent", "Prism/${BuildConfig.VERSION_NAME}")
+            // GitHub answers "not modified" when the latest release is the one seen last time (and doesn't count it
+            // against its hourly limit), so asking every hour costs next to nothing.
+            .apply { prefs.getString("etag", null)?.takeIf { _available.value != null || prefs.contains("latest_version") }?.let { header("If-None-Match", it) } }
+            .build()
         http.newCall(req).execute().use { r ->
+            if (r.code == 304) { prefs.edit().putLong("checked_at", System.currentTimeMillis()).apply(); _available.value = saved(); return }
             if (!r.isSuccessful) error(tr(R.string.github_answered, r.code))
+            r.header("ETag")?.let { prefs.edit().putString("etag", it).apply() }
             val json = InnerTube.json.parseToJsonElement(r.body.string())
             val version = json.str("tag_name")?.removePrefix("v")?.trim() ?: error("GitHub's answer had no version")
             val apk = json.arr("assets")?.firstOrNull { it.str("name")?.endsWith(".apk", true) == true }?.str("browser_download_url")
@@ -139,7 +148,13 @@ class UpdateChecker(private val context: Context, private val http: OkHttpClient
      * missing; [install] is simply called again once the listener comes back with it.
      */
     fun install(update: AppUpdate) {
-        if (job?.isActive == true) return
+        // One update at a time (#278: a second tap could start a second download and a second install): while one is
+        // downloading nothing new starts, and while Android's installer waits for the listener, its screen comes back.
+        when (installStep(_progress.value, job?.isActive == true)) {
+            InstallStep.WAIT -> return
+            InstallStep.REOPEN -> { pendingConfirm?.let { runCatching { context.startActivity(Intent(it).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) } }; return }
+            InstallStep.START -> Unit
+        }
         if (!canInstall()) { _progress.value = UpdateProgress.NeedsPermission; return }
         _progress.value = UpdateProgress.Downloading(null)
         job = scope.launch(Dispatchers.IO) {
@@ -222,6 +237,9 @@ class UpdateChecker(private val context: Context, private val http: OkHttpClient
     /** Android's "uninstall Prism?" prompt. */
     fun uninstallIntent(): Intent = Intent(Intent.ACTION_DELETE, Uri.parse("package:${context.packageName}"))
 
+    /** Android's "install this update?" screen while it waits for the listener (shown again on a tap, #278). */
+    @Volatile private var pendingConfirm: Intent? = null
+
     /** The APK being installed and whether its session carried [dexMetadata], for one try without it. */
     @Volatile private var installing: Pair<File, Boolean>? = null
 
@@ -229,6 +247,9 @@ class UpdateChecker(private val context: Context, private val http: OkHttpClient
         val profile = if (withProfile) dexMetadata(apk) else null
         installing = apk to (profile != null)
         val installer = context.packageManager.packageInstaller
+        // An earlier install of Prism's own that never finished (its confirm screen left open) goes: never two at once.
+        runCatching { installer.mySessions.filter { it.appPackageName == context.packageName }.forEach { installer.abandonSession(it.sessionId) } }
+        pendingConfirm = null
         val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
             setAppPackageName(context.packageName)
             setSize(apk.length() + (profile?.length() ?: 0L))
@@ -304,11 +325,12 @@ class UpdateChecker(private val context: Context, private val http: OkHttpClient
                 @Suppress("DEPRECATION")
                 val confirm = (if (Build.VERSION.SDK_INT >= 33) intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)
                     else intent.getParcelableExtra(Intent.EXTRA_INTENT)) ?: return
+                pendingConfirm = Intent(confirm)
                 context.startActivity(confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             }
             // On success Android replaces Prism and closes it; there's nothing left to do here.
-            PackageInstaller.STATUS_SUCCESS -> _progress.value = UpdateProgress.Idle
-            PackageInstaller.STATUS_FAILURE_ABORTED -> _progress.value = UpdateProgress.Idle
+            PackageInstaller.STATUS_SUCCESS -> { pendingConfirm = null; _progress.value = UpdateProgress.Idle }
+            PackageInstaller.STATUS_FAILURE_ABORTED -> { pendingConfirm = null; _progress.value = UpdateProgress.Idle }
             else -> if (!retryWithoutProfile(status)) _progress.value = UpdateProgress.Failed(
                 when (status) {
                     PackageInstaller.STATUS_FAILURE_CONFLICT, PackageInstaller.STATUS_FAILURE_INCOMPATIBLE ->
@@ -336,8 +358,26 @@ class UpdateChecker(private val context: Context, private val http: OkHttpClient
         return true
     }
 
+    /** What a tap on the update does now ([installStep]). */
+    enum class InstallStep { START, WAIT, REOPEN }
+
     companion object {
         const val REPO = "Yigder/Prism"
+
+        /** How long between background checks (#278: was six hours). */
+        const val CHECK_EVERY_MS = 3_600_000L
+
+        fun dueToCheck(now: Long, checkedAt: Long): Boolean = now - checkedAt !in 0 until CHECK_EVERY_MS
+
+        /**
+         * A tap on the update while one is under way (#278): downloading, nothing new starts; handed to Android's
+         * installer, its confirm screen is shown again instead of a second install starting.
+         */
+        fun installStep(progress: UpdateProgress, downloading: Boolean): InstallStep = when {
+            downloading || progress is UpdateProgress.Downloading -> InstallStep.WAIT
+            progress == UpdateProgress.Installing -> InstallStep.REOPEN
+            else -> InstallStep.START
+        }
 
         /** "1.10.0" is newer than "1.9.2"; anything after a dash ("-beta") is ignored. */
         fun isNewer(candidate: String, current: String): Boolean {

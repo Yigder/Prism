@@ -156,7 +156,7 @@ class I18nConvert {
         "Regex(" to "pattern", "toRegex" to "pattern", "PreferencesKey(" to "key", "getSharedPreferences(" to "key",
         // (Keys and routes are lowercase codes, which never look like text; a route's words, like a settings group to
         // open, are the group's own title, so they move with it.)
-        "testTag(" to "key", "startsWith(" to "compare", "endsWith(" to "compare", "contains(" to "compare", "equals(" to "compare",
+        "testTag(" to "key", "SemanticsPropertyKey" to "key", "startsWith(" to "compare", "endsWith(" to "compare", "contains(" to "compare", "equals(" to "compare",
         "split(" to "compare", "replace(" to "compare", "removePrefix(" to "compare",
         "removeSuffix(" to "compare", "substringBefore(" to "compare", "substringAfter(" to "compare", "indexOf(" to "compare",
         "Uri.parse(" to "address", "mimeType" to "key", "setType(" to "key", "MIME" to "key",

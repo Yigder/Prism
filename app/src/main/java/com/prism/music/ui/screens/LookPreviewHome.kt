@@ -116,7 +116,7 @@ private fun MiniBar(c: ThemeColors, song: Song?) {
                 Text(song?.artistText ?: tr(R.string.prism_sample), style = MaterialTheme.typography.bodySmall, color = c.ink2, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             if (s.miniPrevButton) Icon(PrismIcons.Previous, null, Modifier.size(22.dp), tint = scheme.onBackground)
-            Box(Modifier.padding(horizontal = 6.dp).size(36.dp).clip(CircleShape).border(1.5.dp, Brush.sweepGradient(c.ring), CircleShape), contentAlignment = Alignment.Center) {
+            if (s.view.miniPlayButton) Box(Modifier.padding(horizontal = 6.dp).size(36.dp).clip(CircleShape).border(1.5.dp, Brush.sweepGradient(c.ring), CircleShape), contentAlignment = Alignment.Center) {
                 Icon(PrismIcons.Play, null, Modifier.size(16.dp), tint = scheme.onBackground)
             }
             if (s.miniSkipButtons) Icon(PrismIcons.Next, null, Modifier.size(22.dp), tint = scheme.onBackground)

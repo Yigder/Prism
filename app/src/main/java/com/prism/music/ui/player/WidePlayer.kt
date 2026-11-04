@@ -348,7 +348,9 @@ internal fun PlayerCredits(song: Song, onMore: () -> Unit, onCollapse: () -> Uni
             var pickArtist by remember(song.id) { mutableStateOf(false) }
             if (settings.shows(PlayerPart.ARTIST)) Box {
                 PlayerMarquee(
-                    song.artistText, MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.W500, fontSize = 17.sp, lineHeight = 22.sp),
+                    // #289: each name its own link, if asked for.
+                    artistLinkText(song.artistText, linked, settings.view.artistLinks) { a -> onCollapse(); nav.go(Routes.artist(a)) },
+                    MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.W500, fontSize = 17.sp, lineHeight = 22.sp),
                     Color.White.copy(alpha = 0.6f), true,
                     Modifier.combinedClickable(enabled = linked.isNotEmpty() || menuHeld != null, onLongClick = menuHeld) {
                         if (linked.size > 1) pickArtist = true else linked.firstOrNull()?.let { onCollapse(); nav.go(Routes.artist(it)) }

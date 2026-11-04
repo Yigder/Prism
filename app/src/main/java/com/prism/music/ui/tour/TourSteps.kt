@@ -53,6 +53,8 @@ object Tour {
 private const val V1_7_9_2 = 51
 /** Prism 1.8.0 (build 53): Prism TV, Settings made clearer, the player and lyrics in parts. */
 private const val V1_8_0 = 53
+/** Prism 1.8.1 (build 55): your history brought in, Spotify with your own key, History & Replay, your requests. */
+private const val V1_8_1 = 55
 
     /** Every step, in the order they're shown. */
     val steps: List<TourStep> = listOf(
@@ -456,6 +458,64 @@ private const val V1_8_0 = 53
                 tr(R.string.tour_180_size),
             ),
             listOf(PrismIcons.Moon, PrismIcons.Equalizer),
+        ),
+        TourStep(
+            V1_8_1, PrismIcons.History, tr(R.string.tour_181_history),
+            tr(R.string.tour_181_history_body),
+            listOf(
+                tr(R.string.tour_181_history_spotify),
+                tr(R.string.tour_181_history_others),
+                tr(R.string.tour_181_history_replay),
+            ),
+            listOf(PrismIcons.Download, PrismIcons.Stats),
+            showMe = Routes.BRING_HISTORY,
+        ),
+        TourStep(
+            V1_8_1, PrismIcons.Library, tr(R.string.tour_181_spotify),
+            tr(R.string.tour_181_spotify_body),
+            listOf(
+                tr(R.string.tour_181_spotify_lists),
+                tr(R.string.tour_181_spotify_plays),
+                tr(R.string.tour_181_spotify_likes),
+            ),
+            listOf(PrismIcons.Sync, PrismIcons.HeartFilled),
+            showMe = Routes.settings("spotify"),
+        ),
+        TourStep(
+            // Opens Recommendations & Replay at its History group (pause, what counts as a play).
+            V1_8_1, PrismIcons.Stats, tr(R.string.tour_181_replay),
+            tr(R.string.tour_181_replay_body),
+            listOf(
+                tr(R.string.tour_181_replay_pause),
+                tr(R.string.tour_181_replay_counts),
+                tr(R.string.tour_181_replay_graphs),
+            ),
+            listOf(PrismIcons.Pause, PrismIcons.History),
+            showMe = Routes.settings("library", find = tr(R.string.hist_title)),
+        ),
+        TourStep(
+            V1_8_1, PrismIcons.Palette, tr(R.string.tour_181_yours),
+            tr(R.string.tour_181_yours_body),
+            listOf(
+                tr(R.string.tour_181_yours_cover),
+                tr(R.string.tour_181_yours_explicit),
+                tr(R.string.tour_181_yours_white),
+                tr(R.string.tour_181_yours_fonts),
+                tr(R.string.tour_181_yours_artists),
+            ),
+            listOf(PrismIcons.Photo, PrismIcons.Signature),
+            showMe = Routes.settings("appearance"),
+        ),
+        TourStep(
+            V1_8_1, PrismIcons.QueueMusic, tr(R.string.also_new),
+            tr(R.string.from_your_requests),
+            listOf(
+                tr(R.string.tour_181_files),
+                tr(R.string.tour_181_crossfade),
+                tr(R.string.tour_181_auto),
+                tr(R.string.tour_181_tv),
+            ),
+            listOf(PrismIcons.Car, PrismIcons.Tv),
         ),
         TourStep(
             V1_7, PrismIcons.Update, tr(R.string.stay_in_the_loop),

@@ -60,15 +60,22 @@ fun TvWelcomeScreen(onPhone: () -> Unit, onSkip: () -> Unit, modifier: Modifier 
  * screen moves on by itself when the phone confirms.
  */
 @Composable
-fun TvPairScreen(title: String, code: String, link: String, tvName: String, status: String, onCancel: () -> Unit, modifier: Modifier = Modifier) {
+fun TvPairScreen(
+    title: String, code: String, link: String, tvName: String, status: String, onCancel: () -> Unit, modifier: Modifier = Modifier,
+    /** Signing in: what to tap on the phone once paired, and how the library comes over too. */
+    signIn: Boolean = false,
+) {
     val scheme = MaterialTheme.colorScheme
     Row(modifier.fillMaxSize().padding(horizontal = 96.dp, vertical = 40.dp).testTag(TAG_PAIR), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.SemiBold), color = scheme.onBackground)
             Spacer(Modifier.height(20.dp))
             Step(1, tr(R.string.tv_pair_step_open))
-            Step(2, tr(R.string.tv_pair_step_find, tvName))
+            // Where on the phone, in its own words (1.8.1, Reddit: "I had to stop and think about how to finish"): the
+            // line under the player's controls, a plain tap; then Remote beside this TV.
+            Step(2, tr(R.string.tv_pair_step_where, tvName))
             Step(3, tr(R.string.tv_pair_step_code))
+            if (signIn) Step(4, tr(R.string.tv_pair_step_sign_in))
             Spacer(Modifier.height(16.dp))
             Text(code.chunked(3).joinToString(" "), style = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 6.sp), color = scheme.onBackground, modifier = Modifier.testTag("$TAG_PAIR/code"))
             Spacer(Modifier.height(8.dp))

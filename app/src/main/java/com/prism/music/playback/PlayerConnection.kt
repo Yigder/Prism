@@ -302,6 +302,14 @@ class PlayerConnection(private val context: Context, private val c: AppContainer
 
     fun playQueue(songs: List<Song>, startIndex: Int = 0, source: QueueSource, shuffle: Boolean = false) {
         if (songs.isEmpty()) return
+        // #216: with the explicit filter on, explicit songs don't go in (a tapped one gives way to the next that may play).
+        val mode = c.settings.current.behavior.explicitContent
+        if (mode != com.prism.music.data.prefs.ExplicitContent.SHOW && songs.any { it.explicit }) {
+            val (kept, at) = com.prism.music.data.ExplicitFilter.queue(mode, songs, startIndex) ?: run { reportError(tr(R.string.explicit_none_left)); return }
+            if (!shuffle && songs.getOrNull(startIndex)?.explicit == true) reportError(tr(R.string.explicit_skipped))
+            playQueue(kept, at, source, shuffle)
+            return
+        }
         source.page?.let { c.recentCollections.played(it) }
         val token = ++playToken
         val first = if (shuffle) songs.indices.random() else startIndex.coerceIn(0, songs.lastIndex)
@@ -392,8 +400,34 @@ class PlayerConnection(private val context: Context, private val c: AppContainer
         }
     }
 
-    /** Plays [song] and then a radio of songs like it (YouTube Music's), whether or not Autoplay is on. */
-    fun playRadio(song: Song) = playQueue(listOf(song), 0, QueueSource(QueueKind.RADIO, tr(R.string.radio, song.title), seedId = song.id))
+    /**
+     * Plays [song] and then a radio of songs like it (YouTube Music's), whether or not Autoplay is on. The song playing
+     * now carries on where it is, the radio lined up after it (#292: it started again from the top).
+     */
+    fun playRadio(song: Song) {
+        val source = QueueSource(QueueKind.RADIO, tr(R.string.radio, song.title), seedId = song.id)
+        val p = player
+        if (p == null || p.mediaItemCount == 0 || p.currentMediaItem?.mediaId != song.id) { playQueue(listOf(song), 0, source); return }
+        ++playToken
+        // As a new queue would be: just this song (what came before stays in Played), in order, the radio to follow.
+        djNext = false
+        c.dj.setOn(false)
+        c.queue.smartShuffle.value = false
+        c.queue.smartPicks.value = emptySet()
+        c.queue.source.value = source
+        c.queue.autoplayContinuation = null
+        c.queue.autoplayStart.value = -1
+        c.queue.userQueued.value = emptySet()
+        p.shuffleModeEnabled = false
+        val at = p.currentMediaItemIndex
+        if (at + 1 < p.mediaItemCount) p.removeMediaItems(at + 1, p.mediaItemCount)
+        if (at > 0) p.removeMediaItems(0, at)
+        if (!p.isPlaying) { ensureStarted(); if (p.playbackState == Player.STATE_IDLE) p.prepare(); p.play() }
+        // An autoplay load still out for the old queue drops its songs when it lands (the source changed): the radio
+        // asks now rather than wait on it.
+        c.queue.autoplayLoading = false
+        service?.maybeAutoplay()
+    }
 
     fun playNext(song: Song) = playNext(listOf(song), null)
 
@@ -407,9 +441,23 @@ class PlayerConnection(private val context: Context, private val c: AppContainer
         c.queue.userQueued.value = c.queue.userQueued.value + songs.map { it.id }
     }
 
+    /**
+     * #216: [songs] without the explicit ones when the filter is on (saying so when some were left out); null, having
+     * said so, when none is left.
+     */
+    private fun playable(songs: List<Song>): List<Song>? {
+        val mode = c.settings.current.behavior.explicitContent
+        val kept = songs.filter { com.prism.music.data.ExplicitFilter.plays(mode, it) }
+        if (kept.isEmpty()) { reportError(tr(R.string.explicit_none_left)); return null }
+        if (kept.size < songs.size) reportError(tr(R.string.explicit_skipped))
+        return kept
+    }
+
     /** Songs (one, or a whole album or playlist) straight after the current song, or played, with nothing on. */
     fun playNext(songs: List<Song>, source: QueueSource?) {
         if (songs.isEmpty()) return
+        val allowed = playable(songs) ?: return
+        if (allowed.size < songs.size) return playNext(allowed, source)
         withPlayer { p ->
             if (p.mediaItemCount == 0) {
                 if (source == null) playSingle(songs.first()) else playQueue(songs, 0, source)
@@ -423,6 +471,8 @@ class PlayerConnection(private val context: Context, private val c: AppContainer
      */
     fun addToQueue(songs: List<Song>, source: QueueSource?) {
         if (songs.isEmpty()) return
+        val allowed = playable(songs) ?: return
+        if (allowed.size < songs.size) return addToQueue(allowed, source)
         withPlayer { p ->
             if (p.mediaItemCount == 0) {
                 if (source == null) playSingle(songs.first()) else playQueue(songs, 0, source)
@@ -757,6 +807,9 @@ class PlayerConnection(private val context: Context, private val c: AppContainer
     override fun onRenderedFirstFrame() {
         _videoLoading.value = false
     }
+
+    /** #305: a cover was picked (or put back) for a song or an album: the queue's songs it shows on take it up. */
+    fun refreshCovers(shows: (Song) -> Boolean) = withPlayer { service?.refreshCovers(shows) }
 
     suspend fun videoIdFor(song: Song): String? = service?.videoIdFor(song)?.id ?: if (song.isVideo) song.id else null
 

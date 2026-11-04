@@ -58,6 +58,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -121,6 +122,9 @@ fun BackgroundsScreen(bottomPadding: Dp, forPlayer: Boolean = false) {
         subtitle = if (forPlayer) tr(R.string.behind_the_player_darkened_so_its) else tr(R.string.color_from_what_s_playing_ready),
         horizontalPadding = 16.dp, spacing = 12.dp,
     ) {
+            // Performance mode draws every screen on the plain background: say so here, where a background is picked and
+            // otherwise looks chosen while the screens stay plain (Reddit 1.8.0, "only a black background now").
+            if (s.performanceMode) item(key = "paused") { PerformancePaused() }
             if (forPlayer) item {
                 val own = s.backdrops[com.prism.music.ui.theme.PLAYER_BACKDROP]
                 Column(Modifier.pane(ui.card, MaterialTheme.colorScheme.surfaceContainer).padding(vertical = 8.dp)) {
@@ -233,6 +237,14 @@ fun BackgroundsScreen(bottomPadding: Dp, forPlayer: Boolean = false) {
                             Text(tr(R.string.color_fields_drift_waves_roll_and), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         PrismSwitch(s.backdropMotion, { c.settings.setBackdropMotion(it) })
+                    }
+                    // #283 (1.8.1): while a screen uses "Now playing", its cover can fade into the next song's.
+                    if (s.backdrops.values.any { Backdrop.parse(it).first == Backdrop.ARTWORK }) Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(tr(R.string.now_playing_background_fades), style = MaterialTheme.typography.bodyLarge)
+                            Text(tr(R.string.now_playing_background_fades_detail), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        PrismSwitch(s.view.backdropFade, { c.settings.setBackdropFade(it) }, Modifier.testTag("backdropFade"))
                     }
                     if (s.backdrops.isNotEmpty()) PrismTextButton(onClick = { c.settings.setBackdrops(emptyMap()) }, Modifier.align(Alignment.End)) { Text(tr(R.string.reset_all_to_ambient)) }
                 }

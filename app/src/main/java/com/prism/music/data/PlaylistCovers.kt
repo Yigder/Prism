@@ -13,6 +13,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
+/** #305 (1.8.1): the song's picture as Prism shows it: the cover picked for it or its album, else its own. */
+val com.prism.music.data.model.Song.art: String? get() = PlaylistCovers.artOf(this)
+
 /**
  * Pictures the listener picked for their playlists (and for Liked songs and Downloads),
  * kept on this phone by playlist id: either a photo copied into the app or a song's cover.
@@ -30,11 +33,49 @@ class PlaylistCovers(private val context: Context) {
     /** The picture to show for playlist [id]: the listener's own if they picked one, else [fallback]. */
     fun art(id: String, fallback: String?): String? = covers[id] ?: fallback
 
-    /** Any item's picture, with a playlist's custom cover (or an artist's own photo, 1.7.6) in place of YouTube's. */
+    /**
+     * Any item's picture, with a playlist's custom cover (or an artist's own photo, 1.7.6, or a song's or an album's,
+     * #305) in place of YouTube's.
+     */
     fun art(item: BrowseItem): String? = when (item) {
         is PlaylistItem -> art(item.id, item.thumbnail)
         is com.prism.music.data.model.ArtistItem -> covers["artist:${item.id}"] ?: item.thumbnail
+        is com.prism.music.data.model.SongItem -> art(item.song)
+        is com.prism.music.data.model.AlbumItem -> albumArt(item.id, item.thumbnail)
         else -> item.thumbnail
+    }
+
+    /** A song's own cover (#305, 1.8.1), kept under the song's id. */
+    fun songKey(id: String) = "song:$id"
+
+    /** An album's own cover (#305), kept under the album's id; its songs show it too. */
+    fun albumKey(id: String) = "album:$id"
+
+    /**
+     * #305: the picture to show for [song] wherever it shows: the one picked for it, else the one picked for its album,
+     * else its own. Read in a composable, it follows a change at once.
+     */
+    fun art(song: com.prism.music.data.model.Song): String? = picked(song) ?: song.thumbnail
+
+    /** The cover picked for [song] (or its album), if any. */
+    fun picked(song: com.prism.music.data.model.Song): String? =
+        // With no covers picked (most phones), no keys are made for each row drawn (the empty check is read too, so a
+        // first pick still shows at once).
+        if (covers.isEmpty()) null
+        else covers[songKey(song.id)] ?: song.album?.id?.let { covers[albumKey(it)] }
+
+    /** An album's picture: the one picked for it (#305), else [fallback]. */
+    fun albumArt(id: String, fallback: String?): String? = covers[albumKey(id)] ?: fallback
+
+    init { shared = this }
+
+    companion object {
+        /** The phone's covers, for what draws a song without the app's container at hand (the media session, a row). */
+        @Volatile var shared: PlaylistCovers? = null
+            internal set
+
+        /** [art] for [song], or its own picture before the covers have been read. */
+        fun artOf(song: com.prism.music.data.model.Song): String? = shared?.art(song) ?: song.thumbnail
     }
 
     private fun put(id: String, value: String) {

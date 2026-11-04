@@ -35,6 +35,9 @@ class PerformanceModeTest {
         assertFalse(e.frostedGlass || e.liquidGlass || e.frostedPages || e.canvasEnabled)
         assertTrue(e.backdrops.isEmpty())
         assertTrue(e.reduceMotion)
+        // Your own photo stays (1.8.1, Reddit: "only a black background now"): a still picture is cheap to draw.
+        val photo = heavy.copy(performanceMode = true, backdrops = mapOf("HOME" to "PHOTO|/data/p.jpg", "SEARCH" to "SILK", "PLAYER" to "PHOTO|/data/q.jpg")).effective()
+        assertEquals(mapOf("HOME" to "PHOTO|/data/p.jpg", "PLAYER" to "PHOTO|/data/q.jpg"), photo.backdrops)
         assertEquals(VisualizerStyle.OFF, e.visualizer)
         assertEquals(0f, e.meshSpeed)
         assertEquals(PlayerBackground.MESH, e.playerBackground)

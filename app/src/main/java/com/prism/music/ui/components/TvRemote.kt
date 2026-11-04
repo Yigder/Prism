@@ -67,13 +67,16 @@ fun TvRemoteSheet(tv: PrismDevice, onDismiss: () -> Unit) {
     var askBring by remember { mutableStateOf(false) }
     // On the main thread whatever the caller's (the link answers on its own).
     val say: (String) -> Unit = { msg -> androidx.core.content.ContextCompat.getMainExecutor(context).execute { Toast.makeText(context, msg, Toast.LENGTH_SHORT).show() } }
-    LaunchedEffect(tv.key) {
+    // Why the TV didn't answer, while it doesn't (1.8.1): said in the sheet, with Try again, in place of "One moment…".
+    var failed by remember { mutableStateOf<String?>(null) }
+    var tries by remember { mutableStateOf(0) }
+    LaunchedEffect(tv.key, tries) {
         // A missed answer (the Wi-Fi blinked, the TV was busy) is said once, and the sheet keeps asking.
         var failing = false
         while (true) {
             when (val r = handoff.ask(tv, HandoffRequest.Now)) {
-                is HandoffResult.Playing -> { now = r.now; failing = false }
-                is HandoffResult.Failed -> { if (!failing) say(r.reason); failing = true }
+                is HandoffResult.Playing -> { now = r.now; failing = false; failed = null }
+                is HandoffResult.Failed -> { if (!failing && now != null) say(r.reason); failing = true; failed = r.reason }
                 HandoffResult.Cancelled -> { onDismiss(); return@LaunchedEffect }
                 else -> Unit
             }
@@ -97,7 +100,10 @@ fun TvRemoteSheet(tv: PrismDevice, onDismiss: () -> Unit) {
                 Spacer(Modifier.height(10.dp))
                 Text(n.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(n.artist, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            } else Text(tr(R.string.one_moment), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else failed?.let { why ->
+                Text(why, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.testTag("tvRemote/why"))
+                PrismTextButton(onClick = { failed = null; tries++ }, Modifier.testTag("tvRemote/retry")) { Text(tr(R.string.try_again)) }
+            } ?: Text(tr(R.string.one_moment), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(14.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { press(RemoteKey.VOLUME_DOWN) }) { Icon(PrismIcons.VolumeDown, tr(R.string.tv_volume_down)) }

@@ -36,4 +36,13 @@ class StationParseTest {
         val albumTrack = Parser.twoRow(card("Song • Oasis", """{"videoId":"abc123","playlistId":"OLAK5uy_abc"}"""))
         assertTrue(albumTrack is SongItem)
     }
+
+    /** #266: a Speed dial song card whose play starts another kind of radio is still the song, not a station. */
+    @Test
+    fun aCardThatSaysSongIsASongWhateverRadioItStarts() {
+        assertTrue(Parser.twoRow(card("Song • Oasis", """{"videoId":"abc123","playlistId":"RDEMxyz"}""")) is SongItem)
+        assertTrue(Parser.twoRow(card("Video • Oasis", """{"videoId":"abc123","playlistId":"RDCLAKxyz"}""")) is SongItem)
+        // A radio card without a word for its kind is still taken for a station.
+        assertTrue(Parser.twoRow(card("Oasis, Blur", """{"videoId":"abc123","playlistId":"RDEMxyz"}""")) is PlaylistItem)
+    }
 }

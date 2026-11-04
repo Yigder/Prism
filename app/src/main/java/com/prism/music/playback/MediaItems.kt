@@ -36,7 +36,10 @@ fun Song.toMediaItem(videoId: String? = null): MediaItem {
                 .setTitle(title)
                 .setArtist(artistText)
                 .setAlbumTitle(album?.title)
-                .setArtworkUri(hiRes(thumbnail, 544)?.let(Uri::parse))
+                // The cover picked for the song or its album (#305), through the artwork provider so a car can show it too.
+                .setArtworkUri(com.prism.music.data.PlaylistCovers.artOf(this@toMediaItem).let { art ->
+                    if (art != null && art.startsWith("file:")) ArtworkProvider.contentUri(art) else hiRes(art, 544)?.let(Uri::parse)
+                })
                 .setIsPlayable(true)
                 .setIsBrowsable(false)
                 .setMediaType(if (isEpisode) MediaMetadata.MEDIA_TYPE_PODCAST_EPISODE else MediaMetadata.MEDIA_TYPE_MUSIC)

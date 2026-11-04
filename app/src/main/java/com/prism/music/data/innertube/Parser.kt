@@ -273,7 +273,9 @@ object Parser {
             // A station ("Station • Bring Me The Horizon, Oasis…"): a radio seeded by a song, not the song itself.
             // Song cards carry their own radio ("RDAMVM" + the song) or album; anything else that's a radio is the station.
             val kind = subtitle.substringBefore(" • ").trim()
-            val station = pid != null && (
+            // A card that says it's a song or a video is one, whatever radio it starts (#266: Speed dial showed no songs).
+            val songCard = id != null && (kind.equals("Song", true) || kind.equals("Video", true))
+            val station = pid != null && !songCard && (
                 id == null || kind.equals("Station", true) || kind.equals("Mix", true) ||
                     (pid.startsWith("RD") && !pid.startsWith("RDAMVM"))
                 )

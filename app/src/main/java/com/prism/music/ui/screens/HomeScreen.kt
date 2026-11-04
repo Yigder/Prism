@@ -122,12 +122,56 @@ private val standInPicks = MutableStateFlow<List<Song>>(emptyList())
 /** Quick picks made around the listener's artists, kept for the session (and which pull to refresh made them). */
 private val curatedPicks = MutableStateFlow<List<Song>>(emptyList())
 private val curatedAt = MutableStateFlow(-1)
+/** Which pull to refresh Quick picks were last tried for, and the set shown for it (kept: #297). */
+private val picksTried = MutableStateFlow(-1)
+private val shownPicks = MutableStateFlow<Pair<Int, List<Song>>?>(null)
+/** How long Quick picks wait for the set made around the listener's artists before YouTube's own show. */
+private const val QUICK_PICKS_WAIT_MS = 6_000L
+
+/**
+ * The Quick picks to show (#297): the set already shown ([locked]) stays; else the one made around your artists
+ * ([curated]); else, once that's been tried or waited for ([ready]), YouTube's own. Nothing before that, so the section
+ * comes in once rather than changing twice. [keep] leaves out songs shown elsewhere (Speed dial's).
+ */
+internal fun quickPicksToShow(locked: List<Song>?, curated: List<Song>, youtube: List<Song>, ready: Boolean, keep: (Song) -> Boolean = { true }): List<Song> = when {
+    locked != null -> locked
+    curated.isNotEmpty() -> curated.filter(keep)
+    ready -> youtube.filter(keep)
+    else -> emptyList()
+}
+
+/** The set made around your artists, only when it was made for this pull to refresh ([madeFor]): an older one isn't kept. */
+internal fun curatedFor(curated: List<Song>, madeFor: Int, refresh: Int): List<Song> = if (madeFor == refresh) curated else emptyList()
 private val speedDialMine = MutableStateFlow<List<BrowseItem>>(emptyList())
 /** The last lists and mixes made from your music, shown while the next are made. */
 private val lastYours = MutableStateFlow<com.prism.music.data.foryou.YourMusic.Sections?>(null)
 private val YOURS_KEYS = setOf(HomeSections.ON_REPEAT, HomeSections.REPEAT_REWIND, HomeSections.FORGOTTEN, HomeSections.MADE_FOR_YOU)
 
 fun shelfKey(title: String) = HomeSections.shelfKey(title)
+
+/** A YouTube shelf's identity beyond its title, when it has one: where its "More" button goes. */
+internal fun shelfIdentity(s: Shelf): String? = s.moreBrowseId?.let { it + "|" + s.moreParams.orEmpty() }
+
+/**
+ * The shelf for each of [keys] (YouTube's sections on Home, by title): by its title, else by where its More button goes,
+ * as last seen under that key ([known]: key -> [shelfIdentity]). #277 (1.7.9.2, a Spanish account): sections such as
+ * "From the community" vanished when YouTube's language changed (the app's language, or a request answered in English
+ * after a retry), because they're kept by title. Only a shelf no other section has by its title, and only one with
+ * that identity, stands in.
+ */
+internal fun matchShelves(keys: Collection<String>, shelves: List<Shelf>, known: Map<String, String>): Map<String, Shelf> {
+    val byTitle = shelves.associateBy { shelfKey(it.title) }
+    val out = LinkedHashMap<String, Shelf>()
+    keys.forEach { k -> byTitle[k]?.let { out[k] = it } }
+    keys.filter { it !in out }.forEach { k ->
+        val id = known[k] ?: return@forEach
+        val same = shelves.filter { shelfIdentity(it) == id }
+        val s = same.singleOrNull() ?: return@forEach
+        if (shelfKey(s.title) in keys || out.values.any { it === s }) return@forEach
+        out[k] = s
+    }
+    return out
+}
 
 /** What kind of section a YouTube shelf is, for "Leave off Home" (1.7.6): mostly music videos, or podcasts. */
 internal fun shelfKind(shelf: Shelf): String? {
@@ -145,6 +189,9 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
     val nav = LocalNavigator.current
     val settings = LocalAppSettings.current
     val layoutNow by rememberUpdatedState(settings.homeLayout)
+    // Where each YouTube section's More button goes, by its key: the section is found again under another language's title.
+    val shelfIds = remember { c.app.getSharedPreferences("home_shelf_ids", android.content.Context.MODE_PRIVATE) }
+    fun knownShelves(): Map<String, String> = shelfIds.all.mapNotNull { (k, v) -> (v as? String)?.let { k to it } }.toMap()
     val home = rememberLoad("home") {
         // YouTube's personalised feed reshuffles per load, so pinned shelves (e.g. "Mixed for you")
         // can land on a later page or drop out entirely. Page further for them, and keep the last
@@ -158,19 +205,23 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
         val signedIn = owner.isNotBlank()
         val picksOn = signedIn && layoutNow.any { it.visible && it.key == HomeSections.QUICK_PICKS }
         val dialWanted = signedIn && layoutNow.any { it.visible && it.key == HomeSections.SPEED_DIAL }
+        val known = knownShelves()
         val (fresh, pages) = c.ytm.fullHomePages(pages = 3, maxPages = 8) { got ->
-            wanted.all { k -> got.any { shelfKey(it.title) == k } } && (!picksOn || got.quickPicks(owner) != null) && (!dialWanted || got.speedDial(owner) != null)
+            matchShelves(wanted, got, known).size == wanted.size && (!picksOn || got.quickPicks(owner) != null) && (!dialWanted || got.speedDial(owner) != null)
         }
         // Kept for the next start, to show while this loads again (#126).
         c.scope.launch { c.homeCache.write(pages) }
-        val freshKeys = fresh.map { shelfKey(it.title) }.toSet()
+        // Each section's identity, under its title now (#277).
+        shelfIds.edit().apply { fresh.forEach { s -> shelfIdentity(s)?.let { putString(shelfKey(s.title), it) } } }.apply()
+        val freshKeys = matchShelves(wanted, fresh, known).keys
         val kept = homeShelfCache.value.filter { shelfKey(it.title).let { k -> k in wanted && k !in freshKeys } }
         // What YouTube's Home held, and which shelves Prism took for Quick picks and Speed dial (#162, #163: an account
         // in Spanish found neither), for a diagnostics log.
         com.prism.music.playback.AudioDiagnostics.log(
             "home",
             tr(R.string.pages_2, pages.size) + fresh.joinToString { s ->
-                s.title + " (" + listOfNotNull("rows".takeIf { s.rows }, "stacked".takeIf { s.stacked }, "${s.items.size}",
+                // What's in each by kind ("song=3 album=4 playlist=2"): #266's Speed dial had no songs.
+                s.title + " (" + listOfNotNull("rows".takeIf { s.rows }, "stacked".takeIf { s.stacked }, shelfKinds(s),
                     s.strapline?.let { "strapline=" + if (it.equals(settings.accountName, true)) "owner" else it }).joinToString(" ") + ")"
             } + tr(R.string.quick_picks_speed_dial, fresh.quickPicks(owner)?.title ?: "none", fresh.speedDial(owner)?.title ?: "none") +
                 if (kept.isNotEmpty()) tr(R.string.kept_from_before, kept.joinToString { it.title }) else "",
@@ -193,17 +244,23 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
     val dial = shelves.speedDial(settings.accountName)?.takeIf { dialOn }
     // The holiday section and holiday pins only in their season (1.8.0), read from the phone's own date.
     val today = c.seasonal.today()
-    val layout = remember(settings.homeLayout, shelves, settings.autoAddSections, picks, settings.homeHideKinds, today) {
+    // YouTube's sections on Home, found by title or, in another language, by where they lead (#277).
+    val ytShelves = remember(settings.homeLayout, shelves) {
+        matchShelves(settings.homeLayout.map { it.key }.filter { it.startsWith(HomeSections.YT_PREFIX) }, shelves, knownShelves())
+    }
+    val layout = remember(settings.homeLayout, shelves, settings.autoAddSections, picks, settings.homeHideKinds, today, ytShelves) {
         val known = settings.homeLayout.map { it.key }.toSet()
+        val placed = ytShelves.values
         val extra = if (settings.autoAddSections) shelves
-            .filter { shelfKey(it.title) !in known && it !== picks && it !== dial && shelfKind(it) !in settings.homeHideKinds }
+            .filter { shelfKey(it.title) !in known && placed.none { p -> p === it } && it !== picks && it !== dial && shelfKind(it) !in settings.homeHideKinds }
             .map { HomeSectionConfig(shelfKey(it.title), it.title) } else emptyList()
         HomeSections.inSeason(settings.homeLayout, today).filter { it.visible } + extra
     }
 
     // Worked out here rather than inside their rows: a LazyColumn row forgets its state when scrolled off, so these were
     // fetched again on the way back and the sections popped out and in, pushing everything under them.
-    var refreshes by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    // Kept across tab switches, so the session's Quick picks aren't made again on the way back to Home.
+    var refreshes by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableIntStateOf(0) }
     val seed = recent.firstOrNull()?.takeIf { picks == null && home.state is Load.Ok }
     val standIn by produceState(standInPicks.value, seed?.id, refreshes) {
         // One stand-in per session (a pull to refresh asks again): each new play swapped the whole section before.
@@ -222,25 +279,40 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
     // YouTube's tiles lead; yours fill the rest, unless Customize Home says YouTube's only (#131). With none from
     // YouTube (signed out, offline), yours stand in either way.
     val youtubeDialOnly = settings.speedDialYouTubeOnly && (dial?.items?.size ?: 0) >= 3
-    val dialItems = remember(dial, dialMine, youtubeDialOnly) {
-        (dial?.items.orEmpty().filter { it !is MoodItem } + if (youtubeDialOnly) emptyList() else dialMine).distinctBy { it.id }.take(SPEED_DIAL_SIZE)
+    val dialItems = remember(dial, dialMine, youtubeDialOnly, recent, liked) {
+        speedDialTiles(dial?.items.orEmpty(), dialMine, (recent + liked).filter { !it.isEpisode && !it.isLive }.map(::SongItem), youtubeDialOnly)
     }
     // Quick picks made around the artists the listener plays (their favourites, new songs from radios of their top
     // artists, YouTube's own that fit): worked out once a session, again on pull to refresh.
     val youtubePicks = picks?.items?.filterIsInstance<SongItem>()?.map { it.song } ?: standIn
     val onlineNow by c.network.online.collectAsState()
-    val curated by produceState(curatedPicks.value, youtubePicks.isNotEmpty() || recent.isNotEmpty(), refreshes, onlineNow) {
+    // #297 / #277 (1.7.9.3): the section showed the kept Home's picks, then the fresh feed's, then these. Now they're
+    // made once, from the fresh feed (not the copy kept from last time), and the section waits for them.
+    val homeSettled = home.state !is Load.Loading
+    val curated by produceState(curatedPicks.value, homeSettled, refreshes, onlineNow) {
         if (!onlineNow || (curatedPicks.value.isNotEmpty() && curatedAt.value == refreshes)) return@produceState
-        if (youtubePicks.isEmpty() && recent.isEmpty()) return@produceState
-        val made = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        if (!homeSettled) return@produceState
+        val made = if (youtubePicks.isEmpty() && recent.isEmpty()) emptyList() else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             runCatching { c.yourMusic.quickPicks(youtubePicks, radioOf = { seed: Song -> c.ytm.next(seed.id, playlistId = "RDAMVM${seed.id}").songs }) }.getOrDefault(youtubePicks)
         }
         if (made.isNotEmpty()) { value = made; curatedPicks.value = made; curatedAt.value = refreshes }
+        picksTried.value = refreshes
     }
-    // Songs already on a Speed dial tile aren't repeated in Quick picks.
-    val pickSongs = remember(curated, youtubePicks, dialItems) {
+    // Never waiting for long: after a few seconds YouTube's own show. Kept as the pull to refresh it waited for:
+    // produceState keeps its value when the keys change, so a plain "waited" stayed true after a refresh.
+    val waitedFor by produceState(if (picksTried.value == refreshes) refreshes else -1, refreshes) {
+        if (picksTried.value != refreshes) kotlinx.coroutines.delay(QUICK_PICKS_WAIT_MS)
+        value = refreshes
+    }
+    val tried by picksTried.collectAsState()
+    val madeFor by curatedAt.collectAsState()
+    val picksReady = waitedFor == refreshes || tried == refreshes
+    // Songs already on a Speed dial tile aren't repeated in Quick picks. Once shown, the set stays for the session
+    // (until pull to refresh), whatever loads after it.
+    val pickSongs = remember(curated, madeFor, youtubePicks, dialItems, picksReady, refreshes) {
         val onDial = if (dialItems.size >= 3) dialItems.map { it.id }.toSet() else emptySet()
-        curated.ifEmpty { youtubePicks }.filter { it.id !in onDial }
+        quickPicksToShow(shownPicks.value?.takeIf { it.first == refreshes }?.second, curatedFor(curated, madeFor, refreshes), youtubePicks, picksReady) { it.id !in onDial }
+            .also { if (it.isNotEmpty()) shownPicks.value = refreshes to it }
     }
 
     // Offline, Home is what's on the phone: no YouTube shelves, and lists keep to songs that play without a connection.
@@ -349,7 +421,7 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
                         } else if (online) {
                             // Not a shelf that already shows as Quick picks or Speed dial (it was on Home twice), nor of a
                             // kind left off Home (Customize Home → Leave off Home).
-                            val shelf = shelves.firstOrNull { shelfKey(it.title) == cfg.key }
+                            val shelf = (ytShelves[cfg.key] ?: shelves.firstOrNull { shelfKey(it.title) == cfg.key })
                                 ?.takeIf { it !== picks && it !== dial && shelfKind(it) !in settings.homeHideKinds }
                             if (shelf != null) ShelfSection(cfg, shelf, openItem)
                         }
@@ -607,7 +679,8 @@ internal fun UpdateBanner(inSettings: Boolean = false) {
     Column(
         Modifier.padding(start = 16.dp, end = 16.dp, top = if (inSettings) 4.dp else ui.gap(14.dp), bottom = if (inSettings) 8.dp else 0.dp)
             .fillMaxWidth().pane(ui.shape(16.dp)).border(1.5.dp, com.prism.music.ui.theme.PrismTokens.spectrum, ui.shape(16.dp))
-            .clickable(enabled = !busy) {
+            // While Android's installer waits, a tap brings its screen back (#278); nothing starts a second update.
+            .clickable(enabled = progress !is com.prism.music.data.UpdateProgress.Downloading) {
                 when {
                     !u.isApk -> runCatching { uri.openUri(u.url) }
                     progress is com.prism.music.data.UpdateProgress.NeedsPermission -> runCatching { allow.launch(c.updates.permissionIntent()) }
@@ -736,7 +809,7 @@ private fun GreetingSection(cfg: HomeSectionConfig, recent: List<Song>) {
 
 @Composable
 private fun SongSection(
-    cfg: HomeSectionConfig, title: String, strapline: String?, songs: List<Song>,
+    cfg: HomeSectionConfig, title: String, strapline: String?, listed: List<Song>,
     /** Swipes stop on each column of rows, as YouTube Music's Quick picks do. */
     snap: Boolean = false,
     /** What tapping a song does; null plays the section from it. */
@@ -744,6 +817,9 @@ private fun SongSection(
     onMore: (() -> Unit)? = null,
 ) {
     val c = LocalContainer.current
+    // #216: "Hide them" leaves explicit songs off Home's rows too (a row of nothing else goes).
+    val songs = com.prism.music.data.ExplicitFilter.shown(com.prism.music.ui.theme.LocalAppSettings.current.behavior.explicitContent, listed)
+    if (songs.isEmpty()) return
     val current by c.player.currentSong.collectAsState()
     val start: (Int) -> Unit = { i -> play?.invoke(songs, i) ?: c.player.playQueue(songs, i, QueueSource(QueueKind.OTHER, title)) }
     val indexOf: (BrowseItem) -> Int = { item -> songs.indexOfFirst { it.id == item.id }.coerceAtLeast(0) }
@@ -819,6 +895,24 @@ private fun SpeedDialSection(cfg: HomeSectionConfig, items: List<BrowseItem>, op
 private const val SPEED_DIAL_SIZE = 27
 
 /**
+ * Speed dial's tiles: YouTube's first, then the listener's own most played ([mine]) and, while the last page still has
+ * gaps, their recent plays and likes ([more]). #295 (1.7.9.3): with only the most played to fill in from, 18–26 tiles
+ * were cut to whole pages, two of them; now the last page is filled. With "YouTube Music's only" ([youtubeOnly]) only
+ * YouTube's own tiles show, cut to whole pages.
+ */
+internal fun speedDialTiles(youtube: List<BrowseItem>, mine: List<BrowseItem>, more: List<BrowseItem>, youtubeOnly: Boolean): List<BrowseItem> {
+    val theirs = youtube.filter { it !is MoodItem }
+    if (youtubeOnly) return theirs.distinctBy { it.id }.take(SPEED_DIAL_SIZE)
+    val first = (theirs + mine).distinctBy { it.id }.take(SPEED_DIAL_SIZE)
+    // Whole pages: as many as there are tiles for, and a page begun is filled up from the rest.
+    val pages = minOf(SPEED_DIAL_SIZE / 9, (first.size + 8) / 9)
+    if (first.size >= pages * 9) return first
+    // Not a song whose album is a tile already.
+    val shown = first.map { it.id }.toSet()
+    return (first + more.filter { (it as? SongItem)?.song?.album?.id !in shown }).distinctBy { it.id }.take(pages * 9)
+}
+
+/**
  * Speed dial's pages of 3 × 3: whole pages only (#267, 1.7.9.3: 19 tiles left a last page with one), unless there's
  * less than a page, which shows as it is.
  */
@@ -826,6 +920,10 @@ internal fun <T> speedDialPages(items: List<T>): List<List<T>> {
     val whole = if (items.size > 9) items.size - items.size % 9 else items.size
     return items.take(whole).chunked(9)
 }
+
+/** A shelf's items counted by kind, for the diagnostics log's Home line ("song=3 album=4 playlist=2"). */
+internal fun shelfKinds(s: com.prism.music.data.model.Shelf): String =
+    s.items.groupingBy { it.javaClass.simpleName.removeSuffix("Item").lowercase() }.eachCount().entries.joinToString(" ") { "${it.key}=${it.value}" }
 
 /** The last three months' most played: albums you've played two or more songs from, and the songs otherwise. */
 internal suspend fun speedDialFromHistory(c: com.prism.music.AppContainer): List<BrowseItem> {
@@ -939,32 +1037,36 @@ internal fun HeroRow(items: List<BrowseItem>, open: (BrowseItem) -> Unit) {
 private class YearSoFar(
     val at: Long, val ms: Long, val months: List<Long>,
     val topSong: com.prism.music.data.db.SongPlays?, val topArtist: com.prism.music.data.db.ArtistPlays?,
+    /** What the bars are (#286) and the imported sources counted (1.8.1): read again when either changes. */
+    val graph: com.prism.music.data.prefs.ReplayGraph = com.prism.music.data.prefs.ReplayGraph.MONTHS,
+    val counted: Set<com.prism.music.data.imports.ImportSource> = emptySet(),
 )
 private val yearSoFar = MutableStateFlow<YearSoFar?>(null)
 
-private suspend fun loadYearSoFar(c: com.prism.music.AppContainer): YearSoFar = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+private suspend fun loadYearSoFar(
+    c: com.prism.music.AppContainer, graph: com.prism.music.data.prefs.ReplayGraph, counted: Set<com.prism.music.data.imports.ImportSource>,
+): YearSoFar = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
     val now = System.currentTimeMillis()
     val start = Calendar.getInstance().apply { set(Calendar.DAY_OF_YEAR, 1); set(Calendar.HOUR_OF_DAY, 0) }.timeInMillis
-    val months = Calendar.getInstance().let { today ->
-        (0..today.get(Calendar.MONTH)).map { m ->
-            val from = Calendar.getInstance().apply { set(Calendar.MONTH, m); set(Calendar.DAY_OF_MONTH, 1); set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0) }
-            val to = (from.clone() as Calendar).apply { add(Calendar.MONTH, 1) }
-            runCatching { c.db.plays().totalMs(from.timeInMillis, minOf(to.timeInMillis, now)) }.getOrDefault(0L)
-        }
-    }
-    val top = runCatching { c.db.plays().topSongs(start, now, 20).mergeUploads().firstOrNull() to c.db.plays().topArtists(start, now, 1).firstOrNull() }
+    // 1.8.1: the sources Replay counts (Prism's own plays unless the listener counts an imported history too).
+    val plays = c.imports.stats(counted)
+    // This year's months, or (#286) the last weeks or days.
+    val bars = replayCardBars(plays, graph, now)
+    val top = runCatching { plays.topSongs(start, now, 20).mergeUploads().firstOrNull() to plays.topArtists(start, now, 1).firstOrNull() }
         .getOrDefault(null to null)
-    YearSoFar(now, c.db.plays().totalMs(start, now), months, top.first, top.second)
+    YearSoFar(now, plays.totalMs(start, now), bars, top.first, top.second, graph, counted)
 }
 
 @Composable
 private fun ReplayTeaser(cfg: HomeSectionConfig) {
     val c = LocalContainer.current
     val nav = LocalNavigator.current
-    val kept by produceState(yearSoFar.value) {
-        val have = yearSoFar.value
-        if (have != null && System.currentTimeMillis() - have.at < 5 * 60_000L) return@produceState
-        value = runCatching { loadYearSoFar(c) }.getOrNull()?.also { yearSoFar.value = it } ?: have
+    val graph = LocalAppSettings.current.view.replayGraph
+    val counted by c.imports.counted.collectAsState()
+    val kept by produceState(yearSoFar.value?.takeIf { it.graph == graph && it.counted == counted }, graph, counted) {
+        val have = yearSoFar.value?.takeIf { it.graph == graph && it.counted == counted }
+        if (have != null && System.currentTimeMillis() - have.at < 5 * 60_000L) { value = have; return@produceState }
+        value = runCatching { loadYearSoFar(c, graph, counted) }.getOrNull()?.also { yearSoFar.value = it } ?: have
     }
     val soFar = kept ?: return
     val ms = soFar.ms
@@ -977,12 +1079,14 @@ private fun ReplayTeaser(cfg: HomeSectionConfig) {
     // Spotlight (the default) is the big card below; the other styles show the year so far as a few cards or rows:
     // the time listened, the top song and the top artist, each opening Replay.
     val top = soFar.topSong to soFar.topArtist
+    // The card counts imported histories too when they're switched on, but doesn't say "Includes Spotify" (owner,
+    // 1.8.1): Replay itself and its story still do.
     if (cfg.style != SectionStyle.HERO) {
         val open: () -> Unit = { if (rewind) c.rewindRequest.value = year; nav.go(Routes.REPLAY) }
         val dark = com.prism.music.ui.theme.LocalIsDark.current
         SectionHeader(if (rewind) tr(R.string.rewind, year) else tr(R.string.replay, year), strapline = tr(R.string.your_year_so_far), onMore = open)
         StyledEntries(cfg.style, listOfNotNull(
-            HomeEntry("replay:time", total.full, if (rewind) tr(R.string.your_year_in_music) else tr(R.string.listened_this_year), icon = PrismIcons.ReplayFilled,
+            HomeEntry("replay:time", total.full, listOfNotNull(if (rewind) tr(R.string.your_year_in_music) else tr(R.string.listened_this_year)).joinToString(" · "), icon = PrismIcons.ReplayFilled,
                 fill = com.prism.music.ui.theme.PrismTokens.spectrum(dark), onFill = true, onClick = open),
             top.first?.let { s -> HomeEntry("replay:song", s.title, tr(R.string.your_top_song, s.artistName), image = s.thumbnail, onClick = open) },
             top.second?.let { a -> HomeEntry("replay:artist", a.artistName, tr(R.string.your_top_artist), image = a.thumbnail, icon = PrismIcons.Person, onClick = open) },
@@ -1007,7 +1111,7 @@ private fun ReplayTeaser(cfg: HomeSectionConfig) {
         }
         ReplayCard(
             look,
-            ReplayCardData(year, total.full, months, top.first?.title, top.first?.artistName, top.second?.artistName, yearDone, 0),
+            ReplayCardData(year, total.full, months, top.first?.title, top.first?.artistName, top.second?.artistName, yearDone, 0, soFar.graph),
             art, Modifier.padding(vertical = ui.gap(16.dp)),
         ) { nav.go(Routes.REPLAY) }
         return
@@ -1040,7 +1144,7 @@ private fun ReplayTeaser(cfg: HomeSectionConfig) {
             if (rewind) Text(tr(R.string.your_year_in_music), style = big, color = scheme.onSurface, maxLines = 1)
             else Text(total.full, Modifier.toggleListenUnit(), style = big, color = scheme.onSurface, maxLines = 1)
             Text(
-                if (rewind) tr(R.string.your_top_songs_and_artists_your, total.full) else tr(R.string.your_top_songs_artists_and_genres),
+                (if (rewind) tr(R.string.your_top_songs_and_artists_your, total.full) else tr(R.string.your_top_songs_artists_and_genres)),
                 color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, maxLines = 2,
             )
         }

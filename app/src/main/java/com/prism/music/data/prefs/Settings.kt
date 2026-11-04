@@ -305,7 +305,24 @@ data class BehaviorPrefs(
     val pageSlide: Boolean = false,
     /** #264 (1.8.0): on a tablet, the tabs along the bottom or down the side; phones always have them at the bottom. */
     val tabBarPosition: TabBarPosition = TabBarPosition.SIDE,
+    /** #216 (1.8.1): explicit songs shown and played (as before), skipped when they'd play, or hidden too. */
+    val explicitContent: ExplicitContent = ExplicitContent.SHOW,
+    /**
+     * #296 (1.8.1): history is paused until this time (0: not paused; Long.MAX_VALUE: until turned back on). See
+     * [com.prism.music.data.HistoryPause].
+     */
+    val historyPausedUntil: Long = 0L,
+    /** #263 (1.8.1): seconds a song must be heard to count as a play (10, as always, unless changed). */
+    val playCountSeconds: Int = 10,
+    /** #263: YouTube Music's history waits for the same; off, it's told as a song starts (as before). */
+    val playCountOnAccount: Boolean = false,
 )
+
+/**
+ * Explicit songs (#216, 1.8.1): YouTube Music marks them "E". [SHOW] is as before; [SKIP] leaves them out of what plays
+ * (radios, autoplay, mixes, the queue) while they stay listed; [HIDE] also leaves them out of search and the song lists.
+ */
+enum class ExplicitContent(val label: String) { SHOW(tr(R.string.explicit_show)), SKIP(tr(R.string.explicit_skip)), HIDE(tr(R.string.explicit_hide)) }
 
 /** Where the tabs sit on a tablet or a wide window (#264); phones always have them at the bottom. Side = as before 1.8.0. */
 enum class TabBarPosition(val label: String) { SIDE(tr(R.string.down_the_side)), BOTTOM(tr(R.string.at_the_bottom)) }
@@ -328,7 +345,24 @@ data class TvPrefs(
      * own now-playing hero. Empty: Home as it comes (see `TvHomeLayout`).
      */
     val homeLayout: List<HomeSectionConfig> = emptyList(),
-)
+    /**
+     * How dark the background behind the TV's player and lyrics is (1.8.1, Reddit: "options on TV to change background
+     * opacity, especially in lyrics mode"): [DIM_LIGHTER] (a music video shows through more) to [DIM_DARKEST]; 0 is
+     * Prism as it comes.
+     */
+    val backdropDim: Int = 0,
+) {
+    companion object {
+        const val DIM_LIGHTER = -1
+        const val DIM_DARKEST = 3
+
+        /** Black laid over the cover's backdrop at [dim]: none as it comes (and lighter: the cover's own can't be). */
+        fun coverShade(dim: Int): Float = when (dim.coerceIn(DIM_LIGHTER, DIM_DARKEST)) { 1 -> 0.25f; 2 -> 0.5f; 3 -> 0.75f; else -> 0f }
+
+        /** How much of the shade over a music video (its lyrics' scrim) stays, at [dim]: 1 as it comes. */
+        fun videoShade(dim: Int): Float = when (dim.coerceIn(DIM_LIGHTER, DIM_DARKEST)) { -1 -> 0.6f; 1 -> 1.2f; 2 -> 1.4f; 3 -> 1.6f; else -> 1f }
+    }
+}
 
 /** Picture-in-picture for a playing video (1.7.8, #167). */
 enum class PipMode(val label: String) { AUTO(tr(R.string.when_you_leave_prism)), MENU(tr(R.string.only_with_its_button)) }
@@ -364,11 +398,33 @@ data class ViewLook(
     val miniFillStrength: Float = 0.22f,
     /** #231: the split-light ring around the player's play button. */
     val playRing: Boolean = true,
+    /** Reddit (1.8.1): play / pause on the mini player; off, a tap on it opens the player and its swipes still skip. */
+    val miniPlayButton: Boolean = true,
     /** Reddit (1.7.9.2): on album, playlist and artist pages, the playing song's bars and title in the page's picture color. */
     val playingInPageColor: Boolean = false,
     /** 1.8.0: what's on the player and what's in its ⋯ menu ([PlayerParts]). */
     val parts: PlayerParts = PlayerParts(),
+    /**
+     * 1.8.1 (the owner's): with Crossfade on and a blend planned, the progress bar's end tapers as the song fades out and
+     * the next song's bar grows in as it fades in, along the crossfade's own curve ([CrossfadeCurve.gains]).
+     */
+    val crossfadeShape: Boolean = false,
+    /** #310 (1.8.1): the album's name under each song in Downloads (as before); off, just the artist. */
+    val downloadsAlbums: Boolean = true,
+    /** #289 (1.8.1): with more than one artist, each name under the player's title opens its own page (off: a menu asks which). */
+    val artistLinks: Boolean = false,
+    /** #283 (1.8.1): the "Now playing" background fades into the next song's cover (at "Between songs"' pace) instead of cutting. */
+    val backdropFade: Boolean = false,
+    /** #286 (1.8.1): what the Replay card's bars show: this year's months (as before), the last weeks or the last days. */
+    val replayGraph: ReplayGraph = ReplayGraph.MONTHS,
+    /** #287 (1.8.1): Replay and Rewind stories in your app font, instead of Prism's poster type. */
+    val replayStoryFont: Boolean = false,
 )
+
+/** The Replay card's bars (#286): one for each month of this year so far, each of the last 12 weeks, or the last 14 days. */
+enum class ReplayGraph(val label: String, val count: Int) {
+    MONTHS(tr(R.string.replay_graph_months), 12), WEEKS(tr(R.string.replay_graph_weeks), 12), DAYS(tr(R.string.replay_graph_days), 14),
+}
 
 // 1.8.0 player editor
 /**
@@ -403,7 +459,10 @@ enum class MenuGroup(val label: String) { SONG(tr(R.string.this_song)), LYRICS(t
  */
 enum class MenuAction(val group: MenuGroup, val fromPlayer: Boolean = false) {
     ADD_TO_PLAYLIST(MenuGroup.SONG), RADIO(MenuGroup.SONG), DOWNLOAD(MenuGroup.SONG), ALBUM(MenuGroup.SONG), ARTIST(MenuGroup.SONG),
-    CREDITS(MenuGroup.SONG), VERSION(MenuGroup.SONG), NOT_FOR_ME(MenuGroup.SONG),
+    CREDITS(MenuGroup.SONG), VERSION(MenuGroup.SONG),
+    /** #305 (1.8.1): a cover of the listener's choosing for the song. */
+    COVER(MenuGroup.SONG),
+    NOT_FOR_ME(MenuGroup.SONG),
     SING(MenuGroup.LYRICS), LYRICS_SOURCE(MenuGroup.LYRICS), LYRICS_TIMING(MenuGroup.LYRICS), TRANSLATE(MenuGroup.LYRICS),
     ROMANIZE(MenuGroup.LYRICS), LYRICS_AGAIN(MenuGroup.LYRICS), LYRICS_INTO_FILE(MenuGroup.LYRICS),
     OPEN_LYRICS(MenuGroup.PLAYING, true), OPEN_QUEUE(MenuGroup.PLAYING, true), VIDEO_SWITCH(MenuGroup.PLAYING, true),
@@ -532,6 +591,11 @@ data class SoundPrefs(
     val sleepFadeSeconds: Int = 0,
     /** Pausing and playing fade the sound out and in over a moment instead of cutting (A5). */
     val pauseFade: Boolean = false,
+    /**
+     * #314 (1.8.1): your own MP3/AAC/Ogg files on the phone that match songs play in place of the stream and show in
+     * Downloads ("Use your own song files"). Off by default; doesn't need lossless playback.
+     */
+    val ownLossyFiles: Boolean = false,
 )
 
 /** How a crossfade's two volumes cross (1.7.8, A1). */
@@ -624,6 +688,11 @@ enum class PlayerBackground(val label: String) {
     /** The background picked for Home in Appearance → Backgrounds, in its dark version. */
     APPEARANCE(tr(R.string.your_background)),
     THEME(tr(R.string.theme)), BLACK(tr(R.string.black)),
+    /**
+     * #320 (1.8.1): a white player, its type and controls dark (for the light theme; the lyrics and the queue keep their
+     * dark blurred cover). Only when picked.
+     */
+    WHITE(tr(R.string.white)),
 }
 enum class TransportStyle(val label: String) { GLYPHS(tr(R.string.classic)), BUTTON(tr(R.string.play_button)), OUTLINE(tr(R.string.rings)) }
 /** How wide the player's cover is: [extra] is how far it reaches into each side margin. */
@@ -1337,7 +1406,10 @@ data class AppSettings(
     val miniProgress: MiniProgress = MiniProgress.LINE,
     // Player look
     val playerBackground: PlayerBackground = PlayerBackground.MESH,
-    /** 0..1: how much of the player's background shows through its darkening (blurred cover and your background). */
+    /**
+     * 0..1: how much of the player's background shows through its darkening (blurred cover and your background); below
+     * 0, down to [com.prism.music.ui.player.BACKDROP_SHOW_MIN], it darkens on to black (#309, 1.8.1).
+     */
     val playerBackdropShow: Float = 0.35f,
     val playerArtCorners: Int = 20,
     val coverSize: CoverSize = CoverSize.STANDARD,
@@ -1478,7 +1550,8 @@ data class AppSettings(
         liquidGlass = false,
         frostedGlass = false,
         frostedPages = false,
-        backdrops = emptyMap(),
+        // Your own photo stays (owner, 1.8.1): a still picture costs next to nothing; the drawn and moving ones pause.
+        backdrops = backdrops.filterValues { it.substringBefore('|') == "PHOTO" },
         backdropMotion = false,
         reduceMotion = true,
         canvasEnabled = false,
@@ -1495,6 +1568,7 @@ data class AppSettings(
             immersiveBackground = if (immersiveBackground == LyricsBackground.CANVAS) LyricsBackground.PLAYER else immersiveBackground,
         ),
         homeHeader = if (homeHeader == HomeHeader.PICTURE || homeHeader == HomeHeader.NOW_PLAYING) HomeHeader.GREETING else homeHeader,
+        view = view.copy(crossfadeShape = false),
     )
 
     /** The lyric sources Prism asks, in the listener's order: the ones turned off are left out (#51). */
@@ -1705,6 +1779,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val miniProgressColor = stringPreferencesKey("mini_progress_color")
         val miniFillStrength = floatPreferencesKey("mini_fill_strength")
         val playRing = booleanPreferencesKey("play_ring")
+        val miniPlayButton = booleanPreferencesKey("mini_play_button")
         val playingInPageColor = booleanPreferencesKey("playing_page_color")
         val playerBackground = stringPreferencesKey("player_background")
         val playerBackdropShow = floatPreferencesKey("player_backdrop_show")
@@ -1825,6 +1900,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val tvLyricsScale = floatPreferencesKey("tv_lyrics_scale")
     val tvWelcomed = booleanPreferencesKey("tv_welcomed")
         val tvHomeLayout = stringPreferencesKey("tv_home_layout")
+        val tvBackdropDim = intPreferencesKey("tv_backdrop_dim")
         val pauseOnMute = booleanPreferencesKey("pause_on_mute")
         val pipMode = stringPreferencesKey("pip_mode")
         val panelSwipes = booleanPreferencesKey("panel_swipes")
@@ -1836,6 +1912,20 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val crossfadeMark = booleanPreferencesKey("crossfade_mark")
         val blendCovers = booleanPreferencesKey("blend_covers")
         val buttonsPill = booleanPreferencesKey("player_buttons_pill")
+        // 1.8.1 ([ViewLook.crossfadeShape]).
+        val crossfadeShape = booleanPreferencesKey("crossfade_shape")
+        // 1.8.1 requests ([ViewLook.downloadsAlbums], [ViewLook.artistLinks], [ViewLook.backdropFade]).
+        val downloadsAlbums = booleanPreferencesKey("downloads_albums")
+        val artistLinks = booleanPreferencesKey("player_artist_links")
+        val backdropFade = booleanPreferencesKey("backdrop_fade")
+        /** 1.8.1 (#216, [BehaviorPrefs.explicitContent]). */
+        val explicitContent = stringPreferencesKey("explicit_content")
+        // 1.8.1 ([ViewLook.replayGraph], [ViewLook.replayStoryFont]; [BehaviorPrefs]' history choices).
+        val replayGraph = stringPreferencesKey("replay_card_graph")
+        val replayStoryFont = booleanPreferencesKey("replay_story_font")
+        val historyPausedUntil = longPreferencesKey("history_paused_until")
+        val playCountSeconds = intPreferencesKey("play_count_seconds")
+        val playCountOnAccount = booleanPreferencesKey("play_count_account")
         // 1.8.0 player editor ([PlayerParts]): the hidden parts are part of a Look, the menu's choices aren't.
         val playerHiddenParts = stringPreferencesKey("player_hidden_parts")
         val playerMenuHidden = stringPreferencesKey("player_menu_hidden")
@@ -1849,6 +1939,8 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val skipSilenceEpisodes = booleanPreferencesKey("skip_silence_episodes")
         val sleepFade = intPreferencesKey("sleep_fade")
         val pauseFade = booleanPreferencesKey("pause_fade")
+        /** 1.8.1 (#314, [SoundPrefs.ownLossyFiles]). */
+        val ownLossyFiles = booleanPreferencesKey("own_lossy_files")
         val performanceMode = booleanPreferencesKey("performance_mode")
         /** The Home card offering Performance mode on a slower phone was answered (either way). */
         val performanceOffered = booleanPreferencesKey("performance_offered")
@@ -1857,7 +1949,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val look: List<Preferences.Key<*>> by lazy {
             listOf(
                 fontChoice, textScale, corners, uiDensity, titleSize, cardSize, reduceMotion, navStyle, navLabels, navHideOnScroll,
-                navTabs, startTab, miniPlayerStyle, miniSkipButtons, miniPrevButton, miniProgress, miniProgressColor, miniFillStrength, playRing, playingInPageColor, playerBackground, playerBackdropShow, playerArtCorners, transportStyle,
+                navTabs, startTab, miniPlayerStyle, miniSkipButtons, miniPrevButton, miniPlayButton, miniProgress, miniProgressColor, miniFillStrength, playRing, playingInPageColor, playerBackground, playerBackdropShow, playerArtCorners, transportStyle,
                 coverSize, scrubberStyle, artShrinkOnPause, showOutputDevice, lyricsAlign, libraryView, playlistHeroCover, frostedPages, replayThemeColors,
                 immersiveArt, immersiveLyrics, immersiveControls, playerShuffleRepeat, lightStyle,
                 playerLayout, vinylTonearm, playerDeck, playerButtons, scrubberColor, playerTitleAlign, playerTitleSize, playerTitleScroll,
@@ -1869,7 +1961,9 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 cornerScale, songShape, albumShape, artistShape, playerShape, buttonShape, playOutlined,
                 typeWeight, typeSpacing, titleFont, tabTint, playerTitleWeight, typeClassic, controlsClassic,
                 panelPlayer, queueHeadings, castMark, immersiveVideo, bleedFit, coverFlight, videoControlsHide,
-                crossfadeMark, blendCovers, buttonsPill, playerHiddenParts,
+                crossfadeMark, blendCovers, buttonsPill, playerHiddenParts, crossfadeShape,
+                downloadsAlbums, artistLinks, backdropFade,
+                crossfadeMark, blendCovers, buttonsPill, playerHiddenParts, crossfadeShape, replayGraph, replayStoryFont,
             ) + lyricsLook.map { it.first }
         }
 
@@ -1889,7 +1983,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 fontChoice to 's', appFontName to 's', lyricsFont to 's', textScale to 'f', corners to 's', uiDensity to 's', titleSize to 's', cardSize to 's',
                 navStyle to 's', navLabels to 's', navHideOnScroll to 'b', navTabs to 's', startTab to 's',
                 tabNames to 's', navBarSize to 's', navBarFill to 's', miniPlayerJoined to 'b',
-                miniPlayerStyle to 's', miniSkipButtons to 'b', miniPrevButton to 'b', miniProgress to 's', miniProgressColor to 's', miniFillStrength to 'f', playRing to 'b', playingInPageColor to 'b',
+                miniPlayerStyle to 's', miniSkipButtons to 'b', miniPrevButton to 'b', miniPlayButton to 'b', miniProgress to 's', miniProgressColor to 's', miniFillStrength to 'f', playRing to 'b', playingInPageColor to 'b',
                 playerBackground to 's', playerBackdropShow to 'f', playerArtCorners to 'i', transportStyle to 's', coverSize to 's',
                 scrubberStyle to 's', artShrinkOnPause to 'b', showOutputDevice to 'b', fullBleedArtwork to 'b', videoFullBleed to 'b', hideVolumeBar to 'b',
                 showPlayingFrom to 'b', playerShuffleRepeat to 'b', immersiveArt to 's', immersiveLyrics to 's', immersiveControls to 'b',
@@ -1904,6 +1998,9 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 typeWeight to 's', typeSpacing to 's', titleFont to 's', tabTint to 's', playerTitleWeight to 's', typeClassic to 'b', controlsClassic to 'b',
                 panelPlayer to 's', queueHeadings to 'b', castMark to 'b', immersiveVideo to 'b', bleedFit to 's', coverFlight to 'b',
                 videoControlsHide to 'b', crossfadeMark to 'b', blendCovers to 'b', buttonsPill to 'b', playerHiddenParts to 's',
+                crossfadeShape to 'b',
+                downloadsAlbums to 'b', artistLinks to 'b', backdropFade to 'b',
+                crossfadeShape to 'b', replayGraph to 's', replayStoryFont to 'b',
             ) + lyricsLook
         }
 
@@ -1938,10 +2035,16 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 // 1.7.8 ([BehaviorPrefs]).
                 "lock_portrait", "pause_on_mute", "pip_mode", "panel_swipes", "recent_shows", "queue_locked", "scroll_shows_controls", "playlist_genres", "screen_fades", "player_gestures_everywhere", "page_slide", "tab_bar_position",
                 // 1.8.0 ([TvPrefs]): how Prism behaves on a TV and in desk mode.
-                "tv_ambient_minutes", "desk_mode", "tv_lyrics_scale", "tv_welcomed", "tv_home_layout",
+                "tv_ambient_minutes", "desk_mode", "tv_lyrics_scale", "tv_welcomed", "tv_home_layout", "tv_backdrop_dim",
                 // 1.7.8 ([SoundPrefs]).
                 "crossfade_curve", "normalize_target", "normalize_albums", "music_speed", "music_pitch",
                 "skip_silence_episodes", "sleep_fade", "pause_fade",
+                // 1.8.1 (#314): your own song files in place of the stream.
+                "own_lossy_files",
+                // 1.8.1 (#216): what plays and shows, not a look.
+                "explicit_content",
+                // 1.8.1 (#296, #263): what Prism keeps of your listening.
+                "history_paused_until", "play_count_seconds", "play_count_account",
             )
         }
     }
@@ -2019,10 +2122,10 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             pageColors = p[K.pageColors] ?: d.pageColors,
             frostedGlass = p[K.frostedGlass] ?: d.frostedGlass,
             haptics = p[K.haptics] ?: d.haptics,
-            // 1.8.0 player editor: one switch for the cover and the video ("Full-bleed artwork"); on if either was on (a
-            // full-bleed cover with a framed video looked broken). Both keys are kept and always written together.
-            fullBleedArtwork = fullBleed(p),
-            videoFullBleed = fullBleed(p),
+            // Two switches again (1.8.1, owner): 1.8.0 made the cover and the video one, so the video's own button turned
+            // the cover's edge-to-edge look on and off too. Each key is its own setting, as before 1.8.0.
+            fullBleedArtwork = p[K.fullBleedArtwork] ?: d.fullBleedArtwork,
+            videoFullBleed = p[K.videoFullBleed] ?: d.videoFullBleed,
             immersivePlayer = p[K.immersivePlayer] ?: d.immersivePlayer,
             immersiveArt = p.enum(K.immersiveArt, d.immersiveArt),
             immersiveLyrics = p.enum(K.immersiveLyrics, d.immersiveLyrics),
@@ -2194,8 +2297,15 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 miniProgressColor = p.enum(K.miniProgressColor, d.view.miniProgressColor),
                 miniFillStrength = (p[K.miniFillStrength] ?: d.view.miniFillStrength).coerceIn(0.1f, 0.9f),
                 playRing = p[K.playRing] ?: d.view.playRing,
+                miniPlayButton = p[K.miniPlayButton] ?: d.view.miniPlayButton,
                 playingInPageColor = p[K.playingInPageColor] ?: d.view.playingInPageColor,
                 parts = readParts(p),
+                crossfadeShape = p[K.crossfadeShape] ?: d.view.crossfadeShape,
+                downloadsAlbums = p[K.downloadsAlbums] ?: d.view.downloadsAlbums,
+                artistLinks = p[K.artistLinks] ?: d.view.artistLinks,
+                backdropFade = p[K.backdropFade] ?: d.view.backdropFade,
+                replayGraph = p.enum(K.replayGraph, d.view.replayGraph),
+                replayStoryFont = p[K.replayStoryFont] ?: d.view.replayStoryFont,
             ),
             sound = SoundPrefs(
                 crossfadeCurve = p.enum(K.crossfadeCurve, d.sound.crossfadeCurve),
@@ -2207,6 +2317,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 skipSilenceEpisodes = p[K.skipSilenceEpisodes] ?: p[K.skipSilence] ?: d.sound.skipSilenceEpisodes,
                 sleepFadeSeconds = (p[K.sleepFade] ?: d.sound.sleepFadeSeconds).coerceIn(0, 60),
                 pauseFade = p[K.pauseFade] ?: d.sound.pauseFade,
+                ownLossyFiles = p[K.ownLossyFiles] ?: d.sound.ownLossyFiles,
             ),
             behavior = BehaviorPrefs(
                 lockPortrait = p[K.lockPortrait] ?: d.behavior.lockPortrait,
@@ -2221,6 +2332,10 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 gesturesEverywhere = p[K.gesturesEverywhere] ?: d.behavior.gesturesEverywhere,
                 pageSlide = p[K.pageSlide] ?: d.behavior.pageSlide,
                 tabBarPosition = p.enum(K.tabBarPosition, d.behavior.tabBarPosition),
+                explicitContent = p.enum(K.explicitContent, d.behavior.explicitContent),
+                historyPausedUntil = p[K.historyPausedUntil] ?: d.behavior.historyPausedUntil,
+                playCountSeconds = (p[K.playCountSeconds] ?: d.behavior.playCountSeconds).coerceIn(0, 600),
+                playCountOnAccount = p[K.playCountOnAccount] ?: d.behavior.playCountOnAccount,
             ),
             tv = TvPrefs(
                 ambientMinutes = (p[K.tvAmbientMinutes] ?: d.tv.ambientMinutes).coerceIn(0, 60),
@@ -2228,6 +2343,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 lyricsScale = (p[K.tvLyricsScale] ?: d.tv.lyricsScale).coerceIn(0.75f, 1.5f),
             welcomed = p[K.tvWelcomed] ?: d.tv.welcomed,
                 homeLayout = p[K.tvHomeLayout]?.let { runCatching { json.decodeFromString<List<HomeSectionConfig>>(it) }.getOrNull() } ?: d.tv.homeLayout,
+                backdropDim = (p[K.tvBackdropDim] ?: d.tv.backdropDim).coerceIn(TvPrefs.DIM_LIGHTER, TvPrefs.DIM_DARKEST),
             ),
             uiDensity = p.enum(K.uiDensity, d.uiDensity),
             titleSize = p.enum(K.titleSize, d.titleSize),
@@ -2250,7 +2366,8 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             miniPrevButton = p[K.miniPrevButton] ?: d.miniPrevButton,
             miniProgress = p.enum(K.miniProgress, d.miniProgress),
             playerBackground = p.enum(K.playerBackground, d.playerBackground),
-            playerBackdropShow = p[K.playerBackdropShow] ?: d.playerBackdropShow,
+            // #309 (1.8.1): down to a fully dark player.
+            playerBackdropShow = (p[K.playerBackdropShow] ?: d.playerBackdropShow).coerceIn(com.prism.music.ui.player.BACKDROP_SHOW_MIN, 1f),
             playerArtCorners = p[K.playerArtCorners] ?: d.playerArtCorners,
             transportStyle = p.enum(K.transportStyle, d.transportStyle),
             coverSize = p.enum(K.coverSize, d.coverSize),
@@ -2527,8 +2644,8 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     @Suppress("UNCHECKED_CAST")
     fun resetColors() = edit { p -> K.colors.forEach { p.remove(it as Preferences.Key<Any>) } }
     // 1.8.0 player editor: the cover and the video are one switch (see [fullBleed]).
-    fun setFullBleedArtwork(v: Boolean) = edit { it[K.fullBleedArtwork] = v; it[K.videoFullBleed] = v }
-    fun setVideoFullBleed(v: Boolean) = setFullBleedArtwork(v)
+    fun setFullBleedArtwork(v: Boolean) = edit { it[K.fullBleedArtwork] = v }
+    fun setVideoFullBleed(v: Boolean) = edit { it[K.videoFullBleed] = v }
     fun setImmersivePlayer(v: Boolean) = edit { it[K.immersivePlayer] = v }
     fun setImmersiveArt(v: ImmersiveArt) = edit { it[K.immersiveArt] = v.name }
     fun setImmersiveLyrics(v: ImmersiveLyrics) = edit { it[K.immersiveLyrics] = v.name }
@@ -2695,6 +2812,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     fun setMiniPlayerStyle(v: MiniPlayerStyle) = edit { it[K.miniPlayerStyle] = v.name }
     fun setMiniSkipButtons(v: Boolean) = edit { it[K.miniSkipButtons] = v }
     fun setMiniPrevButton(v: Boolean) = edit { it[K.miniPrevButton] = v }
+    fun setMiniPlayButton(v: Boolean) = edit { it[K.miniPlayButton] = v }
     fun setMiniProgress(v: MiniProgress) = edit { it[K.miniProgress] = v.name }
     fun setMiniProgressColor(v: ScrubberColor) = edit { it[K.miniProgressColor] = v.name }
     fun setMiniFillStrength(v: Float) = edit { it[K.miniFillStrength] = v }
@@ -2780,6 +2898,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     fun setTvAmbientMinutes(v: Int) = edit { it[K.tvAmbientMinutes] = v.coerceIn(0, 60) }
     fun setDeskMode(v: Boolean) = edit { it[K.deskMode] = v }
     fun setTvLyricsScale(v: Float) = edit { it[K.tvLyricsScale] = v.coerceIn(0.75f, 1.5f) }
+    fun setTvBackdropDim(v: Int) = edit { it[K.tvBackdropDim] = v.coerceIn(TvPrefs.DIM_LIGHTER, TvPrefs.DIM_DARKEST) }
     fun setTvWelcomed() = edit { it[K.tvWelcomed] = true }
     /** The TV Home's rows ([TvPrefs.homeLayout]); an empty list is Home as it comes (Back to default). */
     fun setTvHomeLayout(v: List<HomeSectionConfig>) = edit {
@@ -2797,14 +2916,22 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     fun setCrossfadeMark(v: Boolean) = edit { it[K.crossfadeMark] = v }
     fun setBlendCovers(v: Boolean) = edit { it[K.blendCovers] = v }
     fun setButtonsPill(v: Boolean) = edit { it[K.buttonsPill] = v }
+    fun setCrossfadeShape(v: Boolean) = edit { it[K.crossfadeShape] = v }
+    fun setDownloadsAlbums(v: Boolean) = edit { it[K.downloadsAlbums] = v }
+    fun setArtistLinks(v: Boolean) = edit { it[K.artistLinks] = v }
+    fun setBackdropFade(v: Boolean) = edit { it[K.backdropFade] = v }
+    fun setExplicitContent(v: ExplicitContent) = edit { it[K.explicitContent] = v.name }
+    fun setReplayGraph(v: ReplayGraph) = edit { it[K.replayGraph] = v.name }
+    fun setReplayStoryFont(v: Boolean) = edit { it[K.replayStoryFont] = v }
+    /** #296: history paused until [until] (0: on again). */
+    fun setHistoryPausedUntil(until: Long) = edit { if (until > 0) it[K.historyPausedUntil] = until else it.remove(K.historyPausedUntil) }
+    fun setPlayCountSeconds(v: Int) = edit { it[K.playCountSeconds] = v.coerceIn(0, 600) }
+    fun setPlayCountOnAccount(v: Boolean) = edit { it[K.playCountOnAccount] = v }
 
     // 1.8.0 player editor
     /** A comma-separated set of names (unknown ones skipped): a Look or backup from a later Prism still opens. */
     private inline fun <reified E : Enum<E>> namesOf(v: String?): List<E> =
         v.orEmpty().split(',').mapNotNull { n -> enumValues<E>().firstOrNull { it.name == n } }.distinct()
-
-    /** Full-bleed artwork and full-bleed video, one switch since 1.8.0: on if either was. */
-    private fun fullBleed(p: Preferences) = (p[K.fullBleedArtwork] ?: false) || (p[K.videoFullBleed] ?: false)
 
     private fun readParts(p: Preferences): PlayerParts {
         val d = PlayerParts()
@@ -2863,6 +2990,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     fun setSkipSilenceEpisodes(v: Boolean) = edit { it[K.skipSilenceEpisodes] = v }
     fun setSleepFade(v: Int) = edit { it[K.sleepFade] = v.coerceIn(0, 60) }
     fun setPauseFade(v: Boolean) = edit { it[K.pauseFade] = v }
+    fun setOwnLossyFiles(v: Boolean) = edit { it[K.ownLossyFiles] = v }
     fun setLyricsStripAlign(v: LyricsAlign) = edit { it[K.lyricsStripAlign] = v.name }
     fun setLyricsStripTwoLines(v: Boolean) = edit { it[K.lyricsStripTwoLines] = v }
     fun setMergeLikedVideos(v: Boolean) = edit { it[K.mergeLikedVideos] = v }

@@ -11,6 +11,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -78,11 +79,7 @@ fun GlassSurface(
                 .shadow(elevation * 0.5f, shape, ambientColor = Color.Black.copy(alpha = 0.22f), spotColor = Color.Black.copy(alpha = 0.22f))
                 .clip(shape)
                 .background(if (tint.isSpecified) tint else if (onMedia) Color.Black.copy(alpha = 0.35f) else com.prism.music.ui.components.frostFill(1.4f))
-                .border(
-                    0.6.dp,
-                    Brush.verticalGradient(listOf(Color.White.copy(alpha = if (dark || onMedia) 0.18f else 0.6f), Color.White.copy(alpha = 0.03f))),
-                    shape,
-                ),
+                .rim(Color.White.copy(alpha = if (dark || onMedia) 0.18f else 0.6f), Color.White.copy(alpha = 0.03f), shape, all = refract),
             content = content,
         )
     } else if (glassPath(android.os.Build.VERSION.SDK_INT, settings.liquidGlass, settings.frostedGlass, haze != null, refract) == GlassPath.LIQUID) {
@@ -124,13 +121,7 @@ fun GlassSurface(
                 .shadow(elevation * 0.6f, shape, ambientColor = Color.Black.copy(alpha = 0.25f), spotColor = Color.Black.copy(alpha = 0.25f))
                 .clip(shape)
                 .hazeBlur(input = HazeInput.Backdrop(haze), style = style)
-                .border(
-                    0.6.dp,
-                    Brush.verticalGradient(
-                        listOf(Color.White.copy(alpha = if (dark || onMedia) 0.18f else 0.55f), Color.White.copy(alpha = 0.03f))
-                    ),
-                    shape,
-                ),
+                .rim(Color.White.copy(alpha = if (dark || onMedia) 0.18f else 0.55f), Color.White.copy(alpha = 0.03f), shape, all = refract),
             content = content,
         )
     } else {
@@ -142,14 +133,20 @@ fun GlassSurface(
                 .shadow(elevation, shape, ambientColor = Color.Black.copy(alpha = 0.3f), spotColor = Color.Black.copy(alpha = 0.3f))
                 .clip(shape)
                 .background(if (tint.isSpecified) tint else fill)
-                .border(
-                    0.6.dp,
-                    Brush.verticalGradient(
-                        listOf(Color.White.copy(alpha = if (dark || onMedia) 0.16f else 0.6f), Color.White.copy(alpha = 0.02f))
-                    ),
-                    shape,
-                ),
+                .rim(Color.White.copy(alpha = if (dark || onMedia) 0.16f else 0.6f), Color.White.copy(alpha = 0.02f), shape, all = refract),
             content = content,
         )
     }
 }
+
+/**
+ * The glass's lit edge: brightest at the top ([top]), fading to [bottom] down its sides. Not [all] (a flat bar from one
+ * side of the screen to the other, the docked tab bar), only the top edge's hairline: down the screen's sides the edge
+ * showed as two bright lines (#290).
+ */
+private fun Modifier.rim(top: Color, bottom: Color, shape: RoundedCornerShape, all: Boolean): Modifier =
+    if (all) border(0.6.dp, Brush.verticalGradient(listOf(top, bottom)), shape)
+    else drawWithContent {
+        drawContent()
+        drawLine(top, androidx.compose.ui.geometry.Offset(0f, 0f), androidx.compose.ui.geometry.Offset(size.width, 0f), 0.6.dp.toPx())
+    }

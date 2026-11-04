@@ -28,15 +28,20 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import java.net.Inet4Address
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.util.UUID
 import kotlin.coroutines.resume
 
-/** Another Prism on this network that's available for handoff. */
-data class PrismDevice(val name: String, val host: String, val port: Int, val id: String?, val key: String, val paired: Boolean, val tv: Boolean = false)
+/**
+ * Another Prism on this network that's available for handoff. [hosts]: every address it answers on, the likeliest first
+ * ([LinkReach.order]); [host] is the first.
+ */
+data class PrismDevice(
+    val name: String, val host: String, val port: Int, val id: String?, val key: String, val paired: Boolean, val tv: Boolean = false,
+    val hosts: List<String> = listOf(host),
+)
 
 /** A code this device is showing for another to type in, while it pairs. */
 data class ShownCode(val code: String, val from: String)
@@ -67,6 +72,9 @@ class Handoff(private val app: Application, private val c: AppContainer) : Hando
     val busy: StateFlow<String?> = _busy.asStateFlow()
     private val _events = MutableSharedFlow<String>(extraBufferCapacity = 8)
     val events = _events.asSharedFlow()
+    private val _unreachable = MutableStateFlow<Map<String, String>>(emptyMap())
+    /** Devices (by [PrismDevice.key]) that didn't answer the last time, and why: shown on their rows, tapped to try again. */
+    val unreachable: StateFlow<Map<String, String>> = _unreachable.asStateFlow()
     init {
         // 1.8.0: links are encrypted now (version 2); keys from before can't be used for it, so those devices pair again once.
         val old = prefs.all.keys.filter { it.startsWith("s:") }
@@ -508,7 +516,9 @@ class Handoff(private val app: Application, private val c: AppContainer) : Hando
         kotlin.concurrent.thread(name = "handoff-accept", isDaemon = true) {
             while (!ss.isClosed) {
                 val s = runCatching { ss.accept() }.getOrNull() ?: break
-                if (!Lan.isLocal(s.inetAddress)) { runCatching { s.close() }; continue }
+                // A home network's addresses are private ones, or any on this device's own network (some routers hand
+                // out others, 1.8.1).
+                if (!Lan.isLocal(s.inetAddress) && !Lan.sameNetwork(s.inetAddress, Lan.ownNetworks())) { runCatching { s.close() }; continue }
                 links.take(s)
             }
         }
@@ -533,6 +543,9 @@ class Handoff(private val app: Application, private val c: AppContainer) : Hando
             setAttribute("id", device)
             setAttribute("v", VERSION.toString())
             if (isTv) setAttribute("tv", "1")
+            // Its IPv4 addresses, said outright (1.8.1): a phone on Android 13 or older is told one address by its lookup,
+            // often an IPv6 link-local one it can't connect to.
+            Lan.ownAddresses().take(3).joinToString(",").takeIf { it.isNotEmpty() }?.let { setAttribute("a", it) }
         }
         val listener = object : NsdManager.RegistrationListener {
             override fun onServiceRegistered(info: NsdServiceInfo) = Unit
@@ -591,33 +604,49 @@ class Handoff(private val app: Application, private val c: AppContainer) : Hando
     }
 
     private fun resolve(info: NsdServiceInfo) {
-        val manager = nsd ?: return
         scope.launch {
-            resolveLock.withLock {
-                val r = withTimeoutOrNull(6_000) {
-                    suspendCancellableCoroutine<NsdServiceInfo?> { cont ->
-                        runCatching {
-                            @Suppress("DEPRECATION")
-                            manager.resolveService(info, object : NsdManager.ResolveListener {
-                                override fun onResolveFailed(i: NsdServiceInfo, error: Int) { if (cont.isActive) cont.resume(null) }
-                                override fun onServiceResolved(i: NsdServiceInfo) { if (cont.isActive) cont.resume(i) }
-                            })
-                        }.onFailure { if (cont.isActive) cont.resume(null) }
-                    }
-                } ?: return@withLock
-                val id = r.attributes["id"]?.toString(Charsets.UTF_8)
-                // Itself (this very app, advertising while it looks).
-                if (id == device) return@withLock
-                @Suppress("DEPRECATION")
-                val all = if (Build.VERSION.SDK_INT >= 34) r.hostAddresses else listOfNotNull(r.host)
-                val host = (all.firstOrNull { it is Inet4Address } ?: all.firstOrNull())?.hostAddress ?: return@withLock
-                val tv = r.attributes["tv"]?.toString(Charsets.UTF_8) == "1"
-                val d = PrismDevice(r.serviceName.removePrefix(NAME_PREFIX), host, r.port, id, r.serviceName, id != null && secretFor(id) != null, tv)
-                if (tv) prefs.edit().putString("tvhost:$host", d.name).apply()
-                _devices.value = (_devices.value.filterNot { it.key == d.key } + d).sortedBy { it.name.lowercase() }
-            }
+            val d = lookUp(info) ?: return@launch
+            _devices.value = (_devices.value.filterNot { it.key == d.key } + d).sortedBy { it.name.lowercase() }
         }
     }
+
+    /** The Prism advertised as [info], looked up afresh (its addresses and port); null if it didn't answer, or is this one. */
+    private suspend fun lookUp(info: NsdServiceInfo): PrismDevice? {
+        val manager = nsd ?: return null
+        return resolveLock.withLock {
+            val r = withTimeoutOrNull(6_000) {
+                suspendCancellableCoroutine<NsdServiceInfo?> { cont ->
+                    runCatching {
+                        @Suppress("DEPRECATION")
+                        manager.resolveService(info, object : NsdManager.ResolveListener {
+                            override fun onResolveFailed(i: NsdServiceInfo, error: Int) { if (cont.isActive) cont.resume(null) }
+                            override fun onServiceResolved(i: NsdServiceInfo) { if (cont.isActive) cont.resume(i) }
+                        })
+                    }.onFailure { if (cont.isActive) cont.resume(null) }
+                }
+            } ?: return@withLock null
+            val id = r.attributes["id"]?.toString(Charsets.UTF_8)
+            // Itself (this very app, advertising while it looks).
+            if (id == device) return@withLock null
+            @Suppress("DEPRECATION")
+            val all = if (Build.VERSION.SDK_INT >= 34) r.hostAddresses else listOfNotNull(r.host)
+            val said = r.attributes["a"]?.toString(Charsets.UTF_8)?.split(',').orEmpty()
+            val hosts = LinkReach.order(all, said, Lan.ownNetworks(), ::scopedToWifi).takeIf { it.isNotEmpty() } ?: return@withLock null
+            val tv = r.attributes["tv"]?.toString(Charsets.UTF_8) == "1"
+            val d = PrismDevice(r.serviceName.removePrefix(NAME_PREFIX), hosts.first(), r.port, id, r.serviceName, id != null && secretFor(id) != null, tv, hosts)
+            if (tv) prefs.edit().apply { hosts.forEach { putString("tvhost:$it", d.name) } }.apply()
+            Log.i(TAG, "found ${d.name} on ${hosts.joinToString()} port ${d.port}")
+            d
+        }
+    }
+
+    /** An IPv6 link-local address, given this device's Wi-Fi as its scope (it can't be connected to without one). */
+    private fun scopedToWifi(a: java.net.Inet6Address): java.net.InetAddress = runCatching {
+        val wifi = java.net.NetworkInterface.getNetworkInterfaces().toList()
+            .filter { it.isUp && !it.isLoopback && it.inetAddresses.toList().any { x -> x is java.net.Inet6Address && x.isLinkLocalAddress } }
+            .minByOrNull { i -> listOf("wlan", "swlan", "eth").indexOfFirst { i.name.startsWith(it) }.let { if (it < 0) 9 else it } }
+        java.net.Inet6Address.getByAddress(null, a.address, wifi)
+    }.getOrDefault(a)
 
     // ------------------------------------------------------------ Moving
 
@@ -674,11 +703,47 @@ class Handoff(private val app: Application, private val c: AppContainer) : Hando
     }
 
     /** [repair]: pair again though a key is kept (it was refused); the kept key is replaced only once that works. */
-    private fun attempt(d: PrismDevice, request: HandoffRequest, repair: Boolean = false): HandoffResult =
-        (connect(d) ?: return HandoffResult.Failed(tr(R.string.couldn_t_reach_is_prism_open, d.name))).use { link -> attempt(d, link, request, repair) }
+    private fun attempt(d: PrismDevice, request: HandoffRequest, repair: Boolean = false): HandoffResult {
+        val (link, why) = connect(d)
+        return link?.use { attempt(d, it, request, repair) } ?: HandoffResult.Failed(why ?: tr(R.string.couldn_t_reach_is_prism_open, d.name))
+    }
 
-    private fun connect(d: PrismDevice): HLink? =
-        runCatching { Socket().apply { connect(InetSocketAddress(d.host, d.port), 5_000); tcpNoDelay = true } }.getOrNull()?.let(::HLink)
+    /**
+     * A connection to [d], or why not: each of its addresses in turn ([LinkReach]), then, if none answered, each of the
+     * ones a fresh lookup gives (it may have moved to another address, or another port, since it was found). Blocking.
+     */
+    private fun connect(d: PrismDevice): Pair<HLink?, String?> {
+        val failures = ArrayList<LinkReach.Failure>()
+        val tried = HashSet<String>()
+        fun tryAll(hosts: List<String>, port: Int): HLink? {
+            for (h in hosts) {
+                if (!tried.add("$h:$port")) continue
+                val s = Socket()
+                try {
+                    s.connect(InetSocketAddress(h, port), LinkReach.CONNECT_MS)
+                    s.tcpNoDelay = true
+                    return HLink(s)
+                } catch (t: Throwable) {
+                    runCatching { s.close() }
+                    failures += LinkReach.failure(t)
+                    Log.i(TAG, "${d.name} didn't answer on $h:$port: $t")
+                }
+            }
+            return null
+        }
+        val link = tryAll(d.hosts, d.port) ?: run {
+            val info = NsdServiceInfo().apply { serviceName = d.key; serviceType = SERVICE }
+            val fresh = if (d.key.startsWith("test:")) null else runBlocking { lookUp(info) }
+            fresh?.let { f ->
+                _devices.value = _devices.value.map { if (it.key == f.key) f else it }
+                tryAll(f.hosts, f.port)
+            }
+        }
+        if (link != null) { _unreachable.value = _unreachable.value - d.key; return link to null }
+        val why = LinkReach.why(d.name, failures)
+        _unreachable.value = _unreachable.value + (d.key to why)
+        return null to why
+    }
 
     private fun attempt(d: PrismDevice, link: HLink, request: HandoffRequest, repair: Boolean): HandoffResult = runCatching {
         peer.request(link, request, HandoffExpect(device = d.id, repair = repair)) { them ->
@@ -696,7 +761,8 @@ class Handoff(private val app: Application, private val c: AppContainer) : Hando
      */
     fun openFollow(d: PrismDevice, first: FollowState): Pair<HLink?, String?> {
         for (repair in listOf(false, true)) {
-            val link = connect(d) ?: return null to tr(R.string.couldn_t_reach_is_prism_open, d.name)
+            val (link, why) = connect(d)
+            if (link == null) return null to (why ?: tr(R.string.couldn_t_reach_is_prism_open, d.name))
             when (val r = attempt(d, link, HandoffRequest.Follow(first), repair)) {
                 is HandoffResult.Done -> return link to null
                 // Its key was refused (forgotten over there): pair again, once.

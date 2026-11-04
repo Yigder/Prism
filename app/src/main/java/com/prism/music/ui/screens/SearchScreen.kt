@@ -136,7 +136,8 @@ fun SearchScreen(bottomPadding: Dp) {
 
     fun saveQuery(q: String) {
         val v = q.trim()
-        if (v.isBlank()) return
+        // #296: nothing searched is kept while history is paused.
+        if (v.isBlank() || com.prism.music.data.HistoryPause.paused(c.settings.current.behavior)) return
         recents.remove(v); recents.add(0, v)
         while (recents.size > 12) recents.removeAt(recents.lastIndex)
         history(context).edit().putString("q", recents.joinToString("\n")).apply()
@@ -167,7 +168,7 @@ fun SearchScreen(bottomPadding: Dp) {
             .getOrDefault(emptyList<String>() to emptyList())
         suggestions.clear()
         suggestions.addAll((mine + s).distinctBy { com.prism.music.data.innertube.SearchRank.norm(it) }.take(if (items.isEmpty()) 4 else 3))
-        suggestedItems.clear(); suggestedItems.addAll(items.take(3))
+        suggestedItems.clear(); suggestedItems.addAll(com.prism.music.data.ExplicitFilter.items(c.settings.current.behavior.explicitContent, items).take(3))
     }
     LaunchedEffect(query) {
         if (query.isBlank()) return@LaunchedEffect
@@ -186,8 +187,10 @@ fun SearchScreen(bottomPadding: Dp) {
             // Read into results off the main thread (#132: typing on a Galaxy Note 8 waited on it).
             // A search cancelled by the next keystroke (or by leaving) isn't a failure: runCatching would have caught the
             // cancellation and shown "The coroutine scope left the composition" as the error.
+            // #216: with "Hide them", explicit songs aren't among the results.
+            val explicit = c.settings.current.behavior.explicitContent
             top = runCatching { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { c.ytm.searchTop(live, taste) } }
-                .fold({ Load.Ok(it) }, { if (it is kotlinx.coroutines.CancellationException) throw it; Load.Err(it.friendlyMessage(tr(R.string.search_failed))) })
+                .fold({ Load.Ok(com.prism.music.data.ExplicitFilter.top(explicit, it)) }, { if (it is kotlinx.coroutines.CancellationException) throw it; Load.Err(it.friendlyMessage(tr(R.string.search_failed))) })
             // The top result is the likeliest tap: when it's a song, get it ready (on Wi-Fi) so it starts at once.
             ((top as? Load.Ok)?.value?.top as? SongItem)?.song?.let { song ->
                 val cm = context.getSystemService(android.net.ConnectivityManager::class.java)
@@ -196,7 +199,7 @@ fun SearchScreen(bottomPadding: Dp) {
         } else {
             if (list == null) list = Load.Loading
             list = runCatching { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { c.ytm.search(live, filter) } }
-                .fold({ continuation = it.continuation; Load.Ok(it.items) }, { if (it is kotlinx.coroutines.CancellationException) throw it; Load.Err(it.friendlyMessage(tr(R.string.search_failed))) })
+                .fold({ continuation = it.continuation; Load.Ok(com.prism.music.data.ExplicitFilter.items(c.settings.current.behavior.explicitContent, it.items)) }, { if (it is kotlinx.coroutines.CancellationException) throw it; Load.Err(it.friendlyMessage(tr(R.string.search_failed))) })
         }
         loading = false
     }
@@ -345,7 +348,7 @@ fun SearchScreen(bottomPadding: Dp) {
                         val token = continuation ?: return@LaunchedEffect
                         runCatching { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { c.ytm.search(live, filter, token) } }.onSuccess { more ->
                             continuation = more.continuation
-                            list = Load.Ok(r.value + more.items.filter { n -> r.value.none { it.id == n.id } })
+                            list = Load.Ok(r.value + com.prism.music.data.ExplicitFilter.items(c.settings.current.behavior.explicitContent, more.items).filter { n -> r.value.none { it.id == n.id } })
                         }.onFailure { continuation = null }
                     }
                     LoadingState()

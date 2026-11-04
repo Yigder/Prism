@@ -17,14 +17,12 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
@@ -385,9 +383,12 @@ private fun rememberArtworkColor(song: Song?, settings: com.prism.music.data.pre
     val swatch = settings.artworkSwatch
     val vivid = settings.artworkVivid
     // "New albums only" (1.7.2): songs from the same album keep the color; otherwise every cover is looked at.
-    val key = if (settings.artworkChange == com.prism.music.data.prefs.ArtworkChange.ALBUM) song?.album?.id ?: song?.album?.title ?: song?.thumbnail else song?.thumbnail
+    // The cover picked for the song or its album (#305) gives the colors too.
+    val art = song?.let { com.prism.music.data.PlaylistCovers.artOf(it) }
+    val picked = song?.let { com.prism.music.data.PlaylistCovers.shared?.picked(it) }
+    val key = if (settings.artworkChange == com.prism.music.data.prefs.ArtworkChange.ALBUM) (song?.album?.id ?: song?.album?.title ?: art) to picked else art
     LaunchedEffect(key, swatch, vivid) {
-        val url = song?.thumbnail ?: return@LaunchedEffect
+        val url = art ?: return@LaunchedEffect
         // One palette for both: the accent's swatch, and the light "From the cover" (#123; also what its tile in Color shows).
         val made = withContext(Dispatchers.IO) {
             runCatching {
@@ -586,8 +587,15 @@ private fun PrismRoot(deepLink: MutableStateFlow<Uri?>) {
         // What's under the full player holds its purely visual motion still while the player hides it.
         val playerCover = remember { com.prism.music.ui.components.PlayerCover() }
         val hiddenByPlayer = remember(playerCover) { { playerCover.hides } }
+        // The playing bars stand still while the song is paused (#302); read where they're drawn.
+        val musicPlaying = c.player.isPlaying.collectAsState()
+        val playingNow = remember(musicPlaying) { { musicPlaying.value } }
+        // What the song rows mark (liked, downloaded, video saved): collected here once, not by every row in view.
+        val rowMarks = com.prism.music.ui.components.rememberRowMarks(c.library.likedIds, c.downloadState, c.downloadStandIns, c.videoState)
         CompositionLocalProvider(
+            com.prism.music.ui.components.LocalRowMarks provides rowMarks,
             com.prism.music.ui.components.LocalPlayerCover provides playerCover,
+            com.prism.music.ui.components.LocalMusicPlaying provides playingNow,
             LocalNavigator provides navigator,
             LocalHazeState provides haze,
             com.prism.music.ui.theme.LocalChromeStart provides railInset,
@@ -658,6 +666,9 @@ private fun PrismRoot(deepLink: MutableStateFlow<Uri?>) {
                         }
                         composable(Routes.NEW_RELEASES) { ScreenBackdrop(BackdropScreen.HOME) { com.prism.music.ui.screens.NewReleasesScreen(bottomPadding) } }
                         composable(Routes.EXCLUSIONS) { ScreenBackdrop(BackdropScreen.SETTINGS) { com.prism.music.ui.screens.ExclusionsScreen(bottomPadding) } }
+                        // 1.8.1: Bring your history, and its "Needs a look".
+                        composable(Routes.BRING_HISTORY) { ScreenBackdrop(BackdropScreen.SETTINGS) { com.prism.music.ui.screens.BringHistoryScreen(bottomPadding) } }
+                        composable(Routes.IMPORT_REVIEW) { ScreenBackdrop(BackdropScreen.SETTINGS) { com.prism.music.ui.screens.ImportReviewScreen(bottomPadding) } }
                         composable(
                             Routes.RECOGNIZE + "?start={start}",
                             listOf(navArgument("start") { type = NavType.BoolType; defaultValue = false }),
@@ -844,7 +855,7 @@ private fun PrismRoot(deepLink: MutableStateFlow<Uri?>) {
                     androidx.compose.runtime.DisposableEffect(Unit) { onDispose { playerCover.settled = false } }
                     Box(Modifier.customizable(com.prism.music.ui.components.CustomizeTarget.PLAYER)) { NowPlayingScreen { playerOpen = false } }
                 }
-                com.prism.music.ui.player.CoverFlightLayer(song?.thumbnail)
+                com.prism.music.ui.player.CoverFlightLayer(song?.let { com.prism.music.data.PlaylistCovers.artOf(it) })
 
                 // Looks (1.7.3): "Undo" after each change to the look, and "Customize this" while it's on.
                 com.prism.music.ui.components.LookUndoBar(
@@ -1144,20 +1155,24 @@ private fun TabItem(tab: Tab, selected: Boolean, labels: NavLabels, compact: Flo
                 }
             }
         }
-        // The picked tab grows into a capsule with its name beside the icon.
-        NavLabels.SELECTED -> Box(modifier.then(spectrumLine).then(click), contentAlignment = Alignment.Center) {
-            Row(
-                Modifier.height(40.dp).clip(CircleShape).background(indicator).padding(horizontal = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+        // The picked tab's name under its icon, as "Always" places it (#291: it grew into a capsule with the name beside
+        // the icon, which a long name pushed off the tab); the other tabs show their icons alone.
+        NavLabels.SELECTED -> Column(
+            modifier.then(spectrumLine).then(click),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Box(Modifier.size(52.dp, 32.dp).clip(CircleShape).background(indicator), contentAlignment = Alignment.Center) {
                 // 24 dp as in the other label styles (#272: 22 here made every icon a little smaller with "Selected").
                 Icon(icon, tab.label, tint = fg, modifier = Modifier.size(24.dp).then(if (selected) Modifier.tabTint(tabTint) else Modifier))
-                AnimatedVisibility(selected && compact < 0.5f, enter = expandHorizontally() + fadeIn(), exit = shrinkHorizontally() + fadeOut()) {
-                    Row {
-                        Spacer(Modifier.width(6.dp))
-                        Text(tab.label, color = fg, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, maxLines = 1)
-                    }
-                }
+            }
+            AnimatedVisibility(selected && compact < 0.5f, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
+                Text(
+                    tab.label, color = fg, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = androidx.compose.ui.unit.TextUnit(8f, androidx.compose.ui.unit.TextUnitType.Sp), maxFontSize = MaterialTheme.typography.labelSmall.fontSize),
+                    modifier = Modifier.padding(top = 2.dp, start = 6.dp, end = 6.dp),
+                )
             }
         }
         NavLabels.NEVER -> Box(modifier.then(spectrumLine).then(click), contentAlignment = Alignment.Center) {
@@ -1214,11 +1229,16 @@ private fun handleDeepLink(uri: Uri, nav: Navigator, c: AppContainer) {
                 }
             }
         }
+        // Back from Spotify's authorize page (1.8.1): the code already reached Prism on the phone's loopback address, so
+        // this only brings its page back (where the connection shows).
+        uri.scheme == "prism" && uri.host == "spotify" -> nav.go(Routes.settings(com.prism.music.ui.screens.SettingsSection.SPOTIFY.key))
         // A widget's cover or title: the player.
         uri.scheme == "prism" && uri.host == "player" -> nav.openPlayer()
         // Release Radar's notification.
         uri.scheme == "prism" && uri.host == "releases" -> nav.go(Routes.NEW_RELEASES)
         uri.scheme == "prism" && uri.host == "blends" -> nav.go(Routes.BLENDS)
+        // Bring your history's matching notification (1.8.1).
+        uri.scheme == "prism" && uri.host == "bring" -> nav.go(Routes.BRING_HISTORY)
         // A Look shared to Prism: Appearance → Looks, which shows it first.
         uri.scheme == "prism" && uri.host == "looks" -> nav.go(Routes.settings(com.prism.music.ui.screens.SettingsSection.LOOKS.key))
         // The Quick Settings tile: straight to listening.

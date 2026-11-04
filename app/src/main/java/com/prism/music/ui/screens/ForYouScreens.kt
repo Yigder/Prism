@@ -226,8 +226,12 @@ fun NewReleasesSection(cfg: HomeSectionConfig) {
     val c = LocalContainer.current
     val nav = LocalNavigator.current
     val today = remember { LocalDate.now() }
-    val releases by remember { c.db.releases().freshFlow(today.year - 1).map { list -> list.filter { ReleaseRadar.isRecent(it, today, 30) } } }
+    val recent by remember { c.db.releases().freshFlow(today.year - 1).map { list -> list.filter { ReleaseRadar.isRecent(it, today, 30) } } }
         .collectAsState(initial = emptyList())
+    // #311: with the page's "Favorite artists only" on, Home's section keeps to them too.
+    val favorites by c.artistPrefs.favorites.collectAsState()
+    val starredOnly = remember { c.library.sortOf(ReleaseRadar.STARRED_ONLY) != null }
+    val releases = if (starredOnly) ReleaseRadar.fromFavorites(recent, favorites.map { it.id }.toSet()) else recent
     if (releases.isEmpty()) return
     SectionHeader(cfg.title, strapline = tr(R.string.from_artists_you_listen_to), onMore = { nav.go(Routes.NEW_RELEASES) })
     StyledItems(cfg.style, releases.take(15).map { it.asItem() }) { nav.go(Routes.album(it.id)) }
@@ -253,6 +257,16 @@ fun NewReleasesScreen(bottomPadding: Dp) {
     var kind by remember { mutableStateOf(ReleaseKind.entries.firstOrNull { it.name == c.library.sortOf("releases:kind") } ?: ReleaseKind.ALL) }
     var order by remember { mutableStateOf(ReleaseOrder.entries.firstOrNull { it.name == c.library.sortOf("releases:order") } ?: ReleaseOrder.NEWEST) }
     var hideSaved by remember { mutableStateOf(c.library.sortOf("releases:hide_saved") != null) }
+    // #311 (1.8.1): only your favorite (starred) artists' releases, kept like the other filters; and one artist at a
+    // time, picked from the artists you play most (for this visit only).
+    var starredOnly by remember { mutableStateOf(c.library.sortOf(ReleaseRadar.STARRED_ONLY) != null) }
+    var oneArtist by remember { mutableStateOf<String?>(null) }
+    val favorites by c.artistPrefs.favorites.collectAsState()
+    val starredIds = remember(favorites) { favorites.map { it.id }.toSet() }
+    val mostPlayed by androidx.compose.runtime.produceState(emptyList<String>()) {
+        val now = System.currentTimeMillis()
+        value = runCatching { c.imports.taste.tasteTopArtists(now - 90L * 86_400_000, now, 60).mapNotNull { it.artistId } }.getOrDefault(emptyList())
+    }
     val libraryAlbums by c.library.albums.collectAsState()
     val savedHere by c.prismLibrary.albums.collectAsState()
     val savedIds = remember(libraryAlbums, savedHere) {
@@ -270,6 +284,12 @@ fun NewReleasesScreen(bottomPadding: Dp) {
             }
         }
         val all = releases ?: return@SubPage
+        val beforeArtist = all
+            .filter { age(it) <= within.days }
+            .filter { kind.accepts(it.kind) }
+            .filter { !hideSaved || (it.id !in savedIds && (it.playlistId == null || it.playlistId !in savedIds)) }
+            .let { if (starredOnly) ReleaseRadar.fromFavorites(it, starredIds) else it }
+        val artistChoices = ReleaseRadar.artistsToPick(beforeArtist, mostPlayed)
         item("filters") {
             ReleaseFilters(
                 within, kind, order, hideSaved,
@@ -277,12 +297,19 @@ fun NewReleasesScreen(bottomPadding: Dp) {
                 onKind = { kind = it; c.library.setSort("releases:kind", it.name) },
                 onOrder = { order = it; c.library.setSort("releases:order", it.name) },
                 onHideSaved = { hideSaved = it; c.library.setSort("releases:hide_saved", if (it) "on" else null) },
+                starredOnly = starredOnly,
+                onStarredOnly = { starredOnly = it; oneArtist = null; c.library.setSort(ReleaseRadar.STARRED_ONLY, if (it) "on" else null) },
+                artists = artistChoices, oneArtist = oneArtist, onArtist = { oneArtist = it },
             )
         }
-        val list = all
-            .filter { age(it) <= within.days }
-            .filter { kind.accepts(it.kind) }
-            .filter { !hideSaved || (it.id !in savedIds && (it.playlistId == null || it.playlistId !in savedIds)) }
+        val list = beforeArtist.filter { oneArtist == null || it.artistId == oneArtist }
+        if (starredOnly && starredIds.isEmpty()) item("no-favorites") {
+            Text(
+                tr(R.string.no_favorite_artists_yet),
+                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+            )
+        }
         if (all.isNotEmpty() && list.isEmpty()) item("filtered-empty") {
             Text(
                 tr(R.string.nothing_matches_these_filters_try_a),
@@ -327,6 +354,8 @@ private enum class ReleaseOrder(val label: String) { NEWEST(tr(R.string.newest))
 private fun ReleaseFilters(
     within: ReleaseWithin, kind: ReleaseKind, order: ReleaseOrder, hideSaved: Boolean,
     onWithin: (ReleaseWithin) -> Unit, onKind: (ReleaseKind) -> Unit, onOrder: (ReleaseOrder) -> Unit, onHideSaved: (Boolean) -> Unit,
+    starredOnly: Boolean = false, onStarredOnly: (Boolean) -> Unit = {},
+    artists: List<Pair<String, String>> = emptyList(), oneArtist: String? = null, onArtist: (String?) -> Unit = {},
 ) {
     Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         com.prism.music.ui.components.Segmented(ReleaseWithin.entries, within, { it.label }, Modifier.fillMaxWidth(), onWithin)
@@ -336,6 +365,19 @@ private fun ReleaseFilters(
         ) {
             ReleaseKind.entries.forEach { k -> com.prism.music.ui.components.PrismChip(k == kind, { onKind(k) }, k.label) }
             com.prism.music.ui.components.PrismChip(hideSaved, { onHideSaved(!hideSaved) }, tr(R.string.not_in_my_library), icon = if (hideSaved) PrismIcons.Check else null)
+            // #311: just the artists you've starred.
+            com.prism.music.ui.components.PrismChip(
+                starredOnly, { onStarredOnly(!starredOnly) }, tr(R.string.favorite_artists_only),
+                icon = if (starredOnly) PrismIcons.Check else PrismIcons.Star,
+            )
+        }
+        // #311: one artist at a time, the ones you play most first.
+        if (artists.size > 1) Row(
+            Modifier.fillMaxWidth().horizontalScroll(androidx.compose.foundation.rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            com.prism.music.ui.components.PrismChip(oneArtist == null, { onArtist(null) }, tr(R.string.every_artist))
+            artists.forEach { (id, name) -> com.prism.music.ui.components.PrismChip(oneArtist == id, { onArtist(if (oneArtist == id) null else id) }, name) }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(tr(R.string.sort_by), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)

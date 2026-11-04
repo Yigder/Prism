@@ -187,6 +187,23 @@ class LastFm(private val context: Context, private val http: OkHttpClient, priva
         }
     }
 
+    // ---- Bring your history (1.8.1)
+
+    /**
+     * One page of the connected account's scrobbles, newest first ([com.prism.music.data.imports.LastFmHistory]), as
+     * Last.fm's JSON. Public data of the account, asked with Prism's key: nothing is signed or sent but the user's name.
+     */
+    suspend fun recentTracksPage(page: Int, perPage: Int = 200, from: Long? = null): String = withContext(Dispatchers.IO) {
+        val name = _user.value ?: throw IOException("Last.fm isn't connected")
+        val url = recentTracksUrl(name, page, perPage, from, KEY)
+        val req = Request.Builder().url(url).header("User-Agent", "Prism/${BuildConfig.VERSION_NAME}").build()
+        http.newCall(req).execute().use { r ->
+            val body = r.body.string()
+            if (!r.isSuccessful) throw IOException(tr(R.string.last_fm_answered_http, r.code))
+            body
+        }
+    }
+
     // ---- The API
 
     class LastFmError(val code: Int, message: String) : IOException(tr(R.string.last_fm, message, code))
@@ -223,6 +240,15 @@ class LastFm(private val context: Context, private val http: OkHttpClient, priva
         private const val MIN_SONG_SEC = 30
         private const val MAX_NEEDED_MS = 4 * 60_000L
         private const val ERROR_INVALID_SESSION = 9
+
+        /** `user.getRecentTracks` for [user]: one page, and with [from] (seconds) only the scrobbles since then. */
+        fun recentTracksUrl(user: String, page: Int, perPage: Int, from: Long?, key: String): okhttp3.HttpUrl =
+            okhttp3.HttpUrl.Builder().scheme("https").host("ws.audioscrobbler.com").addPathSegments("2.0/")
+                .addQueryParameter("method", "user.getrecenttracks").addQueryParameter("user", user)
+                .addQueryParameter("limit", perPage.toString()).addQueryParameter("page", page.toString())
+                .apply { if (from != null) addQueryParameter("from", from.toString()) }
+                .addQueryParameter("api_key", key).addQueryParameter("format", "json").build()
+
         /**
          * Last.fm's errors that pass or aren't the scrobbles' fault, so they're kept: operation failed (8), service offline
          * (11), temporarily unavailable (16), rate limit (29), and Prism's own key refused (10, 13, 26).

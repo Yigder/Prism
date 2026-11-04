@@ -18,6 +18,8 @@ import com.prism.music.data.innertube.InnerTube
 import com.prism.music.data.innertube.SearchFilter
 import com.prism.music.data.local.LocalLossless
 import com.prism.music.data.local.LocalLossless.Companion.norm
+import com.prism.music.data.local.OwnFiles
+import com.prism.music.data.local.PlaySourceRule
 import com.prism.music.data.model.Song
 import com.prism.music.data.model.SongItem
 import kotlinx.coroutines.Dispatchers
@@ -39,6 +41,8 @@ import java.util.concurrent.TimeUnit
  * from the file. New files are picked up as soon as Android indexes them, and every few hours
  * by [LosslessSyncWorker]. Only runs while lossless playback and the lossless add-on are on.
  * Removing one from Downloads only hides it; the file itself is never touched.
+ * Since 1.8.1 (#314) "Use your own song files" adds MP3/AAC/Ogg files to the same sync, with or without lossless
+ * playback ([OwnFiles]); a lossless file of the same song still comes first ([PlaySourceRule]).
  */
 class LosslessSync(private val context: Context, private val c: AppContainer) {
     /** File uri -> the song it was matched to (JSON). */
@@ -58,17 +62,25 @@ class LosslessSync(private val context: Context, private val c: AppContainer) {
     private val mutex = Mutex()
     private var pending: Job? = null
 
-    private fun enabled(): Boolean {
-        val s = c.settings.current
-        return s.lossless && s.losslessLocal && c.localLossless.hasPermission()
-    }
+    /** Which files sync looks at now: lossless ones (lossless playback + its file access) and your own lossy ones (#314). */
+    private fun kinds(): OwnFiles.Kinds = OwnFiles.kinds(c.settings.current)
+
+    private fun enabled(): Boolean = kinds().any && c.localLossless.hasPermission()
+
+    /**
+     * For in-app tests: finds the song for a file instead of YouTube Music (tests have no account and no network), and
+     * lets a sync look files up while offline. Null in the app.
+     */
+    @androidx.annotation.VisibleForTesting
+    @Volatile var lookUpForTest: (suspend (LocalLossless.Track) -> Song?)? = null
 
     /** Syncs now and whenever the setting changes or Android adds or removes audio files. */
     fun start() {
         c.scope.launch {
-            c.settings.flow.map { it.lossless && it.losslessLocal }.distinctUntilChanged().collect { on ->
+            c.settings.flow.map { OwnFiles.kinds(it) }.distinctUntilChanged().collect { kinds ->
                 // The look every few hours only while it's on: off, it used to wake Prism up for nothing.
-                runCatching { if (on) LosslessSyncWorker.schedule(context) else LosslessSyncWorker.cancel(context) }
+                runCatching { if (kinds.any) LosslessSyncWorker.schedule(context) else LosslessSyncWorker.cancel(context) }
+                // Your own files turned off go back to the stream at once: this rescan leaves them out of Downloads.
                 sync()
             }
         }
@@ -94,23 +106,28 @@ class LosslessSync(private val context: Context, private val c: AppContainer) {
                 _songs.value = emptyMap()
                 return@withLock
             }
-            c.localLossless.scan()
+            val kinds = kinds()
+            c.localLossless.scan(lossless = kinds.lossless, lossy = kinds.lossy)
             val tracks = c.localLossless.tracks
-            val present = tracks.map { it.uri.toString() }.toSet()
-            // Files that are gone take their song out of Downloads.
-            links.all.keys.filter { it !in present }.let { gone ->
+            val present = tracks.map { it.key }.toSet()
+            // Files that are gone take their song out of Downloads. Only the kinds this scan looked for: your own files'
+            // matches are kept while their switch is off, so turning it back on doesn't look them all up again.
+            fun scanned(key: String) = if (OwnFiles.isOwnKey(key)) kinds.lossy else kinds.lossless
+            links.all.keys.filter { it !in present && scanned(it) }.let { gone ->
                 if (gone.isNotEmpty()) links.edit().apply { gone.forEach { remove(it) } }.apply()
             }
-            misses.all.keys.filter { it !in present }.let { gone ->
+            misses.all.keys.filter { it !in present && scanned(it) }.let { gone ->
                 if (gone.isNotEmpty()) misses.edit().apply { gone.forEach { remove(it) } }.apply()
             }
             publish(tracks)
 
-            if (!lookUp || !online()) return@withLock
+            if (!lookUp || (lookUpForTest == null && !online())) return@withLock
             val now = System.currentTimeMillis()
+            // Already matched, or found nothing lately (a week for lossless files; your own files, of which a phone may
+            // hold thousands, only after [OwnFiles.MISS_RETRY_MS] or once the file changes, whose key then changes too).
             val todo = tracks.filter { t ->
-                val key = t.uri.toString()
-                !links.contains(key) && now - misses.getLong(key, 0L) > 7 * 86_400_000L
+                val key = t.key
+                !links.contains(key) && now - misses.getLong(key, 0L) > (if (t.lossy) OwnFiles.MISS_RETRY_MS else 7 * 86_400_000L)
             }.take(MAX_LOOKUPS)
             if (todo.isEmpty()) return@withLock
             _working.value = true
@@ -121,7 +138,7 @@ class LosslessSync(private val context: Context, private val c: AppContainer) {
                         Log.w("LosslessSync", "lookup failed for ${t.title}", e)
                         null
                     }
-                    val key = t.uri.toString()
+                    val key = t.key
                     if (song != null) {
                         links.edit().putString(key, InnerTube.json.encodeToString(Song.serializer(), song)).apply()
                         found++
@@ -130,24 +147,26 @@ class LosslessSync(private val context: Context, private val c: AppContainer) {
                     } else {
                         misses.edit().putLong(key, now).apply()
                     }
-                    delay(400) // gentle on YouTube Music
+                    if (lookUpForTest == null) delay(400) // gentle on YouTube Music
                 }
             } finally {
                 _working.value = false
                 publish(tracks)
             }
-            Log.i("LosslessSync", "${tracks.size} lossless files; looked up ${todo.size}, matched $found")
+            Log.i("LosslessSync", "${tracks.count { !it.lossy }} lossless files, ${tracks.count { it.lossy }} of your own; looked up ${todo.size}, matched $found")
             Unit
         }
     }
 
     private fun publish(tracks: List<LocalLossless.Track>) {
-        val byUri = tracks.associateBy { it.uri.toString() }
+        val byKey = tracks.associateBy { it.key }
         val out = LinkedHashMap<String, Pair<Song, LocalLossless.Track>>()
         for ((key, json) in links.all) {
-            val track = byUri[key] ?: continue
+            val track = byKey[key] ?: continue
             val song = runCatching { InnerTube.json.decodeFromString(Song.serializer(), json as String) }.getOrNull() ?: continue
-            if (!out.containsKey(song.id)) out[song.id] = song to track
+            // Two files of one song: the lossless one wins over your own lossy one ([PlaySourceRule]); else the first.
+            val had = out[song.id]
+            if (had == null || PlaySourceRule.choose(listOf(had.second, track)) !== had.second) out[song.id] = song to track
         }
         c.localLossless.linked = out.mapValues { it.value.second.uri }
         _songs.value = out.filterKeys { !hidden.contains(it) }
@@ -155,6 +174,8 @@ class LosslessSync(private val context: Context, private val c: AppContainer) {
 
     /** The YouTube Music song a file is: same title, same artist, about the same length. */
     private suspend fun lookUp(t: LocalLossless.Track): Song? {
+        lookUpForTest?.let { return it(t) }
+        if (t.lossy) return lookUpOwn(t)
         val title = norm(t.title).ifBlank { return null }
         val artist = norm(t.artist.substringBefore(";").substringBefore(","))
         val results = c.ytm.search("${t.artist} ${t.title}".trim(), SearchFilter.SONGS).items
@@ -164,6 +185,19 @@ class LosslessSync(private val context: Context, private val c: AppContainer) {
         fun artistOk(s: Song) = artist.isBlank() || s.artists.any { a -> norm(a.name).let { it.isNotBlank() && (it.contains(artist) || artist.contains(it)) } }
         return results.firstOrNull { titleOk(it) && artistOk(it) && lengthOk(it, 4) }
             ?: results.firstOrNull { titleOk(it) && lengthOk(it, 2) && t.durationMs > 0 && it.durationSec > 0 }
+    }
+
+    /**
+     * The song one of your own files is (#314). Their tags are often worse than lossless files' ("03 - Artist - Title",
+     * no artist), and a wrong file playing for a song is worse than the stream, so the match is strict
+     * ([OwnFiles.sameSong]): searched by the cleaned-up tags, the same title, a shared artist and both lengths known.
+     */
+    private suspend fun lookUpOwn(t: LocalLossless.Track): Song? {
+        val tags = OwnFiles.clean(t.title, t.artist)
+        if (tags.artist.isBlank() || norm(tags.title).isBlank() || t.durationMs <= 0) return null
+        val results = c.ytm.search("${tags.artist} ${tags.title}".trim(), SearchFilter.SONGS).items
+            .mapNotNull { (it as? SongItem)?.song }
+        return pickOwn(t, results)
     }
 
     fun isSynced(id: String) = _songs.value.containsKey(id)
@@ -193,6 +227,10 @@ class LosslessSync(private val context: Context, private val c: AppContainer) {
     companion object {
         /** Lookups per sync; a big library fills in over a few runs. */
         private const val MAX_LOOKUPS = 300
+
+        /** Of a search's songs, the one your file [t] is, strictly ([OwnFiles.sameSong]); videos never. */
+        fun pickOwn(t: LocalLossless.Track, results: List<Song>): Song? =
+            results.firstOrNull { !it.isVideo && OwnFiles.sameSong(t.title, t.artist, t.durationMs, it) }
     }
 }
 

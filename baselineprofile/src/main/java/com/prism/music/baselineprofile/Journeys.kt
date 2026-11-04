@@ -1,5 +1,6 @@
 package com.prism.music.baselineprofile
 
+import android.os.SystemClock
 import androidx.benchmark.macro.MacrobenchmarkScope
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.StaleObjectException
@@ -19,14 +20,57 @@ const val PACKAGE = "com.prism.music"
  */
 object Journeys {
     private const val WAIT = 15_000L
+    /** Home up with nothing to answer for this long: the tour comes 0.6 s after Home, Holiday Mode 1.5 s after it. */
+    private const val SETTLED = 5_000L
+    /** The longest pastOnboarding waits (a fresh install on a slow emulator: welcome, picker, tour, question). */
+    private const val ONBOARDING = 90_000L
 
-    /** Past the welcome screen, the artist picker and the tour, when they show (a fresh install). */
+    /**
+     * Past the welcome screen, the artist picker and the tour when they show (a fresh install), and Holiday Mode's
+     * question (1.8.0): the first time Prism opens in a seasonal month after setting up, it asks once, 1.5 s after the
+     * tour closes; the 1.8.0 profile run stalled on it. Done once Home has been up with nothing to answer for
+     * [SETTLED] (so a question that comes up late is still caught), or after [ONBOARDING] at most.
+     */
     fun MacrobenchmarkScope.pastOnboarding() {
-        for (label in listOf("Skip for now", "Skip", "Skip tour")) {
-            device.wait(Until.findObject(By.text(label)), 4_000)?.click()
-            device.waitForIdle(1_000)
+        val end = SystemClock.uptimeMillis() + ONBOARDING
+        var quietSince = SystemClock.uptimeMillis()
+        while (SystemClock.uptimeMillis() < end) {
+            if (answerFirstRun() || answerPrompts()) {
+                quietSince = SystemClock.uptimeMillis()
+                continue
+            }
+            val home = device.hasObject(By.desc("Home").pkg(PACKAGE))
+            if (!home) quietSince = SystemClock.uptimeMillis()
+            else if (SystemClock.uptimeMillis() - quietSince >= SETTLED) return
+            SystemClock.sleep(500)
         }
-        device.wait(Until.hasObject(By.desc("Home")), WAIT)
+    }
+
+    /** The first-run screens' ways past: the welcome screen and Prism Account, then the artist picker. */
+    private fun MacrobenchmarkScope.answerFirstRun(): Boolean {
+        for (label in listOf("Skip for now", "Skip")) {
+            val button = device.findObject(By.text(label).pkg(PACKAGE)) ?: continue
+            if (button.tap()) {
+                device.waitForIdle(1_000)
+                return true
+            }
+        }
+        return false
+    }
+
+    /**
+     * What Prism may put over any page once, answered so a journey carries on: the tour (Skip tour: new installs see
+     * all of it, an update the pages since the last one, 1.8.1's five included) and Holiday Mode's question ("No
+     * thanks", only inside its own dialog, as .claude/release-check/tools/lib.ps1 answers it). True when it tapped.
+     */
+    private fun MacrobenchmarkScope.answerPrompts(): Boolean {
+        val holiday = device.hasObject(By.text("Holiday Mode").pkg(PACKAGE))
+        val button = (if (holiday) device.findObject(By.text("No thanks").pkg(PACKAGE)) else null)
+            ?: device.findObject(By.text("Skip tour").pkg(PACKAGE))
+            ?: return false
+        if (!button.tap()) return false
+        device.waitForIdle(1_000)
+        return true
     }
 
     /** Down Home a screen at a time and back up: covers, shelves and Prism's own sections compose as they come in. */
@@ -52,8 +96,9 @@ object Journeys {
             flingPage(down = true, times = 1)
         }
         if (item?.tap() != true) return
-        // The page's song rows have a "More" button.
-        device.wait(Until.hasObject(By.desc("More")), WAIT)
+        // The page's song rows have a "More" button. No page opened (the text tapped wasn't a card): no Back, which
+        // would leave Prism and send every later journey's taps to the launcher (the 1.8.1 profile run, 2026-11-03).
+        if (device.wait(Until.hasObject(By.desc("More")), WAIT) != true) return
         flingPage(down = true, times = 2)
         device.pressBack()
         device.waitForIdle(2_000)
@@ -136,6 +181,17 @@ object Journeys {
     }
 
     private fun MacrobenchmarkScope.tab(name: String) {
+        // Prism no longer in front (a Back too many in an earlier journey): open it again, so this journey still runs.
+        if (!device.hasObject(By.desc("Home").pkg(PACKAGE)) && !device.hasObject(By.desc("Library").pkg(PACKAGE))) {
+            device.pressBack()
+            device.waitForIdle(1_000)
+            if (!device.hasObject(By.pkg(PACKAGE))) {
+                startActivityAndWait()
+                pastOnboarding()
+            }
+        }
+        // A question that came up after pastOnboarding (the tour or Holiday Mode) would take the tap: answer it first.
+        for (i in 1..3) if (!answerPrompts()) break
         // The tab bar's buttons carry their names as descriptions; Home's top bar has others, so take the lowest one.
         val tabs = device.findObjects(By.desc(name).pkg(PACKAGE))
         tabs.maxByOrNull { it.visibleBounds.centerY() }?.click()

@@ -229,10 +229,18 @@ fun BackdropLayer(style: Backdrop, photo: String?, dim: Float, motion: Boolean, 
             Backdrop.ARTWORK -> {
                 val song by LocalContainer.current.player.currentSong.collectAsState()
                 Box(Modifier.fillMaxSize().background(bg))
-                AsyncImage(
-                    hiRes(song?.thumbnail, 300), null, contentScale = ContentScale.Crop,
+                val s = LocalAppSettings.current
+                val url = hiRes(song?.thumbnail, 300)
+                val fadeMs = nowPlayingFadeMs(s)
+                if (fadeMs == null) AsyncImage(
+                    url, null, contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize().blur(70.dp).graphicsLayer { alpha = if (black) 0.5f else 0.85f },
                 )
+                else FadingCover(url, fadeMs, Modifier.fillMaxSize().blur(70.dp).graphicsLayer {
+                    alpha = if (black) 0.5f else 0.85f
+                    // The two covers mix as one layer, so the background's own see-through stays the same through a fade.
+                    compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen
+                })
             }
             Backdrop.PHOTO -> {
                 Box(Modifier.fillMaxSize().background(bg))
@@ -256,6 +264,54 @@ fun BackdropLayer(style: Backdrop, photo: String?, dim: Float, motion: Boolean, 
                 Brush.verticalGradient(listOf(bg.copy(alpha = wash * 0.7f), bg.copy(alpha = wash), bg.copy(alpha = (wash + 0.25f).coerceAtMost(0.95f))))
             ),
         )
+    }
+}
+
+/**
+ * #283 (1.8.1): how long the "Now playing" background takes to fade into the next song's cover, at the accent's and
+ * the light's own pace ("Between songs"; a fade even when they change at once); null cuts as before (the switch is
+ * off, or Reduce motion is on).
+ */
+fun nowPlayingFadeMs(s: com.prism.music.data.prefs.AppSettings): Int? =
+    if (!s.view.backdropFade || s.reduceMotion) null
+    else s.artworkChange.ms.takeIf { it > 0 } ?: com.prism.music.data.prefs.ArtworkChange.FADE.ms
+
+/**
+ * A cover that fades into the next one: the new picture comes in over the old once it has loaded (never over a blank),
+ * then takes its place. Only the "Now playing" background uses it, and only with its fade on.
+ */
+@Composable
+internal fun FadingCover(url: String?, fadeMs: Int, modifier: Modifier) {
+    // The picture fully in, and the one coming in over it.
+    var shown by remember { mutableStateOf(url) }
+    var incoming by remember { mutableStateOf<String?>(null) }
+    var loaded by remember { mutableStateOf(false) }
+    val fade = remember { androidx.compose.animation.core.Animatable(0f) }
+    androidx.compose.runtime.LaunchedEffect(url) {
+        if (url == shown) { incoming = null; return@LaunchedEffect }
+        // Nothing playing any more: the last cover doesn't stay behind every screen.
+        if (url == null) { shown = null; incoming = null; return@LaunchedEffect }
+        // A fade cut short: what had come in so far stays as the picture under the next one.
+        incoming?.takeIf { loaded && fade.value > 0.5f }?.let { shown = it }
+        loaded = false
+        fade.snapTo(0f)
+        incoming = url
+    }
+    androidx.compose.runtime.LaunchedEffect(incoming, loaded) {
+        if (incoming == null || !loaded) return@LaunchedEffect
+        fade.animateTo(1f, tween(fadeMs, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+        shown = incoming
+        incoming = null
+    }
+    Box(modifier) {
+        if (shown != null) AsyncImage(shown, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+        incoming?.let { next ->
+            AsyncImage(
+                next, null, contentScale = ContentScale.Crop,
+                onState = { if (it is coil3.compose.AsyncImagePainter.State.Success) loaded = true },
+                modifier = Modifier.fillMaxSize().graphicsLayer { alpha = fade.value },
+            )
+        }
     }
 }
 

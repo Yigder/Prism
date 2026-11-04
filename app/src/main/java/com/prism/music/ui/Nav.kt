@@ -48,6 +48,10 @@ object Routes {
     /** The Prism Account: make one (after the welcome screen, or from Settings) or change it. */
     const val ACCOUNT = "prism_account"
     const val EXCLUSIONS = "exclusions"
+    /** Bring your history (1.8.1): Spotify's data download, Google Takeout, Last.fm. */
+    const val BRING_HISTORY = "bring_history"
+    /** The imported songs that need a look: pick which song each is. */
+    const val IMPORT_REVIEW = "import_review"
     /** Blend: your code, scanning a friend's, and your Blends. */
     const val BLENDS = "blends"
     const val BLEND_SCAN = "blend_scan"

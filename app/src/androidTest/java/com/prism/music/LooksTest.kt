@@ -100,7 +100,12 @@ class LooksTest {
 fun androidx.compose.ui.test.junit4.ComposeTestRule.clickWhenFound(matcher: SemanticsMatcher, timeoutMs: Long = 10_000) {
     val end = System.currentTimeMillis() + timeoutMs
     while (onAllNodes(matcher).fetchSemanticsNodes().isEmpty()) {
-        if (System.currentTimeMillis() > end) throw AssertionError("Not found: ${matcher.description}")
+        if (System.currentTimeMillis() > end) {
+            // What the screen did show, so a failure says where the test was.
+            val shown = onAllNodes(androidx.compose.ui.test.hasText("", substring = true)).fetchSemanticsNodes()
+                .mapNotNull { it.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsProperties.Text) { null }?.joinToString() }
+            throw AssertionError("Not found: ${matcher.description}. On screen: ${shown.joinToString(" | ").take(1200)}")
+        }
         // Every scrollable on the page, outer first: the page, then each row.
         onAllNodes(androidx.compose.ui.test.hasScrollToNodeAction()).fetchSemanticsNodes().indices.forEach { i ->
             runCatching { onAllNodes(androidx.compose.ui.test.hasScrollToNodeAction())[i].performScrollToNode(matcher) }

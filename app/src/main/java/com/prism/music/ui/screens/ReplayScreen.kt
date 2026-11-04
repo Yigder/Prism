@@ -149,6 +149,8 @@ private data class ReplayData(
     val genres: List<Pair<String, Long>>,
     /** Up to 250 top songs: what Play and Shuffle play. Not shown. */
     val top250: List<SongPlays> = songs,
+    /** #286/#287: the graph by hours, days or weeks for a shorter stretch (null: by month, [months]). */
+    val timeline: ReplayTimeline? = null,
 )
 
 internal fun SongPlays.toSong() = Song(
@@ -186,7 +188,7 @@ private val PICK_DATES = Period(Period.Kind.DAYS, fromDay = -1, toDay = -1)
 private fun ReplayDatesSheet(onPick: (Period) -> Unit, onDismiss: () -> Unit) {
     val c = LocalContainer.current
     val months by produceState(emptyList<Period>()) {
-        value = runCatching { c.db.plays().monthly(0, System.currentTimeMillis()) }.getOrDefault(emptyList())
+        value = runCatching { c.imports.replay().monthly(0, System.currentTimeMillis()) }.getOrDefault(emptyList())
             .mapNotNull { m -> m.month.split("-").mapNotNull { it.toIntOrNull() }.takeIf { it.size == 2 }?.let { (y, mo) -> Period.monthOf(y, mo - 1) } }
             .reversed()
     }
@@ -252,10 +254,13 @@ fun ReplayScreen(bottomPadding: Dp) {
     val years by produceState(listOf(Period.thisYear().year)) {
         value = runCatching { c.rewind.years() }.getOrNull()?.takeIf { it.isNotEmpty() } ?: value
     }
-    val data by produceState<ReplayData?>(null, period) {
+    // The imported histories Replay counts besides Prism's own plays (1.8.1): the page says so, and reads again on a change.
+    val counted by c.imports.counted.collectAsState()
+    val historyPaused = com.prism.music.data.HistoryPause.paused(LocalAppSettings.current.behavior)
+    val data by produceState<ReplayData?>(null, period, counted) {
         value = null
         val (from, to) = range(period)
-        val dao = c.db.plays()
+        val dao = c.imports.replay()
         // The top 250 are kept for Play / Shuffle; the screen itself shows the top 100 at most.
         val top = dao.topSongs(from, to, 300).mergeUploads().take(250)
         val songs = top.take(100)
@@ -266,7 +271,7 @@ fun ReplayScreen(bottomPadding: Dp) {
         value = ReplayData(
             totalMs = dao.totalMs(from, to), plays = dao.count(from, to), activeDays = dao.activeDays(from, to),
             songCount = dao.songCount(from, to), songs = songs, artists = dao.topArtists(from, to, 12), months = dao.monthly(from, to), genres = genres,
-            top250 = top,
+            top250 = top, timeline = runCatching { loadTimeline(dao, period, from, to) }.getOrNull(),
         )
         // Fill in genres for the top tracks in the background so the next visit is richer.
         songs.take(40).filter { it.songId !in genreMap }.forEach { runCatching { c.meta.genreFor(it.toSong()) } }
@@ -300,8 +305,13 @@ fun ReplayScreen(bottomPadding: Dp) {
     Box(Modifier.fillMaxSize()) {
     LazyColumn(Modifier.fillMaxSize(), state = list, contentPadding = PaddingValues(bottom = bottomPadding + 24.dp)) {
         item {
-            com.prism.music.ui.components.ScreenHeader(tr(R.string.replay_2), subtitle = tr(R.string.your_listening_recapped_on_device))
+            com.prism.music.ui.components.ScreenHeader(
+                tr(R.string.replay_2),
+                subtitle = replayIncludes(counted) ?: tr(R.string.your_listening_recapped_on_device),
+            )
         }
+        // #296: while history is paused, Replay says so (and how to turn it back on).
+        if (historyPaused) item { HistoryPausedNote() }
         item {
             // Any dates (#149): today, this week, any month, or the days you pick, beside the usual ones.
             val presets = listOf(Period.TODAY, Period.WEEK, Period.MONTH, Period.DAYS30) + years.map { Period.year(it) } + Period.ALL
@@ -341,9 +351,24 @@ fun ReplayScreen(bottomPadding: Dp) {
                 ) { Icon(PrismIcons.PlaylistAdd, tr(R.string.save_as_a_playlist)) }
             }
         }
-        if (d.months.size > 1) item {
+        // A day by its hours, a week or a month by its days (#286, #287); longer stretches by month, as before.
+        val timeline = d.timeline
+        if (timeline != null) item {
+            SectionHeader(timeline.heading())
+            TimelineChart(timeline, Modifier.padding(horizontal = 20.dp).fillMaxWidth().height(196.dp))
+        } else if (d.months.size > 1) item {
             SectionHeader(if (LocalAppSettings.current.replayHours) tr(R.string.hours_by_month) else tr(R.string.minutes_by_month))
             MonthChart(d.months, Modifier.padding(horizontal = 20.dp).fillMaxWidth().height(160.dp))
+            // The busiest month, as the shorter graphs say theirs.
+            d.months.maxByOrNull { it.ms }?.takeIf { it.ms > 0 }?.let { m ->
+                val (y, mo) = m.month.split("-").mapNotNull { it.toIntOrNull() }.takeIf { it.size == 2 } ?: return@let
+                val at = java.time.LocalDate.of(y, mo, 1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+                Text(
+                    tr(R.string.replay_busiest_month, formatAt(at, com.prism.music.localDates("MMMMy")), listenTime(m.ms)),
+                    Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp),
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
         if (d.artists.isNotEmpty()) item {
             // Artist photos, not the cover of whichever of their songs came first.
@@ -456,9 +481,11 @@ private fun HeroCard(d: ReplayData, period: Period, notYet: Boolean, loading: Bo
             }
             Spacer(Modifier.height(18.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(22.dp)) {
-                Stat("${d.plays}", trp(R.plurals.plays_word, d.plays))
-                Stat("${d.songCount}", trp(R.plurals.songs_word, d.songCount))
-                Stat("${d.activeDays}", trp(R.plurals.days_word, d.activeDays))
+                // In the listener's own number format ("1,358", "1.358"), as the rest of Prism writes counts.
+                val n = java.text.NumberFormat.getIntegerInstance()
+                Stat(n.format(d.plays), trp(R.plurals.plays_word, d.plays))
+                Stat(n.format(d.songCount), trp(R.plurals.songs_word, d.songCount))
+                Stat(n.format(d.activeDays), trp(R.plurals.days_word, d.activeDays))
             }
             if (top != null) {
                 Spacer(Modifier.height(18.dp))

@@ -189,7 +189,7 @@ class PlayerEditorTest {
         assertEquals(MenuAction.DEFAULT_TILES, today.tiles)
         assertEquals(listOf(MenuGroup.SONG, MenuGroup.LYRICS, MenuGroup.PLAYING, MenuGroup.HELP), today.groups.map { it.first })
         assertEquals(
-            listOf(MenuAction.ALBUM, MenuAction.ARTIST, MenuAction.CREDITS, MenuAction.VERSION, MenuAction.NOT_FOR_ME),
+            listOf(MenuAction.ALBUM, MenuAction.ARTIST, MenuAction.CREDITS, MenuAction.VERSION, MenuAction.COVER, MenuAction.NOT_FOR_ME),
             today.groups.first { it.first == MenuGroup.SONG }.second,
         )
         assertTrue(today.more.isEmpty())
@@ -245,18 +245,21 @@ class PlayerEditorTest {
         assertFalse(d.copy(hideVolumeBar = true).shows(PlayerPart.VOLUME))
     }
 
-    /** Full-bleed artwork and full-bleed video are one switch: on if either was, and both written together. */
-    @Test fun fullBleedIsOneSwitch() {
+    /**
+     * Edge-to-edge cover and edge-to-edge video are two switches again (1.8.1, owner): in 1.8.0 they were one, so the
+     * button on a playing video turned the cover's edge-to-edge look on and off too.
+     */
+    @Test fun coverAndVideoEdgeToEdgeAreSeparate() {
         runBlocking { store.editNow { it[booleanPreferencesKey("video_full_bleed")] = true; it[booleanPreferencesKey("full_bleed_artwork")] = false } }
         var s = settled { it.videoFullBleed }
-        assertTrue("video only before: the cover too now", s.fullBleedArtwork)
-        store.setFullBleedArtwork(false)
-        s = settled { !it.fullBleedArtwork }
-        assertFalse(s.videoFullBleed)
-        // The chip on a playing video is the same switch.
-        store.setVideoFullBleed(true)
-        s = settled { it.videoFullBleed }
-        assertTrue(s.fullBleedArtwork)
+        assertFalse("the video's switch leaves the cover alone", s.fullBleedArtwork)
+        // The button on a playing video changes only the video.
+        store.setVideoFullBleed(false)
+        s = settled { !it.videoFullBleed }
+        assertFalse(s.fullBleedArtwork)
+        store.setFullBleedArtwork(true)
+        s = settled { it.fullBleedArtwork }
+        assertFalse("the cover's switch leaves the video alone", s.videoFullBleed)
         assertFalse("off by default", AppSettings().fullBleedArtwork || AppSettings().videoFullBleed)
     }
 

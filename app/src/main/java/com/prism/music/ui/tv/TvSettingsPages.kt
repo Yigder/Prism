@@ -42,6 +42,18 @@ private class TvSettingRow(val setting: TvSetting, val action: TvSettingAction)
 private val SIZES = listOf(0.85f, 1f, 1.15f, 1.3f)
 private val LYRICS_SIZES = listOf(0.75f, 1f, 1.25f, 1.5f)
 private val AMBIENT_MINUTES = listOf(1, 3, 5, 10)
+/** The background's steps, lighter to darkest ([com.prism.music.data.prefs.TvPrefs.backdropDim]). */
+internal val TV_BACKDROP_DIMS = (com.prism.music.data.prefs.TvPrefs.DIM_LIGHTER..com.prism.music.data.prefs.TvPrefs.DIM_DARKEST).toList()
+
+internal fun tvBackdropLabel(dim: Int): String = tr(
+    when (dim) {
+        -1 -> R.string.tv_backdrop_lighter
+        1 -> R.string.tv_backdrop_darker
+        2 -> R.string.tv_backdrop_much_darker
+        3 -> R.string.tv_backdrop_darkest
+        else -> R.string.tv_backdrop_as_it_comes
+    },
+)
 
 /**
  * Settings on the TV (1.8.0, plan §2): the short TV set, on the same settings as the phone (one Prism). Groups on the
@@ -96,6 +108,11 @@ fun TvSettingsPlace(nav: TvNav) {
             ),
             // The phone's own lyrics style, with a live example of each (TvLyricsStyleChoice).
             TvSettingRow(TvSetting(tr(R.string.lyrics_style), settings.lyricsLook.style.label), TvSettingAction.Run { pickingLyricsStyle = true }),
+            // How dark the background is behind the player and lyrics (1.8.1, Reddit); as it comes unless picked.
+            TvSettingRow(
+                TvSetting(tr(R.string.tv_backdrop), tvBackdropLabel(settings.tv.backdropDim), info = tr(R.string.tv_backdrop_info)),
+                TvSettingAction.Choose(TV_BACKDROP_DIMS.map { d -> tvBackdropLabel(d) to { c.settings.setTvBackdropDim(d) } }),
+            ),
             TvSettingRow(
                 TvSetting(tr(R.string.lyrics_source), settings.lyricsSources.firstOrNull()?.label),
                 TvSettingAction.Choose(settings.lyricsSources.map { s -> s.label to { c.settings.setLyricsOrder(listOf(s) + settings.lyricsOrder.filter { it != s }) } }),

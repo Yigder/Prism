@@ -180,7 +180,7 @@ object Widgets {
         job = scope.launch {
             lock.withLock {
                 val s = state ?: State(lastSong(app), playing = false, liked = false, 0L, 0L)
-                val url = s.song?.thumbnail
+                val url = s.song?.let { com.prism.music.data.PlaylistCovers.artOf(it) }
                 val manager = AppWidgetManager.getInstance(app) ?: return@withLock
                 fun draw(a: Art?) = placed(app).forEach { (style, ids) ->
                     // Widgets left as designed share one update; each with settings of its own (1.7.7) gets its own.
@@ -210,7 +210,9 @@ object Widgets {
     suspend fun preview(context: Context, style: WidgetStyle, o: WidgetOptions): RemoteViews {
         val app = context.applicationContext
         val s = state ?: State(lastSong(app), playing = false, liked = false, 0L, 0L)
-        val a = art?.takeIf { it.url == s.song?.thumbnail } ?: s.song?.thumbnail?.let { loadArt(app, it) }
+        // The cover picked for the song or its album (#305), else its own.
+        val shownArt = s.song?.let { com.prism.music.data.PlaylistCovers.artOf(it) }
+        val a = art?.takeIf { it.url == shownArt } ?: shownArt?.let { loadArt(app, it) }
         return views(app, style, s, a, o)
     }
 

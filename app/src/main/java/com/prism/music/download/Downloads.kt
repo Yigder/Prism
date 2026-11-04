@@ -42,8 +42,17 @@ import java.util.concurrent.TimeUnit
 
 const val DOWNLOAD_CHANNEL = "downloads"
 
-/** [lossless]: a lossless file on the phone that lossless sync matched to this song (see [LosslessSync]). */
-data class DownloadInfo(val song: Song?, val state: Int, val percent: Float, val bytes: Long, val addedAt: Long = 0, val lossless: Boolean = false)
+/**
+ * [lossless]: a file on the phone that lossless sync matched to this song (see [LosslessSync]): a lossless one, or with
+ * [ownFile] one of your own MP3/AAC/Ogg files (1.8.1, #314), whose quality that is ("MP3 · 320 kbps").
+ */
+data class DownloadInfo(val song: Song?, val state: Int, val percent: Float, val bytes: Long, val addedAt: Long = 0, val lossless: Boolean = false, val ownFile: String? = null)
+
+/**
+ * A list row's download: its own, or for a music video that was downloaded as its song ("Songs, not videos"), the
+ * song's ([standIns]: video id -> song id). #315: a playlist's video rows showed as not downloaded.
+ */
+fun Map<String, DownloadInfo>.forRow(id: String, standIns: Map<String, String>): DownloadInfo? = this[id] ?: standIns[id]?.let { this[it] }
 
 /** A song's music video saved for offline: its picture, plus the video's own audio when that isn't the song's. */
 data class VideoDownload(val videoId: String, val state: Int, val percent: Float, val bytes: Long)
@@ -82,8 +91,26 @@ class DownloadRepository(private val context: Context, private val c: AppContain
     private val _lossless = MutableStateFlow<Map<String, DownloadInfo>>(emptyMap())
     private val _downloads = MutableStateFlow<Map<String, DownloadInfo>>(emptyMap())
     val downloads: StateFlow<Map<String, DownloadInfo>> = _downloads
+    /**
+     * Music videos that were downloaded as their song (#186, "Songs, not videos"), video id -> the song's id: a
+     * playlist's video row shows its song's download (#315: those rows read "not downloaded" whatever was saved).
+     */
+    private val standInPrefs = context.getSharedPreferences("download_standins", Context.MODE_PRIVATE)
+    private val _standIns = MutableStateFlow(standInPrefs.all.mapNotNull { (k, v) -> (v as? String)?.let { k to it } }.toMap())
+
+    private fun standIn(videoId: String, songId: String) {
+        if (videoId == songId || _standIns.value[videoId] == songId) return
+        _standIns.value = _standIns.value + (videoId to songId)
+        standInPrefs.edit().putString(videoId, songId).apply()
+        publish()
+    }
+
+    /** The id a download is kept under: a music video downloaded as its song is kept under the song's. */
+    private fun keptAs(id: String): String = if (id in _media.value || id in _lossless.value) id else _standIns.value[id] ?: id
+
     private fun publish() {
         _downloads.value = _lossless.value + _media.value
+        c.downloadStandIns.value = _standIns.value
         c.downloadState.value = _downloads.value
         c.smartPickBytes = _smartIds.value.sumOf { _media.value[it]?.bytes ?: 0L }
     }
@@ -254,7 +281,10 @@ class DownloadRepository(private val context: Context, private val c: AppContain
             c.losslessSync.songs.collect { synced ->
                 val known = _lossless.value
                 _lossless.value = synced.mapValues { (id, v) ->
-                    DownloadInfo(v.first, Download.STATE_COMPLETED, 100f, v.second.size, known[id]?.addedAt ?: System.currentTimeMillis(), lossless = true)
+                    DownloadInfo(
+                        v.first, Download.STATE_COMPLETED, 100f, v.second.size, known[id]?.addedAt ?: System.currentTimeMillis(), lossless = true,
+                        ownFile = v.second.takeIf { it.lossy }?.let(com.prism.music.data.local.OwnFiles::label),
+                    )
                 }
                 publish()
                 // Lyrics come with synced songs too, like with any download (same Wi-Fi-only rule).
@@ -483,13 +513,17 @@ class DownloadRepository(private val context: Context, private val c: AppContain
         if (song.isLocal) return
         // A lossless file that was taken out of Downloads just comes back.
         if (c.losslessSync.unhide(song.id)) return
-        if (_downloads.value[song.id]?.state.let { it == Download.STATE_COMPLETED || it == Download.STATE_DOWNLOADING || it == Download.STATE_QUEUED }) return
+        // (A music video already downloaded as its song counts as downloaded.)
+        if (_downloads.value[keptAs(song.id)]?.state.let { it == Download.STATE_COMPLETED || it == Download.STATE_DOWNLOADING || it == Download.STATE_QUEUED }) return
         // A music video comes down as its song (#186), with "Songs, not videos" on: the audio, without the video's intro
         // and outro. When there's no song for it, the video's own sound, as before.
         if (!asIs && song.isVideo && !song.isUpload && !song.isLive && !song.isEpisode && c.settings.current.radioSongsOnly) {
             c.scope.launch {
                 val audio = c.player.songFor(song)
-                if (audio != null) com.prism.music.playback.AudioDiagnostics.log("download", "${song.id} is a music video: downloading its song ${audio.id} instead")
+                if (audio != null) {
+                    com.prism.music.playback.AudioDiagnostics.log("download", "${song.id} is a music video: downloading its song ${audio.id} instead")
+                    standIn(song.id, audio.id)
+                }
                 download(audio ?: song, asIs = true)
             }
             return
@@ -547,7 +581,9 @@ class DownloadRepository(private val context: Context, private val c: AppContain
         _videoParts.value.keys.filter { partSongId(it) == songId }.forEach { manager.removeDownload(it) }
     }
 
-    fun remove(id: String) {
+    fun remove(asked: String) {
+        // A video row's download is its song's (#315).
+        val id = keptAs(asked)
         if (isLosslessOnly(id)) { c.losslessSync.hide(listOf(id)); return }
         DownloadService.sendRemoveDownload(context, PrismDownloadService::class.java, id, false)
         removeVideo(id)
@@ -555,7 +591,8 @@ class DownloadRepository(private val context: Context, private val c: AppContain
     }
 
     /** Deletes many downloads at once, straight through the manager (no intent per song). */
-    fun removeMany(ids: Collection<String>) {
+    fun removeMany(asked: Collection<String>) {
+        val ids = asked.map(::keptAs).distinct()
         c.losslessSync.hide(ids.filter(::isLosslessOnly))
         ids.forEach { manager.removeDownload(it); removeVideo(it) }
         c.scope.launch(Dispatchers.IO) { ids.forEach { c.db.songs().setSmart(it, false) }; refreshSmartIds() }

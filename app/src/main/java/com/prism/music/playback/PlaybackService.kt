@@ -44,6 +44,7 @@ import com.prism.music.MainActivity
 import com.prism.music.R
 import com.prism.music.container
 import com.prism.music.data.db.PlayEventEntity
+import com.prism.music.data.db.toEntity
 import com.prism.music.data.innertube.InnerTube
 import com.prism.music.data.model.Song
 import kotlinx.coroutines.CoroutineScope
@@ -135,7 +136,10 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
     override fun onCreate() {
         super.onCreate()
         PlaybackServices.running = this::class.java
-        if (com.prism.music.BuildConfig.DEBUG) PlaybackServices.failForTest = { onPlayerError(it) }
+        if (com.prism.music.BuildConfig.DEBUG) {
+            PlaybackServices.failForTest = { onPlayerError(it) }
+            PlaybackServices.taskRemovedForTest = { onTaskRemoved(null) }
+        }
         AudioDiagnostics.init(this)
         // Media3's own audio warnings (spurious AudioTrack timestamps, position jumps…) go into the diagnostics too.
         androidx.media3.common.util.Log.setLogger(object : androidx.media3.common.util.Log.Logger {
@@ -192,7 +196,7 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             .setMediaSourceFactory(
                 PrismMediaSourceFactory(
                     c.playbackDataSourceFactory(), c.videoDataSourceFactory(),
-                    androidx.media3.datasource.DefaultDataSource.Factory(this),
+                    localFiles(),
                     localAudio = { item -> losslessFileFor(item) },
                     liveDsf = c.liveDataSourceFactory(),
                 )
@@ -454,7 +458,7 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             .setMediaSourceFactory(
                 PrismMediaSourceFactory(
                     c.playbackDataSourceFactory(), c.videoDataSourceFactory(),
-                    androidx.media3.datasource.DefaultDataSource.Factory(this),
+                    localFiles(),
                     localAudio = { item -> losslessFileFor(item) },
                     liveDsf = c.liveDataSourceFactory(),
                 )
@@ -494,6 +498,7 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
     private fun inForeground(): Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || foregroundServiceType != 0
 
     override fun onTaskRemoved(rootIntent: Intent?) {
+        android.util.Log.i("PrismControl", "swiped away: wants to play ${player.playWhenReady}, ${player.mediaItemCount} songs, stop on swipe ${c.settings.current.stopOnSwipeAway}")
         saveQueue(now = true)
         // Settings → Playback → "Stop when swiped away" (#45): closing Prism from Recents ends the music too (some
         // phones, Samsung's among them, otherwise keep it playing with no app on screen).
@@ -503,12 +508,25 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             pauseAllPlayersAndStopSelf()
             return
         }
-        if (!player.playWhenReady || player.mediaItemCount == 0) stopSelf()
+        // Paused (#274): the notification goes too. stopSelf alone left it, and the service, while anything else was
+        // still connected (the system's media controls, a watch, a widget), sometimes one that couldn't be swiped away.
+        // The queue is saved above, and Play from anywhere picks it up again. Marked closed first: the service shows a
+        // stopped player's notification otherwise (idle mode ALWAYS), until something plays again.
+        if (!player.playWhenReady || player.mediaItemCount == 0) {
+            flushPlayTime()
+            saveEpisodePosition()
+            android.util.Log.i("PrismControl", "swiped away while paused: stopping, notification closed until something plays")
+            AudioDiagnostics.log("control", "swiped away while paused: Prism stops until something plays")
+            setNotificationClosed(true)
+            player.stop()
+            stopSelf()
+        }
     }
 
     override fun onDestroy() {
         if (PlaybackServices.running == this::class.java) PlaybackServices.running = null
         PlaybackServices.failForTest = null
+        PlaybackServices.taskRemovedForTest = null
         flushPlayTime()
         saveEpisodePosition()
         saveQueue(now = true)
@@ -559,7 +577,26 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         val picked = c.queue.source.value.kind == QueueKind.RADIO || player.currentMediaItemIndex >= c.queue.autoplayStart.value.let { if (it < 0) Int.MAX_VALUE else it }
         val unwanted = c.library.isDisliked(song.id) || (picked && c.exclusions.blocks(song))
         if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO && !c.queue.followingHost && unwanted && player.hasNextMediaItem()) {
+            untrack()
             player.seekToNextMediaItem()
+            return
+        }
+        // #216: with the explicit filter on, an explicit song that got into the queue anyway (a mix, the DJ, a Look's
+        // shuffle) is passed over for the next one that may play; with none left, the music stops there.
+        val explicitMode = c.settings.current.behavior.explicitContent
+        if (!c.queue.followingHost && !com.prism.music.data.ExplicitFilter.plays(explicitMode, song)) {
+            // Passed over unheard: the seek's own transition mustn't count the song that just finished a second time,
+            // and with none left nothing is credited while the explicit song sits there ([onPlayWhenReadyChanged] keeps it paused).
+            untrack()
+            val tl = player.currentTimeline
+            var i = tl.getNextWindowIndex(player.currentMediaItemIndex, Player.REPEAT_MODE_OFF, player.shuffleModeEnabled)
+            while (i != C.INDEX_UNSET) {
+                val next = player.getMediaItemAt(i).toSong()
+                if (next == null || com.prism.music.data.ExplicitFilter.plays(explicitMode, next)) { player.seekTo(i, 0); return }
+                i = tl.getNextWindowIndex(i, Player.REPEAT_MODE_OFF, player.shuffleModeEnabled)
+            }
+            player.pause()
+            c.player.reportError(tr(R.string.explicit_none_left))
             return
         }
         // Offline, songs that aren't on the phone are passed over too (#55): they'd play as far as any cached start
@@ -570,7 +607,7 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             var i = tl.getNextWindowIndex(player.currentMediaItemIndex, Player.REPEAT_MODE_OFF, player.shuffleModeEnabled)
             while (i != C.INDEX_UNSET) {
                 val next = player.getMediaItemAt(i)
-                if (next.toSong()?.isLive == true || c.availableOffline(next.mediaId)) { player.seekTo(i, 0); return }
+                if (next.toSong()?.isLive == true || c.availableOffline(next.mediaId)) { untrack(); player.seekTo(i, 0); return }
                 i = tl.getNextWindowIndex(i, Player.REPEAT_MODE_OFF, player.shuffleModeEnabled)
             }
         }
@@ -578,7 +615,8 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         trackedSource = sourceOf(mediaItem)
         trackedRecommended = picked || mediaItem.mediaId in c.queue.smartPicks.value ||
             c.queue.source.value.originId?.let { com.prism.music.data.foryou.ForYou.isMixId(it) } == true
-        c.lastFm.started(song)
+        // Not while history is paused (#296): no "now playing" on Last.fm either.
+        if (!com.prism.music.data.HistoryPause.paused(c.settings.current.behavior)) c.lastFm.started(song)
         trackedExcluded = c.exclusions.outOfTaste(song, c.queue.source.value.originId)
         // Podcast episodes pick up where they were left, and play at the speed picked for episodes.
         if (song.isEpisode) {
@@ -606,7 +644,8 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         if (player.isPlaying) playStartedAt = SystemClock.elapsedRealtime()
         c.nerdStats.value = NerdStats(videoId = song.id, outputDevice = AudioEffects.outputDevice(this))
         c.streamDetails[song.id]?.let { applyStreamStats(song.id) }
-        scope.launch(Dispatchers.IO) { c.library.recordPlayed(song) }
+        // Recently played (#296: not while history is paused).
+        if (!com.prism.music.data.HistoryPause.paused(c.settings.current.behavior)) scope.launch(Dispatchers.IO) { c.library.recordPlayed(song) }
         scope.launch { c.bestParts.onSongStarted(song) }
         singAhead()
         djAhead()
@@ -630,6 +669,7 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         maybeAutoplay()
         prefetchNext()
         songCoverForVideo(song)
+        albumForSong(song)
         updateButtons()
         PlayTileService.update(this)
         carLyrics.refresh()
@@ -792,6 +832,16 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         }
     }
 
+    override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+        // #216: the explicit song left current when none that may play came after it stays paused, whatever presses Play.
+        if (!playWhenReady || c.queue.followingHost) return
+        val song = player.currentMediaItem?.toSong() ?: return
+        if (!com.prism.music.data.ExplicitFilter.plays(c.settings.current.behavior.explicitContent, song)) {
+            player.pause()
+            c.player.reportError(tr(R.string.explicit_none_left))
+        }
+    }
+
     /** The song [prefetchNext] last got ready. */
     private var warmedNext: String? = null
 
@@ -806,6 +856,12 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         edges.timelineChanged(timeline)
         vocals.timelineChanged(timeline)
         if (reason != Player.TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED) return
+        // A spoken request's songs are in: they play (the phone's VoicePlayActivity leaves that to here, so a request
+        // that found nothing doesn't resume the old queue).
+        if (voiceAnsweredAt > 0 && SystemClock.elapsedRealtime() - voiceAnsweredAt < VOICE_START_MS) {
+            voiceAnsweredAt = 0
+            scope.launch { if (player.playbackState == Player.STATE_IDLE) player.prepare(); player.play() }
+        }
         // What's lined up changed (songs added, moved, removed, the queue emptied): kept for the next start. It was only
         // saved on a song change, play / pause, shuffle or repeat, so an emptied or edited queue could come back as it was.
         scheduleSave()
@@ -818,6 +874,9 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             djSoon = scope.launch { delay(1_500); djAhead() }
         }
     }
+
+    /** When a spoken request last found something to play (elapsed realtime), till its songs are in; 0: none waiting. */
+    private var voiceAnsweredAt = 0L
 
     /** When playback stalled waiting for data (logged with how long, tag PrismStream). */
     private var stalledAt = 0L
@@ -1169,7 +1228,19 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
                 if (trackedSong?.id == song.id && settling()) { songLoudness = loud; applyNormalization() }
             }
             if (ex != null && c.settings.current.isLoggedIn) {
-                withContext(Dispatchers.IO) { runCatching { c.ytm.registerPlayback(ex) } }
+                // #263: with "Same for your YouTube Music history" on, the account hears of the play once it counts here
+                // too (this job is cancelled by the next song, so a song skipped first isn't sent). Off: at once, as before.
+                val after = com.prism.music.data.PlayCount.accountAfterMs(c.settings.current.behavior)
+                if (after > 0) while (trackedSong?.id == song.id && heardMs() < after) delay(500)
+                // #296: nothing goes to the account's history while history is paused.
+                if (trackedSong?.id == song.id && !com.prism.music.data.HistoryPause.paused(c.settings.current.behavior)) {
+                    withContext(Dispatchers.IO) {
+                        val sent = runCatching { c.ytm.registerPlayback(ex) }.getOrDefault(false)
+                        // YouTube Music (live) then knows this one at the top of the account's history as Prism's own
+                        // (only when YouTube took it: else a play elsewhere would be taken for Prism's).
+                        if (sent) runCatching { com.prism.music.data.imports.YouTubeLive.noteSent(c.app, song.id, com.prism.music.data.imports.YouTubeLive.keyOf(song)) }
+                    }
+                }
             }
         }
     }
@@ -1231,7 +1302,10 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             // An artist a few times a batch at most, never twice running.
             val songs = com.prism.music.data.foryou.Variety.arrange(mine, theirs, 25, freshShare, perArtist = 3) { it.primaryArtist.lowercase() }
             android.util.Log.i("PrismRadio", "autoplay after $seed: ${mine.size} of yours, ${theirs.size} from YouTube ($mode${if (offline) ", offline" else ""})")
-            val add = songs.distinctBy { it.id }.filter { it.id !in existing && !c.library.isDisliked(it.id) && !c.exclusions.blocks(it) }
+            val explicit = c.settings.current.behavior.explicitContent
+            val add = songs.distinctBy { it.id }.filter {
+                it.id !in existing && !c.library.isDisliked(it.id) && !c.exclusions.blocks(it) && com.prism.music.data.ExplicitFilter.plays(explicit, it)
+            }
             if (add.isNotEmpty()) {
                 if (c.queue.autoplayStart.value < 0) c.queue.autoplayStart.value = player.mediaItemCount
                 player.addMediaItems(add.map { it.toMediaItem() })
@@ -1530,6 +1604,36 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
      * search for the same title by the same artist, once per video). Only the cover changes: the item keeps its address (and
      * its video mode), so Media3 swaps it without a pause, and the video and its sound play on as they were.
      */
+    /**
+     * A song that came without its album (#312: Speed dial's tiles, and other Home cards, carry only a title and the
+     * artist) gets it from YouTube's own queue for it, whose first item is the song with its album: the player's
+     * album link, "From the album" and the history row then have it. Same address, so it plays on untouched.
+     */
+    private fun albumForSong(song: Song) {
+        if (!AlbumFill.wanted(song)) return
+        scope.launch {
+            val found = runCatching { withContext(Dispatchers.IO) { c.ytm.next(song.id, "RDAMVM${song.id}").songs.take(3) } }.getOrNull() ?: return@launch
+            val now = player.currentMediaItem
+            if (now?.mediaId != song.id) return@launch
+            val current = now.toSong() ?: return@launch
+            val filled = AlbumFill.withAlbum(current, found) ?: return@launch
+            swapInPlace(player.currentMediaItemIndex, filled.toMediaItem(now.videoModeId))
+            withContext(Dispatchers.IO) { runCatching { c.db.songs().upsert(filled.toEntity(c.db.songs().get(filled.id))) } }
+        }
+    }
+
+    /**
+     * #305: the queue's songs that [shows] the cover just picked (or put back) for, made again with it, so the
+     * notification, the lock screen and the car show it. Only the cover changes: the same address, so nothing pauses.
+     */
+    fun refreshCovers(shows: (Song) -> Boolean) {
+        for (i in 0 until player.mediaItemCount) {
+            val item = player.getMediaItemAt(i)
+            val song = item.toSong() ?: continue
+            if (shows(song)) swapInPlace(i, song.toMediaItem(item.videoModeId))
+        }
+    }
+
     private fun songCoverForVideo(song: Song) {
         if (!song.isVideo || song.isLive || song.isLocal || song.isEpisode || song.isUpload) return
         val item = player.currentMediaItem ?: return
@@ -1616,6 +1720,15 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
     /** Whether the song being heard was Prism's or YouTube's suggestion (radio, autoplay, a mix, Smart Shuffle). */
     private var trackedRecommended = false
 
+    /** How long the song being tracked has been heard so far (what [flushPlayTime] would count now). */
+    private fun heardMs(): Long = accumulatedMs + (if (playStartedAt > 0) SystemClock.elapsedRealtime() - playStartedAt else 0L)
+
+    /** Nothing is being heard as a play: a song passed over at once ([onMediaItemTransition]) isn't tracked. */
+    private fun untrack() {
+        trackedSong = null
+        trackedRecommended = false
+    }
+
     private fun flushPlayTime(skipped: Boolean = false) {
         val now = SystemClock.elapsedRealtime()
         if (playStartedAt > 0) accumulatedMs += now - playStartedAt
@@ -1625,19 +1738,22 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         val excluded = trackedExcluded
         val ms = accumulatedMs
         accumulatedMs = 0
+        // History paused (#296): a private stretch, as Spotify's private session: no scrobbles, nothing learned from it.
+        val paused = com.prism.music.data.HistoryPause.paused(c.settings.current.behavior)
         // Last.fm counts every stretch heard (#133); it scrobbles once the play is long enough.
-        if (song != null && ms > 0) c.lastFm.heard(song, ms)
+        if (song != null && ms > 0 && !paused) c.lastFm.heard(song, ms)
         // What the listener made of a suggestion (1.7.9): skipped within its first moments, it's left out of them for a while;
         // heard through, it's welcome. Under ten seconds a play isn't kept at all, so this is the only trace of a quick skip.
-        if (song != null && trackedRecommended && !song.isEpisode && !song.isLive) {
+        if (song != null && trackedRecommended && !song.isEpisode && !song.isLive && !paused) {
             val length = song.durationSec * 1000L
             when {
                 skipped && ms < minOf(30_000L, if (length > 0) length * 3 / 10 else 30_000L) -> c.recFeedback.skipped(song.id, song.primaryArtist)
                 length > 0 && ms >= length * 7 / 10 -> c.recFeedback.heard(song.id, song.primaryArtist)
             }
         }
-        // Replay, smart downloads and search taste are about music: episodes aren't counted.
-        if (song != null && ms >= 10_000 && !song.isEpisode) {
+        // Replay, smart downloads and search taste are about music: episodes aren't counted. Long enough to be a play
+        // (#263: ten seconds unless the listener picked otherwise), and not while history is paused (#296).
+        if (song != null && com.prism.music.data.HistoryPause.keepsPlay(c.settings.current.behavior, ms, song.isEpisode)) {
             scope.launch(Dispatchers.IO) {
                 c.db.plays().insert(PlayEventEntity(songId = song.id, timestamp = System.currentTimeMillis(), playedMs = ms, source = source, excluded = excluded))
             }
@@ -1944,7 +2060,8 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         scope.launch {
             val r = runCatching { withContext(Dispatchers.IO) { c.radio(song.id, "RDAMVM${song.id}") } }.getOrNull() ?: return@launch
             if (player.currentMediaItem?.mediaId != song.id) return@launch
-            val add = r.songs.filter { it.id != song.id && !c.library.isDisliked(it.id) && !c.exclusions.blocks(it) }
+            val explicit = c.settings.current.behavior.explicitContent
+            val add = r.songs.filter { it.id != song.id && !c.library.isDisliked(it.id) && !c.exclusions.blocks(it) && com.prism.music.data.ExplicitFilter.plays(explicit, it) }
             if (add.isEmpty()) return@launch
             val idx = player.currentMediaItemIndex
             if (idx + 1 < player.mediaItemCount) player.removeMediaItems(idx + 1, player.mediaItemCount)
@@ -1981,7 +2098,16 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         )
     }
 
-    /** The lossless add-on: a matching FLAC / WAV / AIFF on the phone, when lossless mode and the add-on are on. */
+    /**
+     * The lossless add-on: a matching FLAC / WAV / AIFF on the phone, when lossless mode and the add-on are on; and since
+     * 1.8.1 one of your own MP3 / AAC / Ogg files when "Use your own song files" is on.
+     */
+    /** Files on the phone, read as the player loads them (a test holds the loading here: [TestHooks.songLoads]). */
+    private fun localFiles(): androidx.media3.datasource.DataSource.Factory {
+        val files = androidx.media3.datasource.DefaultDataSource.Factory(this)
+        return androidx.media3.datasource.ResolvingDataSource.Factory(files) { spec -> if (com.prism.music.TestHooks.singHolding) com.prism.music.TestHooks.songLoads(); spec }
+    }
+
     private fun losslessFileFor(item: MediaItem): android.net.Uri? {
         // Local music always plays from its file.
         if (item.mediaId.startsWith(Song.LOCAL_PREFIX)) {
@@ -1991,11 +2117,13 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             scope.launch { applyStreamStats(item.mediaId) }
             return uri
         }
-        val s = c.settings.current
-        if (!s.lossless || !s.losslessLocal) return null
+        // Lossless files need lossless playback, as in 1.8.0; your own MP3/AAC/Ogg files (#314) need only their switch,
+        // and give way to a lossless file of the same song ([com.prism.music.data.local.PlaySourceRule]).
+        val kinds = com.prism.music.data.local.OwnFiles.kinds(c.settings.current)
+        if (!kinds.any) return null
         val song = item.toSong() ?: return null
-        val track = c.localLossless.match(song) ?: return null
-        c.streamDetails[song.id] = "Lossless · ${track.format} on this phone" to null
+        val track = c.localLossless.match(song, lossless = kinds.lossless, lossy = kinds.lossy) ?: return null
+        c.streamDetails[song.id] = (if (track.lossy) com.prism.music.data.local.OwnFiles.source(track) else "Lossless · ${track.format} on this phone") to null
         scope.launch { applyStreamStats(song.id) }
         return track.uri
     }
@@ -2231,9 +2359,11 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             pageSize: Int,
             params: LibraryParams?,
         ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> = scope.future {
-            val all = tree.searchResults()
-            val from = (page * pageSize).coerceAtMost(all.size)
-            LibraryResult.ofItemList(all.subList(from, (from + pageSize).coerceAtMost(all.size)), params)
+            // This query's results (searched now if the car asks for them without a search first), not the last search's.
+            val all = tree.searchItems(query)
+            // A car that asks for no pages gets page 0 of Int.MAX_VALUE: worked out in Long, so it can't overflow.
+            val from = (page.toLong() * pageSize).coerceIn(0, all.size.toLong()).toInt()
+            LibraryResult.ofItemList(all.subList(from, (from.toLong() + pageSize).coerceAtMost(all.size.toLong()).toInt()), params)
         }
 
         // ---- Playing what a controller picked
@@ -2258,20 +2388,11 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             startPositionMs: Long,
         ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> = scope.future {
             val single = mediaItems.singleOrNull()
-            // "Hey Google, play … on Prism": a search query instead of an id.
-            val query = single?.requestMetadata?.searchQuery
-            if (single != null && single.mediaId.isBlank() && !query.isNullOrBlank()) {
-                val top = tree.searchTop(query)
-                if (top != null) {
-                    c.queue.source.value = QueueSource(QueueKind.SINGLE, tr(R.string.autoplay), seedId = top.id)
-                    c.queue.autoplayStart.value = -1
-                    c.queue.autoplayContinuation = null
-                    return@future MediaSession.MediaItemsWithStartPosition(listOf(top.toMediaItem()), 0, C.TIME_UNSET)
-                }
-            }
-            // "Hey Google, play music on Prism": no query at all, so carry on with the last queue.
-            if (single != null && single.mediaId.isBlank() && query.isNullOrBlank() && single.toSong() == null) {
-                return@future onPlaybackResumption(mediaSession, controller, true).await()
+            // "Hey Google, play … on Prism" (the phone's VoicePlayActivity, or the car's voice button through the
+            // session's play-from-search): words and voice extras instead of an id.
+            if (single != null && single.mediaId.isBlank() && single.toSong() == null) {
+                return@future playVoice(mediaSession, controller, single.requestMetadata.searchQuery, single.requestMetadata.extras)
+                    .also { voiceAnsweredAt = SystemClock.elapsedRealtime() }
             }
             // "Shuffle play" at the top of a list.
             if (single != null && single.mediaId.startsWith(MediaTree.SHUFFLE)) {
@@ -2318,6 +2439,53 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             }
             val resolved = mediaItems.mapNotNull { item -> (item.toSong() ?: tree.song(item.mediaId, item))?.toMediaItem() }
             MediaSession.MediaItemsWithStartPosition(resolved, startIndex.coerceIn(0, (resolved.size - 1).coerceAtLeast(0)), startPositionMs)
+        }
+
+        /**
+         * A spoken request ([VoiceSearch]): an artist's songs, an album, a playlist (the listener's own first), liked songs,
+         * downloads, a song and its radio, or Search's Top result; "play music" carries on with the last queue. With
+         * nothing found the queue is left as it was (it used to be cleared, so the car went silent) and the asker is told
+         * why, which Android Auto shows.
+         */
+        private suspend fun playVoice(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            query: String?,
+            extras: Bundle?,
+        ): MediaSession.MediaItemsWithStartPosition {
+            val request = VoiceSearch.parse(query, extras)
+            AudioDiagnostics.log("voice", "\"${query.orEmpty()}\" (${extras?.getString(android.provider.MediaStore.EXTRA_MEDIA_FOCUS) ?: "no focus"}) from ${controller.packageName}: $request")
+            if (request == VoiceRequest.Resume) return onPlaybackResumption(session, controller, true).await()
+            val pick = try {
+                tree.voice(request)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                AudioDiagnostics.log("voice", "couldn't search: ${e.javaClass.simpleName} ${e.message.orEmpty()}")
+                session.sendError(controller, SessionError(SessionError.ERROR_IO, tr(R.string.voice_search_offline)))
+                throw VoiceNotFound(request)
+            }
+            if (pick == null) {
+                AudioDiagnostics.log("voice", "nothing found")
+                val heard = query?.trim()?.takeIf { it.isNotEmpty() } ?: request.toString()
+                session.sendError(controller, SessionError(SessionError.ERROR_BAD_VALUE, tr(R.string.voice_nothing_found, heard)))
+                throw VoiceNotFound(request)
+            }
+            AudioDiagnostics.log("voice", "playing \"${pick.title}\": ${pick.songs.size} songs")
+            c.queue.autoplayStart.value = -1
+            c.queue.autoplayContinuation = null
+            if (pick.radio) {
+                val song = pick.songs.first()
+                c.queue.source.value = QueueSource(QueueKind.SINGLE, pick.title, seedId = song.id)
+                player.shuffleModeEnabled = false
+                return MediaSession.MediaItemsWithStartPosition(listOf(song.toMediaItem()), 0, C.TIME_UNSET)
+            }
+            c.queue.source.value = QueueSource(QueueKind.PLAYLIST, pick.title)
+            // Asked to shuffle: shuffled here too, so it's a new order each time (as the car's "Shuffle play" is);
+            // otherwise in order, whatever shuffle was left on.
+            player.shuffleModeEnabled = request.shuffle && pick.songs.size > 1
+            val list = if (player.shuffleModeEnabled) pick.songs.shuffled() else pick.songs
+            return MediaSession.MediaItemsWithStartPosition(list.map { it.toMediaItem() }, pick.start.coerceIn(0, list.lastIndex), C.TIME_UNSET)
         }
 
         /** Lets the system media controls (and the car) resume the last queue after Prism was closed. */
@@ -2568,6 +2736,8 @@ private const val LENGTH_MISMATCH_SEC = 8
 
 /** Songs heard this recently aren't added by radio or autoplay again (1.7.9, Reddit: "the same songs over and over"). */
 private const val RADIO_REST_MS = 4 * 3_600_000L
+/** How long after a spoken request found its songs they may still come in and start playing. */
+private const val VOICE_START_MS = 10_000L
 /** How many songs ahead DJ mode scans and orders (a quick scan each: three stretches of the song, a few at once). */
 private const val DJ_WINDOW = 40
 /** How long DJ mode waits for more scans before putting the queue in order again. */

@@ -104,7 +104,9 @@ fun StyledEntries(style: SectionStyle, entries: List<HomeEntry>) {
  * rows whatever they are (it used to fall back to a carousel unless every one was a song).
  */
 @Composable
-fun StyledItems(style: SectionStyle, items: List<BrowseItem>, open: (BrowseItem) -> Unit) {
+fun StyledItems(style: SectionStyle, listed: List<BrowseItem>, open: (BrowseItem) -> Unit) {
+    // #216: "Hide them" leaves explicit songs off Home's shelves (albums, artists and playlists stay).
+    val items = com.prism.music.data.ExplicitFilter.items(com.prism.music.ui.theme.LocalAppSettings.current.behavior.explicitContent, listed)
     if (items.isEmpty()) return
     when (style) {
         SectionStyle.CAROUSEL -> ItemCarousel(items, open)

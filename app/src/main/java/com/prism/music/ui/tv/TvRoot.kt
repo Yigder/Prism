@@ -119,6 +119,11 @@ fun TvRoot(link: kotlinx.coroutines.flow.MutableStateFlow<android.net.Uri?> = re
             val s = c.settings.current
             if (tvWelcomeDue(s.tv.welcomed, s.isLoggedIn)) nav.go(TvRoute.Welcome)
         }
+        // What the player has to say (a song that wouldn't play, Sing letting go so the song plays): the phone showed it,
+        // the TV said nothing, and a song that failed looked as if it were still loading (1.8.1, Reddit).
+        androidx.compose.runtime.LaunchedEffect(Unit) {
+            c.player.errors.collect { android.widget.Toast.makeText(c.app, it, android.widget.Toast.LENGTH_LONG).show() }
+        }
         BackHandler(enabled = stack.isNotEmpty() || section != TvSection.HOME) {
             if (!nav.back()) { section = TvSection.HOME; memory.opening("section:${TvSection.HOME.name}") }
         }

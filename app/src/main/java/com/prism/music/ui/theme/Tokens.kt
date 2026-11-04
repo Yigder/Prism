@@ -220,9 +220,101 @@ object AppFonts {
      * it. Returns its name for Settings, or throws with a message to show.
      */
     fun import(context: android.content.Context, uri: android.net.Uri, slot: FontSlot): String {
+        copyIn(context, slot) { context.contentResolver.openInputStream(uri) }
+        val name = context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+            if (c.moveToFirst()) c.getString(0) else null
+        }
+        return name?.substringBeforeLast('.')?.takeIf { it.isNotBlank() } ?: tr(R.string.your_font_2)
+    }
+
+    /**
+     * #318 (1.8.1): a font installed on the phone ([installed]) copied into Prism for [slot], as a picked file is.
+     * Returns its name for Settings, or throws with a message to show.
+     */
+    fun importInstalled(context: android.content.Context, font: InstalledFont, slot: FontSlot): String {
+        copyIn(context, slot) { runCatching { font.file.inputStream() }.getOrNull() }
+        return font.name
+    }
+
+    /** A font the phone has installed: its family's [name] and the file of its regular face. */
+    data class InstalledFont(val name: String, val file: File)
+
+    /**
+     * #318: the fonts installed on the phone that can write Latin text, one per family (its regular, upright face),
+     * by name. Android lists them to apps from Android 10 (SystemFonts); a font collection (.ttc) isn't offered, as
+     * Prism can only use one face of a file. Fonts some phones add through their own font stores (Samsung's) aren't
+     * listed by Android: the System font is the phone's own font, whichever is picked there. Reads files: off the
+     * main thread.
+     */
+    fun installed(): List<InstalledFont> {
+        if (android.os.Build.VERSION.SDK_INT < 29) return emptyList()
+        val fonts = runCatching { android.graphics.fonts.SystemFonts.getAvailableFonts() }.getOrDefault(emptySet())
+        val paint = android.graphics.Paint()
+        return fonts.asSequence()
+            .mapNotNull { f -> f.file?.takeIf { it.canRead() && !it.name.endsWith(".ttc", true) && !it.name.endsWith(".otc", true) }?.let { f to it } }
+            .filter { (f, _) -> runCatching {
+                // Only that font (no fallback), so a script's own font without Latin letters doesn't pass as one.
+                paint.typeface = android.graphics.Typeface.CustomFallbackBuilder(android.graphics.fonts.FontFamily.Builder(f).build()).build()
+                paint.hasGlyph("A") && paint.hasGlyph("a")
+            }.getOrDefault(false) }
+            .map { (f, file) -> Triple(fontFamilyName(file) ?: familyFromFileName(file.name), f, file) }
+            .groupBy { it.first }
+            .map { (name, faces) ->
+                // The face closest to regular, upright first.
+                val best = faces.minBy { (_, f, _) -> kotlin.math.abs(f.style.weight - 400) + if (f.style.slant != android.graphics.fonts.FontStyle.FONT_SLANT_UPRIGHT) 1000 else 0 }
+                InstalledFont(name, best.third)
+            }
+            .sortedBy { it.name.lowercase() }
+    }
+
+    /** "NotoSerifDisplay-Italic.ttf" → "Noto Serif Display": a name from the file's when the font names none. */
+    internal fun familyFromFileName(fileName: String): String = fileName.substringBeforeLast('.').substringBefore('-')
+        .replace(Regex("(?<=[a-z])(?=[A-Z])|(?<=[A-Za-z])(?=[0-9])"), " ").replace('_', ' ').trim()
+
+    /**
+     * The family a TrueType / OpenType file names itself ('name' table: the typographic family, else the family), in
+     * English where it has one; null when it can't be read.
+     */
+    internal fun fontFamilyName(f: File): String? = runCatching {
+        java.io.RandomAccessFile(f, "r").use { raf ->
+            raf.seek(4)
+            val tables = raf.readUnsignedShort()
+            var nameAt = -1L
+            val tag = ByteArray(4)
+            for (i in 0 until tables.coerceAtMost(256)) {
+                raf.seek(12L + i * 16)
+                raf.readFully(tag)
+                if (String(tag, Charsets.US_ASCII) == "name") { raf.skipBytes(4); nameAt = raf.readInt().toLong() and 0xFFFFFFFFL; break }
+            }
+            if (nameAt < 0) return@use null
+            raf.seek(nameAt + 2)
+            val count = raf.readUnsignedShort()
+            val strings = nameAt + raf.readUnsignedShort()
+            // (rank, text): the typographic family (16) over the family (1); Windows English over the rest.
+            var best: Pair<Int, String>? = null
+            for (i in 0 until count.coerceAtMost(1024)) {
+                raf.seek(nameAt + 6 + i * 12L)
+                val platform = raf.readUnsignedShort(); val encoding = raf.readUnsignedShort(); val language = raf.readUnsignedShort()
+                val id = raf.readUnsignedShort(); val length = raf.readUnsignedShort(); val offset = raf.readUnsignedShort()
+                if (id != 1 && id != 16) continue
+                val text = when {
+                    platform == 3 || platform == 0 -> ByteArray(length).also { raf.seek(strings + offset); raf.readFully(it) }.toString(Charsets.UTF_16BE)
+                    platform == 1 && encoding == 0 -> ByteArray(length).also { raf.seek(strings + offset); raf.readFully(it) }.toString(Charsets.ISO_8859_1)
+                    else -> continue
+                }.trim()
+                if (text.isEmpty()) continue
+                val rank = (if (id == 16) 0 else 10) + (if (platform == 3 && language == 0x409) 0 else if (platform == 3) 1 else 2)
+                if (best == null || rank < best.first) best = rank to text
+            }
+            best?.second
+        }
+    }.getOrNull()
+
+    /** [open]'s bytes into [slot]'s file, after checking Android can read them as a font; throws with a message to show. */
+    private fun copyIn(context: android.content.Context, slot: FontSlot, open: () -> java.io.InputStream?) {
         val target = File(context.filesDir, "fonts").apply { mkdirs() }
         val tmp = File(target, slot.fileName + ".new")
-        context.contentResolver.openInputStream(uri)?.use { input -> tmp.outputStream().use { input.copyTo(it) } }
+        open()?.use { input -> tmp.outputStream().use { input.copyTo(it) } }
             ?: error(tr(R.string.couldn_t_open_that_file))
         val ok = runCatching {
             if (android.os.Build.VERSION.SDK_INT >= 29) { android.graphics.fonts.Font.Builder(tmp).build(); true }
@@ -231,11 +323,12 @@ object AppFonts {
         if (!ok || tmp.length() < 1024) { tmp.delete(); error(tr(R.string.that_isn_t_a_font_file)) }
         val out = File(target, slot.fileName)
         out.delete()
-        if (!tmp.renameTo(out)) { tmp.delete(); error(tr(R.string.couldn_t_save_the_font)) }
-        val name = context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
-            if (c.moveToFirst()) c.getString(0) else null
+        // A file still held open (the font check can keep it mapped on some systems) is copied instead.
+        if (!tmp.renameTo(out)) {
+            val copied = runCatching { tmp.copyTo(out, overwrite = true) }.isSuccess
+            tmp.delete()
+            if (!copied) error(tr(R.string.couldn_t_save_the_font))
         }
-        return name?.substringBeforeLast('.')?.takeIf { it.isNotBlank() } ?: tr(R.string.your_font_2)
     }
 
     fun remove(slot: FontSlot) {

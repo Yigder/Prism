@@ -1,6 +1,7 @@
 package com.prism.music.playback.sing
 
 import com.prism.music.R
+import com.prism.music.TestHooks
 import com.prism.music.tr
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
@@ -72,11 +73,48 @@ class Sing(private val c: AppContainer) : VocalStemProcessor.Source {
     private var env: OrtEnvironment? = null
     private var releaseJob: Job? = null
 
-    /** Sing's engine can run on this processor (otherwise only the quick way, [Separation.QUICK]). */
-    val fullEngine: Boolean get() = ModelStore.Model.singRuntime() != null
+    /**
+     * Sing's engine can run on this processor (otherwise only the quick way, [Separation.QUICK]), and didn't take Prism
+     * down as it loaded on this version ([SingWatch.engineBroken]).
+     */
+    val fullEngine: Boolean get() = (ModelStore.Model.singRuntime() != null || TestHooks.singEngineFails) && !engineFailedNow && !engineBroken
+
+    private val enginePrefs by lazy { c.app.getSharedPreferences("sing_engine", android.content.Context.MODE_PRIVATE) }
+    private val version: Int get() = com.prism.music.BuildConfig.VERSION_CODE
+
+    /**
+     * The engine's loads that never finished: one is kept as it starts and cleared once it's in, so a load that took
+     * Prism down (a crash in the engine itself, which nothing can catch) is found as Prism starts again.
+     */
+    private val engineBroken: Boolean by lazy {
+        val p = enginePrefs
+        val strikes = p.getInt("unfinished", 0)
+        val broken = SingWatch.engineBroken(strikes, p.getInt("broken_on", 0), version)
+        if (broken && p.getInt("broken_on", 0) != version) {
+            p.edit().putInt("broken_on", version).putInt("unfinished", 0).apply()
+            Log.w("PrismSing", "Sing's engine didn't finish loading $strikes times running: the quick way on this version")
+        }
+        broken
+    }
+
+    init {
+        // As Prism starts, on Sing's own thread before any song is worked on: the copies a song in hand was decoded from
+        // when Prism last stopped go (nothing half-done is read again), and an engine load that never finished is counted.
+        scope.launch {
+            withContext(worker) {
+                c.app.cacheDir.listFiles { f -> f.name.startsWith("sing_") && f.name.endsWith(".part") }?.forEach { it.delete() }
+                engineBroken
+            }
+        }
+    }
+
+    /** The engine as it was before a test's forced failure ([TestHooks.singEngineFails]). */
+    internal fun engineAgain() { engineFailedNow = false; _method.value = choose(retry = false) }
 
     /** Sing can start: its engine is on the phone, or this processor only has the quick way, which needs nothing. */
     fun engineReady(): Boolean {
+        // A test's engine: there, and failing as it loads ([networks]).
+        if (TestHooks.singEngineFails) return true
         val runtime = ModelStore.Model.singRuntime() ?: return true
         return c.models.ready(runtime) && c.models.ready(ModelStore.Model.SING_MODEL)
     }
@@ -118,23 +156,136 @@ class Sing(private val c: AppContainer) : VocalStemProcessor.Source {
     /** Settings → Lyrics → Sing → "Get songs ready while Sing is off": songs are separated ahead with Sing off too. */
     private val alwaysReady: Boolean get() = c.settings.current.singAlwaysReady
 
-    /** Songs are being got ready: Sing is on, or set to get them ready anyway. */
-    private val working: Boolean get() = onNow || alwaysReady
+    /** Songs are being got ready: Sing is on, or set to get them ready anyway (not after Sing let go of the player). */
+    private val working: Boolean get() = onNow || (alwaysReady && !heldBack)
 
     /** When Sing was last switched off (nanoTime): the song in hand is finished for [GRACE_NS] more, not thrown away. */
     @Volatile private var offAt = 0L
 
     /** Still at work on the song in hand: Sing is on (or set to get songs ready), or was switched off only just now. */
-    private val stillWorking: Boolean get() = working || System.nanoTime() - offAt < GRACE_NS
+    private val stillWorking: Boolean get() = !letGo && (working || System.nanoTime() - offAt < GRACE_NS)
+
+    /** Sing let go of the song in hand ([letGoNow]): its pass ends at once, grace or not. Cleared as the next one starts. */
+    @Volatile private var letGo = false
+    /** Sing stopped itself for the player's sake ([rescue]): nothing is got ready ahead till Sing is switched on again. */
+    @Volatile private var heldBack = false
+    /** A song is being worked on (fetched, decoded or separated) now. */
+    @Volatile private var busy = false
+    /** The decoders and the download of the song in hand, so letting go of it stops them at once. */
+    private val decoders = java.util.concurrent.CopyOnWriteArraySet<PcmDecoder>()
+    @Volatile private var download: androidx.media3.datasource.cache.CacheWriter? = null
 
     fun setOn(on: Boolean) {
+        switch(on)
+        // Switched off, the song plays as it is, whatever Sing was doing: a player stuck loading meanwhile (or stopped on
+        // an error) has the song in hand let go (its decoder and download with it) and loads again.
+        if (!on) main.launch {
+            val p = c.player.player ?: return@launch
+            val error = p.playbackState == androidx.media3.common.Player.STATE_IDLE && p.playerError != null
+            if (SingWatch.stuck(p.playWhenReady, p.playbackState, p.playerError != null) &&
+                (error || watching.stuckFor(android.os.SystemClock.elapsedRealtime()) >= SingWatch.OFF_STUCK_MS)
+            ) { letGoNow(); unstick(p) }
+        }
+    }
+
+    private fun switch(on: Boolean) {
         _on.value = on
         onNow = on
+        if (on) { heldBack = false; watchPlayer() }
         if (!on) offAt = System.nanoTime()
         if (!on && !alwaysReady) {
             synchronized(wanted) { wanted.clear() }
             scheduleRelease()
         }
+    }
+
+    private val main = CoroutineScope(Dispatchers.Main.immediate)
+    private var watch: Job? = null
+    /** How long the player may sit loading while Sing works before Sing lets go ([SingWatch]); shorter in the tests. */
+    @Volatile internal var stuckMs = SingWatch.STUCK_MS
+    /** The watchdog's count of how long the player's been stuck (on the main thread). */
+    private var watching = SingWatch(SingWatch.STUCK_MS)
+
+    /**
+     * The watchdog (1.8.1, Reddit: Sing on a Google TV Streamer stopped the music, which sat "loading"): while Sing is on
+     * or a song is being worked on, a player that should be playing but has sat loading while Sing worked (or stopped on
+     * an error) for [stuckMs] has Sing let go: the song in hand is dropped, Sing switches off, the song loads again and
+     * plays as it is, and the listener is told.
+     */
+    private fun watchPlayer() {
+        main.launch {
+            if (watch?.isActive == true) return@launch
+            watching = SingWatch(stuckMs)
+            watch = main.launch {
+                while (onNow || busy) {
+                    delay(500)
+                    val p = c.player.player ?: continue
+                    // Counted while a song is being worked on (Sing's sound processing never holds the player): loading, or
+                    // stopped on an error (a decoder it couldn't have, say, while Sing had it). Other errors are the service's.
+                    val stuck = SingWatch.counts(busy, p.playWhenReady, p.playbackState, p.playerError != null)
+                    if (watching.check(stuck, android.os.SystemClock.elapsedRealtime())) {
+                        rescue(p)
+                        watching.reset()
+                    }
+                }
+                watching.reset()
+            }
+        }
+    }
+
+    /** Sing lets go for the player's sake: see [watchPlayer]. On the main thread. */
+    private fun rescue(p: androidx.media3.exoplayer.ExoPlayer) {
+        Log.w("PrismSing", "The player sat loading for $stuckMs ms while Sing worked: Sing let go")
+        com.prism.music.playback.AudioDiagnostics.log("background", "Sing let go: the player sat loading for $stuckMs ms")
+        heldBack = true
+        letGoNow()
+        switch(false)
+        val say = tr(R.string.sing_stopped_for_the_song)
+        _problem.value = say
+        c.player.reportError(say)
+        unstick(p)
+    }
+
+    /** Drops the song in hand at once: its decoders stop, its download stops, and its pass ends. */
+    private fun letGoNow() {
+        letGo = true
+        synchronized(wanted) { wanted.clear() }
+        decoders.forEach { it.cancel() }
+        download?.cancel()
+    }
+
+    /** The player loads the song again where it was and plays (after Sing let go of what held it). */
+    private fun unstick(p: androidx.media3.exoplayer.ExoPlayer) {
+        val pos = p.currentPosition
+        if (p.playbackState == androidx.media3.common.Player.STATE_IDLE) p.prepare()
+        p.seekTo(pos)
+        p.play()
+    }
+
+    /** A decoder for the song in hand, let go of with it ([letGoNow]). */
+    private fun <T> decoding(uri: android.net.Uri, block: (PcmDecoder) -> T): T {
+        if (TestHooks.singPassHangs) try {
+            TestHooks.singHolding = true
+            while (!letGo) Thread.sleep(50)
+        } finally {
+            TestHooks.singHolding = false
+        }
+        if (letGo) throw Stopped(tr(R.string.sing_was_switched_off))
+        val dec = PcmDecoder(c.app, uri)
+        decoders += dec
+        if (letGo) dec.cancel()
+        try {
+            return dec.use(block)
+        } finally {
+            decoders -= dec
+        }
+    }
+
+    /** The whole song saved for Sing, as the player saves it ([AppContainer.warmUp]); stopped if Sing lets go of it. */
+    private fun fetchWhole(id: String) {
+        c.warmUp(id, whole = true, cellular = c.settings.current.singOnCellular, forSing = true) { download = it }
+        download = null
+        if (letGo) throw Stopped(tr(R.string.sing_was_switched_off))
     }
 
     /** The quick way's stand-ins (1.8.x): done first, in seconds, so Sing takes effect at once. */
@@ -221,6 +372,8 @@ class Sing(private val c: AppContainer) : VocalStemProcessor.Source {
                 nextPass(wanted.map { it.id }, ::quickDone, ::needsOwn)?.let { (id, q) -> wanted.first { it.id == id } to q }
                     ?: run { wanted.clear(); null }
             } ?: return
+            busy = true
+            watchPlayer()
             runCatching { withContext(worker) { separate(next, quickPass) } }
                 .onSuccess {
                     _problem.value = it
@@ -229,17 +382,34 @@ class Sing(private val c: AppContainer) : VocalStemProcessor.Source {
                 }
                 .onFailure {
                     synchronized(wanted) { wanted.removeAll { w -> w.id == next.id } }
-                    if (it !is Stopped) {
+                    if (it !is Stopped && it !is PcmDecoder.Cancelled) {
                         Log.w("PrismSing", "Couldn't separate ${next.id}: $it")
-                        _problem.value = it.message ?: tr(R.string.couldn_t_get_this_song_ready)
+                        // Whatever went wrong (the download, the decoder, the engine), the song plays on as it is, and
+                        // the listener is told so (said on the TV's Sing page, and as a message for the song playing).
+                        val why = failure(it)
+                        _problem.value = why
+                        if (onNow && next.id == c.player.currentSong.value?.id) withContext(Dispatchers.Main) { c.player.reportError(why) }
                     }
                 }
+            busy = false
             _progress.update { it - next.id }
         }
     }
 
+    /** What the listener's told when a song couldn't be got ready: why, and that it plays on as it is. */
+    private fun failure(t: Throwable): String {
+        val why = if (t is EngineFailed) tr(R.string.sing_engine_didn_t_start) else t.message?.takeIf { it.isNotBlank() } ?: tr(R.string.couldn_t_get_this_song_ready)
+        return why + "\n" + tr(R.string.sing_song_plays_as_it_is)
+    }
+
     /** Sing was switched off a while ago: the song in hand is let go. */
     private class Stopped(message: String) : IOException(message)
+
+    /** Sing's engine failed to load here: the quick way from now on (this run; a crash, this version: [engineBroken]). */
+    private class EngineFailed(cause: Throwable) : IOException(cause)
+
+    /** The engine failed to load in this run (an error, not a crash): the quick way stands in till Prism starts again. */
+    @Volatile private var engineFailedNow = false
 
     /** The device fell behind and stepped down to the quick way: the song's own separation stops (its stand-in stays). */
     private class SteppedDown : IOException()
@@ -282,13 +452,30 @@ class Sing(private val c: AppContainer) : VocalStemProcessor.Source {
     /** The networks [way] needs, loaded (none for the quick way; the backing's for the full way only). */
     private fun networks(way: Separation): Pair<OrtSession?, OrtSession?> {
         if (way == Separation.QUICK) return null to null
-        val runtime = ModelStore.Model.singRuntime() ?: throw IOException(tr(R.string.sing_doesn_t_run_on_this_2))
-        val e = env ?: OrtLoader.environment(c.models.dir(runtime)).also { env = it }
-        val dir = c.models.dir(ModelStore.Model.SING_MODEL)
-        val vocals = vocalsNet ?: e.createSession(File(dir, "vocals.fp16.onnx").path, options()).also { vocalsNet = it }
-        val backing = if (way == Separation.FULL) backingNet ?: e.createSession(File(dir, "accompaniment.fp16.onnx").path, options()).also { backingNet = it }
-        else backingNet
-        return vocals to backing
+        val runtime = ModelStore.Model.singRuntime() ?: if (TestHooks.singEngineFails) ModelStore.Model.SING_MODEL else throw IOException(tr(R.string.sing_doesn_t_run_on_this_2))
+        if (vocalsNet != null && (way != Separation.FULL || backingNet != null)) return vocalsNet to backingNet
+        // Kept as the engine loads, cleared once it's in (or failed in the usual way): a load that took Prism down with
+        // it is found as Prism starts again ([engineBroken]).
+        enginePrefs.edit().putInt("unfinished", enginePrefs.getInt("unfinished", 0) + 1).commit()
+        try {
+            if (TestHooks.singEngineFails) throw IOException("Sing's engine failed (a test)")
+            val e = env ?: OrtLoader.environment(c.models.dir(runtime)).also { env = it }
+            val dir = c.models.dir(ModelStore.Model.SING_MODEL)
+            val vocals = vocalsNet ?: e.createSession(File(dir, "vocals.fp16.onnx").path, options()).also { vocalsNet = it }
+            val backing = if (way == Separation.FULL) backingNet ?: e.createSession(File(dir, "accompaniment.fp16.onnx").path, options()).also { backingNet = it }
+            else backingNet
+            return vocals to backing
+        } catch (t: Throwable) {
+            // The engine won't load here (a library the processor can't run, a model file cut short): the quick way
+            // stands in from now on, rather than failing every song.
+            Log.w("PrismSing", "Sing's engine didn't load: $t")
+            engineFailedNow = true
+            closeNetworks()
+            _method.value = choose(retry = false)
+            throw EngineFailed(t)
+        } finally {
+            enginePrefs.edit().putInt("unfinished", 0).apply()
+        }
     }
 
     /** The networks take ~100 MB: let go of them a few minutes after Sing is switched off. */
@@ -312,13 +499,16 @@ class Sing(private val c: AppContainer) : VocalStemProcessor.Source {
      * TV's speed check. Their speeds in seconds of song a second, also kept for choosing ([method]).
      */
     suspend fun timeWays(song: Song): Pair<Double?, Double?> = withContext(worker) {
-        if (!song.isLocal) c.warmUp(song.id, whole = true, cellular = c.settings.current.singOnCellular)
+        letGo = false
+        busy = true
+        watchPlayer()
         val scratch = File(c.app.cacheDir, "sing_time.part")
-        val uri = c.audioOnPhone(song.id, scratch) ?: throw IOException(tr(R.string.this_song_isn_t_on_the))
         val speeds = HashMap<Separation, Double>()
         try {
+            if (!song.isLocal) fetchWhole(song.id)
+            val uri = c.audioOnPhone(song.id, scratch) ?: throw IOException(tr(R.string.this_song_isn_t_on_the))
             val (vocals, backing) = networks(Separation.FULL)
-            PcmDecoder(c.app, uri).use { dec ->
+            decoding(uri) { dec ->
                 val first = dec.read() ?: throw IOException(tr(R.string.the_song_didn_t_decode))
                 val reader = PieceReader(dec, first, Resampler(2, dec.sampleRate, Spleeter.RATE))
                 val sp = Spleeter(env, vocals, backing)
@@ -334,6 +524,7 @@ class Sing(private val c: AppContainer) : VocalStemProcessor.Source {
             }
         } finally {
             scratch.delete()
+            busy = false
         }
         speeds[Separation.FULL]?.let { keepPace(Separation.FULL, it, blend = false) }
         speeds[Separation.LIGHT]?.let { keepPace(Separation.LIGHT, it, blend = false) }
@@ -354,16 +545,17 @@ class Sing(private val c: AppContainer) : VocalStemProcessor.Source {
         if (if (quickPass) quickDone(id) else !needsOwn(id)) return null
         val target = if (quickPass) quickStore else store
         val started = System.nanoTime()
+        letGo = false
         _progress.update { it + (id to 0f) }
         // The whole song from the player's own copy (cached whole first if need be), so the vocals line up with it.
-        if (!song.isLocal) c.warmUp(id, whole = true, cellular = c.settings.current.singOnCellular)
+        if (!song.isLocal) fetchWhole(id)
         val scratch = File(c.app.cacheDir, "sing_${id.replace(Regex("[^A-Za-z0-9_-]"), "_")}.part")
         val uri = c.audioOnPhone(id, scratch)
             ?: throw IOException(if (c.network.metered.value && !c.settings.current.singOnCellular) tr(R.string.waiting_for_wi_fi_to_get) else tr(R.string.this_song_isn_t_on_the))
         val way = if (quickPass) Separation.QUICK else choose()
         if (!quickPass) _method.value = way
         if (way == Separation.QUICK && !quickPass) { scratch.delete(); return null }
-        val (vocals, accompaniment) = networks(way)
+        val (vocals, accompaniment) = try { networks(way) } catch (t: Throwable) { scratch.delete(); throw t }
         // The way least good of the song's chunks, kept with its vocals.
         var least = way
         var steppedDown = false
@@ -452,7 +644,7 @@ class Sing(private val c: AppContainer) : VocalStemProcessor.Source {
             var split = 0L
             var later = 0L
             val fromUs = startUs(id, quickPass, song.durationSec)
-            if (fromUs > 0) PcmDecoder(c.app, uri).use { dec ->
+            if (fromUs > 0) decoding(uri) { dec ->
                 dec.seekTo(fromUs)
                 val first = dec.read() ?: throw IOException(tr(R.string.the_song_didn_t_decode))
                 rate = dec.sampleRate
@@ -464,7 +656,7 @@ class Sing(private val c: AppContainer) : VocalStemProcessor.Source {
                     later = run(dec, first, target.pcmFrom(id), Long.MAX_VALUE, 0)
                 }
             }
-            val head = PcmDecoder(c.app, uri).use { dec ->
+            val head = decoding(uri) { dec ->
                 val first = dec.read() ?: throw IOException(tr(R.string.the_song_didn_t_decode))
                 rate = dec.sampleRate
                 if (split <= 0) {

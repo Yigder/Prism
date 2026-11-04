@@ -164,9 +164,11 @@ internal class ReplayStory(
     val topLyric: String? = null,
     val previousTopArtist: String? = null,
     val previousSongCount: Int? = null,
+    /** "Includes Spotify" when an imported history is counted (1.8.1): every card says so. */
+    val includes: String? = null,
 ) {
-    /** "PRISM REWIND" for a year, "PRISM REPLAY" otherwise. */
-    val brand: String get() = if (rewind) tr(R.string.prism_rewind) else tr(R.string.prism_replay)
+    /** "PRISM REWIND" for a year, "PRISM REPLAY" otherwise (and what else it counts). */
+    val brand: String get() = (if (rewind) tr(R.string.prism_rewind) else tr(R.string.prism_replay)) + (includes?.let { " · " + it.uppercase() } ?: "")
 }
 
 /** The facts [StoryParts.pick] chooses this story's slides by. */
@@ -198,8 +200,13 @@ private suspend fun loadRewindStory(c: AppContainer, year: Int): ReplayStory = w
         topArtistImage = s.topArtistImage ?: leadPage?.thumbnail, topArtistType = leadType,
         rewind = true, months = s.months, topAlbum = s.topAlbum, firstSong = s.firstSong, seasons = s.seasons, prism = s.prism,
         topLyric = s.topLyric, previousTopArtist = s.previousTopArtist, previousSongCount = s.previousSongCount,
+        includes = includesLine(c),
     )
 }
+
+/** "Includes Spotify" while an imported history is counted (1.8.1). */
+private fun includesLine(c: AppContainer): String? =
+    c.imports.counted.value.takeIf { it.isNotEmpty() }?.let { s -> tr(R.string.imp_includes, s.sortedBy { it.ordinal }.joinToString(", ") { it.label }) }
 
 internal suspend fun loadReplayStory(c: AppContainer, period: Period): ReplayStory {
     if (period.isYear) return loadRewindStory(c, period.year)
@@ -208,7 +215,8 @@ internal suspend fun loadReplayStory(c: AppContainer, period: Period): ReplaySto
 
 private suspend fun loadPeriodStory(c: AppContainer, period: Period): ReplayStory = withContext(Dispatchers.IO) {
     val (from, to) = range(period)
-    val dao = c.db.plays()
+    // Prism's plays, plus the imported sources the listener counts (1.8.1).
+    val dao = c.imports.replay()
     val songs = dao.topSongs(from, to, 150).mergeUploads().take(100)
     val artists = dao.topArtists(from, to, 20)
     val totalMs = dao.totalMs(from, to)
@@ -274,6 +282,7 @@ private suspend fun loadPeriodStory(c: AppContainer, period: Period): ReplayStor
         topArtistImage = leadPage?.thumbnail,
         topArtistType = leadType,
         months = months,
+        includes = includesLine(c),
     )
 }
 
@@ -371,7 +380,11 @@ internal fun ReplayStoryDialog(story: ReplayStory, onDismiss: () -> Unit) {
         // A story is a phone-shaped thing: on a wide window it stays 9:16 in the middle, on black.
         androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
             val width = minOf(maxWidth, maxHeight * 9f / 16f)
-            Box(Modifier.width(width).fillMaxHeight()) { StoryContent(story, onDismiss) }
+            // #287: in the app's font when "Stories in your font" is on.
+            val own = if (com.prism.music.ui.theme.LocalAppSettings.current.view.replayStoryFont) (androidx.compose.material3.MaterialTheme.typography.displayLarge.fontFamily ?: androidx.compose.ui.text.font.FontFamily.Default) else null
+            Box(Modifier.width(width).fillMaxHeight()) {
+                androidx.compose.runtime.CompositionLocalProvider(LocalStoryFont provides own) { StoryContent(story, onDismiss) }
+            }
         }
     }
 }
@@ -513,7 +526,8 @@ private fun StoryContent(story: ReplayStory, onDismiss: () -> Unit) {
             ) {
                 AsyncImage(hiRes(song.thumbnail, 120), null, Modifier.size(28.dp).clip(CircleShape), contentScale = ContentScale.Crop)
                 Spacer(Modifier.width(8.dp))
-                if (!muted) PlayingBars(Modifier.size(12.dp))
+                // The story's own music, not the player's: it plays while the story shows.
+                if (!muted) PlayingBars(Modifier.size(12.dp), playing = true)
                 Spacer(Modifier.width(6.dp))
                 Text(
                     "${song.title} · ${song.primaryArtist}", color = Color.White, style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.Medium),
@@ -542,14 +556,55 @@ private fun Backdrop(base: Color, c1: Color, c2: Color, c3: Color) {
 
 // ---------------------------------------------------------------- Type and motion
 
-private fun display(size: TextUnit, type: ArtistType = ArtistTypography.condensed) = TextStyle(
-    fontFamily = type.family, fontWeight = type.weight, fontSize = size, lineHeight = size * 0.94f,
-    letterSpacing = type.tracking.em, color = Color.White,
-)
+/**
+ * The app's font for the stories (#287, 1.8.1: "Stories in your font"), or null for Prism's poster type (condensed and
+ * extended display faces, as since 1.7). Provided by [StoryContent] from the settings.
+ */
+internal val LocalStoryFont = androidx.compose.runtime.staticCompositionLocalOf<androidx.compose.ui.text.font.FontFamily?> { null }
 
-private fun kicker(size: TextUnit = 14.sp) = TextStyle(
-    fontFamily = ArtistTypography.extended.family, fontWeight = FontWeight.Black, fontSize = size, letterSpacing = 0.06.em, color = Color.White,
-)
+/**
+ * A slide's big type. In the app's font (#287) it's bold and a touch tighter and smaller (an ordinary face runs wider
+ * than the condensed poster one), with a little more line height than the poster faces need.
+ */
+@Composable
+@androidx.compose.runtime.ReadOnlyComposable
+private fun display(size: TextUnit, type: ArtistType = ArtistTypography.condensed): TextStyle {
+    val own = LocalStoryFont.current ?: return TextStyle(
+        fontFamily = type.family, fontWeight = type.weight, fontSize = size, lineHeight = size * 0.94f,
+        letterSpacing = type.tracking.em, color = Color.White,
+    )
+    return TextStyle(fontFamily = own, fontWeight = FontWeight.Bold, fontSize = size * 0.9f, lineHeight = size, letterSpacing = (-0.02).em, color = Color.White)
+}
+
+/**
+ * A slide's type at a glance, for picking it in Settings (#287): the Minutes slide's words on Replay's colors, in
+ * Prism's poster type or ([own]) the app's font.
+ */
+@Composable
+internal fun StoryTypeSample(own: Boolean, modifier: Modifier = Modifier) {
+    val family = if (own) (androidx.compose.material3.MaterialTheme.typography.displayLarge.fontFamily ?: androidx.compose.ui.text.font.FontFamily.Default) else null
+    androidx.compose.runtime.CompositionLocalProvider(LocalStoryFont provides family) {
+        Column(
+            modifier.fillMaxWidth().height(112.dp).clip(RoundedCornerShape(12.dp)).background(Brush.linearGradient(replayGradient())).padding(12.dp),
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(tr(R.string.you_listened_for), style = kicker(9.sp), maxLines = 1)
+            Text("1,204", style = display(40.sp), maxLines = 1)
+            Text(tr(R.string.of_music).uppercase(), style = display(16.sp, ArtistTypography.extended), maxLines = 1)
+        }
+    }
+}
+
+/** The small capitals over a slide's figure ("YOU LISTENED FOR"). */
+@Composable
+@androidx.compose.runtime.ReadOnlyComposable
+private fun kicker(size: TextUnit = 14.sp): TextStyle {
+    val own = LocalStoryFont.current
+    return TextStyle(
+        fontFamily = own ?: ArtistTypography.extended.family, fontWeight = if (own != null) FontWeight.SemiBold else FontWeight.Black,
+        fontSize = size, letterSpacing = if (own != null) 0.1.em else 0.06.em, color = Color.White,
+    )
+}
 
 private val body = TextStyle(fontSize = 19.sp, lineHeight = 26.sp, fontWeight = FontWeight.Medium, color = Color.White)
 
@@ -705,20 +760,23 @@ private fun TopArtist(s: ReplayStory, modifier: Modifier) {
         Column(modifier, verticalArrangement = Arrangement.Bottom) {
             Text(tr(R.string.your_top_artist_2), style = kicker(), modifier = Modifier.reveal(300))
             val type = s.topArtistType
+            // In your font (#287) the name is set in it too, at the artist's size, not in their signature's face.
+            val own = LocalStoryFont.current
             Text(
-                if (type.caps) a.artistName.uppercase() else a.artistName,
+                if (type.caps && own == null) a.artistName.uppercase() else a.artistName,
                 style = TextStyle(
-                    fontFamily = type.family, fontWeight = type.weight, fontSize = (type.size * 1.25f).coerceAtMost(72f).sp,
+                    fontFamily = own ?: type.family, fontWeight = if (own != null) FontWeight.Bold else type.weight, fontSize = (type.size * 1.25f).coerceAtMost(72f).sp,
                     lineHeight = (type.size * 1.25f * type.lineHeight).coerceAtMost(72f).sp, letterSpacing = type.tracking.em, color = Color.White,
-                    fontStyle = if (type.italic) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal,
+                    fontStyle = if (type.italic && own == null) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal,
                 ),
                 maxLines = 3, modifier = Modifier.reveal(600),
             )
             Spacer(Modifier.height(18.dp))
             Row(Modifier.reveal(1_200), horizontalArrangement = Arrangement.spacedBy(26.dp)) {
-                listenTotal(a.ms).let { t -> Stat(t.text(t.value), t.unit.ifEmpty { "listened" }) }
-                Stat(fmt(a.plays.toLong()), "plays")
-                Stat("${s.songs.count { it.mainArtist == a.artistName }}", "songs")
+                listenTotal(a.ms).let { t -> Stat(t.text(t.value), t.unit.ifEmpty { tr(R.string.listened).lowercase() }) }
+                Stat(fmt(a.plays.toLong()), trp(R.plurals.plays_word, a.plays))
+                val theirs = s.songs.count { it.mainArtist == a.artistName }
+                Stat(fmt(theirs.toLong()), trp(R.plurals.songs_word, theirs))
             }
             val share = (a.ms * 100.0 / s.totalMs.coerceAtLeast(1)).toInt()
             Text(tr(R.string.of_everything_you_played_was_them, share), style = body, modifier = Modifier.reveal(1_800).padding(top = 16.dp))

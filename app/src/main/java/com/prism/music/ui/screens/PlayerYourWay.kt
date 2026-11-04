@@ -35,9 +35,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.drawscope.clipRect
 import com.prism.music.ui.player.drawRibbonStrands
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -586,6 +588,14 @@ fun PlayerTitleGroup() {
             onSelect = { prefs.setPlayerTitleWeight(it) },
         ) { TitleSample(s.playerTitleAlign, it) }
         Toggle(tr(R.string.scrolling_titles), tr(R.string.a_long_title_scrolls_across_off), s.playerTitleScroll) { prefs.setPlayerTitleScroll(it) }
+        // #289 (1.8.1): with several artists, each name a link of its own; off, the line asks which (as before).
+        Label(tr(R.string.each_artist_its_own_link), info = tr(R.string.each_artist_its_own_link_info))
+        ChoiceCards(
+            listOf(false, true), s.view.artistLinks,
+            title = { if (it) tr(R.string.each_name_opens_its_artist) else tr(R.string.one_tap_asks_which) },
+            detail = { if (it) tr(R.string.a_tap_between_names_still_asks) else tr(R.string.as_now) },
+            onSelect = { prefs.setArtistLinks(it) },
+        ) { ArtistLinksSample(it) }
         Label(tr(R.string.times_under_the_progress_bar))
         ChoiceCards(
             PlayerTimes.entries, s.playerTimes, title = { it.label }, detail = { null }, onSelect = { prefs.setPlayerTimes(it) },
@@ -633,6 +643,14 @@ fun PlayerProgressGroup() {
             detail = { if (it == com.prism.music.data.prefs.ScrubberThumb.AUTO) tr(R.string.a_dot_with_the_thumb_style) else null },
             onSelect = { prefs.setScrubberThumb(it) },
         ) { KnobSample(it, s.scrubberThickness) }
+        // 1.8.1 (the owner's): the bar shaped by the crossfade, an option; off it's the bar as before.
+        Label(tr(R.string.crossfade_on_the_progress_bar), info = tr(R.string.crossfade_shape_info))
+        ChoiceCards(
+            listOf(false, true), s.view.crossfadeShape,
+            title = { if (it) tr(R.string.shaped_by_the_crossfade) else tr(R.string.plain) },
+            detail = { if (it) tr(R.string.the_end_tapers_as_the_song_fades) else tr(R.string.as_now) },
+            onSelect = { prefs.setCrossfadeShape(it) },
+        ) { CrossfadeShapeSample(it, s.sound.crossfadeCurve, s.scrubberColor) }
         // Reddit, 1.7.9.1: the volume bar as thick as the progress bar (its style's height and this thickness).
         Toggle(tr(R.string.volume_bar_like_the_progress_bar), tr(R.string.same_style_and_thickness), s.volumeMatchesProgress) {
             prefs.setVolumeMatchesProgress(it)
@@ -661,6 +679,39 @@ private fun KnobSample(knob: com.prism.music.data.prefs.ScrubberThumb, thickness
                 }
                 com.prism.music.data.prefs.ScrubberThumb.NONE -> {}
             }
+        }
+    }
+}
+
+/**
+ * A song's bar near its end, as the mockup draws it: the last quarter its blend, the playhead in it ([shaped]: tapering
+ * along [curve], the knob riding it; else the plain bar).
+ */
+@Composable
+private fun CrossfadeShapeSample(shaped: Boolean, curve: com.prism.music.data.prefs.CrossfadeCurve, color: ScrubberColor) {
+    val fill = com.prism.music.ui.player.scrubberFill(color, LocalContainer.current.player.currentSong.value?.thumbnail)
+        ?: Brush.horizontalGradient(*PrismTokens.spectrumColors(true).toTypedArray())
+    val outline = remember { com.prism.music.ui.player.BlendBarPath() }
+    val shape = remember(curve) { com.prism.music.ui.player.BlendShape(curve, outFrom = 0.75f, outTo = 1f) }
+    SampleScreen(Modifier.fillMaxWidth().height(40.dp)) {
+        androidx.compose.foundation.Canvas(Modifier.align(Alignment.Center).padding(horizontal = 14.dp).fillMaxWidth().height(16.dp)) {
+            val h = 7.dp.toPx()
+            val y = size.height / 2
+            val played = size.width * 0.86f
+            translate(top = y - h / 2) {
+                val bar = androidx.compose.ui.geometry.Size(size.width, h)
+                if (shaped) {
+                    val path = outline.outline(shape, bar.width, h)
+                    drawPath(path, Faint)
+                    clipRect(right = played) { drawPath(path, fill) }
+                } else {
+                    val r = androidx.compose.ui.geometry.CornerRadius(h / 2)
+                    drawRoundRect(Faint, size = bar, cornerRadius = r)
+                    drawRoundRect(fill, size = androidx.compose.ui.geometry.Size(played, h), cornerRadius = r)
+                }
+            }
+            val knob = 6.dp.toPx() * (if (shaped) com.prism.music.ui.player.BlendShape.knobScale(shape.height(0.86f)) else 1f)
+            drawCircle(Color.White, knob, androidx.compose.ui.geometry.Offset(played, y))
         }
     }
 }
@@ -769,6 +820,35 @@ private fun TitleSample(align: PlayerTitleAlign, weight: com.prism.music.data.pr
     }
 }
 
+/**
+ * The artists under a title (#289): [separate], each name underlined on its own and the tap going straight to one;
+ * else the whole line one target, a small menu of the names under it.
+ */
+@Composable
+private fun ArtistLinksSample(separate: Boolean) {
+    SampleScreen(Modifier.fillMaxWidth().height(72.dp)) {
+        Column(Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 8.dp)) {
+            Text(tr(R.string.northern_lights), color = Color.White, fontSize = 12.sp, maxLines = 1, fontWeight = androidx.compose.ui.text.font.FontWeight.Light)
+            val names = listOf(tr(R.string.sample_artist_one), tr(R.string.sample_artist_two), tr(R.string.sample_artist_three))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                names.forEachIndexed { i, n ->
+                    val mark = if (separate) Modifier.drawBehind {
+                        drawLine(Color.White.copy(alpha = if (i == 1) 0.9f else 0.35f), androidx.compose.ui.geometry.Offset(0f, size.height), androidx.compose.ui.geometry.Offset(size.width, size.height), 1.dp.toPx())
+                    } else Modifier
+                    Text(n, mark, color = Color.White.copy(alpha = if (separate && i == 1) 0.95f else 0.6f), fontSize = 10.sp, maxLines = 1)
+                    if (i < names.lastIndex) Text(", ", color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp)
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            if (separate) Text(tr(R.string.opens_artist_page, names[1]), color = Color.White.copy(alpha = 0.8f), fontSize = 9.sp)
+            else Row(
+                Modifier.clip(RoundedCornerShape(5.dp)).background(Color.White.copy(alpha = 0.12f)).padding(horizontal = 6.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) { names.forEach { Text(it, color = Color.White.copy(alpha = 0.8f), fontSize = 8.sp) } }
+        }
+    }
+}
+
 @Composable
 private fun TimesSample(times: PlayerTimes) {
     SampleScreen(Modifier.fillMaxWidth().height(44.dp)) {
@@ -863,6 +943,18 @@ private fun BarSample(color: ScrubberColor) {
 /** Background movement [v] (0 still … 1 lively) as the mesh's speed and its colors' strength (1 = as the cover … 1.5). */
 fun meshMovement(v: Float): Pair<Float, Float> = if (v < 0.05f) 0f to 1f else v to 1f + 0.5f * v
 
+/**
+ * Why the color mesh holds still though its movement is up (#284), or null: Reduce motion, Performance mode, or the
+ * phone's animations turned off (Settings → Accessibility, or developer options' animation scale).
+ */
+internal fun meshHeldBy(s: com.prism.music.data.prefs.AppSettings, context: android.content.Context): String? = when {
+    s.reduceMotion -> tr(R.string.reduce_motion_is_on_so_it)
+    s.performanceMode -> tr(R.string.performance_mode_is_on_so_it_stays_still)
+    android.provider.Settings.Global.getFloat(context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f ->
+        tr(R.string.your_phone_s_animations_are_off_so_it_stays_still)
+    else -> null
+}
+
 /** The color mesh's movement, and how soft the blurred cover is (under Look → Background). */
 @Composable
 fun PlayerBackgroundTuning() {
@@ -875,7 +967,9 @@ fun PlayerBackgroundTuning() {
             tr(R.string.background_movement), s.meshSpeed, 0f..1f,
             { if (it < 0.05f) tr(R.string.still) else worded(if (it < 0.5f) tr(R.string.gentle) else tr(R.string.lively), it) },
         ) { v -> meshMovement(v).let { (speed, colors) -> prefs.setMeshSpeed(speed); prefs.setMeshIntensity(colors) } }
-        if (s.reduceMotion && s.meshSpeed > 0f) Note(tr(R.string.reduce_motion_is_on_so_it))
+        // #284: what else holds it still says so too (the page shows the settings as set, which Performance mode and the
+        // phone's own animations switch leave alone).
+        if (s.meshSpeed > 0f) meshHeldBy(s, androidx.compose.ui.platform.LocalContext.current)?.let { Note(it) }
     }
     // How soft the blurred cover is (1.8.0: only for Blurred cover, where it shows).
     if (s.playerBackground == com.prism.music.data.prefs.PlayerBackground.BLUR) {

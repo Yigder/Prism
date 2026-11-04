@@ -610,8 +610,10 @@ interface RomanizedDao {
 
 @Database(
     entities = [SongEntity::class, PlayEventEntity::class, LyricsEntity::class, GenreEntity::class, MotionArtEntity::class, HeatmapEntity::class,
-        RomanizedEntity::class, ReleaseEntity::class, MixEntity::class, BlendEntity::class, RecognitionEntity::class],
-    version = 8,
+        RomanizedEntity::class, ReleaseEntity::class, MixEntity::class, BlendEntity::class, RecognitionEntity::class,
+        ImportedPlayEntity::class, ImportMatchEntity::class],
+    views = [CountedPlay::class],
+    version = 9,
     exportSchema = true,
 )
 abstract class PrismDatabase : RoomDatabase() {
@@ -626,6 +628,12 @@ abstract class PrismDatabase : RoomDatabase() {
     abstract fun mixes(): MixDao
     abstract fun blends(): BlendDao
     abstract fun recognitions(): RecognitionDao
+    /** Histories brought in from Spotify, Google Takeout and Last.fm (1.8.1). */
+    abstract fun imports(): ImportDao
+    /** Replay's numbers over Prism's plays and the imported ones the listener counts (1.8.1). */
+    abstract fun counted(): CountedPlayDao
+    /** The Spotify connection's questions of the imported plays (1.8.1; no table of its own). */
+    abstract fun spotify(): com.prism.music.data.spotify.SpotifyDao
 
     companion object {
         /**
@@ -682,6 +690,18 @@ abstract class PrismDatabase : RoomDatabase() {
                     // Genres guessed for files without an artist (from a track search on their title alone), and the
                     // genre of a catalogued artist really called "Unknown artist", go: they'd be asked again properly.
                     db.execSQL("DELETE FROM genres WHERE key LIKE 'song2:${Song.LOCAL_PREFIX}%' OR key = 'artist2:unknownartist' OR key = 'artist2:unknown artist'")
+                }
+            },
+            // 1.8.1: histories brought in from Spotify, Google Takeout and Last.fm, kept apart from Prism's own plays.
+            object : Migration(8, 9) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("CREATE TABLE IF NOT EXISTS `imported_plays` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `origin` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, `playedMs` INTEGER NOT NULL, `skipped` INTEGER NOT NULL, `estimated` INTEGER NOT NULL, `title` TEXT NOT NULL, `artist` TEXT NOT NULL, `album` TEXT, `sourceId` TEXT, `songKey` TEXT NOT NULL, `matchedId` TEXT)")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS `index_imported_plays_songKey` ON `imported_plays` (`songKey`)")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS `index_imported_plays_timestamp` ON `imported_plays` (`timestamp`)")
+                    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_imported_plays_origin_timestamp_songKey` ON `imported_plays` (`origin`, `timestamp`, `songKey`)")
+                    db.execSQL("CREATE TABLE IF NOT EXISTS `import_matches` (`songKey` TEXT NOT NULL, `title` TEXT NOT NULL, `artist` TEXT NOT NULL, `album` TEXT, `durationMs` INTEGER NOT NULL, `atLeastMs` INTEGER NOT NULL, `sourceId` TEXT, `isrc` TEXT, `youtubeId` TEXT, `status` TEXT NOT NULL, `matchedId` TEXT, `candidates` TEXT, `checkedAt` INTEGER NOT NULL, `tries` INTEGER NOT NULL, PRIMARY KEY(`songKey`))")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS `index_import_matches_status` ON `import_matches` (`status`)")
+                    db.execSQL("CREATE VIEW `counted_plays` AS $COUNTED_PLAYS_SQL")
                 }
             },
         )

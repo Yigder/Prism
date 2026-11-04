@@ -43,13 +43,27 @@ object Lan {
     }
 
     /** This phone's own address on the local network (Wi-Fi first, then its hotspot, then Ethernet), for links shown to people. */
-    fun ownAddress(): String? = runCatching {
+    fun ownAddress(): String? = ownAddresses().firstOrNull()
+
+    /** This device's own IPv4 addresses on the local network, Wi-Fi first, then its hotspot, then Ethernet. */
+    fun ownAddresses(): List<String> = ownNetworks().map { it.first }.filter { it is Inet4Address && it.isSiteLocalAddress }.mapNotNull { it.hostAddress }
+
+    /** This device's own addresses and their networks' prefix lengths, Wi-Fi first (up, not loopback). */
+    fun ownNetworks(): List<Pair<InetAddress, Int>> = runCatching {
         java.net.NetworkInterface.getNetworkInterfaces().toList()
             .filter { it.isUp && !it.isLoopback }
             .sortedBy { i -> listOf("wlan", "swlan", "ap", "eth").indexOfFirst { i.name.startsWith(it) }.let { if (it < 0) 9 else it } }
-            .flatMap { it.inetAddresses.toList() }
-            .firstOrNull { it is Inet4Address && it.isSiteLocalAddress }?.hostAddress
-    }.getOrNull()
+            .flatMap { i -> i.interfaceAddresses.mapNotNull { a -> a.address?.let { it to a.networkPrefixLength.toInt() } } }
+    }.getOrDefault(emptyList())
+
+    /** [a] is on one of [own]'s networks (address and prefix length): the same Wi-Fi, whatever its addresses look like. */
+    fun sameNetwork(a: InetAddress, own: List<Pair<InetAddress, Int>>): Boolean = own.any { (mine, prefix) ->
+        val x = a.address
+        val y = mine.address
+        if (x.size != y.size || prefix <= 0) return@any false
+        val bits = minOf(prefix, x.size * 8)
+        (0 until bits).all { b -> ((x[b / 8].toInt() shr (7 - b % 8)) and 1) == ((y[b / 8].toInt() shr (7 - b % 8)) and 1) }
+    }
 }
 
 class HttpRequest(

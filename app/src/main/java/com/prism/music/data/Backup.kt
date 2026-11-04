@@ -302,30 +302,44 @@ class Backup(private val c: AppContainer) {
 
         /** Saved preferences by part; anything not named here counts as Settings. Some never go in a backup (null). */
         private val PREFS_PARTS: Map<String, BackupPart?> = buildMap {
+            // playlist_covers (with files/covers below) holds songs' and albums' own covers too (#305, 1.8.1).
             listOf("artist_prefs", "artist_thumbs", "playlist_covers", "library_order", "blend", "liked_playlist", "recent_collections", "song_versions")
                 .forEach { put(it, BackupPart.LIBRARY) }
             listOf(
                 "dislikes", "exclusions", "for_you", "for_you_feedback", "release_radar", "search", "episode_progress", "episode_played", "best_part_mine",
                 "mix_tempo", "song_loudness", "song_peak", "song_key", "dj_quick", "loudness", "lyric_offsets", "lyrics_choice", "lyrics_search_as",
-                "romanize_songs", "video_sync", "local_album_tags", "local_lengths", "local_no_art",
+                "romanize_songs", "video_sync", "local_album_tags", "local_lengths", "local_no_art", "lyrics_word_shift",
+                // 1.8.1: Bring your history's choices (what Replay counts, what shapes the mixes).
+                "imports",
+                // 1.8.1: YouTube Music (live): its switch, its kill switch and the History page as last read.
+                com.prism.music.data.imports.YouTubeLive.PREFS,
             ).forEach { put(it, BackupPart.HISTORY) }
             listOf(
-                "canvas_saved", "download_lyrics", "download_failures", "download_auto_retry", "download_formats", "smart_downloads",
+                "canvas_saved", "download_lyrics", "download_failures", "download_auto_retry", "download_formats", "smart_downloads", "download_standins",
                 "lossless_links", "lossless_misses", "lossless_hidden", "lossless_alac",
             ).forEach { put(it, BackupPart.DOWNLOADS) }
             // The Last.fm connection (and its waiting scrobbles) is the listener's account.
             listOf("lastfm", "spotify_canvas").forEach { put(it, BackupPart.ACCOUNTS) }
+            // 1.8.1: the Spotify connection's Client ID and switches go with the accounts (a Client ID is public in
+            // PKCE); its tokens never travel, as Discord's sign-in doesn't (sealed by a key only this phone has anyway).
+            put(com.prism.music.data.spotify.SpotifyStore.PREFS, BackupPart.ACCOUNTS)
+            put(com.prism.music.data.spotify.SpotifyStore.AUTH_PREFS, null)
             // The Discord sign-in is a key to the whole Discord account; Prism Connect's pairings belong to this phone.
             listOf("discord", "connect_remote", "connect_handoff").forEach { put(it, null) }
             // The song cache's formats describe this phone's cache, which a backup doesn't carry.
             put("cache_formats", null)
+            // Which install this is (RestoredInstall): restoring one's own backup elsewhere mustn't look like Android's.
+            put(RestoredInstall.PREFS, null)
         }
 
         /** Folders (and files) right under files/ by part; anything else counts as Settings. */
         private val FILE_PARTS: Map<String, BackupPart?> = buildMap {
             listOf("library", "blends", "covers", "offline", "artwork").forEach { put(it, BackupPart.LIBRARY) }
-            listOf("rewind", "waves", "queue.json").forEach { put(it, BackupPart.HISTORY) }
+            // 1.8.1: imports/ holds the library a data download is still bringing over (its plays are in the database).
+            listOf("rewind", "waves", "queue.json", "imports").forEach { put(it, BackupPart.HISTORY) }
             put("account", BackupPart.ACCOUNTS)
+            // What the Spotify connection read (which Prism playlists show which Spotify ones, the likes' sync state).
+            put(com.prism.music.data.spotify.Spotify.DIR, BackupPart.ACCOUNTS)
             listOf("downloads", "canvas_saved").forEach { put(it, BackupPart.DOWNLOADS) }
             // Downloaded data files (models/) can always be downloaded again; stems are made again; staging is a restore's.
             listOf(STAGING, "models", "stems", REDOWNLOAD, RESTORED_SETTINGS).forEach { put(it, null) }

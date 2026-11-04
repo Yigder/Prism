@@ -119,7 +119,7 @@ class ForYou(private val c: AppContainer) {
         companion object {
             suspend fun load(c: AppContainer): Listening? {
                 val now = System.currentTimeMillis()
-                val events = c.db.plays().tasteEventsSince(now - 90 * DAY)
+                val events = c.imports.taste.tasteEventsSince(now - 90 * DAY)
                 val liked = c.db.songs().liked().map { it.toSong() }
                 if (events.isEmpty() && liked.isEmpty()) return null
                 val songs = events.map { it.songId }.distinct().chunked(500).flatMap { c.db.songs().getAll(it) }.associate { it.id to it.toSong() }.toMutableMap()

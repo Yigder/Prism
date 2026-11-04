@@ -557,7 +557,9 @@ class LyricsRepository(
     private fun lengthFits(song: Song, sec: Double?): Boolean =
         song.durationSec <= 0 || sec == null || sec <= 0 || abs(sec - song.durationSec) <= MAX_LENGTH_GAP_SEC
 
+    // Word timings that aren't the words' (outside their line, every word the same length) are shown by their lines (#301).
     private fun build(source: LyricsSource, text: String?): Lyrics? = parse(source, text)?.let(::untimedIfBogus)
+        ?.let { l -> if (!l.wordSynced) l else WordTiming.checked(l.lines).let { lines -> if (lines === l.lines) l else l.copy(lines = lines) } }
 
     /** A saved answer's lines as plain text, whatever its format (Search's lyric search). */
     fun textLines(stored: String): List<String> =
@@ -813,7 +815,70 @@ class LyricsRepository(
 
     /** [source]'s lyrics for [song] (saved copy first), with any starred-out words filled in ([uncensor]). */
     suspend fun fetch(song: Song, source: LyricsSource, force: Boolean = false): Lyrics? =
-        fetchRaw(song, source, force)?.let { uncensor(song, it) }
+        fetchRaw(song, source, force)?.let { uncensor(song, it) }?.let { linedUp(song, it) }
+
+    /**
+     * Where each song's word timings were found early or late against its line-timed lyrics (#301): "<song id>|<source>"
+     * -> the difference in ms ("0" when they agree), or "?<when>" when there were no line-timed lyrics to compare with.
+     */
+    var wordShifts: android.content.SharedPreferences? = null
+
+    /**
+     * Word-by-word lyrics lined up with the song's line-timed lyrics when the two disagree by one steady amount
+     * ([WordTiming.offsetAgainst]): worked out once per song and source, then kept. Call it once on lyrics as read (it
+     * moves them). With [network] the line-timed lyrics may be asked for; with nothing to compare with, that's asked
+     * again after a week, and a reference that doesn't come in time is asked for the next time the lyrics load. Without
+     * it, only line-timed lyrics already on the phone are compared with.
+     */
+    private suspend fun linedUp(song: Song, l: Lyrics, network: Boolean = true): Lyrics {
+        if (!l.wordSynced) return l
+        val prefs = wordShifts ?: return l
+        val key = shiftKey(song, l.source)
+        val kept = prefs.getString(key, null)
+        kept?.toLongOrNull()?.let { return withShift(l, it) }
+        val asked = kept?.removePrefix("?")?.toLongOrNull()
+        val reference = if (!network) lineReference(song, network = false).ifEmpty { return l }
+        else {
+            if (asked != null && System.currentTimeMillis() - asked < RECHECK_SHIFT_MS) return l
+            kotlinx.coroutines.withTimeoutOrNull(REFERENCE_WAIT_MS) { lineReference(song, network = true) } ?: return l
+        }
+        if (reference.isEmpty()) {
+            prefs.edit().putString(key, "?${System.currentTimeMillis()}").apply()
+            return l
+        }
+        val shift = WordTiming.offsetAgainst(l.lines, reference) ?: 0L
+        prefs.edit().putString(key, shift.toString()).apply()
+        if (shift != 0L) com.prism.music.playback.AudioDiagnostics.log("lyrics", "${l.source.name} words $shift ms off the line timing for ${song.id}: lined up")
+        return withShift(l, shift)
+    }
+
+    /** Whether [l]'s words were compared with the song's line timing already ([linedUp]). */
+    private fun shiftKnown(song: Song, l: Lyrics) = wordShifts?.getString(shiftKey(song, l.source), null)?.toLongOrNull() != null
+
+    private fun shiftKey(song: Song, source: LyricsSource) = "${song.id}|${source.name}"
+
+    private fun withShift(l: Lyrics, lateMs: Long) = if (lateMs == 0L) l else l.copy(lines = WordTiming.shifted(l.lines, -lateMs))
+
+    /**
+     * The song's line-timed lyrics to compare word timings with: a saved copy first (YouTube Music's own, timed to
+     * YouTube's audio, before the rest), else LRCLIB's or YouTube Music's from the network when the listener has those
+     * sources on. Empty when there are none.
+     */
+    private suspend fun lineReference(song: Song, network: Boolean): List<LyricLine> {
+        val rows = withContext(Dispatchers.IO) { dao.allFor(song.id) }.associateBy { it.source }
+        // Every source's line-timed copy will do (a word source's too, when it only had lines for this song).
+        val order = listOf(LyricsSource.YTMUSIC, LyricsSource.LRCLIB) + LyricsSource.entries.filter { it != LyricsSource.YTMUSIC && it != LyricsSource.LRCLIB }
+        fun lines(l: Lyrics?) = l?.takeIf { it.synced && !it.wordSynced }?.lines
+        order.firstNotNullOfOrNull { src -> rows[src.name]?.let { lines(build(src, it.content)) } }?.let { return it }
+        if (!network) return emptyList()
+        val on = settings().lyricsSources
+        for (src in listOf(LyricsSource.LRCLIB, LyricsSource.YTMUSIC).filter { it in on }) {
+            // Not runCatching: the wait running out cancels this, and that has to get through (or "none" would be kept).
+            val got = try { fetchRaw(song, src) } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) { null }
+            lines(got)?.let { return it }
+        }
+        return emptyList()
+    }
 
     /**
      * Starred-out words put back from Genius's full text of the song, every timing kept ([Uncensor]).
@@ -890,6 +955,9 @@ class LyricsRepository(
         const val YT_SYNCED_SINCE = 1_792_627_200_000L // 2026-10-22
         /** How long [auto] waits on a source before asking the next one as well. */
         const val HEAD_START_MS = 1_200L
+        /** How long word lyrics wait on line-timed ones to compare with (#301), and when "none to compare with" is asked again. */
+        const val REFERENCE_WAIT_MS = 2_500L
+        const val RECHECK_SHIFT_MS = 7 * 86_400_000L
         val LENGTH_CHECKED = setOf(LyricsSource.KUGOU, LyricsSource.NETEASE, LyricsSource.LRCLIB, LyricsSource.BINI)
 
         /** Where the full words for starred-out lyrics come from, in order. */
@@ -969,7 +1037,7 @@ class LyricsRepository(
     }
 
     /** The best lyrics for [song]: saved on the phone, or (with [fetch]) the best any source has, karaoke first. */
-    suspend fun best(song: Song, fetch: Boolean): Lyrics? = saved(song) ?: if (fetch) download(song) else null
+    suspend fun best(song: Song, fetch: Boolean): Lyrics? = saved(song)?.let { linedUp(song, it, network = false) } ?: if (fetch) download(song) else null
 
     /** The best lyrics saved on the phone for [song], as a [level]. */
     suspend fun savedLevel(song: Song): Int = level(saved(song))
@@ -978,7 +1046,7 @@ class LyricsRepository(
     suspend fun savedOnly(song: Song): Lyrics? {
         if (song.isEpisode) return null
         val picked = chosen(song)?.let { src -> withContext(Dispatchers.IO) { dao.allFor(song.id) }.firstOrNull { it.source == src.name }?.let { build(src, it.content) } }
-        return picked ?: saved(song)
+        return (picked ?: saved(song))?.let { linedUp(song, it, network = false) }
     }
 
     /**
@@ -988,7 +1056,7 @@ class LyricsRepository(
      */
     suspend fun download(song: Song): Lyrics? {
         chosen(song)?.let { src -> fetch(song, src)?.let { return it } }
-        saved(song)?.takeIf { it.wordSynced }?.let { return it }
+        saved(song)?.takeIf { it.wordSynced }?.let { return linedUp(song, it) }
         val order = settings().lyricsSources
         var best: Lyrics? = null
         var censored: Lyrics? = null
@@ -1017,8 +1085,9 @@ class LyricsRepository(
             // Saved karaoke is as good as it gets. Saved line-synced lyrics used to be kept for good, so a song never
             // found the karaoke a later source had; now the sources are asked (their own saved answers come back
             // instantly), and the saved copy is the fallback, offline too.
-            savedBest = saved(song)
-            savedBest?.takeIf { it.wordSynced || !s.preferSynced }?.let { return it }
+            savedBest = saved(song)?.let { linedUp(song, it, network = false) }
+            // Saved karaoke not yet checked against the song's line timing (#301) is checked once, the network allowed.
+            savedBest?.takeIf { it.wordSynced || !s.preferSynced }?.let { return if (it.wordSynced && !shiftKnown(song, it)) linedUp(song, it) else it }
         }
         var plainFallback: Lyrics? = null
         var censored: Lyrics? = null

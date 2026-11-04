@@ -42,6 +42,7 @@ object SettingsIndex {
     private val carLyrics = turnOn(tr(R.string.lyrics_in_the_car)) { it.carLyrics }
     private val smart = turnOn(tr(R.string.smart_downloads)) { it.smartDownloads }
     private val webRemote = turnOn(tr(R.string.control_from_a_browser)) { it.webRemote }
+    private val ownFiles = turnOn(tr(R.string.use_your_own_song_files)) { it.sound.ownLossyFiles }
 
     private val A = SettingsSection.APPEARANCE
     private val CO = SettingsSection.COLOR
@@ -60,6 +61,7 @@ object SettingsIndex {
     private val C = SettingsSection.CONNECT
     private val DC = SettingsSection.DISCORD
     private val LF = SettingsSection.LASTFM
+    private val SP = SettingsSection.SPOTIFY
     private val YL = SettingsSection.LYRICS_LOOK
     private val CT = SettingsSection.CONTROLS
     private val DV = SettingsSection.DEVICES
@@ -140,6 +142,8 @@ object SettingsIndex {
         SettingEntry(T, tr(R.string.weight_and_spacing), tr(R.string.letter_spacing), tr(R.string.tracking_wide_tight_letters)),
         SettingEntry(T, tr(R.string.titles), tr(R.string.titles), tr(R.string.title_font_headings_different_font)),
         SettingEntry(T, tr(R.string.text), tr(R.string.remove_your_font)),
+        SettingEntry(T, tr(R.string.text), tr(R.string.installed_fonts), tr(R.string.installed_fonts_keywords)),
+        SettingEntry(T, tr(R.string.text), tr(R.string.installed_fonts_for_lyrics), tr(R.string.installed_fonts_keywords)),
         SettingEntry(T, tr(R.string.text), tr(R.string.lyrics_font), "typeface"),
         SettingEntry(T, tr(R.string.text), tr(R.string.lyrics_font_file)),
         SettingEntry(T, tr(R.string.text), tr(R.string.remove_the_lyrics_font_file)),
@@ -159,6 +163,7 @@ object SettingsIndex {
         SettingEntry(I, tr(R.string.buttons), tr(R.string.play_on_album_and_playlist_pages), tr(R.string.play_button_outlined_filled)),
         SettingEntry(I, tr(R.string.buttons), tr(R.string.switches_sliders_and_buttons), tr(R.string.classic_controls_1_6_material_switch)),
         SettingEntry(G, tr(R.string.backgrounds), tr(R.string.screen_backgrounds), tr(R.string.wallpaper_photo_pattern_design)),
+        SettingEntry(G, tr(R.string.backgrounds), tr(R.string.now_playing_background_fades), tr(R.string.now_playing_background_fades_keywords)),
         // 1.8.0: one Glass choice; Motion moved to the Customize Prism page. Old titles stay as search words.
         SettingEntry(G, tr(R.string.glass), tr(R.string.glass), tr(R.string.blur_transparent) + " " + tr(R.string.liquid_glass) + " " + tr(R.string.frosted_glass) + " " + tr(R.string.glass_style)),
         SettingEntry(G, tr(R.string.glass), tr(R.string.frosted_pages), tr(R.string.blur_artist_album_playlist)),
@@ -178,6 +183,7 @@ object SettingsIndex {
         SettingEntry(L, tr(R.string.tabs), tr(R.string.open_prism_on), tr(R.string.start_tab_first_screen)),
         SettingEntry(L, tr(R.string.mini_player), tr(R.string.mini_player), tr(R.string.style_card_slim_pill)),
         SettingEntry(L, tr(R.string.mini_player), tr(R.string.previous_button), tr(R.string.back_skip)),
+        SettingEntry(L, tr(R.string.mini_player), tr(R.string.play_pause_button), tr(R.string.play_pause)),
         SettingEntry(L, tr(R.string.mini_player), tr(R.string.next_button), tr(R.string.skip_forward)),
         SettingEntry(L, tr(R.string.mini_player), tr(R.string.progress)),
         SettingEntry(L, tr(R.string.mini_player), tr(R.string.progress_bar_color), tr(R.string.scrubber_color_accent_white_cover_spectrum)),
@@ -194,7 +200,8 @@ object SettingsIndex {
         SettingEntry(P, tr(R.string.progress_bar), tr(R.string.progress_bar), tr(R.string.scrubber_seek_bar)),
         SettingEntry(P, tr(R.string.cover), tr(R.string.cover_size), tr(R.string.large_full_width)),
         SettingEntry(P, tr(R.string.cover), tr(R.string.corners), tr(R.string.cover_rounded)),
-        SettingEntry(P, tr(R.string.cover), tr(R.string.full_bleed_artwork), tr(R.string.edge_to_edge) + " " + tr(R.string.full_bleed_video) + " " + tr(R.string.music_video_edge_to_edge_fill)),
+        SettingEntry(P, tr(R.string.cover), tr(R.string.edge_to_edge_cover), tr(R.string.edge_to_edge) + " " + tr(R.string.full_bleed_artwork)),
+        SettingEntry(P, tr(R.string.cover), tr(R.string.edge_to_edge_video), tr(R.string.edge_to_edge) + " " + tr(R.string.full_bleed_video) + " " + tr(R.string.music_video_edge_to_edge_fill)),
         SettingEntry(P, tr(R.string.cover), tr(R.string.shrink_when_paused)),
         SettingEntry(I, tr(R.string.covers_shapes), tr(R.string.square_video_covers), tr(R.string.video_thumbnail_crop_black_bars_letterbox)),
         SettingEntry(P, tr(R.string.immersive_mode), tr(R.string.immersive_mode), tr(R.string.lyric_video_full_screen)),
@@ -235,11 +242,14 @@ object SettingsIndex {
         SettingEntry(P, tr(R.string.title_and_times), tr(R.string.title_size), tr(R.string.big_small_large_font)),
         SettingEntry(P, tr(R.string.title_and_times), tr(R.string.title_weight), tr(R.string.bold_heavy_thick_light_regular_font)),
         SettingEntry(P, tr(R.string.title_and_times), tr(R.string.scrolling_titles), tr(R.string.marquee_scroll_long_title_ellipsis)),
+        SettingEntry(P, tr(R.string.title_and_times), tr(R.string.each_artist_its_own_link), tr(R.string.each_artist_its_own_link_keywords)),
         SettingEntry(P, tr(R.string.title_and_times), tr(R.string.times_under_the_progress_bar), tr(R.string.elapsed_remaining_time_left_none)),
         SettingEntry(P, tr(R.string.progress_bar), tr(R.string.progress_bar_color), tr(R.string.scrubber_color_accent_white_cover_spectrum)),
         SettingEntry(P, tr(R.string.progress_bar), tr(R.string.progress_bar_thickness), tr(R.string.scrubber_thick_thin_height_bold)),
         SettingEntry(P, tr(R.string.progress_bar), tr(R.string.knob_at_the_playhead), tr(R.string.scrubber_thumb_knob_dot_line_ring)),
         SettingEntry(P, tr(R.string.progress_bar), tr(R.string.volume_bar_like_the_progress_bar), tr(R.string.volume_bar_keywords)),
+        // 1.8.1: the bar shaped by the crossfade (drawn only while Crossfade is on).
+        SettingEntry(P, tr(R.string.progress_bar), tr(R.string.crossfade_on_the_progress_bar), tr(R.string.crossfade_shape_keywords), needs = crossfade),
         SettingEntry(P, tr(R.string.what_s_on_the_player), tr(R.string.handle_at_the_top), tr(R.string.player_handle_keywords)),
         SettingEntry(P, tr(R.string.what_s_on_the_player), tr(R.string.band_behind_the_navigation_buttons), tr(R.string.nav_band_keywords)),
         SettingEntry(P, tr(R.string.visualizer), tr(R.string.visualizer), tr(R.string.visualiser_bars_wave_ring_pulse_glow)),
@@ -259,6 +269,7 @@ object SettingsIndex {
         SettingEntry(S, tr(R.string.what_plays_next), tr(R.string.when_the_queue_ends), tr(R.string.radio_continue_similar) + " " + tr(R.string.autoplay) + " " + tr(R.string.autoplay_from) + " " + tr(R.string.radio_your_music_prism_radio_youtube)),
         SettingEntry(S, tr(R.string.what_plays_next), tr(R.string.music_videos_label), tr(R.string.music_videos_audio) + " " + tr(R.string.songs_not_videos) + " " + tr(R.string.songs_not_videos_everywhere)),
         SettingEntry(S, tr(R.string.what_plays_next), tr(R.string.keep_playing_videos), tr(R.string.music_video_2)),
+        SettingEntry(S, tr(R.string.what_plays_next), tr(R.string.explicit_songs), tr(R.string.explicit_songs_keywords)),
         SettingEntry(S, tr(R.string.sound), tr(R.string.trim_silence), tr(R.string.trim_silence_songs_gaps) + " " + tr(R.string.skip_silence) + " " + tr(R.string.skip_silence_in_podcasts) + " " + tr(R.string.trim_silence_episodes_pauses_talk)),
         SettingEntry(S, tr(R.string.stopping_and_pausing), tr(R.string.stopping_and_pausing)),
         SettingEntry(S, tr(R.string.stopping_and_pausing), tr(R.string.stop_when_swiped_away), tr(R.string.recents_background)),
@@ -269,6 +280,18 @@ object SettingsIndex {
         SettingEntry(LF, "Last.fm", tr(R.string.first_artist_only), tr(R.string.lastfm_featured_artists_main_artist)),
         SettingEntry(LF, "Last.fm", tr(R.string.love_when_i_like_a_song), tr(R.string.lastfm_love_like_heart)),
         SettingEntry(LF, "Last.fm", tr(R.string.disconnect), tr(R.string.lastfm_sign_out)),
+        // 1.8.1: Spotify, through the listener's own developer app.
+        SettingEntry(SP, tr(R.string.spotify), tr(R.string.spotify), tr(R.string.spot_keywords)),
+        SettingEntry(SP, tr(R.string.spot_set_up), tr(R.string.spot_open_dashboard), tr(R.string.spot_keywords)),
+        SettingEntry(SP, tr(R.string.spot_set_up), tr(R.string.spot_redirect_uri), tr(R.string.spot_keywords)),
+        SettingEntry(SP, tr(R.string.spot_set_up), tr(R.string.spot_client_id), tr(R.string.spot_keywords)),
+        SettingEntry(SP, tr(R.string.spotify), tr(R.string.spot_connected_as, "").trim(), tr(R.string.spot_keywords)),
+        SettingEntry(SP, tr(R.string.spotify), tr(R.string.spot_recent), tr(R.string.spot_keywords)),
+        SettingEntry(SP, tr(R.string.spotify), tr(R.string.spot_top), tr(R.string.spot_keywords)),
+        SettingEntry(SP, tr(R.string.spotify), tr(R.string.spot_playlists), tr(R.string.spot_keywords)),
+        SettingEntry(SP, tr(R.string.spotify), tr(R.string.spot_keep_in_step), tr(R.string.spot_keywords)),
+        SettingEntry(SP, tr(R.string.spotify), tr(R.string.spot_likes), tr(R.string.spot_keywords)),
+        SettingEntry(SP, tr(R.string.spot_connection), tr(R.string.disconnect), tr(R.string.spot_keywords)),
         SettingEntry(H, tr(R.string.home), tr(R.string.recently_played_shows), tr(R.string.recently_played_albums_playlists_songs_home)),
         SettingEntry(P, tr(R.string.lyrics_and_the_queue), tr(R.string.lyrics_and_the_queue), tr(R.string.player_controls_hide_full_screen_lyrics)),
         SettingEntry(P, tr(R.string.what_s_on_the_player), tr(R.string.hide_controls_over_videos), tr(R.string.music_video_controls_hide_tap_full)),
@@ -372,6 +395,9 @@ object SettingsIndex {
         SettingEntry(D, tr(R.string.downloads), tr(R.string.manage_downloads), tr(R.string.offline_delete)),
         SettingEntry(D, tr(R.string.downloads), tr(R.string.download_on_wi_fi_only), tr(R.string.cellular_mobile_data)),
         SettingEntry(D, tr(R.string.downloads), tr(R.string.download_liked_songs_automatically), tr(R.string.offline_likes)),
+        // #314 (1.8.1).
+        SettingEntry(D, tr(R.string.your_own_song_files), tr(R.string.use_your_own_song_files), tr(R.string.own_files_keywords)),
+        SettingEntry(D, tr(R.string.your_own_song_files), tr(R.string.scan_your_song_files_again), tr(R.string.own_files_keywords), needs = ownFiles),
         SettingEntry(D, tr(R.string.smart_downloads), tr(R.string.smart_downloads), tr(R.string.offline_cache_storage_space)),
         SettingEntry(D, tr(R.string.smart_downloads), tr(R.string.space_to_use), tr(R.string.storage_cache_size_gb)),
         SettingEntry(D, tr(R.string.mobile_data), tr(R.string.smart_downloads_on_mobile_data), "cellular", needs = smart),
@@ -381,6 +407,7 @@ object SettingsIndex {
         SettingEntry(H, tr(R.string.home), tr(R.string.add_new_sections_automatically), "shelves"),
         SettingEntry(H, tr(R.string.home), tr(R.string.continue_line), tr(R.string.continue_album_resume_greeting_hide_context)),
         SettingEntry(H, tr(R.string.replay_card), tr(R.string.replay_card), tr(R.string.replay_teaser_look_style_design_quiet)),
+        SettingEntry(H, tr(R.string.replay_card), tr(R.string.replay_card_graph), tr(R.string.replay_card_graph_keywords)),
         SettingEntry(H, tr(R.string.home), tr(R.string.buttons_at_the_top_of_home), tr(R.string.podcasts_button) + " " + tr(R.string.customize_button_at_the_top)),
         SettingEntry(H, tr(R.string.search), tr(R.string.search)),
         SettingEntry(H, tr(R.string.home), tr(R.string.customize_button_at_the_bottom)),
@@ -408,10 +435,31 @@ object SettingsIndex {
         SettingEntry(H, tr(R.string.library), tr(R.string.open_library_on), tr(R.string.start_tab)),
         SettingEntry(H, tr(R.string.library), tr(R.string.full_width_playlist_pictures)),
         SettingEntry(H, tr(R.string.library), tr(R.string.genres_on_playlists), tr(R.string.genres_on_playlists_keywords)),
+        SettingEntry(H, tr(R.string.library), tr(R.string.album_names_in_downloads), tr(R.string.album_names_in_downloads_keywords)),
         SettingEntry(H, tr(R.string.library), tr(R.string.library_tiles), tr(R.string.liked_downloads_local_files_replay_podcasts)),
         SettingEntry(LB, tr(R.string.replay_2), tr(R.string.show_time_in_hours), tr(R.string.stats_minutes)),
         SettingEntry(LB, tr(R.string.replay_2), tr(R.string.use_theme_colors), tr(R.string.colors_stats)),
         SettingEntry(LB, tr(R.string.replay_2), tr(R.string.rewind_notification), tr(R.string.rewind_wrapped_year_in_review_december)),
+        SettingEntry(LB, tr(R.string.replay_2), tr(R.string.replay_story_font), tr(R.string.replay_story_font_keywords)),
+        // 1.8.1: History (#296, #263).
+        SettingEntry(LB, tr(R.string.hist_title), tr(R.string.hist_pause), tr(R.string.hist_pause_keywords)),
+        SettingEntry(LB, tr(R.string.hist_title), tr(R.string.hist_count_after), tr(R.string.hist_count_keywords)),
+        SettingEntry(
+            LB, tr(R.string.hist_title), tr(R.string.hist_count_account), tr(R.string.hist_count_keywords),
+            needs = Needs(tr(R.string.hist_needs_account)) { it.isLoggedIn },
+        ),
+        // 1.8.1: Bring your history.
+        SettingEntry(LB, tr(R.string.imp_title), tr(R.string.imp_title), tr(R.string.imp_keywords)),
+        SettingEntry(LB, tr(R.string.imp_title), tr(R.string.imp_shape_mixes), tr(R.string.imp_shape_mixes_keywords)),
+        // On the Bring your history page (opened from this group): the fresh-download reminder.
+        SettingEntry(LB, tr(R.string.imp_title), tr(R.string.imp_remind), tr(R.string.imp_remind_keywords)),
+        // And YouTube Music (live): the account's History page every few hours (signed in).
+        SettingEntry(
+            LB, tr(R.string.imp_title), tr(R.string.ytlive_title), tr(R.string.ytlive_keywords),
+            needs = Needs(tr(R.string.ytlive_sign_in)) { it.isLoggedIn },
+        ),
+        SettingEntry(LB, tr(R.string.replay_2), tr(R.string.imp_count_history_from), tr(R.string.imp_count_keywords)),
+        SettingEntry(LB, tr(R.string.replay_2), tr(R.string.imp_prism_plays)),
         SettingEntry(LB, tr(R.string.made_for_you), tr(R.string.exclusions), tr(R.string.taste_profile_exclude_artist_playlist_don)),
         SettingEntry(LB, tr(R.string.made_for_you), tr(R.string.forget_skipped_suggestions), tr(R.string.skipped_suggestions_keywords)),
         // About

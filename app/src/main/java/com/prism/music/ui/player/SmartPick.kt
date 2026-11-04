@@ -28,6 +28,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
+ * What adding a Smart Shuffle pick to the playlist [title] did ([result] null: it failed), as Add to playlist says it
+ * ("Added to …", "Already in …", "Couldn't add to …"; 1.8.1: "Added" showed when the song was already there), and
+ * whether the song is the playlist's own now (no longer a pick).
+ */
+internal fun smartPickAdded(result: com.prism.music.data.innertube.YouTubeMusic.PlaylistAdd?, title: String): Pair<String, Boolean> =
+    com.prism.music.ui.components.addedMessage(result, title, many = false) to (result != null && (result.added > 0 || result.alreadyThere > 0))
+
+/**
  * Beside the like button while a Smart Shuffle pick plays: add it to the playlist it was picked for (a playlist on the
  * signed-in account), or "Not for me" (disliked, and on to the next song).
  */
@@ -50,10 +58,12 @@ fun SmartPickButton(song: Song) {
                 {
                     open = false
                     c.scope.launch(Dispatchers.Main) {
-                        val ok = runCatching { withContext(Dispatchers.IO) { c.ytm.addToPlaylist(playlist, song.id) } }.isSuccess
+                        val result = runCatching { withContext(Dispatchers.IO) { c.ytm.addSongsToPlaylist(playlist, listOf(song.id)) } }.getOrNull()
+                        val (message, kept) = smartPickAdded(result, source.title.ifBlank { tr(R.string.this_playlist_2) })
                         // Kept: it's the playlist's own song now, not a pick.
-                        if (ok) c.queue.smartPicks.value = c.queue.smartPicks.value - song.id
-                        Toast.makeText(context, if (ok) tr(R.string.added_to, source.title) else tr(R.string.couldn_t_add_it_to_the), Toast.LENGTH_SHORT).show()
+                        if (kept) c.queue.smartPicks.value = c.queue.smartPicks.value - song.id
+                        if ((result?.added ?: 0) > 0) c.library.playlistChanged(playlist)
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     }
                 },
                 leadingIcon = { Icon(PrismIcons.PlaylistAdd, null) },

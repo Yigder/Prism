@@ -98,6 +98,32 @@ class MigrationTest {
         db.close()
     }
 
+    /**
+     * v9 (1.8.1): imported histories get their own tables and the counted_plays view, and Prism's plays read through
+     * the view exactly as from play_events.
+     */
+    @Test
+    fun v9AddsImportedHistoryApart() {
+        val context = RuntimeEnvironment.getApplication()
+        val name = "migrate-v9-imports.db"
+        context.deleteDatabase(name)
+        createAt(context.getDatabasePath(name), 8)
+        val db = Room.databaseBuilder(context, PrismDatabase::class.java, name)
+            .addMigrations(*PrismDatabase.MIGRATIONS).allowMainThreadQueries().build()
+        runBlocking {
+            val prism = listOf("prism")
+            assertEquals(db.plays().totalMs(0, Long.MAX_VALUE), db.counted().totalMs(prism, 0, Long.MAX_VALUE))
+            assertEquals(db.plays().topSongs(0, Long.MAX_VALUE, 5), db.counted().topSongs(prism, 0, Long.MAX_VALUE, 5))
+            db.imports().insertPlays(listOf(com.prism.music.data.db.ImportedPlayEntity(
+                origin = "spotify", timestamp = 5_000L, playedMs = 60_000, title = "Title", artist = "Artist", songKey = "title|artist", matchedId = "song1",
+            )))
+            assertEquals("not counted unless asked", 200_000L, db.counted().totalMs(prism, 0, Long.MAX_VALUE))
+            assertEquals(260_000L, db.counted().totalMs(prism + "spotify", 0, Long.MAX_VALUE))
+            assertEquals(3, db.counted().topSongs(prism + "spotify", 0, Long.MAX_VALUE, 5).single().plays)
+        }
+        db.close()
+    }
+
     @Test
     fun currentSchemaIsExported() {
         // A version bump without its exported schema would leave the next migration untestable.

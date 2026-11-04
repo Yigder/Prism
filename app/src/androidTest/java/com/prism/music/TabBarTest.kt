@@ -9,6 +9,7 @@ import com.prism.music.data.prefs.NavLabels
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,5 +40,18 @@ class TabBarTest {
         }
         val always = widths.getValue(NavLabels.ALWAYS)
         widths.forEach { (style, w) -> assertEquals("$style: $widths", always, w, 1f) }
+    }
+
+    /** #291: with Labels "Selected", the current tab's name sits under its icon (as "Always" has it), not beside it. */
+    @Test fun theSelectedTabsNameSitsUnderItsIcon() {
+        Fixture.ready()
+        Fixture.launch()
+        compose.waitUntil(20_000) { compose.onAllNodes(hasText(tr(R.string.search)) and hasClickAction()).fetchSemanticsNodes().isNotEmpty() }
+        runBlocking { Fixture.container.settings.setNavLabels(NavLabels.SELECTED) }
+        compose.waitForIdle(); Thread.sleep(800)
+        // Home is the current tab: its icon and its name, the tab bar's (the lowest on the screen).
+        val icon = compose.onAllNodes(hasContentDescription(tr(R.string.home)), useUnmergedTree = true).fetchSemanticsNodes().maxByOrNull { it.boundsInRoot.top }!!
+        val name = compose.onAllNodes(hasText(tr(R.string.home)), useUnmergedTree = true).fetchSemanticsNodes().maxByOrNull { it.boundsInRoot.top }!!
+        assertTrue("the name (${name.boundsInRoot}) under the icon (${icon.boundsInRoot})", name.boundsInRoot.top >= icon.boundsInRoot.bottom - 1f)
     }
 }

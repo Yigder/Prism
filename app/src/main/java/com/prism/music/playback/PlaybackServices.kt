@@ -27,6 +27,8 @@ object PlaybackServices {
     @Volatile var running: Class<out PlaybackService>? = null
     /** Debug builds only, for the in-app tests: hands the running service a player error, as if the player had one. */
     @Volatile var failForTest: ((androidx.media3.common.PlaybackException) -> Unit)? = null
+    /** Debug builds only, for the in-app tests: Prism swiped away from Recents (#274). */
+    @Volatile var taskRemovedForTest: (() -> Unit)? = null
 
     fun classFor(icon: AppIcon): Class<out PlaybackService> = when (icon) {
         AppIcon.CLASSIC -> PlaybackService::class.java

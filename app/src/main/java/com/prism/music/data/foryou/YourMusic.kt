@@ -47,11 +47,11 @@ class YourMusic(private val c: AppContainer) {
 
     private suspend fun snapshot(): Snapshot = lock.withLock {
         val now = System.currentTimeMillis()
-        val count = runCatching { c.db.plays().count(0, now) }.getOrDefault(0)
+        val count = runCatching { c.imports.taste.changeCount(now) }.getOrDefault(0)
         // Kept for a few minutes, and only while no new play has come in.
         snap?.takeIf { now - it.at < 5 * 60_000 && count == total }?.let { return@withLock it }
         withContext(Dispatchers.IO) {
-            val events = c.db.plays().tasteEventsSince(now - YEAR)
+            val events = c.imports.taste.tasteEventsSince(now - YEAR)
             val liked = c.db.songs().liked().map { it.toSong() }
             val local = c.localMusic.tracks.value.map { it.song }
             val downloaded = c.downloads.completedSongs()

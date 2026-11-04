@@ -108,6 +108,9 @@ fun PlayerOptionsSheet(
     var versions by remember { mutableStateOf(false) }
     val picks by c.versions.picks.collectAsState()
     if (versions) { com.prism.music.ui.components.SongVersionsSheet(song) { versions = false; onDismiss() }; return }
+    // #305: the song's own cover, in the menu's place.
+    var coverPick by remember { mutableStateOf(false) }
+    if (coverPick) { com.prism.music.ui.components.CoverPickSheet(com.prism.music.ui.components.CoverFor.OfSong(song, c.covers.songKey(song.id))) { coverPick = false; onDismiss() }; return }
     if (pickPlaylist) { PlaylistPicker(song) { pickPlaylist = false; onDismiss() }; return }
     // Speakers and TVs, from the menu too (Reddit 1.7: "where's the cast button?").
     if (outputs) {
@@ -152,8 +155,8 @@ fun PlayerOptionsSheet(
                 ActionItem(PrismIcons.Queue, tr(R.string.up_next), onClick = onOpenQueue) else null,
             statsItem,
         )
-        ActionSheet(song.thumbnail, onDismiss) { close ->
-            ActionHeader(song.thumbnail, song.title, song.artistText) {
+        ActionSheet(com.prism.music.data.PlaylistCovers.artOf(song), onDismiss) { close ->
+            ActionHeader(com.prism.music.data.PlaylistCovers.artOf(song), song.title, song.artistText) {
                 SheetIconButton(PrismIcons.Share, tr(R.string.share)) { sharing = true }
             }
             // An episode has no radio and goes in no playlist: download and sleep.
@@ -192,6 +195,8 @@ fun PlayerOptionsSheet(
     if (!local && !song.isLive && together !is com.prism.music.playback.together.TogetherState.Guest) put(
         MenuAction.VERSION, ActionItem(PrismIcons.SwapVertical, tr(R.string.play_a_different_version), active = song.id in picks, keepOpen = true) { versions = true },
     )
+    // #305: a cover of the listener's choosing (a photo, another version's, or back to its own).
+    if (!song.isLive) put(MenuAction.COVER, ActionItem(PrismIcons.Photo, tr(R.string.change_cover), active = c.covers.custom(c.covers.songKey(song.id)) != null, keepOpen = true) { coverPick = true })
     put(
         MenuAction.NOT_FOR_ME,
         if (song.id in disliked) ActionItem(PrismIcons.ThumbDownFilled, tr(R.string.not_for_me), active = true, keepOpen = true) { c.library.setDisliked(song, false) }
@@ -275,8 +280,8 @@ fun PlayerOptionsSheet(
 
     val layout = settings.view.parts.menuLayout(items.keys)
     var moreOpen by remember { mutableStateOf(false) }
-    ActionSheet(song.thumbnail, onDismiss) { close ->
-        ActionHeader(song.thumbnail, song.title, song.artistText) {
+    ActionSheet(com.prism.music.data.PlaylistCovers.artOf(song), onDismiss) { close ->
+        ActionHeader(com.prism.music.data.PlaylistCovers.artOf(song), song.title, song.artistText) {
             SheetIconButton(if (isLiked) PrismIcons.HeartFilled else PrismIcons.Heart, if (isLiked) tr(R.string.remove_from_liked) else tr(R.string.widget_like), active = isLiked) {
                 c.library.toggleLike(song)
             }
@@ -321,6 +326,7 @@ internal fun menuIcon(a: MenuAction): ImageVector = when (a) {
     MenuAction.ARTIST -> PrismIcons.Person
     MenuAction.CREDITS -> PrismIcons.Info
     MenuAction.VERSION -> PrismIcons.SwapVertical
+    MenuAction.COVER -> PrismIcons.Photo
     MenuAction.NOT_FOR_ME -> PrismIcons.ThumbDown
     MenuAction.SING -> PrismIcons.Mic
     MenuAction.LYRICS_SOURCE -> PrismIcons.Lyrics
@@ -357,6 +363,7 @@ internal fun menuLabel(a: MenuAction): String = when (a) {
     MenuAction.ARTIST -> tr(R.string.go_to_artist)
     MenuAction.CREDITS -> tr(R.string.song_credits)
     MenuAction.VERSION -> tr(R.string.play_a_different_version)
+    MenuAction.COVER -> tr(R.string.change_cover)
     MenuAction.NOT_FOR_ME -> tr(R.string.not_for_me)
     MenuAction.SING -> tr(R.string.sing)
     MenuAction.LYRICS_SOURCE -> tr(R.string.lyrics_source)

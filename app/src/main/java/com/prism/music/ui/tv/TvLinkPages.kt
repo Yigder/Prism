@@ -62,5 +62,6 @@ fun TvPairPage(signIn: Boolean, nav: TvNav, onDone: () -> Unit = { nav.back() })
         tvName = handoff.name,
         status = status,
         onCancel = { nav.back() },
+        signIn = signIn,
     )
 }

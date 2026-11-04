@@ -15,7 +15,7 @@ A free, open-source YouTube Music client for Android, with word-by-word lyrics, 
 
 ### [⬇ Download Prism.apk](../../releases/latest/download/Prism.apk)
 
-[What's new in 1.8.0](../../releases/tag/v1.8.0) · [Changelog](CHANGELOG.md) · [Watch the film](../../releases/download/v1.7.0/Prism-1.7-film.mp4)
+[What's new in 1.8.1](../../releases/tag/v1.8.1) · [Changelog](CHANGELOG.md) · [Watch the film](../../releases/download/v1.7.0/Prism-1.7-film.mp4)
 
 <a href="../../releases/download/v1.7.0/Prism-1.7-film.mp4"><img src="docs/screenshots/preview.gif" width="720" alt="Prism 1.7: word-by-word lyrics on the player. Click to watch the full film."></a>
 
@@ -29,7 +29,37 @@ A free, open-source YouTube Music client for Android, with word-by-word lyrics, 
 > [!NOTE]
 > Prism is an independent, unofficial app. It is not affiliated with, endorsed by, or connected to Google, YouTube or YouTube Music.
 
-## New in 1.8.0: Prism TV, and Settings made clearer
+## New in 1.8.1: bring your history
+
+Your listening history from Spotify, YouTube Music and Last.fm, matched to YouTube Music on your phone, and Spotify connected through its official API with a key of your own. Everything stays on your phone, and Replay counts only Prism's own plays unless you say so.
+
+- **Bring your history** (Settings → Recommendations & Replay): Spotify's data download (no Spotify sign-in needed), Google Takeout for YouTube Music, or your Last.fm scrobbles. Prism shows what's in it and you pick what comes in: plays, Liked Songs, playlists, saved albums, followed artists. Songs Prism isn't sure of wait in **Needs a look**, where you play the top three and pick.
+- **Keep it current:** bring a newer download any time and only what's new comes in, with a gentle reminder every few months if you like. Signed in, **YouTube Music (live)** keeps your history from the YouTube Music app, the website and speakers in step every few hours (off unless you turn it on).
+- **Count history from:** every source has its own switch, so Replay and Rewind count what you choose ("Includes Spotify"). Imported plays also shape your mixes, radio and Quick picks.
+- **Spotify, through your own developer app** (optional). Not a regular "Sign in with Spotify": a Spotify developer app can only be connected by five people until Spotify approves it for full access (only given to large companies), so instead each listener makes their own free app on Spotify's developer dashboard, pastes its Client ID into Prism and approves it on Spotify's own page (Spotify requires Premium for that). About three minutes, walked through in Settings → Devices & connections → Spotify; official API, Prism never sees your password. Without it, Spotify's data download still brings your history. Recent plays, your top songs and artists, your playlists in Library (playing through their YouTube Music matches) and Liked Songs both ways, each with its own switch. Playlists you only follow show too, with the way to bring them (a copy in Spotify, or TuneMyMusic).
+- **Your own song files** in place of the stream (#314, off by default), a progress bar shaped like the crossfade, a White player background (#320), fonts installed on your phone (#318), an explicit filter (#216), your own covers for songs and albums (#305), Pause history (#296) and when a song counts as played (#263).
+- **Also:** Replay graphs for days and weeks, favorite artists' new releases (#311), Add to playlist marks the playlists that have the song (#246), "Hey Google, play … on Prism" plays artists, albums and your playlists, word-by-word lyrics line up more often (#301), edge-to-edge cover and video are two switches again, and a long list of fixes. See the [changelog](CHANGELOG.md).
+
+<p align="center">
+<img src="docs/screenshots/bring-history.jpg" width="32%" alt="Bring your history: Spotify, YouTube Music and Last.fm, with your imports and the last Spotify import">
+<img src="docs/screenshots/needs-a-look.jpg" width="32%" alt="Needs a look: play the top three matches and pick the right one">
+<img src="docs/screenshots/replay-spotify.jpg" width="32%" alt="Replay counting Spotify too: Includes Spotify">
+<img src="docs/screenshots/spotify-connect.jpg" width="32%" alt="Connect Spotify through your own Spotify developer app (not a regular sign-in), step by step">
+<img src="docs/screenshots/crossfade-bar.jpg" width="32%" alt="A progress bar shaped like the crossfade into the next song">
+<img src="docs/screenshots/white-player.jpg" width="32%" alt="The White player background in the light theme">
+</p>
+
+**Prism on your TV** (new in 1.8.0):
+
+<p align="center">
+<img src="docs/screenshots/tv-home.jpg" width="49%" alt="Prism TV's Home: Quick picks and holiday mixes">
+<img src="docs/screenshots/tv-player.jpg" width="49%" alt="Prism TV's full-screen player">
+<img src="docs/screenshots/tv-search.jpg" width="49%" alt="Prism TV's Search: top result and songs">
+<img src="docs/screenshots/tv-ambient.jpg" width="49%" alt="The TV dims to the song when the remote is put down">
+<img src="docs/screenshots/tv-pair.jpg" width="49%" alt="Pair your phone with the TV by a code or a QR code">
+</p>
+
+## 1.8.0: Prism TV, and Settings made clearer
 
 The first 1.8 update: Prism on your TV, with your phone as its remote, and every Settings page gone through so each choice is in one place. Nothing you had set changes on the update.
 

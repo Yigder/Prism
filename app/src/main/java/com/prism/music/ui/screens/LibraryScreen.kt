@@ -16,6 +16,7 @@ import androidx.compose.foundation.combinedClickable
 import com.prism.music.ui.components.pane
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -260,8 +261,13 @@ fun LibraryScreen(bottomPadding: Dp) {
     // Signed out, YouTube playlists saved on the phone (H7) sit with Prism's own.
     val savedPlaylists by c.prismLibrary.playlists.collectAsState()
     val myPlaylists = remember(playlists, prismLists, savedPlaylists, settings.isLoggedIn) {
-        prismLists.map { it.item() } + (if (settings.isLoggedIn) emptyList() else savedPlaylists.map { it.item() }) + playlists.filter { it.id != "LM" }
+        // A Spotify playlist (1.8.1) says so where Prism's own say "Prism playlist".
+        prismLists.map { l -> l.item().let { if (c.spotify.isSpotifyPlaylist(l.id)) it.copy(subtitle = tr(R.string.spot_playlist_subtitle, com.prism.music.data.model.songCount(l.songs.size))) else it } } + (if (settings.isLoggedIn) emptyList() else savedPlaylists.map { it.item() }) + playlists.filter { it.id != "LM" }
     }
+    // Spotify playlists the listener follows or saved (1.8.1): named after the playlists, greyed, their songs not shared.
+    val spotifyFollowed by c.spotify.followedShown.collectAsState()
+    var followedOpen by remember { mutableStateOf<com.prism.music.data.spotify.SpotifyPlaylist?>(null) }
+    followedOpen?.let { p -> SpotifyFollowedSheet(p) { followedOpen = null } }
     var openingLink by remember { mutableStateOf(false) }
     if (openingLink) OpenPlaylistLinkDialog({ openingLink = false }) { id -> openingLink = false; nav.go(Routes.playlist(id)) }
     // Playlists in a folder (1.7.6) show in it, not in the list; pinned ones lead.
@@ -317,7 +323,7 @@ fun LibraryScreen(bottomPadding: Dp) {
             var fromAccount by rememberSaveable { mutableStateOf(false) }
             var historyLimit by rememberSaveable { androidx.compose.runtime.mutableIntStateOf(300) }
             val phoneHistory = if (tab == LibTab.HISTORY) {
-                val rows by remember(historyLimit) { c.db.plays().historyFlow(historyLimit, 10_000) }.collectAsState(null)
+                val rows by remember(historyLimit) { c.db.plays().historyFlow(historyLimit, 0) /* #263: every kept play (how long one takes is the listener's pick) */ }.collectAsState(null)
                 remember(rows) { rows?.let { it.size to historyByDay(it) } }
             } else null
             var accountReload by remember { androidx.compose.runtime.mutableIntStateOf(0) }
@@ -392,7 +398,7 @@ fun LibraryScreen(bottomPadding: Dp) {
                       }
                       val playlistsPart: androidx.compose.foundation.lazy.grid.LazyGridScope.() -> Unit = {
                         // Signed out: playlists made here are kept on the phone; signing in brings YouTube Music's too.
-                        if (!settings.isLoggedIn && myPlaylists.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
+                        if (!settings.isLoggedIn && myPlaylists.isEmpty() && spotifyFollowed.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 EmptyState(PrismIcons.QueueMusic, tr(R.string.your_playlists), tr(R.string.make_one_with_new_playlist_or))
                                 PrismTextButton(onClick = { nav.go(Routes.LOGIN) }) { Text(tr(R.string.or_sign_in_to_bring_your)) }
@@ -436,6 +442,10 @@ fun LibraryScreen(bottomPadding: Dp) {
                             }
                             items(sortedPlaylists, key = { "p" + it.id }) { p ->
                                 LibraryItem(shown(p), asList, onLongClick = { menuFor = p }) { nav.open(p, onSong) }
+                            }
+                            items(spotifyFollowed, key = { "sf" + it.id }) { p ->
+                                val item = com.prism.music.data.model.PlaylistItem("spotify-followed:${p.id}", p.name, tr(R.string.spot_followed_subtitle, p.ownerName.ifBlank { tr(R.string.spotify) }), p.image)
+                                Box(Modifier.alpha(0.6f)) { LibraryItem(item, asList) { followedOpen = p } }
                             }
                         }
                       }

@@ -122,6 +122,9 @@ fun PlayActionsSheet(target: Playable, extra: List<SheetItem> = emptyList(), ext
         is Playable.Of -> c.covers.art(target.item)
     }
     adding?.let { songs -> PlaylistPicker(songs, title) { adding = null; onDismiss() }; return }
+    // #305: an album's own cover, in its place.
+    var coverFor by remember { mutableStateOf<CoverFor?>(null) }
+    coverFor?.let { t -> CoverPickSheet(t) { coverFor = null; onDismiss() }; return }
     fun play(shuffle: Boolean, mix: Boolean = false) = c.scope.launch(Dispatchers.Main) {
         val loaded = runCatching { withContext(Dispatchers.IO) { songsFor(c, target, shuffle, mix) } }.getOrNull()
         if (loaded == null || loaded.first.isEmpty()) {
@@ -229,10 +232,13 @@ fun PlayActionsSheet(target: Playable, extra: List<SheetItem> = emptyList(), ext
                 Toast.makeText(context, if (on) tr(R.string.taken_off_home) else tr(R.string.pinned_to_the_top_of_home), Toast.LENGTH_SHORT).show()
             })
         }.orEmpty()
+        val cover = if (item is AlbumItem) listOf(ActionItem(PrismIcons.Photo, tr(R.string.change_cover), active = c.covers.custom(c.covers.albumKey(item.id)) != null, keepOpen = true) {
+            coverFor = CoverFor.OfAlbum(item.id, item.title, item.thumbnail, c.covers.albumKey(item.id))
+        }) else emptyList()
         if (extraTitle != null) {
-            ActionGroup(null, addTo + djSet + copy + pin + remove) { runAction(it, close) }
+            ActionGroup(null, addTo + djSet + copy + pin + cover + remove) { runAction(it, close) }
             ActionGroup(extraTitle, extra.map { it.toAction() }) { runAction(it, close) }
-        } else ActionGroup(null, addTo + djSet + copy + pin + extra.map { it.toAction() } + remove) { runAction(it, close) }
+        } else ActionGroup(null, addTo + djSet + copy + pin + cover + extra.map { it.toAction() } + remove) { runAction(it, close) }
     }
 }
 
@@ -257,7 +263,8 @@ private fun LibraryToggle(item: BrowseItem?) {
                     Toast.makeText(context, if (saved) tr(R.string.removed_from_your_library) else tr(R.string.added_to_your_library), Toast.LENGTH_SHORT).show()
                 } else c.scope.launch(Dispatchers.Main) {
                     val ok = if (saved) c.library.removeAlbum(item.id, item.playlistId)
-                    else c.library.setSaved(item.playlistId ?: item.id, true)
+                    // A card's album often comes without its playlist id: then by its page's own library button.
+                    else c.library.setSaved(item.playlistId ?: item.id, true, orElse = item.id)
                     Toast.makeText(context, if (!ok) tr(R.string.couldn_t_update_your_library) else if (saved) tr(R.string.removed_from_your_library) else tr(R.string.added_to_your_library), Toast.LENGTH_SHORT).show()
                 }
             }
@@ -320,13 +327,17 @@ private suspend fun songsFor(c: AppContainer, target: Playable, shuffle: Boolean
     Playable.Downloads -> c.downloads.completedSongs() to QueueSource(QueueKind.PLAYLIST, tr(R.string.downloads))
     is Playable.Page -> target.load()
     is Playable.Of -> when (val item = target.item) {
-        is AlbumItem -> c.ytm.album(item.id).songs to QueueSource(QueueKind.ALBUM, item.title, page = item)
+        // The copy kept on the phone when YouTube can't be asked (the album page itself already did this; a long press
+        // on its cover said "Couldn't load" instead).
+        is AlbumItem -> orKept(c, item.id) { c.ytm.album(item.id) }.songs to QueueSource(QueueKind.ALBUM, item.title, page = item)
         is PlaylistItem ->
             // A Prism playlist is on the phone; mixes and radios only exist as a watch queue.
             if (com.prism.music.data.PrismLibrary.isPrismList(item.id))
                 (c.prismLibrary.list(item.id)?.songs ?: emptyList()) to QueueSource(QueueKind.PLAYLIST, item.title, originId = item.id, page = item)
-            else if (item.isMix || item.id.startsWith("RD")) radio(c, item.seedVideoId, item.id, item.params, item.title)
-            else c.ytm.playlistAll(item.id, 1000).songs to QueueSource(QueueKind.PLAYLIST, item.title, originId = item.id.removePrefix("VL"), page = item)
+            // The account's "New episodes" (RDPN) is a list of episodes, not a radio.
+            else if (item.isMix || (item.id.startsWith("RD") && !com.prism.music.data.innertube.YouTubeMusic.isEpisodeList(item.id))) radio(c, item.seedVideoId, item.id, item.params, item.title)
+            else orKept(c, item.id.removePrefix("VL")) { c.ytm.playlistAll(item.id, 1000) }.songs to
+                QueueSource(QueueKind.PLAYLIST, item.title, originId = item.id.removePrefix("VL"), page = item)
         is ArtistItem -> {
             val a = c.ytm.artist(item.id)
             if (shuffle && !mix && a.shufflePlaylistId != null) radio(c, a.shuffleVideoId, a.shufflePlaylistId, a.shuffleParams, a.name)
@@ -335,6 +346,10 @@ private suspend fun songsFor(c: AppContainer, target: Playable, shuffle: Boolean
         else -> emptyList<Song>() to QueueSource(QueueKind.OTHER, item.title)
     }
 }
+
+/** [load]ed from YouTube, else the copy of the page kept on the phone ([com.prism.music.data.OfflineLibrary]). */
+private suspend fun orKept(c: AppContainer, id: String, load: suspend () -> com.prism.music.data.model.CollectionPage): com.prism.music.data.model.CollectionPage =
+    try { load() } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) { c.offline.page(id) ?: c.offline.page("VL$id") ?: throw e }
 
 private suspend fun radio(c: AppContainer, videoId: String?, playlistId: String, params: String?, title: String): Pair<List<Song>, QueueSource> {
     val r = c.radio(videoId, playlistId, params)

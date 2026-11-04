@@ -24,9 +24,15 @@ object Notifications {
     const val REWIND = "rewind"
     const val RECOGNITION = "recognition"
     const val CONNECT = "connect"
+    /** "Time for a fresh Spotify download?" every few months (1.8.1), quiet: no sound, no pop-up. */
+    const val IMPORT_REMINDERS = "import_reminders"
 
     fun createChannels(context: Context) {
         val nm = NotificationManagerCompat.from(context)
+        nm.createNotificationChannel(
+            NotificationChannelCompat.Builder(IMPORT_REMINDERS, NotificationManagerCompat.IMPORTANCE_LOW)
+                .setName(tr(R.string.imp_remind_channel)).setDescription(tr(R.string.imp_remind_channel_desc)).build()
+        )
         // Pairing codes are wanted on screen at once (the other device is waiting for them).
         nm.createNotificationChannel(
             NotificationChannelCompat.Builder(CONNECT, NotificationManagerCompat.IMPORTANCE_HIGH)

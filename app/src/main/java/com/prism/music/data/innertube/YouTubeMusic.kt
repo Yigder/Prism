@@ -68,6 +68,22 @@ class YouTubeMusic(
         /** A song's name in quotes in a video's title ('Artist - "Song" Label'), any kind of double quotes. */
         private val QUOTED_TITLE = Regex("[\"“”]([^\"“”]+)[\"“”]")
 
+        /** The account's "New episodes" list (podcasts it follows), which YouTube makes itself; "SE" is "Episodes for later". */
+        const val NEW_EPISODES = "RDPN"
+
+        /** One of the account's own lists of podcast episodes, which open as a page of episodes (not a radio). */
+        fun isEpisodeList(id: String) = id.removePrefix("VL").let { it == NEW_EPISODES || it == "SE" }
+
+        /**
+         * A playlist page's rows as songs: song rows, and episode rows (`musicMultiRowListItemRenderer`), which is how
+         * "New episodes" lists its episodes (thedarkknight_sl on Reddit, 1.7.9: it showed a count and a length but no
+         * episodes, because only song rows were read).
+         */
+        internal fun playlistRows(node: JsonElement?): List<Song> = (node.arr("contents") ?: emptyList()).mapNotNull { row ->
+            row.obj("musicResponsiveListItemRenderer")?.let { r -> (Parser.responsive(r) as? SongItem)?.song }
+                ?: row.obj("musicMultiRowListItemRenderer")?.let { r -> Parser.episode(r)?.song }
+        }
+
         /** An album page's track title and its playlist's are the same title (case, punctuation and spacing aside). */
         internal fun sameTrackTitle(a: String, b: String): Boolean {
             fun norm(s: String) = s.lowercase().replace(Regex("[^\\p{L}\\p{N}]"), "")
@@ -266,7 +282,7 @@ class YouTubeMusic(
         val albumRef = com.prism.music.data.model.AlbumRef(title, browseId)
         // The album's own playlist (OLAK5uy_…). Its canonical address first: on a long page the first play button found
         // can be another album's ("Imaginal Disk" played someone else's songs from it).
-        val playlistId = res.findFirst("microformatDataRenderer").str("urlCanonical")?.substringAfter("list=", "")?.takeIf { it.isNotBlank() }
+        val playlistId = res.findFirst("microformatDataRenderer").str("urlCanonical")?.substringAfter("list=", "")?.substringBefore('&')?.takeIf { it.isNotBlank() }
             ?: header.findFirst("watchPlaylistEndpoint").str("playlistId")
             ?: res.findFirst("watchPlaylistEndpoint").str("playlistId")
         val listed = songsFrom(res)
@@ -313,6 +329,7 @@ class YouTubeMusic(
             },
             artistThumbnail = header.obj("straplineThumbnail").bestThumbnail(),
             savedToLibrary = libraryToggle(header),
+            libraryId = libraryTarget(header),
             otherVersions = others,
             explicit = header.arr("subtitleBadge")?.any { it.str("musicInlineBadgeRenderer", "icon", "iconType") == "MUSIC_EXPLICIT_BADGE" } == true,
         )
@@ -344,6 +361,18 @@ class YouTubeMusic(
         return toggle.str("isToggled") == "true"
     }
 
+    /**
+     * The playlist id the header's own library button saves, as YouTube Music's app sends it (its like endpoint's
+     * target). Saving by the album's canonical playlist id failed for some albums (Reddit, 1.7.9.1: "Couldn't add to
+     * library" on Miki Matsubara's "WINK"); the button's own target is the one YouTube expects.
+     */
+    private fun libraryTarget(header: JsonElement?): String? {
+        val toggle = header.arr("buttons")?.firstNotNullOfOrNull { it.obj("toggleButtonRenderer") } ?: return null
+        return listOf("defaultServiceEndpoint", "toggledServiceEndpoint").firstNotNullOfOrNull { e ->
+            toggle.obj(e).findFirst("likeEndpoint").str("target", "playlistId")
+        }
+    }
+
     /** A playlist's songs' setVideoIds (what removing one from an owned playlist needs), by video id. */
     private fun setVideoIdsIn(node: JsonElement?): Map<String, String> =
         node.findAll("musicResponsiveListItemRenderer").mapNotNull { r ->
@@ -360,9 +389,7 @@ class YouTubeMusic(
             ?: editable.findFirst("musicResponsiveHeaderRenderer")
             ?: res.findFirst("musicDetailHeaderRenderer")
         val shelf = res.findFirst("musicPlaylistShelfRenderer") ?: res.findFirst("musicShelfRenderer")
-        val songs = (shelf.arr("contents") ?: emptyList()).mapNotNull {
-            it.obj("musicResponsiveListItemRenderer")?.let { r -> (Parser.responsive(r) as? SongItem)?.song }
-        }
+        val songs = playlistRows(shelf)
         val owned = editable != null && api.signedIn
         return CollectionPage(
             id = playlistId.removePrefix("VL"),
@@ -387,7 +414,8 @@ class YouTubeMusic(
 
     suspend fun playlistPage(token: String): PlaylistChunk {
         val res = api.post("browse", buildJsonObject { put("continuation", token) })
-        val items = res.findAll("musicResponsiveListItemRenderer").mapNotNull { (Parser.responsive(it) as? SongItem)?.song }
+        val items = res.findAll("musicResponsiveListItemRenderer").mapNotNull { (Parser.responsive(it) as? SongItem)?.song } +
+            res.findAll("musicMultiRowListItemRenderer").mapNotNull { Parser.episode(it)?.song }
         val next = res.findAll("continuationItemRenderer").firstOrNull()?.findFirst("continuationCommand").str("token")
             ?: res.findFirst("musicPlaylistShelfContinuation").let { Parser.continuation(it) }
         return PlaylistChunk(items, next, setVideoIdsIn(res))
@@ -708,13 +736,17 @@ class YouTubeMusic(
         }
     }
 
-    /** Registers a play in the user's YouTube Music history so recommendations stay in sync. */
-    suspend fun registerPlayback(extras: PlayerExtras) {
-        val base = extras.trackingUrl ?: return
+    /**
+     * Registers a play in the user's YouTube Music history so recommendations stay in sync. Whether YouTube took it
+     * (a 2xx answer): no tracking URL, no answer or a refusal is false.
+     */
+    suspend fun registerPlayback(extras: PlayerExtras): Boolean {
+        val base = extras.trackingUrl ?: return false
         val cpn = (1..16).map { "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_".random() }.joinToString("")
         val sep = if (base.contains("?")) "&" else "?"
         val code = api.ping("$base${sep}ver=2&c=WEB_REMIX&cver=${api.clientVersion}&cpn=$cpn")
         android.util.Log.i("PrismHistory", "play sent to YouTube Music: HTTP $code")
+        return code != null && code in 200..299
     }
 
     // ---------------------------------------------------------------- Account & library
@@ -892,40 +924,74 @@ class YouTubeMusic(
 
     /**
      * Adds a song to an owned playlist; false when it was already there (#159: it went in a second time; now it's
-     * skipped, as YouTube Music's own "Skip duplicates" does, and the listener is told).
+     * skipped, as YouTube Music's own "Skip duplicates" does, and the listener is told). Throws when YouTube didn't add
+     * it (1.8.1: that used to count as added).
      */
-    suspend fun addToPlaylist(playlistId: String, videoId: String): Boolean {
-        val res = api.post("browse/edit_playlist", buildJsonObject {
+    suspend fun addToPlaylist(playlistId: String, videoId: String): Boolean = addSongsToPlaylist(playlistId, listOf(videoId)).added > 0
+
+    /** What adding songs to a playlist did: how many went in, how many were there already, how many YouTube refused. */
+    data class PlaylistAdd(val added: Int, val alreadyThere: Int, val refused: Int = 0)
+
+    /**
+     * Adds songs to an owned playlist, 50 to a request; ones already in it are skipped. Only what YouTube says went in
+     * counts as added (Reddit, 1.7.9: "Added" showed for songs that never got there, because an answer without its
+     * per-song results, or with a failed status, was taken as success, and a whole album's add was never checked at
+     * all). An answer that doesn't say is checked against the playlist itself. A batch YouTube turns down (one song it
+     * won't take spoils all 50) is asked again song by song. Throws when nothing went in and nothing was there already.
+     */
+    suspend fun addSongsToPlaylist(playlistId: String, videoIds: List<String>): PlaylistAdd {
+        val ids = videoIds.distinct()
+        var added = 0
+        var there = 0
+        var refused = 0
+        var unclear = emptyList<String>()
+        var lastError: Exception? = null
+        suspend fun send(chunk: List<String>) {
+            val outcome = try {
+                PlaylistEdits.read(postAdd(playlistId, chunk), chunk.size)
+            } catch (e: InnerTubeException) {
+                // A batch turned down whole: song by song, so the ones it takes still go in.
+                if (e.code == 400 && chunk.size > 1) { chunk.forEach { send(listOf(it)) }; return }
+                lastError = e
+                PlaylistEdits.Outcome.Refused(e.message ?: "")
+            } catch (e: java.io.IOException) {
+                // The connection dropped on a later batch: the ones before it went in, so they still count.
+                lastError = e
+                PlaylistEdits.Outcome.Refused(e.message ?: "")
+            }
+            when (outcome) {
+                is PlaylistEdits.Outcome.Done -> { added += outcome.added; there += chunk.size - outcome.added }
+                is PlaylistEdits.Outcome.Refused -> { refused += chunk.size; if (lastError == null) lastError = java.io.IOException(outcome.message) }
+                PlaylistEdits.Outcome.Unclear -> unclear = unclear + chunk
+            }
+        }
+        ids.chunked(50).forEach { send(it) }
+        // YouTube's answer didn't say: whether they're in the playlist now is what counts.
+        if (unclear.isNotEmpty()) {
+            val inIt = runCatching { playlistSlots(playlistId).keys }.getOrNull()
+            if (inIt == null) refused += unclear.size
+            else unclear.forEach { if (it in inIt) added++ else refused++ }
+        }
+        if (added == 0 && there == 0) throw (lastError ?: java.io.IOException("YouTube Music didn't add it"))
+        return PlaylistAdd(added, there, refused)
+    }
+
+    private suspend fun postAdd(playlistId: String, videoIds: List<String>): JsonObject =
+        api.post("browse/edit_playlist", buildJsonObject {
             put("playlistId", playlistId.removePrefix("VL"))
             putJsonArray("actions") {
-                addJsonObject {
-                    put("action", "ACTION_ADD_VIDEO")
-                    put("addedVideoId", videoId)
-                    put("dedupeOption", "DEDUPE_OPTION_SKIP")
+                videoIds.forEach { id ->
+                    addJsonObject {
+                        put("action", "ACTION_ADD_VIDEO")
+                        put("addedVideoId", id)
+                        put("dedupeOption", "DEDUPE_OPTION_SKIP")
+                    }
                 }
             }
         })
-        // Each song that went in comes back with its place's id; a skipped one doesn't.
-        return res.findFirst("playlistEditVideoAddedResultData") != null || res.findFirst("playlistEditResults") == null
-    }
 
-    /** Adds many songs to an owned playlist, 50 to a request; ones already in it are skipped. */
-    suspend fun addAllToPlaylist(playlistId: String, videoIds: List<String>) {
-        videoIds.chunked(50).forEach { chunk ->
-            api.post("browse/edit_playlist", buildJsonObject {
-                put("playlistId", playlistId.removePrefix("VL"))
-                putJsonArray("actions") {
-                    chunk.forEach { id ->
-                        addJsonObject {
-                            put("action", "ACTION_ADD_VIDEO")
-                            put("addedVideoId", id)
-                            put("dedupeOption", "DEDUPE_OPTION_SKIP")
-                        }
-                    }
-                }
-            })
-        }
-    }
+    /** Adds many songs to an owned playlist ([addSongsToPlaylist]); ones already in it are skipped. */
+    suspend fun addAllToPlaylist(playlistId: String, videoIds: List<String>): PlaylistAdd = addSongsToPlaylist(playlistId, videoIds)
 
     /** Takes many songs out of an owned playlist, 50 to a request; each is (videoId, setVideoId). */
     suspend fun removeAllFromPlaylist(playlistId: String, items: List<Pair<String, String>>) {
@@ -1030,12 +1096,21 @@ class YouTubeMusic(
         })
     }
 
-    /** Saves an album (by its playlist id) or someone else's playlist to the library, or takes it out. */
+    /**
+     * Saves an album (by its playlist id) or someone else's playlist to the library, or takes it out. An album's browse
+     * id ("MPREb_…", what a card on Home or in Search carries, with no playlist id) is turned into the playlist id its
+     * page's library button saves: sent as it was, YouTube refused it ("Couldn't update your library" from a long
+     * press on an album's cover).
+     */
     suspend fun setLibrarySaved(playlistId: String, saved: Boolean) {
+        val id = if (isAlbumBrowseId(playlistId)) album(playlistId).let { it.libraryId ?: it.playlistId }
+            ?: throw java.io.IOException("No playlist for album $playlistId") else playlistId
         api.post(if (saved) "like/like" else "like/removelike", buildJsonObject {
-            putJsonObject("target") { put("playlistId", playlistId.removePrefix("VL")) }
+            putJsonObject("target") { put("playlistId", id.removePrefix("VL")) }
         })
     }
+
+    private fun isAlbumBrowseId(id: String) = id.startsWith("MPRE")
 
     /** Subscribes to (or unsubscribes from) an artist's channel. */
     suspend fun subscribe(channelId: String, subscribed: Boolean) {

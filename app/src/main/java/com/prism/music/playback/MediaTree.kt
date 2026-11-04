@@ -51,6 +51,12 @@ class MediaTree(private val c: AppContainer) {
         const val HOLIDAY = "hm:"
         /** How many of each Home section's items show as tiles in the car. */
         private const val HOME_TILES = 8
+        /** The songs a search found, as a folder (a song tapped in the results plays them on from there). */
+        private const val SEARCH = "search"
+        /** How many of each kind a search lists, and how many searches are kept. */
+        private const val SEARCH_EACH = 8
+        private const val KEPT_SEARCHES = 4
+        private val SEARCH_KINDS = setOf(SearchFilter.SONGS, SearchFilter.ALBUMS, SearchFilter.ARTISTS, SearchFilter.PLAYLISTS)
     }
 
     /** Every song handed out, so a mediaId coming back can be played. */
@@ -58,7 +64,8 @@ class MediaTree(private val c: AppContainer) {
     /** Songs per browsed folder, so tapping one song plays the whole list from there. */
     private val folders = ConcurrentHashMap<String, Pair<String, List<Song>>>()
     private var homeShelves: List<Shelf> = emptyList()
-    private var searchResults: List<Song> = emptyList()
+    /** Search results by query (lower case), oldest first. */
+    private val searches = LinkedHashMap<String, List<MediaItem>>()
 
     /**
      * A folder. [extras]: how a car shows what's inside it, or the section it sits under ([styled], [grouped]).
@@ -83,7 +90,8 @@ class MediaTree(private val c: AppContainer) {
         songs[song.id] = song
         val item = song.toMediaItem()
         return item.buildUpon().setMediaMetadata(
-            item.mediaMetadata.buildUpon().setArtworkUri(artworkUri(song.thumbnail)).setSubtitle(song.artistText)
+            // The cover picked for the song or its album (#305) when there is one.
+            item.mediaMetadata.buildUpon().setArtworkUri(artworkUri(c.covers.art(song))).setSubtitle(song.artistText)
                 .apply { if (extras != null) setExtras(extras) }.build()
         ).build()
     }
@@ -225,18 +233,145 @@ class MediaTree(private val c: AppContainer) {
         return folders[folderId]
     }
 
-    suspend fun search(query: String): Int {
-        val found = runCatching { c.ytm.search(query, SearchFilter.SONGS).items.filterIsInstance<SongItem>() }.getOrDefault(emptyList())
-        // Songs the listener plays (and their artists') come first, as in the app's search.
-        val taste = runCatching { c.taste.searchTaste() }.getOrDefault(com.prism.music.data.innertube.SearchRank.Taste.NONE)
-        searchResults = found.withIndex()
-            .sortedByDescending { (i, item) -> com.prism.music.data.innertube.SearchRank.score(query, item, i, taste) }
-            .map { it.value.song }
-        searchResults.forEach { songs[it.id] = it }
-        return searchResults.size
+    /**
+     * The car's search (its search button, or a spoken search on its screen): what Search's Top results would show, under
+     * their headings, after the listener's own playlists and liked songs that match (those show offline too). Kept per
+     * query, so a page asked for later (or by another browser) is of that search, not of whichever ran last.
+     */
+    suspend fun search(query: String): Int = searchItems(query).size
+
+    /** The results of [search] for [query], searching first if it hasn't been. */
+    suspend fun searchItems(query: String): List<MediaItem> {
+        val key = query.trim().lowercase()
+        synchronized(searches) { searches[key] }?.let { return it }
+        val (items, complete) = buildSearch(query.trim())
+        // A search that couldn't reach Prism Music isn't kept: asked again, it tries again.
+        if (complete) synchronized(searches) {
+            searches[key] = items
+            while (searches.size > KEPT_SEARCHES) searches.remove(searches.keys.first())
+        }
+        return items
     }
 
-    fun searchResults(): List<MediaItem> = searchResults.map(::playable)
+    /** The items, and whether Prism Music's own search answered (else they're only the listener's own). */
+    private suspend fun buildSearch(query: String): Pair<List<MediaItem>, Boolean> {
+        if (query.isEmpty()) return emptyList<MediaItem>() to true
+        val yours = grouped(tr(R.string.your_music))
+        val lists = ownPlaylists().filter { VoiceSearch.names(it.title, query) > 0 }.take(SEARCH_EACH)
+            .map { folder(it.folderId, it.title, it.subtitle, it.art, MediaMetadata.MEDIA_TYPE_PLAYLIST, yours) }
+        val liked = c.library.likedShown.value.filter { VoiceSearch.names("${it.title} ${it.artistText}", query) >= 2 }
+            .take(SEARCH_EACH).map { playable(it, yours) }
+        val taste = runCatching { c.taste.searchTaste() }.getOrDefault(com.prism.music.data.innertube.SearchRank.Taste.NONE)
+        val found = runCatching { c.ytm.searchTop(query, taste) }.getOrNull()
+        val top = found?.top?.let { tile(it, grouped(tr(R.string.top_results))) }
+        val sections = found?.sections.orEmpty().filter { (f, _) -> f in SEARCH_KINDS }.flatMap { (f, items) ->
+            val heading = grouped(f.label)
+            items.asSequence().filter { it.id != found?.top?.id && (it as? SongItem)?.song?.isLive != true }
+                .mapNotNull { tile(it, heading) }.take(SEARCH_EACH).toList()
+        }
+        // A song's folder, so tapping one plays the songs found from there on (as a tapped song in a list does).
+        val foundSongs = (listOfNotNull((found?.top as? SongItem)?.song) +
+            found?.sections.orEmpty().firstOrNull { it.first == SearchFilter.SONGS }?.second.orEmpty().filterIsInstance<SongItem>().map { it.song })
+            .distinctBy { it.id }
+        if (foundSongs.isNotEmpty()) folders[SEARCH] = query to foundSongs
+        return (lists + liked + listOfNotNull(top) + sections).distinctBy { it.mediaId } to (found != null)
+    }
+
+    /** A playlist of the listener's own, for the car: Prism's, then their YouTube library's. */
+    private data class OwnList(val folderId: String, val title: String, val subtitle: String?, val art: String?)
+
+    private fun ownPlaylists(): List<OwnList> =
+        c.prismLibrary.lists.value.map { l -> l.item().let { OwnList(PRISM_LIST + l.id, l.title, it.subtitle, c.covers.art(it)) } } +
+            c.library.playlists.value.filterIsInstance<PlaylistItem>().filter { it.id != "LM" }
+                .map { OwnList(mixOrPlaylistId(it), it.title, it.subtitle, c.covers.art(it)) }
+
+    // ------------------------------------------------------------ Voice ("play … on Prism")
+
+    /** What a voice request plays: the songs, where to start, and the queue's title. [radio]: one song, a radio after it. */
+    data class VoicePick(val title: String, val songs: List<Song>, val start: Int = 0, val radio: Boolean = false)
+
+    /**
+     * What [request] plays ([VoiceSearch]), or null when nothing was found. Network trouble is thrown, so the car can be
+     * told it was that rather than "nothing found".
+     */
+    suspend fun voice(request: VoiceRequest): VoicePick? = when (request) {
+        VoiceRequest.Resume -> null
+        is VoiceRequest.Liked -> c.library.likedShown.value.takeIf { it.isNotEmpty() }?.let { VoicePick(tr(R.string.liked_songs), it) }
+        is VoiceRequest.Downloads -> c.downloads.completedSongs().takeIf { it.isNotEmpty() }?.let { VoicePick(tr(R.string.downloads), it) }
+        is VoiceRequest.Playlist -> ownPlaylist(request.name, exact = false) ?: foundPlaylist(request.name)
+        is VoiceRequest.Artist -> artistPick(request.name) ?: songPick(request.name)
+        is VoiceRequest.Album -> albumPick(request.title, request.artist) ?: songPick(listOfNotNull(request.title, request.artist).joinToString(" "))
+        is VoiceRequest.Song -> songPick(request.text)
+        // A playlist of the listener's own named exactly so comes before anything YouTube has under that name.
+        is VoiceRequest.Top -> ownPlaylist(request.text, exact = true) ?: topPick(request.text)
+    }
+
+    private suspend fun ownPlaylist(name: String, exact: Boolean): VoicePick? {
+        val best = ownPlaylists().map { it to VoiceSearch.names(it.title, name) }.filter { (_, s) -> if (exact) s >= 3 else s > 0 }
+            .maxByOrNull { it.second }?.first ?: return null
+        children(best.folderId)
+        return folders[best.folderId]?.takeIf { it.second.isNotEmpty() }?.let { (title, list) -> VoicePick(title, list) }
+    }
+
+    private suspend fun foundPlaylist(name: String): VoicePick? {
+        val item = listOf(SearchFilter.FEATURED_PLAYLISTS, SearchFilter.PLAYLISTS).firstNotNullOfOrNull { f ->
+            c.ytm.search(name, f).items.filterIsInstance<PlaylistItem>().firstOrNull()
+        } ?: return null
+        return listPick(item)
+    }
+
+    private suspend fun artistPick(name: String): VoicePick? {
+        val artists = c.ytm.search(name, SearchFilter.ARTISTS).items.filterIsInstance<ArtistItem>()
+        val artist = artists.firstOrNull { VoiceSearch.names(it.title, name) >= 3 } ?: artists.firstOrNull() ?: return null
+        val page = runCatching { c.ytm.artist(artist.id) }.getOrNull() ?: return null
+        val list = page.shelves.flatMap { s -> s.items.filterIsInstance<SongItem>().map { it.song } }.filter { !it.isVideo }.distinctBy { it.id }
+        return list.takeIf { it.isNotEmpty() }?.let { VoicePick(page.name, it) }
+    }
+
+    private suspend fun albumPick(title: String, artist: String?): VoicePick? {
+        val albums = c.ytm.search(listOfNotNull(title, artist).joinToString(" "), SearchFilter.ALBUMS).items.filterIsInstance<AlbumItem>()
+        val album = albums.firstOrNull { VoiceSearch.names(it.title, title) >= 3 } ?: albums.firstOrNull() ?: return null
+        val page = runCatching { c.ytm.album(album.id) }.getOrNull() ?: return null
+        return page.songs.takeIf { it.isNotEmpty() }?.let { VoicePick(page.title, it) }
+    }
+
+    /** The best song for [text] (the listener's own taste first, as in Search), and a radio after it. */
+    private suspend fun songPick(text: String): VoicePick? {
+        val found = c.ytm.search(text, SearchFilter.SONGS).items.filterIsInstance<SongItem>()
+        val taste = runCatching { c.taste.searchTaste() }.getOrDefault(com.prism.music.data.innertube.SearchRank.Taste.NONE)
+        val best = found.withIndex().maxByOrNull { (i, item) -> com.prism.music.data.innertube.SearchRank.score(text, item, i, taste) }?.value?.song
+            ?: return null
+        songs[best.id] = best
+        return VoicePick(tr(R.string.autoplay), listOf(best), radio = true)
+    }
+
+    /** Whatever Search's Top result is for [text], played as tapping it would. */
+    private suspend fun topPick(text: String): VoicePick? {
+        val taste = runCatching { c.taste.searchTaste() }.getOrDefault(com.prism.music.data.innertube.SearchRank.Taste.NONE)
+        val found = c.ytm.searchTop(text, taste)
+        val candidates = listOfNotNull(found.top) + found.sections.firstOrNull { it.first == SearchFilter.SONGS }?.second.orEmpty()
+        for (item in candidates) {
+            val pick = when (item) {
+                is SongItem -> if (item.song.isLive || item.song.isEpisode) null else {
+                    songs[item.song.id] = item.song
+                    VoicePick(tr(R.string.autoplay), listOf(item.song), radio = true)
+                }
+                is AlbumItem -> runCatching { c.ytm.album(item.id) }.getOrNull()?.takeIf { it.songs.isNotEmpty() }?.let { VoicePick(it.title, it.songs) }
+                is ArtistItem -> artistPick(item.title)
+                is PlaylistItem -> listPick(item)
+                else -> null
+            }
+            if (pick != null) return pick
+        }
+        return null
+    }
+
+    /** A playlist's songs, or a mix's / station's radio. */
+    private suspend fun listPick(item: PlaylistItem): VoicePick? {
+        val id = mixOrPlaylistId(item)
+        children(id)
+        return folders[id]?.takeIf { it.second.isNotEmpty() }?.let { (title, list) -> VoicePick(item.title.ifBlank { title }, list) }
+    }
 
     suspend fun item(mediaId: String): MediaItem? = song(mediaId)?.let(::playable)
 
@@ -249,11 +384,6 @@ class MediaTree(private val c: AppContainer) {
     fun folderOf(mediaId: String): Pair<String, List<Song>>? =
         if (mediaId.startsWith(SHUFFLE)) null else folders.values.firstOrNull { (_, list) -> list.any { it.id == mediaId } }
 
-    suspend fun searchTop(query: String): Song? {
-        search(query)
-        return searchResults.firstOrNull()
-    }
-
     /**
      * A picture for the car, through [ArtworkProvider]. [fallback]: one of Prism's own `ic_auto_` tiles, shown when
      * there's no picture or it can't be had (the car leaves a tile blank, or draws a warning sign, otherwise).
@@ -262,8 +392,7 @@ class MediaTree(private val c: AppContainer) {
         val u = hiRes(url, 544)
         if (u != null && u.startsWith("android.resource:")) return Uri.parse(u)
         val target = u ?: fallback?.let { ArtworkProvider.RES + it } ?: return null
-        val encoded = Base64.encodeToString(target.toByteArray(), Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
-        val uri = Uri.parse("content://${BuildConfig.APPLICATION_ID}.artwork/$encoded")
+        val uri = ArtworkProvider.contentUri(target)
         return if (u != null && fallback != null) uri.buildUpon().appendQueryParameter(ArtworkProvider.OR, fallback).build() else uri
     }
 }
@@ -367,6 +496,12 @@ class ArtworkProvider : ContentProvider() {
         const val OR = "or"
         private const val LOCAL_ALBUM_ART = "content://media/external/audio/albumart/"
         private const val TILE_PX = 288
+
+        /** [url] served through this provider (a car can't open the app's own files, nor every web address). */
+        fun contentUri(url: String): Uri {
+            val encoded = Base64.encodeToString(url.toByteArray(), Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
+            return Uri.parse("content://${BuildConfig.APPLICATION_ID}.artwork/$encoded")
+        }
     }
 
     override fun getType(uri: Uri) = "image/jpeg"

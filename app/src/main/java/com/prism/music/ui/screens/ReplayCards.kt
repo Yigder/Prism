@@ -25,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,18 +65,54 @@ enum class ReplayCardStyle(val label: String, val note: String) {
     AURORA(tr(R.string.aurora), tr(R.string.full_color_like_a_rewind_slide)),
 }
 
-/** What a Replay card shows: the year so far. [months]: listening per month, January first, up to this month. */
+/**
+ * What a Replay card shows: the year so far. [bars]: listening per bar of [graph], oldest first, the one now last
+ * (months: January up to this month; #286: or the last weeks or days).
+ */
 data class ReplayCardData(
     val year: Int,
     val total: String,
-    val months: List<Long>,
+    val bars: List<Long>,
     val topSong: String?,
     val topSongArtist: String?,
     val topArtist: String?,
     /** 0..1: how far through the year it is. */
     val yearDone: Float,
     val songCount: Int,
-)
+    val graph: com.prism.music.data.prefs.ReplayGraph = com.prism.music.data.prefs.ReplayGraph.MONTHS,
+    /** "Includes Spotify" when Replay counts imported histories too (1.8.1); null: Prism's own plays only. */
+    val includes: String? = null,
+) {
+    /** The bars' caption when they aren't the year's months ("Last 14 days"). */
+    val graphCaption: String? get() = when (graph) {
+        com.prism.music.data.prefs.ReplayGraph.MONTHS -> null
+        com.prism.music.data.prefs.ReplayGraph.WEEKS -> tr(R.string.replay_last_weeks, bars.size)
+        com.prism.music.data.prefs.ReplayGraph.DAYS -> tr(R.string.replay_last_days, bars.size)
+    }
+    /** The card's line under the time: what it counts when that's more than Prism's plays, else what Replay holds. */
+    val subtitle: String get() = includes ?: tr(R.string.your_top_songs_artists_and_genres)
+}
+
+/** "Includes Spotify, Last.fm": the imported histories Replay counts (null: none). */
+fun replayIncludes(counted: Collection<com.prism.music.data.imports.ImportSource>): String? =
+    counted.takeIf { it.isNotEmpty() }?.sortedBy { it.ordinal }?.joinToString(", ") { it.label }?.let { tr(R.string.imp_includes, it) }
+
+/**
+ * Listening in each bar of [graph] (#286), oldest first, the one [now] is in last: this year's months so far, the last
+ * 12 weeks or the last 14 days, from what Replay counts ([plays]).
+ */
+suspend fun replayCardBars(plays: com.prism.music.data.imports.PlayStats, graph: com.prism.music.data.prefs.ReplayGraph, now: Long = System.currentTimeMillis()): List<Long> {
+    val zone = java.time.ZoneId.systemDefault()
+    val buckets = when (graph) {
+        com.prism.music.data.prefs.ReplayGraph.MONTHS -> com.prism.music.data.ReplayBuckets.monthsSoFar(now, zone)
+        com.prism.music.data.prefs.ReplayGraph.WEEKS -> com.prism.music.data.ReplayBuckets.lastWeeks(
+            graph.count, now, zone, java.time.temporal.WeekFields.of(java.util.Locale.getDefault()).firstDayOfWeek,
+        )
+        com.prism.music.data.prefs.ReplayGraph.DAYS -> com.prism.music.data.ReplayBuckets.lastDays(graph.count, now, zone)
+    }
+    // (The store's ranges include both ends: a bar stops a moment before the next one starts.)
+    return buckets.map { b -> runCatching { plays.totalMs(b.start, minOf(b.end - 1, now)) }.getOrDefault(0L) }
+}
 
 private val CARD_HEIGHT = 156.dp
 
@@ -102,7 +139,7 @@ fun ReplayCard(style: ReplayCardStyle, d: ReplayCardData, art: Painter?, modifie
                 Eyebrow(tr(R.string.replay, d.year))
                 Spacer(Modifier.height(4.dp))
                 Text(d.total, style = big, color = scheme.onSurface, maxLines = 1)
-                Text(tr(R.string.your_top_songs_artists_and_genres), style = MaterialTheme.typography.bodyMedium, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(d.subtitle, style = MaterialTheme.typography.bodyMedium, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Icon(PrismIcons.ChevronRight, null, Modifier.align(Alignment.TopEnd), tint = scheme.onSurfaceVariant)
         }
@@ -114,6 +151,7 @@ fun ReplayCard(style: ReplayCardStyle, d: ReplayCardData, art: Painter?, modifie
                 Eyebrow(tr(R.string.replay, d.year), Modifier.weight(1f))
                 Icon(PrismIcons.ChevronRight, null, tint = scheme.onSurfaceVariant)
             }
+            d.includes?.let { Text(it, Modifier.padding(start = 16.dp), style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant, maxLines = 1) }
             Spacer(Modifier.weight(1f))
             Row(Modifier.fillMaxWidth().height(76.dp)) {
                 listOf(tr(R.string.listened) to d.total, tr(R.string.top_artist) to (d.topArtist ?: "—"), tr(R.string.top_song) to (d.topSong ?: "—")).forEachIndexed { i, (label, value) ->
@@ -140,9 +178,13 @@ fun ReplayCard(style: ReplayCardStyle, d: ReplayCardData, art: Painter?, modifie
                 Eyebrow(tr(R.string.replay, d.year))
                 Box(Modifier.padding(top = 6.dp, bottom = 8.dp).size(28.dp, 2.dp).clip(CircleShape).background(PrismTokens.spectrum(dark)))
                 Text(d.total, style = big, color = scheme.onSurface, maxLines = 1)
-                Text(tr(R.string.your_top_songs_artists_and_genres), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, maxLines = 1)
+                Text(d.subtitle, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, maxLines = 1)
             }
-            MonthBars(d.months, hues, Modifier.align(Alignment.BottomEnd).size(width = (d.months.size * 7).dp, height = 54.dp), slim = true)
+            Column(Modifier.align(Alignment.BottomEnd), horizontalAlignment = Alignment.End) {
+                // #286: the last weeks or days say so; the year's months are the card's own.
+                d.graphCaption?.let { Text(it, Modifier.padding(bottom = 4.dp), style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant, maxLines = 1) }
+                GraphBars(d, hues, Modifier.size(width = (d.bars.size * 7).dp, height = 54.dp), slim = true)
+            }
         }
         // 1.7's first look: glass ringed in split light, the time set large and light in the spectrum.
         ReplayCardStyle.FRAME -> Box(
@@ -151,7 +193,7 @@ fun ReplayCard(style: ReplayCardStyle, d: ReplayCardData, art: Painter?, modifie
             Column(Modifier.align(Alignment.BottomStart)) {
                 Eyebrow(tr(R.string.replay, d.year))
                 Text(d.total, style = big.copy(brush = PrismTokens.spectrum(dark)), maxLines = 1)
-                Text(tr(R.string.your_top_songs_artists_and_genres), color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, maxLines = 2)
+                Text(d.subtitle, color = scheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium, maxLines = 2)
             }
             Icon(PrismIcons.ReplayFilled, null, Modifier.align(Alignment.TopEnd), tint = scheme.onSurface)
         }
@@ -181,7 +223,7 @@ fun ReplayCard(style: ReplayCardStyle, d: ReplayCardData, art: Painter?, modifie
                 Eyebrow(tr(R.string.replay, d.year))
                 Spacer(Modifier.height(4.dp))
                 Text(d.total, style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraLight), color = scheme.onSurface, maxLines = 1)
-                Text(tr(R.string.your_top_songs_artists_and_genres), style = MaterialTheme.typography.bodyMedium, color = scheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(d.subtitle, style = MaterialTheme.typography.bodyMedium, color = scheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
         // The top song's cover sets the color: blown up behind a scrim, and sharp beside the words.
@@ -200,6 +242,7 @@ fun ReplayCard(style: ReplayCardStyle, d: ReplayCardData, art: Painter?, modifie
                     d.topSongArtist?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.78f), maxLines = 1) }
                     Spacer(Modifier.height(8.dp))
                     Text(tr(R.string.listened_2, d.total), style = MaterialTheme.typography.labelLarge, color = Color.White.copy(alpha = 0.9f))
+                    d.includes?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.75f), maxLines = 1) }
                 }
             }
         }
@@ -223,15 +266,18 @@ fun ReplayCard(style: ReplayCardStyle, d: ReplayCardData, art: Painter?, modifie
                 Eyebrow(tr(R.string.replay, d.year))
                 Spacer(Modifier.height(4.dp))
                 Text(d.total, style = big, color = scheme.onSurface, maxLines = 1)
-                Text(tr(R.string.your_top_songs_artists_and_genres), style = MaterialTheme.typography.bodyMedium, color = scheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(d.subtitle, style = MaterialTheme.typography.bodyMedium, color = scheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
         // The months as big bars along the card, red to violet (the months still to come as faint stubs), under the time.
         ReplayCardStyle.BARS -> Box(base.pane(shape).border(0.7.dp, glassEdge(), shape).clickable(onClick = onClick)) {
-            MonthBars(d.months, hues, Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(86.dp).padding(horizontal = 18.dp, vertical = 14.dp), slim = false)
+            val caption = listOfNotNull(d.graphCaption, d.includes).joinToString(" · ").takeIf { it.isNotEmpty() }
+            // A caption line under the time: the bars give it the room.
+            GraphBars(d, hues, Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(if (caption != null) 72.dp else 86.dp).padding(horizontal = 18.dp, vertical = 14.dp), slim = false)
             Column(Modifier.align(Alignment.TopStart).padding(start = 20.dp, top = 18.dp)) {
                 Eyebrow(tr(R.string.replay, d.year))
                 Text(d.total, style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraLight), color = scheme.onSurface, maxLines = 1)
+                caption?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis) }
             }
             Icon(PrismIcons.ChevronRight, null, Modifier.align(Alignment.TopEnd).padding(16.dp), tint = scheme.onSurfaceVariant)
         }
@@ -252,7 +298,7 @@ fun ReplayCard(style: ReplayCardStyle, d: ReplayCardData, art: Painter?, modifie
             Column(Modifier.align(Alignment.BottomStart)) {
                 Eyebrow(tr(R.string.replay, d.year), color = Color.White.copy(alpha = 0.85f))
                 Text(d.total, style = big, color = Color.White, maxLines = 1)
-                Text(tr(R.string.your_top_songs_artists_and_genres), style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.85f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(d.subtitle, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.85f), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Icon(PrismIcons.ChevronRight, null, Modifier.align(Alignment.TopEnd), tint = Color.White)
         }
@@ -272,7 +318,13 @@ fun ReplayCardPreview(style: ReplayCardStyle, modifier: Modifier = Modifier) {
     }
     val y = raw ?: return
     val art = y.cover?.takeIf { style == ReplayCardStyle.COVER }?.let { coil3.compose.rememberAsyncImagePainter(it) }
-    val data = ReplayCardData(year, listenTotal(y.ms).full, y.months, y.song, y.songArtist, y.artist, y.yearDone, 0)
+    val graph = com.prism.music.ui.theme.LocalAppSettings.current.view.replayGraph
+    val bars by androidx.compose.runtime.produceState(y.months, graph) {
+        value = if (graph == com.prism.music.data.prefs.ReplayGraph.MONTHS) y.months
+        else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { replayCardBars(c.imports.replay(), graph) }.getOrDefault(emptyList()) }
+    }
+    // As Home's card: no "Includes Spotify" line (owner, 1.8.1).
+    val data = ReplayCardData(year, listenTotal(y.ms).full, bars, y.song, y.songArtist, y.artist, y.yearDone, 0, graph)
     ReplayCard(style, data, art, modifier) {}
 }
 
@@ -282,19 +334,14 @@ private class PreviewYear(
 
 /** The listener's year so far, as Home's Replay card reads it. */
 private suspend fun previewYear(c: com.prism.music.AppContainer): PreviewYear {
-    val cal = java.util.Calendar.getInstance()
     fun monthStart(m: Int) = java.util.Calendar.getInstance().apply {
         set(java.util.Calendar.MONTH, m); set(java.util.Calendar.DAY_OF_MONTH, 1)
         set(java.util.Calendar.HOUR_OF_DAY, 0); set(java.util.Calendar.MINUTE, 0); set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0)
     }
     val start = monthStart(0).timeInMillis
     val now = System.currentTimeMillis()
-    val plays = c.db.plays()
-    val months = (0..cal.get(java.util.Calendar.MONTH)).map { m ->
-        val from = monthStart(m)
-        val to = (from.clone() as java.util.Calendar).apply { add(java.util.Calendar.MONTH, 1) }
-        plays.totalMs(from.timeInMillis, minOf(to.timeInMillis, now))
-    }
+    val plays = c.imports.replay()
+    val months = replayCardBars(plays, com.prism.music.data.prefs.ReplayGraph.MONTHS, now)
     val song = plays.topSongs(start, now, 20).mergeUploads().firstOrNull()
     val artist = plays.topArtists(start, now, 1).firstOrNull()
     return PreviewYear(
@@ -316,19 +363,23 @@ fun yearFraction(now: Long = System.currentTimeMillis()): Float {
     return ((now - start.timeInMillis).toFloat() / (end.timeInMillis - start.timeInMillis)).coerceIn(0f, 1f)
 }
 
-/** The year's months as bars in hue order (this month brightest); [slim] for a small corner chart, else a full row of twelve. */
+/**
+ * The card's bars in hue order, the one now brightest: the year's months ([slim] a small corner chart, else a full row of
+ * twelve with the months to come as stubs), or (#286) the last weeks or days, each a bar.
+ */
 @Composable
-private fun MonthBars(months: List<Long>, hues: List<Color>, modifier: Modifier, slim: Boolean) {
+private fun GraphBars(d: ReplayCardData, hues: List<Color>, modifier: Modifier, slim: Boolean) {
+    val months = d.bars
     val faint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)
     Canvas(modifier) {
         if (months.isEmpty()) return@Canvas
         val most = months.max().coerceAtLeast(1L).toFloat()
-        val slots = if (slim) months.size else 12
+        val slots = if (slim || d.graph != com.prism.music.data.prefs.ReplayGraph.MONTHS) months.size else 12
         val step = size.width / slots
         val w = if (slim) 3.dp.toPx() else step * 0.56f
         for (i in 0 until slots) {
             val x = step * i + (step - w) / 2
-            val col = hues[(i * (hues.size - 1)) / 11]
+            val col = hues[(i * (hues.size - 1)) / (slots - 1).coerceAtLeast(1)]
             if (i >= months.size) {
                 drawRoundRect(faint, Offset(x, size.height - w * 0.6f), Size(w, w * 0.6f), CornerRadius(w / 2))
                 continue

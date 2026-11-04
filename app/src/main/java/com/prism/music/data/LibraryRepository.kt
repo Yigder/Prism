@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -79,19 +80,27 @@ class LibraryRepository(private val c: AppContainer) {
     val syncState = MutableStateFlow(SyncState.IDLE)
     val lastError = MutableStateFlow<String?>(null)
 
+    private val keptLoad: kotlinx.coroutines.Job
+
     init {
         // The library as last synced, so it's all there offline (#55) and before the first sync of a launch finishes.
-        c.scope.launch(Dispatchers.IO) {
+        // A restored copy signs out right after start ([forgetAccount] stops this, so the old account's lists don't
+        // land after they were cleared).
+        keptLoad = c.scope.launch(Dispatchers.IO) {
             if (!c.settings.current.isLoggedIn) return@launch
             val saved = c.offline.library() ?: return@launch
-            if (playlists.value.isEmpty()) playlists.value = saved.playlists
-            if (albums.value.isEmpty()) albums.value = saved.albums
-            if (artists.value.isEmpty()) artists.value = saved.artists
+            synchronized(this@LibraryRepository) {
+                if (!isActive) return@launch
+                if (playlists.value.isEmpty()) playlists.value = saved.playlists
+                if (albums.value.isEmpty()) albums.value = saved.albums
+                if (artists.value.isEmpty()) artists.value = saved.artists
+            }
         }
     }
 
     /** Signed out: the account's lists, and its playlists and albums kept for offline, are gone from the phone. */
     fun forgetAccount() {
+        synchronized(this) { keptLoad.cancel() }
         playlists.value = emptyList(); albums.value = emptyList(); artists.value = emptyList()
         c.scope.launch(Dispatchers.IO) { c.offline.clear(); c.homeCache.clear() }
     }
@@ -107,7 +116,8 @@ class LibraryRepository(private val c: AppContainer) {
         c.settings.saveAccountInfo(a.name, listOfNotNull(a.byline, a.email).distinct().joinToString(" · "), a.avatar)
         // Before the likes go: the playlist mirror would take them out of the old channel's playlist.
         c.likedPlaylist.forget()
-        likedIds.value.filterNot { it.startsWith(Song.LOCAL_PREFIX) }.forEach { songs.setLiked(it, false, 0) }
+        val kept = c.imports.keptLikes() // imported likes kept in Prism are this phone's, not the channel's
+        likedIds.value.filterNot { it.startsWith(Song.LOCAL_PREFIX) || it in kept }.forEach { songs.setLiked(it, false, 0) }
         forgetAccount()
         syncInBackground()
     }
@@ -207,8 +217,9 @@ class LibraryRepository(private val c: AppContainer) {
             })
             if (remote.isNotEmpty()) {
                 val remoteIds = remote.map { it.id }.toSet()
-                // Local songs' likes are Prism's own; YouTube doesn't know them, so it can't take them away.
-                (before - remoteIds).filterNot { it.startsWith(Song.LOCAL_PREFIX) }.forEach { songs.setLiked(it, false, 0) }
+                // Local songs' likes are Prism's own, and so are imported likes kept off the account (1.8.1): YouTube
+                // doesn't know them, so it can't take them away.
+                likesToDrop(before, remoteIds, c.imports.keptLikes()).forEach { songs.setLiked(it, false, 0) }
             }
             if (c.settings.current.downloadLikes && before.isNotEmpty()) {
                 remote.filter { it.id !in before }.forEach { c.downloads.download(it) }
@@ -381,9 +392,14 @@ class LibraryRepository(private val c: AppContainer) {
         }
     }
 
-    /** Saves an album or playlist to the account's library, or takes it out. False if YouTube Music refused. */
-    suspend fun setSaved(playlistId: String, saved: Boolean): Boolean = withContext(Dispatchers.IO) {
-        runCatching { c.ytm.setLibrarySaved(playlistId, saved) }.isSuccess.also { ok -> if (ok) refreshCollections() }
+    /**
+     * Saves an album or playlist to the account's library, or takes it out. False if YouTube Music refused; an album's
+     * other playlist id ([orElse]) is tried before giving up.
+     */
+    suspend fun setSaved(playlistId: String, saved: Boolean, orElse: String? = null): Boolean = withContext(Dispatchers.IO) {
+        listOfNotNull(playlistId, orElse).distinct().any { id ->
+            runCatching { c.ytm.setLibrarySaved(id, saved) }.onFailure { android.util.Log.w("PrismLibrary", "library ${if (saved) "save" else "removal"} of $id refused: $it") }.isSuccess
+        }.also { ok -> if (ok) refreshCollections() }
     }
 
     /**
@@ -402,6 +418,20 @@ class LibraryRepository(private val c: AppContainer) {
         fresh?.none { it.id == albumId } ?: true
     }
 
+    /**
+     * When each YouTube playlist was last changed from Prism (songs added), by its id without "VL". An open playlist
+     * page, or one kept in a tab's back stack, loads again when it's behind (Reddit, 1.7.9: a song added from the queue
+     * "wasn't there", because the playlist page still showed what it had loaded before).
+     */
+    val playlistEdits = MutableStateFlow<Map<String, Long>>(emptyMap())
+
+    /** Songs went into [playlistId]: its page and the Library's playlists (count, cover) are brought up to date. */
+    fun playlistChanged(playlistId: String) {
+        val id = playlistId.removePrefix("VL")
+        playlistEdits.value = playlistEdits.value + (id to System.currentTimeMillis())
+        refreshCollections()
+    }
+
     /** Fetches the library's playlists and albums again (after one is saved, created or changed). */
     fun refreshCollections() {
         if (!c.settings.current.isLoggedIn) return
@@ -413,6 +443,13 @@ class LibraryRepository(private val c: AppContainer) {
     }
 
     companion object {
+        /**
+         * The likes a sync takes away: liked here before, no longer in the account's liked list, and not Prism's own
+         * (local files' likes, and imported likes kept off the account: [kept]).
+         */
+        internal fun likesToDrop(before: Set<String>, remote: Set<String>, kept: Set<String>): List<String> =
+            (before - remote).filterNot { it.startsWith(Song.LOCAL_PREFIX) || it in kept }
+
         /**
          * [items] in the listener's [order]; ones not placed yet (new playlists) lead, in the
          * order YouTube Music lists them.
