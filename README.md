@@ -8,7 +8,7 @@
 A free, open-source YouTube Music client for Android, with word-by-word lyrics, on-device recommendations,<br>karaoke, a DJ mode, Replay and full Android Auto support. No ads, no server, no tracking.
 
 [![Latest release](https://img.shields.io/github/v/release/Yigder/Prism?label=download&color=7c4dff)](../../releases/latest)
-![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-3ddc84?logo=android&logoColor=white)
+![Android 7.1+](https://img.shields.io/badge/Android-7.1%2B-3ddc84?logo=android&logoColor=white)
 ![No tracking](https://img.shields.io/badge/telemetry-none-555)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
 [![Support on Ko-fi](https://img.shields.io/badge/Ko--fi-support%20Prism-ff5e5b?logo=ko-fi&logoColor=white)](https://ko-fi.com/yigder)
@@ -262,7 +262,7 @@ A **Prism Account** is just a name and picture on your phone: no email, no passw
 
 ## Install
 
-1. Download **[`Prism.apk`](../../releases/latest/download/Prism.apk)** on your phone (Android 8.0 or newer).
+1. Download **[`Prism.apk`](../../releases/latest/download/Prism.apk)** on your phone (Android 7.1 or newer, including Fire OS 6).
 2. Open it. Android will ask you to allow installs from your browser or file manager.
 3. Optional: sign in with your YouTube Music account to sync your library.
 

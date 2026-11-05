@@ -318,7 +318,8 @@ object AppFonts {
             ?: error(tr(R.string.couldn_t_open_that_file))
         val ok = runCatching {
             if (android.os.Build.VERSION.SDK_INT >= 29) { android.graphics.fonts.Font.Builder(tmp).build(); true }
-            else Typeface.createFromFile(tmp) != null
+            // createFromFile(File) is Android 8; 7.1 uses the path overload, which has always been there.
+            else Typeface.createFromFile(tmp.path) != null
         }.getOrDefault(false)
         if (!ok || tmp.length() < 1024) { tmp.delete(); error(tr(R.string.that_isn_t_a_font_file)) }
         val out = File(target, slot.fileName)

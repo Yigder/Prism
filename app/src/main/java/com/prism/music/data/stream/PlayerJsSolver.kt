@@ -1,6 +1,7 @@
 package com.prism.music.data.stream
 
 import android.content.Context
+import android.os.Build
 import android.os.Looper
 import android.os.ParcelFileDescriptor
 import androidx.javascriptengine.EvaluationFailedException
@@ -96,6 +97,8 @@ class PlayerJsSolver(private val context: Context, private val http: OkHttpClien
     }
 
     private fun newIsolate(): JavaScriptIsolate {
+        // androidx.javascriptengine needs Android 8.0: don't load its classes at all on Fire OS 6 (7.1).
+        if (Build.VERSION.SDK_INT < 26) throw StreamException("Android 8.0 or newer is needed to play this song")
         if (!JavaScriptSandbox.isSupported()) throw StreamException("Update Android System WebView to play this song")
         val sb = sandbox ?: try {
             JavaScriptSandbox.createConnectedInstanceAsync(context.applicationContext).get(CONNECT_TIMEOUT_S, TimeUnit.SECONDS)

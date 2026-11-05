@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- JavaScriptEngine says 26, but its sandbox is only touched on 26+ (PlayerJsSolver); on Fire OS 6 (25) the
+         signed-in stream solver reports that the system WebView can't run it, instead of the app refusing to install. -->
+    <uses-sdk tools:overrideLibrary="androidx.javascriptengine" />
+
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />

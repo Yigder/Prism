@@ -234,7 +234,8 @@ fun RecognizedScreen(bottomPadding: Dp) {
         tr(R.string.recognized), bottomPadding, subtitle = tr(R.string.songs_prism_found_by_listening),
         actions = { RoundAction(PrismIcons.Recognize, tr(R.string.widget_recognize_empty), glass = true) { nav.go(Routes.RECOGNIZE) } },
     ) {
-        if (widgets?.isRequestPinAppWidgetSupported == true && !placed) item("widget") {
+        // Pinning a widget from an app is Android 8+; Fire OS 6 (7.1) offers it from the launcher only.
+        if (android.os.Build.VERSION.SDK_INT >= 26 && widgets?.isRequestPinAppWidgetSupported == true && !placed) item("widget") {
             Row(
                 Modifier.fillMaxWidth().clickable {
                     placed = widgets.requestPinAppWidget(provider, null, null)
