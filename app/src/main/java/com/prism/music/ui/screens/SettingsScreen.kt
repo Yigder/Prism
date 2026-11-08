@@ -7,6 +7,7 @@ import com.prism.music.ui.components.tabTint
 import com.prism.music.ui.components.PrismOutlinedButton
 import com.prism.music.ui.components.PrismSlider
 import com.prism.music.ui.components.PrismTextButton
+import com.prism.music.ui.components.PrismTextField
 import com.prism.music.ui.theme.PrismIcons
 import android.os.Build
 import android.webkit.CookieManager
@@ -32,6 +33,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,6 +63,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -2320,6 +2324,33 @@ private fun DevicesPage() {
                     tr(R.string.keep_the_song_title), tr(R.string.lyrics_on_the_cover_only), s.carLyricsKeepTitle,
                     info = tr(R.string.the_car_s_small_media_card),
                 ) { prefs.setCarLyricsKeepTitle(it) }
+                if (!s.carLyricsKeepTitle) {
+                    Toggle(
+                        tr(R.string.car_lyrics_split_title),
+                        tr(R.string.car_lyrics_split_desc),
+                        s.carLyricsSplit,
+                        info = tr(R.string.car_lyrics_split_info),
+                    ) { prefs.setCarLyricsSplit(it) }
+                    if (s.carLyricsSplit) {
+                        var showLengthDialog by remember { mutableStateOf(false) }
+                        if (showLengthDialog) {
+                            CarLyricsLengthDialog(
+                                currentLength = s.carLyricsTitleLength,
+                                onDismiss = { showLengthDialog = false },
+                                onSave = { len ->
+                                    prefs.setCarLyricsTitleLength(len)
+                                    showLengthDialog = false
+                                },
+                            )
+                        }
+                        Item(
+                            tr(R.string.car_lyrics_length_title),
+                            tr(R.string.car_lyrics_length_summary, s.carLyricsTitleLength),
+                            onClick = { showLengthDialog = true },
+                            info = tr(R.string.car_lyrics_length_info),
+                        )
+                    }
+                }
                 Toggle(tr(R.string.on_this_phone_too), tr(R.string.lock_screen_and_notification), s.carLyricsOnPhone) { prefs.setCarLyricsOnPhone(it) }
             }
             Toggle(
@@ -2345,6 +2376,48 @@ private fun DevicesPage() {
         }
         SharingGroup()
     }
+}
+
+@Composable
+private fun CarLyricsLengthDialog(
+    currentLength: Int,
+    onDismiss: () -> Unit,
+    onSave: (length: Int) -> Unit,
+) {
+    var text by remember { mutableStateOf(currentLength.toString()) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(tr(R.string.car_lyrics_dialog_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Text(
+                    tr(R.string.car_lyrics_dialog_desc),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                PrismTextField(
+                    text,
+                    { text = it.filter { c -> c.isDigit() }.take(3) },
+                    Modifier.fillMaxWidth(),
+                    label = { Text(tr(R.string.car_lyrics_dialog_label)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                )
+            }
+        },
+        confirmButton = {
+            PrismTextButton(onClick = {
+                val len = (text.toIntOrNull() ?: currentLength).coerceIn(10, 80)
+                onSave(len)
+            }) { Text(tr(R.string.save)) }
+        },
+        dismissButton = {
+            Row {
+                PrismTextButton(onClick = { onSave(AppSettings().carLyricsTitleLength) }) { Text(tr(R.string.reset)) }
+                PrismTextButton(onClick = onDismiss) { Text(tr(R.string.cancel)) }
+            }
+        },
+    )
 }
 
 /** What links Prism sends (Reddit R9), and YouTube Music links opening in Prism (R10). */

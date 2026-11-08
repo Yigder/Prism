@@ -1379,6 +1379,14 @@ data class AppSettings(
      * the car's small media card reads as usual, while its full player shows the lyric card big.
      */
     val carLyricsKeepTitle: Boolean = false,
+    /** Whether long lyrics wrap across both lines (title and subtitle slots) in Android Auto. */
+    val carLyricsSplit: Boolean = false,
+    /**
+     * Character limit before a lyric wraps onto the subtitle slot in Android Auto when splitting is enabled.
+     * Android Auto shares the same MediaMetadata across full player, split-screen (dashboard), and bottom
+     * taskbar views without notifying apps of the active view, so this limit applies across all car views.
+     */
+    val carLyricsTitleLength: Int = 24,
     /** Android Auto shows Home and Library as cover tiles under section headings (like Spotify's), not plain lists. */
     val autoGrid: Boolean = true,
     /** Shared links as youtube.com / youtu.be ones instead of music.youtube.com (Reddit R9; albums stay YouTube Music's). */
@@ -1839,6 +1847,8 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val carLyricsStyle = stringPreferencesKey("car_lyrics_style")
         val carLyricsOnPhone = booleanPreferencesKey("car_lyrics_on_phone")
         val carLyricsKeepTitle = booleanPreferencesKey("car_lyrics_keep_title")
+        val carLyricsSplit = booleanPreferencesKey("car_lyrics_split")
+        val carLyricsTitleLength = intPreferencesKey("car_lyrics_title_length")
         val autoGrid = booleanPreferencesKey("auto_grid")
         val shareYoutubeLinks = booleanPreferencesKey("share_youtube_links")
         val showNerdStats = booleanPreferencesKey("nerd_stats")
@@ -2400,6 +2410,8 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             carLyricsStyle = p.enum(K.carLyricsStyle, d.carLyricsStyle),
             carLyricsOnPhone = p[K.carLyricsOnPhone] ?: d.carLyricsOnPhone,
             carLyricsKeepTitle = p[K.carLyricsKeepTitle] ?: d.carLyricsKeepTitle,
+            carLyricsSplit = p[K.carLyricsSplit] ?: d.carLyricsSplit,
+            carLyricsTitleLength = p[K.carLyricsTitleLength] ?: d.carLyricsTitleLength,
             autoGrid = p[K.autoGrid] ?: d.autoGrid,
             shareYoutubeLinks = p[K.shareYoutubeLinks] ?: d.shareYoutubeLinks,
             showNerdStats = p[K.showNerdStats] ?: d.showNerdStats,
@@ -2983,6 +2995,8 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     fun setCarLyricsStyle(v: CarLyricsStyle) = edit { it[K.carLyricsStyle] = v.name }
     fun setCarLyricsOnPhone(v: Boolean) = edit { it[K.carLyricsOnPhone] = v }
     fun setCarLyricsKeepTitle(v: Boolean) = edit { it[K.carLyricsKeepTitle] = v }
+    fun setCarLyricsSplit(v: Boolean) = edit { it[K.carLyricsSplit] = v }
+    fun setCarLyricsTitleLength(v: Int) = edit { it[K.carLyricsTitleLength] = v }
     fun setAutoGrid(v: Boolean) = edit { it[K.autoGrid] = v }
     fun setShareYoutubeLinks(v: Boolean) = edit { it[K.shareYoutubeLinks] = v }
     fun setShowNerdStats(v: Boolean) = edit { it[K.showNerdStats] = v }

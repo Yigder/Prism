@@ -1417,6 +1417,15 @@
     <string name="translate_lyrics">Translate lyrics</string>
     <string name="pick_a_romanize_lyrics_option_first">Pick a Romanize lyrics option first</string>
     <string name="lyrics_in_the_car">Lyrics in the car</string>
+    <string name="car_lyrics_split_title" translatable="false">Split long lyrics onto subtitle</string>
+    <string name="car_lyrics_split_desc" translatable="false">Wrap across both lines</string>
+    <string name="car_lyrics_split_info" translatable="false">When a lyric exceeds the character limit, wrap the remainder onto the second line instead of showing the song title and artist.</string>
+    <string name="car_lyrics_length_title" translatable="false">Line length limit</string>
+    <string name="car_lyrics_length_summary" translatable="false">%d characters</string>
+    <string name="car_lyrics_length_info" translatable="false">Line 1 maximum characters before wrapping onto the subtitle line. Because Android Auto shares the same text across full player, split-screen, and bottom taskbar views without exposing the active view, tune this to match your preferred view.</string>
+    <string name="car_lyrics_dialog_title" translatable="false">Android Auto lyric length</string>
+    <string name="car_lyrics_dialog_desc" translatable="false">Set the maximum characters for Line 1 before wrapping to Line 2. Android Auto uses this same limit across full player, split screen, and taskbar views.</string>
+    <string name="car_lyrics_dialog_label" translatable="false">Max characters</string>
     <string name="account">Account</string>
     <string name="google_youtube_sign_in_sign_out">google youtube sign in sign out switch account add account</string>
     <string name="prism_account">Prism Account</string>

@@ -161,6 +161,7 @@ class LyricsOverlayPlayer(player: Player) : ForwardingSimpleBasePlayer(player) {
             .setTitle(o.title)
             .setDisplayTitle(o.title)
             .setArtist(o.artist)
+            .setSubtitle(o.artist)
             .apply { if (o.artwork != null) { setArtworkData(o.artwork, MediaMetadata.PICTURE_TYPE_FRONT_COVER); setArtworkUri(null) } }
             .build()
         return s.buildUpon().setPlaylist(s.timeline, s.currentTracks, meta).build()
@@ -275,8 +276,18 @@ class CarLyrics(
         lastArtAt = now
         shown = key
         overlay.show(
-            if (keepTitle) LyricsOverlayPlayer.Overlay(s.id, s.title, s.artistText, art)
-            else LyricsOverlayPlayer.Overlay(s.id, line.text, "${s.title} · ${s.artistText}", art)
+            when {
+                keepTitle -> LyricsOverlayPlayer.Overlay(s.id, s.title, s.artistText, art)
+                c.settings.current.carLyricsSplit -> {
+                    val (title, sub) = splitLyric(
+                        line.text,
+                        "${s.title} · ${s.artistText}",
+                        maxTitle = c.settings.current.carLyricsTitleLength,
+                    )
+                    LyricsOverlayPlayer.Overlay(s.id, title, sub, art)
+                }
+                else -> LyricsOverlayPlayer.Overlay(s.id, line.text, "${s.title} · ${s.artistText}", art)
+            }
         )
     }
 
@@ -284,6 +295,17 @@ class CarLyrics(
         if (shown == null) return
         shown = null
         overlay.show(null)
+    }
+
+    companion object {
+        /** Splits a long lyric across title and subtitle slots if enabled. */
+        fun splitLyric(text: String, defaultSubtitle: String, maxTitle: Int = 24): Pair<String, String> {
+            if (text.length <= maxTitle) return text to defaultSubtitle
+            val cut = text.lastIndexOf(' ', maxTitle).takeIf { it >= maxTitle / 3 } ?: maxTitle
+            val line1 = text.take(cut).trimEnd()
+            val line2 = text.substring(cut).trimStart()
+            return line1 to line2
+        }
     }
 }
 

@@ -334,7 +334,9 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         scope.launch { c.dj.rescan.drop(1).collect { if (c.dj.onNow) djAhead() } }
         scope.launch { c.settings.flow.map { it.djFlow }.distinctUntilChanged().drop(1).collect { resequence() } }
         scope.launch {
-            c.settings.flow.map { Triple(it.carLyrics, it.carLyricsStyle, it.carLyricsOnPhone) }.distinctUntilChanged().collect {
+            c.settings.flow.map {
+                listOf(it.carLyrics, it.carLyricsStyle, it.carLyricsOnPhone, it.carLyricsKeepTitle, it.carLyricsSplit, it.carLyricsTitleLength)
+            }.distinctUntilChanged().collect {
                 carLyrics.refresh(); updateButtons()
             }
         }
