@@ -2342,7 +2342,7 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         if (item.mediaId.startsWith(Song.LOCAL_PREFIX)) {
             val uri = c.localMusic.uriFor(item.mediaId) ?: return null
             val format = c.localMusic.track(item.mediaId)?.mime?.let(::fileFormatName)
-            c.streamDetails[item.mediaId] = "On this phone" + (format?.let { " · $it" } ?: "") to null
+            c.streamDetails[item.mediaId] = ("On this phone" + (format?.let { " · $it" } ?: "")) to null
             scope.launch { applyStreamStats(item.mediaId) }
             return uri
         }

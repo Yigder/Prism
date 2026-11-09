@@ -443,7 +443,7 @@ private fun PhoneResults(query: String, bottomPadding: Dp, onPlay: () -> Unit) {
  * [songs] (music files or downloads) with every typed word in their title, artist or album, the best first: titles
  * that start with it, then titles, artists and albums that have it.
  */
-private fun phoneMatches(query: String, songs: List<com.prism.music.data.model.Song>): List<com.prism.music.data.model.Song> {
+internal fun phoneMatches(query: String, songs: List<com.prism.music.data.model.Song>): List<com.prism.music.data.model.Song> {
     val q = phoneNorm(query)
     val words = q.split(' ').filter { it.isNotBlank() }
     if (words.isEmpty()) return emptyList()

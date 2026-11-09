@@ -392,6 +392,8 @@ class AppContainer(val app: Application) {
      */
     internal fun audioOnPhone(id: String, scratch: File): android.net.Uri? {
         if (id.startsWith(com.prism.music.data.model.Song.LOCAL_PREFIX)) return localMusic.uriFor(id)
+        // A file on the phone picked to play in its place is its sound too.
+        versions.fileOf(id)?.let(localMusic::uriFor)?.let { return it }
         for ((cache, key) in listOf(downloadCache to id, playerCache to songCacheKey(id))) {
             if (!cache.fullyCached(key, 0, C.LENGTH_UNSET.toLong())) continue
             val ok = runCatching {
@@ -729,7 +731,8 @@ class AppContainer(val app: Application) {
 
     /** Whether a song plays without the network: a file on the phone, a finished download, or a song cached whole. */
     fun availableOffline(id: String): Boolean =
-        id.startsWith(com.prism.music.data.model.Song.LOCAL_PREFIX) || downloads.isDownloaded(id) ||
+        id.startsWith(com.prism.music.data.model.Song.LOCAL_PREFIX) || versions.fileOf(id) != null ||
+            downloads.isDownloaded(id) ||
             runCatching { playerCache.fullyCached(songCacheKey(id), 0, C.LENGTH_UNSET.toLong()) }.getOrDefault(false)
 
     private fun Cache.fullyCached(key: String, position: Long, length: Long): Boolean {
@@ -924,6 +927,7 @@ class AppContainer(val app: Application) {
         writer: ((androidx.media3.datasource.cache.CacheWriter) -> Unit)? = null,
     ) {
         if (id.startsWith(com.prism.music.data.model.Song.LOCAL_PREFIX)) return // a file on the phone is ready already
+        if (versions.fileOf(id) != null) return // and so is one picked to play in the song's place
         if (id.startsWith(com.prism.music.data.model.Song.RSS_PREFIX)) return // an hour of a feed's audio isn't fetched on the chance
         if (downloadCache.fullyCached(id, 0, C.LENGTH_UNSET.toLong())) return
         yieldToPlaying(if (forSing) null else id)

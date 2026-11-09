@@ -13,6 +13,8 @@ val Song.shown: Song get() = SongVersions.shownOf(this)
  * guitar cover, and nothing in Prism could change it). Song id → the picked recording's id, kept on the phone.
  * Everything that fetches the song's sound (playing, caching, downloading, scans) asks for the pick instead
  * ([com.prism.music.data.stream.StreamResolver.versionOf]); the song keeps its own id, lyrics, likes and history.
+ * A pick can also be one of the phone's own files ([Song.isLocal], chosen in the sheet's search): then there's no
+ * stream to ask for ([streamedOf]) and the player reads the file in its place ([fileOf]).
  * Where it shows (#328, 1.8.1.1: the player, lists, the notification, the car, widgets), it shows as the pick: its
  * cover, title, artists, album and length ([shown], and [com.prism.music.data.PlaylistCovers.art] for the cover).
  */
