@@ -67,6 +67,9 @@ class LookTest {
     @Test
     fun aLookCanOnlySetLookSettingsWithTheRightKind(): Unit = runBlocking {
         val r = repo()
+        // The store is one per process: a Look an earlier test class left (LookStoreTest's Neon) goes first.
+        r.applyLook(emptyMap())
+        withTimeout(5_000) { r.lookValues.first { it.isEmpty() } }
         r.applyLook(mapOf("cookie" to "s:SAPISID=stolen", "pure_black" to "s:yes", "corners" to "s:SHARP"))
         val now = withTimeout(5_000) { r.lookValues.first { it.isNotEmpty() } }
         assertEquals(mapOf("corners" to "s:SHARP"), now)

@@ -411,9 +411,10 @@ fun BlendScreen(who: String, bottomPadding: Dp) {
                     if (c.settings.current.isLoggedIn) DropdownMenuItem({ Text(tr(R.string.save_to_youtube_music)) }, {
                         menu = false
                         scope.launch {
-                            val id = runCatching { withContext(Dispatchers.IO) { c.ytm.createPlaylist(tr(R.string.blend_2, title), songs.map { it.id }, privacy = "PRIVATE") } }.getOrNull()
+                            val name = tr(R.string.blend_2, title)
+                            val id = runCatching { withContext(Dispatchers.IO) { c.ytm.createPlaylist(name, songs.map { it.id }, privacy = "PRIVATE") } }.getOrNull()
                             Toast.makeText(context, if (id != null) tr(R.string.saved_as_a_private_playlist) else tr(R.string.couldn_t_save_the_blend), Toast.LENGTH_SHORT).show()
-                            if (id != null) c.library.refreshCollections()
+                            if (id != null) c.library.created(id, name, songs.size)
                         }
                     }, leadingIcon = { Icon(PrismIcons.PlaylistAdd, null) })
                     DropdownMenuItem({ Text(tr(R.string.remove_this_blend)) }, {

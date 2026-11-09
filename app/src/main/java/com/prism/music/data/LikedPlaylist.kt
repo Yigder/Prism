@@ -57,7 +57,7 @@ class LikedPlaylist(private val c: AppContainer) {
                     ?: throw java.io.IOException(tr(R.string.youtube_music_didn_t_make_the))
                 if (ids.size > 50) c.ytm.addAllToPlaylist(id, ids.drop(50))
                 save(id, name, ids.toSet())
-                c.library.refreshCollections()
+                c.library.created(id, name, ids.size)
                 id
             }.onFailure { lastError.value = it.friendlyMessage() }
         }

@@ -1061,17 +1061,30 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             // into the video) sent it back to the song for good.
             val network = error.errorCode in PlaybackException.ERROR_CODE_IO_UNSPECIFIED..PlaybackException.ERROR_CODE_IO_READ_POSITION_OUT_OF_RANGE
             val at = SystemClock.elapsedRealtime()
-            if (videoRetryAllowed(videoRetriedAt[videoId], at) && (httpCode == 403 || httpCode == 410 || parse || network)) {
+            // #411: which part failed (the picture or the sound) and what it was read from, and what the picture streams as.
+            val about = "${VideoLegs.lastFor(videoId, at)?.describe() ?: "which part failed isn't known"}; picture ${c.streams.pictureOf(videoId) ?: "not looked up"}" +
+                (runCatching { c.downloadCache.getCachedBytes("video:$videoId", 0, Long.MAX_VALUE) }.getOrDefault(0L).takeIf { it > 0 }?.let { "; Downloads hold $it bytes of it" } ?: "")
+            val retry = videoRetry(httpCode, parse, network, videoRetriedAt[videoId], at)
+            if (retry != null) {
                 videoRetriedAt[videoId] = at
-                AudioDiagnostics.log("video", "video $videoId failed (${httpCode ?: if (parse) "unreadable" else error.errorCodeName}): trying its streams afresh")
+                AudioDiagnostics.log("video", "video $videoId failed (${httpCode ?: if (parse) "unreadable" else error.errorCodeName}; $about): trying its streams afresh")
                 c.streams.invalidate(videoId, refused = true)
                 val pos = player.currentPosition
+                if (retry.forgetCachedSound) {
+                    // Its sound's cached part goes too, as a song's does (below): asked afresh, the same bytes were read again.
+                    val index = player.currentMediaItemIndex
+                    scope.launch {
+                        withContext(Dispatchers.IO) { c.forgetCachedAudio(videoId) }
+                        playOnFrom(index, id, pos)
+                    }
+                    return
+                }
                 player.prepare()
                 player.seekTo(pos)
                 player.play()
                 return
             }
-            AudioDiagnostics.log("video", "video $videoId failed (${httpCode ?: error.errorCodeName}: ${(error.cause ?: error).message?.take(80)}): back to the song")
+            AudioDiagnostics.log("video", "video $videoId failed (${httpCode ?: error.errorCodeName}: ${(error.cause ?: error).message?.take(80)}; $about): back to the song")
             scope.launch { revertVideo(id) }
             return
         }

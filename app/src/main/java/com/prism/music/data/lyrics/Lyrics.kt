@@ -534,7 +534,8 @@ object WordFormat {
         if (bytes.size < 5 || String(bytes, 0, 4, Charsets.US_ASCII) != "krc1") return null
         val key = intArrayOf(64, 71, 97, 119, 94, 50, 116, 71, 81, 54, 49, 45, 206, 210, 110, 105)
         val data = ByteArray(bytes.size - 4) { i -> (bytes[i + 4].toInt() xor key[i % 16]).toByte() }
-        java.util.zip.InflaterInputStream(data.inputStream()).bufferedReader(Charsets.UTF_8).readText()
+        // KuGou's files can start with a byte-order mark, which then stuck to the first line's first word (#403's KAIRO).
+        java.util.zip.InflaterInputStream(data.inputStream()).bufferedReader(Charsets.UTF_8).readText().replace("﻿", "")
     }.getOrNull()
 }
 
@@ -699,15 +700,41 @@ class LyricsRepository(
         return ytm.lyrics(id)
     }
 
+    /**
+     * The file hashes of KuGou song-search hits ([results], song_search_v2) that are [song]: its title, one of its
+     * singers and its length; best first, up to 3.
+     */
+    internal fun kuGouSongHashes(results: JsonElement?, song: Song): List<String> {
+        val title = norm(cleanTitle(song.title))
+        val artist = norm(song.primaryArtist)
+        val hits = results.field("data").field("lists") as? JsonArray ?: return emptyList()
+        if (title.isBlank() || artist.isBlank()) return emptyList()
+        return hits.filter { s ->
+            val t = norm(s.str("OriSongName")?.takeIf { it.isNotBlank() } ?: s.str("SongName") ?: "")
+            val singers = (s.str("SingerName") ?: "").split('、', ',', '&').map(::norm)
+            t.isNotBlank() && (t == title || t.contains(title) || title.contains(t)) &&
+                singers.any { it.isNotBlank() && (it.contains(artist) || artist.contains(it)) } &&
+                lengthFits(song, s.str("Duration")?.toDoubleOrNull())
+        }.mapNotNull { it.str("FileHash")?.takeIf { h -> h.isNotBlank() } }.take(3)
+    }
+
     private fun fetchKuGou(song: Song): String? {
-        fun search(keyword: String) = "https://lyrics.kugou.com/search".toHttpUrl().newBuilder()
+        fun search(keyword: String, hash: String = "") = "https://lyrics.kugou.com/search".toHttpUrl().newBuilder()
             .addQueryParameter("ver", "1").addQueryParameter("man", "yes").addQueryParameter("client", "pc")
             .addQueryParameter("keyword", keyword)
             .addQueryParameter("duration", (song.durationSec * 1000L).toString())
-            .addQueryParameter("hash", "").build()
-        // KuGou matches "Artist - Title" far more often than the other way round.
+            .addQueryParameter("hash", hash).build()
+        fun found(url: okhttp3.HttpUrl) =(getJson(url).field("candidates") as? JsonArray)?.takeIf { it.isNotEmpty() }
+        // KuGou's song search, which (unlike its lyric search) doesn't go by the artist's exact case.
+        fun songHashes() = kuGouSongHashes(getJson("https://songsearch.kugou.com/song_search_v2".toHttpUrl().newBuilder()
+            .addQueryParameter("keyword", "${song.primaryArtist} ${cleanTitle(song.title)}")
+            .addQueryParameter("page", "1").addQueryParameter("pagesize", "10")
+            .addQueryParameter("platform", "WebFilter").build()), song)
+        // KuGou matches "Artist - Title" far more often than the other way round. The lyric search goes by the artist's
+        // exact case ("KAIRO" finds nothing, "Kairo" does, #403); the song search's file hash finds those.
         val candidates = listOf("${song.primaryArtist} - ${cleanTitle(song.title)}", "${cleanTitle(song.title)} - ${song.primaryArtist}")
-            .firstNotNullOfOrNull { (getJson(search(it)).field("candidates") as? JsonArray)?.takeIf { c -> c.isNotEmpty() } } ?: return null
+            .firstNotNullOfOrNull { found(search(it)) }
+            ?: songHashes().firstNotNullOfOrNull { found(search("", it)) } ?: return null
         val fitting = candidates.filter { lengthFits(song, it.str("duration")?.toDoubleOrNull()?.div(1000)) }
             .sortedBy { abs((it.str("duration")?.toLongOrNull() ?: 0L) - song.durationSec * 1000L) }
         // KuGou lists some edits under the album's length: "Thriller" (5:57) came back as "[ti:Thriller(Single Version)]",

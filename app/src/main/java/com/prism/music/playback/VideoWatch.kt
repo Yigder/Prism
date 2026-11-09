@@ -26,3 +26,15 @@ fun videoWatchVerdict(hasPicture: Boolean, buffering: Boolean, waitedMs: Long): 
 
 /** Whether a video that just failed may have its streams asked for afresh: never yet, or not in the last minute. */
 fun videoRetryAllowed(lastRetryAt: Long?, now: Long): Boolean = lastRetryAt == null || now - lastRetryAt >= VIDEO_RETRY_WINDOW_MS
+
+/** A music video's retry: its streams asked for afresh, and with [forgetCachedSound], its sound's cached part dropped too. */
+data class VideoRetry(val forgetCachedSound: Boolean)
+
+/**
+ * Whether a music video that failed gets another go ([videoRetryAllowed]) and how; null: back to the song. Refused (403,
+ * 410), unreadable or a network failure is worth one. [unreadable] (#411): its bytes couldn't be read, so its sound's
+ * cached part goes too, as a song's does: asking afresh alone read the same cached bytes again and failed at once.
+ */
+fun videoRetry(httpCode: Int?, unreadable: Boolean, network: Boolean, lastRetryAt: Long?, now: Long): VideoRetry? =
+    if (videoRetryAllowed(lastRetryAt, now) && (httpCode == 403 || httpCode == 410 || unreadable || network)) VideoRetry(forgetCachedSound = unreadable)
+    else null
