@@ -156,7 +156,7 @@ fun InlineQueue(onRevealPlayer: () -> Unit, onHidePlayer: () -> Unit, modifier: 
         c.scope.launch(kotlinx.coroutines.Dispatchers.Main) {
             val id = runCatching { c.ytm.createPlaylist(name, songs, privacy = privacy) }.getOrNull()
             android.widget.Toast.makeText(context, if (id != null) tr(R.string.saved_to, com.prism.music.data.model.songCount(songs.size), name) else tr(R.string.couldn_t_save_the_queue), android.widget.Toast.LENGTH_SHORT).show()
-            if (id != null) c.library.refreshCollections()
+            if (id != null) c.library.created(id, name, songs.size)
         }
     }
 

@@ -719,7 +719,7 @@ fun LibraryScreen(bottomPadding: Dp) {
                 val id = runCatching { c.ytm.createPlaylist(name, emptyList(), privacy = privacy) }.getOrNull()
                 if (id == null) android.widget.Toast.makeText(context, tr(R.string.couldn_t_make_the_playlist), android.widget.Toast.LENGTH_SHORT).show()
                 else {
-                    c.library.refreshCollections()
+                    c.library.created(id, name)
                     nav.go(Routes.playlist(id))
                 }
             }

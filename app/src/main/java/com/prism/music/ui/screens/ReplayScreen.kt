@@ -344,7 +344,10 @@ fun ReplayScreen(bottomPadding: Dp) {
                             val name = if (period.isYear) tr(R.string.top_songs_of, period.year) else tr(R.string.replay_3, period.label)
                             val id = runCatching { c.ytm.createPlaylist(name, songs.take(100).map { it.id }, tr(R.string.made_with_prism_replay)) }.getOrNull()
                             Toast.makeText(context, if (id != null) tr(R.string.saved_to_youtube_music, name) else tr(R.string.couldn_t_create_playlist), Toast.LENGTH_SHORT).show()
-                            if (id != null) nav.go(Routes.playlist(id))
+                            if (id != null) {
+                                c.library.created(id, name, minOf(songs.size, 100))
+                                nav.go(Routes.playlist(id))
+                            }
                         }
                     },
                     modifier = Modifier.size(48.dp),

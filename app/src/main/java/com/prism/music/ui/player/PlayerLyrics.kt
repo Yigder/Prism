@@ -21,8 +21,8 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.indication
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -114,6 +114,7 @@ import androidx.compose.ui.unit.sp
 import com.prism.music.data.lyrics.LyricLine
 import com.prism.music.data.lyrics.Lyrics
 import com.prism.music.data.lyrics.LyricsRepository
+import com.prism.music.data.lyrics.RubySpan
 import com.prism.music.data.model.Song
 import com.prism.music.data.prefs.LyricsSource
 import com.prism.music.ui.theme.LocalContainer
@@ -147,15 +148,39 @@ internal fun lyricLineLift(settleAt: Float, lineHeight: Float, viewport: Float):
     return over.coerceIn(0f, (settleAt - viewport * LYRIC_HEAD).coerceAtLeast(0f))
 }
 
-/** Scrolls the sung line ([lead]) to its place: at the page's settling point, lifted when [lifts] as [lyricLineLift] says. */
+/**
+ * Scrolls the sung line ([lead]) to its place: at the page's settling point, lifted when [lifts] as [lyricLineLift] says.
+ * #399: animated, it follows the line on the way (where it is and how tall, read again each frame) rather than going a
+ * distance worked out before it starts: a line changing height meanwhile left it short of its place or past it.
+ */
 private suspend fun LazyListState.settleLine(lead: Int, lifts: Boolean, animate: Boolean) {
-    val info = layoutInfo
-    val item = info.visibleItemsInfo.firstOrNull { it.index == lead } ?: return
-    val lift = if (lifts) lyricLineLift(info.beforeContentPadding.toFloat(), item.size.toFloat(), info.viewportSize.height.toFloat()) else 0f
-    val by = item.offset + lift
+    fun away(): Float? {
+        val info = layoutInfo
+        val item = info.visibleItemsInfo.firstOrNull { it.index == lead } ?: return null
+        val lift = if (lifts) lyricLineLift(info.beforeContentPadding.toFloat(), item.size.toFloat(), info.viewportSize.height.toFloat()) else 0f
+        return item.offset + lift
+    }
+    val by = away() ?: return
     if (abs(by) < 1f) return
-    if (animate) animateScrollBy(by, tween(LYRIC_SETTLE_MS, easing = LYRIC_EASING)) else scrollBy(by)
+    if (!animate) { scrollBy(by); return }
+    scroll {
+        var left = by
+        var before = 0f
+        androidx.compose.animation.core.animate(0f, 1f, animationSpec = tween(LYRIC_SETTLE_MS, easing = LYRIC_EASING)) { now, _ ->
+            left = away() ?: left
+            left -= scrollBy(settleStep(left, before, now))
+            before = now
+        }
+    }
 }
+
+/**
+ * #399: how far the settle goes this frame to stay on its curve: of what's [left] to go, the share the curve covers from
+ * [before] to [now] (0 at the start, 1 at the end). With nothing moving it is the curve itself; a target that moves is
+ * taken in on the way, and the last frame goes all the rest.
+ */
+internal fun settleStep(left: Float, before: Float, now: Float): Float =
+    if (before >= 1f || now >= 1f) left else left * ((now - before) / (1f - before)).coerceIn(0f, 1f)
 private val FALLOFF_ALPHA = floatArrayOf(1f, 0.8f, 0.7f, 0.58f, 0.46f)
 private val FALLOFF_BLUR = arrayOf(0.dp, 1.dp, 1.dp, 1.7.dp, 2.4.dp)
 private const val UNSUNG_ALPHA = 0.38f
@@ -593,6 +618,7 @@ fun SweptLine(
         line.words.map { w -> val start = acc; acc += w.text.length; start to acc }
     }
     val rtl = remember(line) { isRtl(line.text) }
+    val rows = remember { SweptRows() }
     // In a right-to-left layout a right-to-left line already starts at the right, so it can keep its own width.
     val ltrLayout = LocalLayoutDirection.current == LayoutDirection.Ltr
     // Full width, so centred and right-aligned lines (and right-to-left ones) sit where their plain copies do.
@@ -611,7 +637,7 @@ fun SweptLine(
                     // part fades in. Drawn whole under the sung part, their soft edges showed round its letters as a pale
                     // fringe (a colored fill over white words still to come, Karaoke's).
                     val l = layout ?: return@drawWithContent drawContent()
-                    drawSweep(l, line, offsets, clock.value, litBrush ?: SolidColor(Color.White), dim, style, glow ?: style.shadow)
+                    drawSweep(l, rows.edges(l), line, offsets, clock.value, litBrush ?: SolidColor(Color.White), dim, style, glow ?: style.shadow)
                 },
                 style = style, color = dim, maxLines = maxLines, overflow = TextOverflow.Ellipsis, onTextLayout = { layout = it; onLayout?.invoke(it) },
             )
@@ -631,7 +657,7 @@ fun SweptLine(
                         val l = layout ?: return@drawWithContent
                         val sung = sungChars(line, offsets, clock.value)
                         if (sung <= 0f) return@drawWithContent
-                        forEachSweptRow(l, line, sung) { top, bottom, part, from, to, rtlLine ->
+                        forEachSweptRow(l, rows.edges(l), line, sung) { top, bottom, part, from, to, rtlLine ->
                             val rowSize = androidx.compose.ui.geometry.Size(size.width, bottom - top)
                             when (part) {
                                 ROW_SUNG -> drawRect(Color.Black, Offset(0f, top), rowSize, blendMode = BlendMode.DstOut)
@@ -656,11 +682,12 @@ fun SweptLine(
                     // Erase what hasn't been sung yet, with a soft edge so the light glides through the word.
                     val feather = size.height.coerceAtMost(l.getLineBottom(0) - l.getLineTop(0)) * 0.55f
                     val textLen = line.text.length
+                    val edges = rows.edges(l)
                     for (li in 0 until l.lineCount) {
                         val ls = l.getLineStart(li)
                         val le = l.getLineEnd(li, visibleEnd = true)
-                        val top = l.getLineTop(li)
-                        val bottom = l.getLineBottom(li)
+                        val top = edges[li]
+                        val bottom = edges[li + 1]
                         if (sung >= le) continue
                         if (sung <= ls) {
                             drawRect(Color.Black, Offset(0f, top), androidx.compose.ui.geometry.Size(size.width, bottom - top), blendMode = BlendMode.DstOut)
@@ -709,15 +736,15 @@ private const val ROW_SUNG = 2
  * whether the row reads right to left (what's still to come then lies to the left).
  */
 private inline fun androidx.compose.ui.graphics.drawscope.DrawScope.forEachSweptRow(
-    l: TextLayoutResult, line: LyricLine, sung: Float, row: (top: Float, bottom: Float, part: Int, from: Float, to: Float, rtl: Boolean) -> Unit,
+    l: TextLayoutResult, edges: FloatArray, line: LyricLine, sung: Float, row: (top: Float, bottom: Float, part: Int, from: Float, to: Float, rtl: Boolean) -> Unit,
 ) {
     val feather = size.height.coerceAtMost(l.getLineBottom(0) - l.getLineTop(0)) * 0.55f
     val textLen = line.text.length
     for (li in 0 until l.lineCount) {
         val ls = l.getLineStart(li)
         val le = l.getLineEnd(li, visibleEnd = true)
-        val top = l.getLineTop(li)
-        val bottom = l.getLineBottom(li)
+        val top = edges[li]
+        val bottom = edges[li + 1]
         when {
             sung >= le -> row(top, bottom, ROW_SUNG, 0f, 0f, false)
             sung <= ls -> row(top, bottom, ROW_TO_COME, 0f, 0f, false)
@@ -741,18 +768,71 @@ private inline fun androidx.compose.ui.graphics.drawscope.DrawScope.forEachSwept
  * [dim] fades in, so neither lies under the other (#303).
  */
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSweep(
-    l: TextLayoutResult, line: LyricLine, offsets: List<Pair<Int, Int>>, now: Long, lit: Brush, dim: Color, style: TextStyle, shadow: androidx.compose.ui.graphics.Shadow?,
+    l: TextLayoutResult, edges: FloatArray, line: LyricLine, offsets: List<Pair<Int, Int>>, now: Long, lit: Brush, dim: Color, style: TextStyle, shadow: androidx.compose.ui.graphics.Shadow?,
 ) {
     val sung = sungChars(line, offsets, now)
     val dimFill = SolidColor(dim)
-    forEachSweptRow(l, line, sung) { top, bottom, part, from, to, rtlLine ->
+    forEachSweptRow(l, edges, line, sung) { top, bottom, part, from, to, rtlLine ->
         val litPart = when (part) { ROW_SUNG -> lit; ROW_SINGING -> fadedAt(lit, from, to, rtlLine); else -> null }
         val dimPart = when { dim.alpha <= 0f -> null; part == ROW_TO_COME -> dimFill; part == ROW_SINGING -> fadedAt(dimFill, from, to, !rtlLine); else -> null }
-        clipRect(0f, top, size.width, bottom) {
+        // #399: no edge at the sides either (a glow's outline and a heavy sung letter reach past the line's box).
+        clipRect(-ROW_FAR, top, size.width + ROW_FAR, bottom) {
             // alpha 1: left unset, the paint keeps the dim copy's alpha and the sung words came out half see-through.
             if (dimPart != null) drawText(l, dimPart, alpha = 1f, shadow = shadow, textDecoration = style.textDecoration, drawStyle = style.drawStyle)
             if (litPart != null) drawText(l, litPart, alpha = 1f, shadow = shadow, textDecoration = style.textDecoration, drawStyle = style.drawStyle)
         }
+    }
+}
+
+/** Far enough past a line's box (px) to stand for "no edge" in a clip or an erase. */
+private const val ROW_FAR = 100_000f
+
+/**
+ * #399: where each row of a swept line ends and the next begins, by the rows' own letters: midway between the bottom of
+ * one row's letters and the top of the next one's (the middle of where they overlap, at tight line spacing), and no edge
+ * above the first row or below the last. The rows' own bands (`getLineTop`..`getLineBottom`) cut off the descenders,
+ * accents and glow that reach past them. Worked out once a layout, not each frame.
+ */
+private class SweptRows {
+    private var layout: TextLayoutResult? = null
+    private var edges = FloatArray(0)
+
+    fun edges(l: TextLayoutResult): FloatArray {
+        if (l === layout) return edges
+        val n = l.lineCount
+        val e = FloatArray(n + 1)
+        e[0] = -ROW_FAR
+        e[n] = ROW_FAR
+        if (n > 1) {
+            // The letters' own bounds, measured in the line's typeface (a tight row's band can end above its baseline).
+            val input = l.layoutInput
+            val st = input.style
+            val paint = if (!st.fontSize.isSp) null else android.graphics.Paint().apply {
+                typeface = input.fontFamilyResolver.resolve(
+                    st.fontFamily, st.fontWeight ?: FontWeight.Normal,
+                    st.fontStyle ?: androidx.compose.ui.text.font.FontStyle.Normal,
+                    st.fontSynthesis ?: androidx.compose.ui.text.font.FontSynthesis.All,
+                ).value as? android.graphics.Typeface
+                textSize = with(input.density) { st.fontSize.toPx() }
+            }
+            val text = input.text.text
+            val box = android.graphics.Rect()
+            val inkTop = FloatArray(n)
+            val inkBottom = FloatArray(n)
+            for (i in 0 until n) {
+                val start = l.getLineStart(i)
+                val end = l.getLineEnd(i, visibleEnd = true)
+                box.setEmpty()
+                if (paint != null && end > start) paint.getTextBounds(text, start, end, box)
+                val base = l.getLineBaseline(i)
+                inkTop[i] = if (box.isEmpty) l.getLineTop(i) else base + box.top
+                inkBottom[i] = if (box.isEmpty) l.getLineBottom(i) else base + box.bottom
+            }
+            for (i in 1 until n) e[i] = (inkBottom[i - 1] + inkTop[i]) / 2f
+        }
+        layout = l
+        edges = e
+        return e
     }
 }
 
@@ -796,6 +876,28 @@ fun LyricProgress(startMs: Long, endMs: Long, clock: State<Long>, origin: Float,
             androidx.compose.ui.geometry.Offset(x, 0f), androidx.compose.ui.geometry.Size(w, size.height),
             androidx.compose.ui.geometry.CornerRadius(size.height / 2),
         )
+    }
+}
+
+/**
+ * A line's own words on the lyrics page: sung ([active], in the look's style) or resting (at [alpha]), and under a
+ * synced line timed from [startMs] to [endMs] the thin progress line ([progress]: not while browsing), growing from
+ * [origin] (as [LyricProgress]). [ruby] are the readings over its kanji, when there are any.
+ */
+@Composable
+internal fun LyricLineWords(
+    shown: LyricLine, startMs: Long, endMs: Long, active: Boolean, synced: Boolean, progress: Boolean, clock: State<Long>,
+    style: TextStyle, look: LyricsLook, axis: androidx.compose.ui.text.font.FontFamily?, onCard: Boolean, alpha: Float, origin: Float,
+    ruby: List<RubySpan>? = null,
+) {
+    if (active) SungLine(shown, clock, style, look, axis, Modifier.fillMaxWidth(), onCard = onCard, ruby = ruby)
+    else RestingLine(shown, style, look, alpha, Modifier.fillMaxWidth(), ruby = ruby)
+    // How far the line has been sung: a thin line of split light under it. #399: every synced line that can show it keeps
+    // its room, drawn only under the sung one, so a line is as tall sung as resting (the old line shrank and the new one
+    // grew at every change, in the middle of the scroll to it: the lines below jumped and the scroll ended off its place).
+    if (synced && endMs > startMs) {
+        val room = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 2.dp)
+        if (active && progress) LyricProgress(startMs, endMs, clock, origin, room) else Spacer(room.height(2.dp))
     }
 }
 
@@ -1174,6 +1276,7 @@ fun LyricsPanel(
             val lineScale by animateFloatAsState(
                 if (isActive || !synced || look.motion == com.prism.music.data.prefs.LyricsMotion.NONE) 1f else 0.98f, tween(LYRIC_SETTLE_MS, easing = LYRIC_EASING), label = "scale",
             )
+            val press = remember { MutableInteractionSource() }
             Box(
                 Modifier
                     .fillMaxWidth()
@@ -1184,12 +1287,13 @@ fun LyricsPanel(
                         )
                     }
                     .blur(blur, BlurredEdgeTreatment.Unbounded)
-                    .clip(RoundedCornerShape(10.dp))
                     // The line being sung reads as selected (TalkBack, and the tests: #308).
                     .semantics { selected = isActive }
-                    .clickable(enabled = synced && !hidden) { c.player.seekToLyric(line.timeMs); browsing = false }
-                    .padding(vertical = 9.dp * look.spacing, horizontal = 2.dp),
+                    .clickable(press, indication = null, enabled = synced && !hidden) { c.player.seekToLyric(line.timeMs); browsing = false },
             ) {
+                // #399: the tap's ripple keeps its rounded box, behind the words: clipped to it, the words lost a glow
+                // and the edges of wide sung letters.
+                Box(Modifier.matchParentSize().clip(RoundedCornerShape(10.dp)).indication(press, androidx.compose.foundation.LocalIndication.current))
                 // Inactive lines sit back (as bright as the setting has them); the sung line is drawn in its style.
                 val lineAlpha = if (synced && !isActive) alpha * look.othersAlpha else alpha
                 val extraAlpha = if (isActive) 0.8f else lineAlpha * 0.8f
@@ -1218,15 +1322,11 @@ fun LyricsPanel(
                         else Text(r.text, style = romanStyle, color = (if (onCard) Color.Black else look.extraColor).copy(alpha = if (isActive) 0.85f else lineAlpha * 0.8f), modifier = pad)
                     }
                 }
-                Column(Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth().padding(vertical = 9.dp * look.spacing, horizontal = 2.dp)) {
                     if (look.extraAbove) { romanised(false); translationLine(false) }
-                    if (isActive) SungLine(shown, clock, style, look, axisFamily, Modifier.fillMaxWidth(), onCard = onCard, ruby = rubyLine)
-                    else RestingLine(shown, style, look, lineAlpha, Modifier.fillMaxWidth(), ruby = rubyLine)
-                    // How far the line has been sung: a thin line of split light under it.
-                    if (isActive && synced && !browsing && line.endMs > line.timeMs) LyricProgress(
-                        line.timeMs, line.endMs, clock,
-                        when { centred && !line.alignEnd -> 0.5f; line.alignEnd != rtl -> 1f; else -> 0f },
-                        Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 2.dp),
+                    LyricLineWords(
+                        shown, line.timeMs, line.endMs, isActive, synced, progress = !browsing, clock, style, look, axisFamily, onCard, lineAlpha,
+                        origin = when { centred && !line.alignEnd -> 0.5f; line.alignEnd != rtl -> 1f; else -> 0f }, ruby = rubyLine,
                     )
                     if (!look.extraAbove) romanised(true)
                     // Background vocals, smaller under the line, lighting up word by word in their own time (#66).

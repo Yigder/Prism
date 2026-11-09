@@ -7,6 +7,7 @@ import com.prism.music.data.db.toEntity
 import com.prism.music.data.model.AlbumItem
 import com.prism.music.data.model.ArtistItem
 import com.prism.music.data.model.BrowseItem
+import com.prism.music.data.model.PlaylistItem
 import com.prism.music.data.model.Song
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -101,6 +102,7 @@ class LibraryRepository(private val c: AppContainer) {
     /** Signed out: the account's lists, and its playlists and albums kept for offline, are gone from the phone. */
     fun forgetAccount() {
         synchronized(this) { keptLoad.cancel() }
+        synchronized(pending) { pending.clear(); followUps?.cancel() }
         playlists.value = emptyList(); albums.value = emptyList(); artists.value = emptyList()
         c.scope.launch(Dispatchers.IO) { c.offline.clear(); c.homeCache.clear() }
     }
@@ -240,7 +242,7 @@ class LibraryRepository(private val c: AppContainer) {
             if (c.settings.current.downloadLikes && before.isNotEmpty()) {
                 remote.filter { it.id !in before }.forEach { c.downloads.download(it) }
             }
-            runCatching { playlists.value = c.ytm.libraryPlaylists() }
+            reloadPlaylists()
             runCatching { albums.value = c.ytm.libraryAlbums() }
             runCatching { artists.value = c.ytm.libraryArtists() }
             runCatching {
@@ -345,6 +347,8 @@ class LibraryRepository(private val c: AppContainer) {
     suspend fun deletePlaylist(item: BrowseItem): Result<Unit> = withContext(Dispatchers.IO) {
         val before = playlists.value
         playlists.value = before.filterNot { it.id == item.id }
+        // One just made here (#414) isn't put back by the next refresh.
+        val wasPending = synchronized(pending) { pending.remove(item.id.removePrefix("VL")) }
         runCatching { c.ytm.deletePlaylist(item.id) }
             .recoverCatching { c.ytm.unsavePlaylist(item.id) }
             .onSuccess {
@@ -352,7 +356,10 @@ class LibraryRepository(private val c: AppContainer) {
                 val pins = c.settings.current.homePlaylists
                 if (pins.any { it.id == item.id }) c.settings.setHomePlaylists(pins.filterNot { it.id == item.id })
             }
-            .onFailure { playlists.value = before }
+            .onFailure {
+                playlists.value = before
+                if (wasPending != null) synchronized(pending) { pending[item.id.removePrefix("VL")] = wasPending }
+            }
     }
 
     private val orderPrefs = c.app.getSharedPreferences("library_order", android.content.Context.MODE_PRIVATE)
@@ -454,13 +461,80 @@ class LibraryRepository(private val c: AppContainer) {
     fun refreshCollections() {
         if (!c.settings.current.isLoggedIn) return
         c.scope.launch(Dispatchers.IO) {
-            runCatching { playlists.value = c.ytm.libraryPlaylists() }
+            reloadPlaylists()
             runCatching { albums.value = c.ytm.libraryAlbums() }
             persist()
         }
     }
 
+    /** Where the library's playlists are read from (a test hands in its own). */
+    internal var fetchPlaylists: suspend () -> List<BrowseItem> = { c.ytm.libraryPlaylists() }
+
+    /** The library's playlists from YouTube, with the ones just made here that it doesn't list yet ([created]). */
+    internal suspend fun reloadPlaylists() {
+        runCatching { playlists.value = withPending(fetchPlaylists()) }
+    }
+
+    /**
+     * Playlists made from Prism that YouTube's library list may not show yet (#414), by id without "VL". YouTube took
+     * about two minutes to list a new one, and every refresh until then put back a list without it.
+     */
+    private val pending = HashMap<String, PendingPlaylist>()
+    private var followUps: kotlinx.coroutines.Job? = null
+
+    private fun withPending(fetched: List<BrowseItem>): List<BrowseItem> = synchronized(pending) {
+        val merged = mergePending(fetched, pending, System.currentTimeMillis())
+        pending.keys.retainAll(merged.still.keys)
+        merged.list
+    }
+
+    /**
+     * A playlist was just made on YouTube Music ([id], named [name], with [songs] songs): it's in Library at once, kept
+     * there through refreshes until YouTube lists it (or [PENDING_MS] pass), and the list is asked for again a few times
+     * in the next minute so YouTube's own entry (cover, count) takes over as soon as it's there.
+     */
+    fun created(id: String, name: String, songs: Int = 0) {
+        val key = id.removePrefix("VL")
+        val item = PlaylistItem(key, name, com.prism.music.data.model.songCount(songs), null)
+        synchronized(pending) { pending[key] = PendingPlaylist(item, System.currentTimeMillis()) }
+        playlists.value = listOf(item) + playlists.value.filterNot { it.id.removePrefix("VL") == key }
+        refreshCollections()
+        synchronized(pending) {
+            followUps?.cancel()
+            followUps = c.scope.launch(Dispatchers.IO) {
+                var waited = 0L
+                for (at in FOLLOW_UPS_MS) {
+                    kotlinx.coroutines.delay(at - waited)
+                    waited = at
+                    if (synchronized(pending) { pending.isEmpty() } || !c.settings.current.isLoggedIn) break
+                    reloadPlaylists()
+                    persist()
+                }
+            }
+        }
+    }
+
     companion object {
+        /** How long a playlist made here is kept in Library without YouTube listing it. */
+        internal const val PENDING_MS = 10 * 60_000L
+
+        /** When Library's playlists are asked for again after one is made (YouTube is slow to list it). */
+        private val FOLLOW_UPS_MS = longArrayOf(5_000, 20_000, 60_000)
+
+        internal data class PendingPlaylist(val item: PlaylistItem, val at: Long)
+        internal data class PendingMerge(val list: List<BrowseItem>, val still: Map<String, PendingPlaylist>)
+
+        /**
+         * [fetched] (the library's playlists as YouTube lists them) with the [pending] ones it doesn't list yet on top,
+         * newest first; [PendingMerge.still] is what stays pending: not listed, and made less than [PENDING_MS] ago.
+         */
+        internal fun mergePending(fetched: List<BrowseItem>, pending: Map<String, PendingPlaylist>, now: Long): PendingMerge {
+            val listed = fetched.mapTo(HashSet()) { it.id.removePrefix("VL") }
+            val still = pending.filter { (id, p) -> id !in listed && now - p.at <= PENDING_MS }
+            val missing = still.values.sortedByDescending { it.at }.map { it.item }
+            return PendingMerge(missing + fetched, still)
+        }
+
         /**
          * The likes a sync takes away: liked here before, no longer in the account's liked list, and not Prism's own
          * (local files' likes, and imported likes kept off the account: [kept]).

@@ -257,15 +257,15 @@ fun SearchScreen(bottomPadding: Dp) {
 
     // The keyboard put away (Back, its own button) means "show me the results": the field stops being typed in, so the
     // suggestions give way to them. Only once the keyboard has been up, so a hardware keyboard keeps the suggestions.
+    // #395: not when a window of its own (a result's menu) took it away, which closed the typed list under the menu.
     @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
     val imeUp = WindowInsets.isImeVisible
+    val windowFocused = androidx.compose.ui.platform.LocalWindowInfo.current.isWindowFocused
     var imeWasUp by remember { mutableStateOf(false) }
-    LaunchedEffect(imeUp, focused) {
-        when {
-            !focused -> imeWasUp = false
-            imeUp -> imeWasUp = true
-            imeWasUp -> { imeWasUp = false; focus.clearFocus() }
-        }
+    LaunchedEffect(imeUp, focused, windowFocused) {
+        val step = SearchKeyboard.step(focused, imeUp, imeWasUp, windowFocused)
+        imeWasUp = step.imeWasUp
+        if (step.showResults) focus.clearFocus()
     }
 
     val ui = com.prism.music.ui.theme.LocalUi.current
