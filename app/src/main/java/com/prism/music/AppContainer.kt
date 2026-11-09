@@ -312,7 +312,7 @@ class AppContainer(val app: Application) {
     val db = PrismDatabase.build(app)
     /** Versions of songs the listener picked to hear instead (1.7.9, "Play a different version"). */
     val versions = com.prism.music.data.SongVersions(app.getSharedPreferences("song_versions", android.content.Context.MODE_PRIVATE))
-    val streams by lazy { StreamResolver(app, http, settings, innerTube).apply { versionOf = versions::of } }
+    val streams by lazy { StreamResolver(app, http, settings, innerTube).apply { versionOf = versions::streamOf } }
     val translator = com.prism.music.data.lyrics.LyricsTranslator(http, File(app.filesDir, "translations"))
     /** Artist pages' Wikipedia bios (1.8.2), kept with the artist pages. Asks nothing unless that switch is on. */
     val artistBios by lazy {
@@ -367,6 +367,8 @@ class AppContainer(val app: Application) {
      */
     internal fun audioOnPhone(id: String, scratch: File): android.net.Uri? {
         if (id.startsWith(com.prism.music.data.model.Song.LOCAL_PREFIX)) return localMusic.uriFor(id)
+        // A file on the phone picked to play in its place is its sound too.
+        versions.localIdOf(id)?.let(localMusic::uriFor)?.let { return it }
         for ((cache, key) in listOf(downloadCache to id, playerCache to songCacheKey(id))) {
             if (!cache.fullyCached(key, 0, C.LENGTH_UNSET.toLong())) continue
             val ok = runCatching {
@@ -648,7 +650,8 @@ class AppContainer(val app: Application) {
 
     /** Whether a song plays without the network: a file on the phone, a finished download, or a song cached whole. */
     fun availableOffline(id: String): Boolean =
-        id.startsWith(com.prism.music.data.model.Song.LOCAL_PREFIX) || downloads.isDownloaded(id) ||
+        id.startsWith(com.prism.music.data.model.Song.LOCAL_PREFIX) || versions.localIdOf(id) != null ||
+            downloads.isDownloaded(id) ||
             runCatching { playerCache.fullyCached(songCacheKey(id), 0, C.LENGTH_UNSET.toLong()) }.getOrDefault(false)
 
     private fun Cache.fullyCached(key: String, position: Long, length: Long): Boolean {
@@ -670,7 +673,7 @@ class AppContainer(val app: Application) {
      * still saving the one it had been playing: what it saved after went in under the song, and back on its own
      * recording the song couldn't be read and stopped playing (1.7.9's check, "Woke Up Older").
      */
-    fun songCacheKey(id: String): String = versions.of(id) ?: id
+    fun songCacheKey(id: String): String = versions.streamOf(id) ?: id
 
     /**
      * Plays [pick] in [song]'s place from now on (null: its own sound again). The version's measurements go, and a
@@ -689,7 +692,10 @@ class AppContainer(val app: Application) {
                 kotlinx.coroutines.withContext(Dispatchers.IO) {
                     mixTempo.forget(song.id)
                     waves.forget(song.id)
-                    downloads.redownload(song.id, unfinished = true)
+                    // A file on the phone needs no download; a download already here stays for going back to its own.
+                    if (pick?.id?.startsWith(com.prism.music.data.model.Song.LOCAL_PREFIX) != true) {
+                        downloads.redownload(song.id, unfinished = true)
+                    }
                 }
             }
         }
@@ -842,6 +848,7 @@ class AppContainer(val app: Application) {
         writer: ((androidx.media3.datasource.cache.CacheWriter) -> Unit)? = null,
     ) {
         if (id.startsWith(com.prism.music.data.model.Song.LOCAL_PREFIX)) return // a file on the phone is ready already
+        if (versions.localIdOf(id) != null) return // and so is one picked to play in the song's place
         if (id.startsWith(com.prism.music.data.model.Song.RSS_PREFIX)) return // an hour of a feed's audio isn't fetched on the chance
         if (downloadCache.fullyCached(id, 0, C.LENGTH_UNSET.toLong())) return
         yieldToPlaying(if (forSing) null else id)

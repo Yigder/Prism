@@ -2331,7 +2331,17 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         if (item.mediaId.startsWith(Song.LOCAL_PREFIX)) {
             val uri = c.localMusic.uriFor(item.mediaId) ?: return null
             val format = c.localMusic.track(item.mediaId)?.mime?.let(::fileFormatName)
-            c.streamDetails[item.mediaId] = "On this phone" + (format?.let { " · $it" } ?: "") to null
+            c.streamDetails[item.mediaId] = ("On this phone" + (format?.let { " · $it" } ?: "")) to null
+            scope.launch { applyStreamStats(item.mediaId) }
+            return uri
+        }
+        // A file on the phone picked by hand to play in this song's place: it plays whether or not "Use your own song
+        // files" is on, since it was picked for this song itself.
+        c.versions.localIdOf(item.mediaId)?.let { localId ->
+            // The media store's own address: it plays before a rescan has listed the file again at startup.
+            val uri = c.localMusic.uriFor(localId) ?: return@let
+            val format = c.localMusic.track(localId)?.mime?.takeIf { it.isNotBlank() }?.let(::fileFormatName)
+            c.streamDetails[item.mediaId] = ("On this phone" + (format?.let { " · $it" } ?: "")) to null
             scope.launch { applyStreamStats(item.mediaId) }
             return uri
         }
