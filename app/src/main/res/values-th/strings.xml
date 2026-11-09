@@ -4810,4 +4810,7 @@
     <string name="speed_dial_your_plays_first_info">YouTube ส่งช่องจากเว็บไซต์มาให้ Prism ซึ่งไม่ใช่ช่องในแอปและไม่ได้ตามสิ่งที่คุณเล่นเสมอไป เมื่อเปิดไว้ สิ่งที่คุณเล่นมากที่สุดในโทรศัพท์เครื่องนี้ในสามเดือนที่ผ่านมาจะมาก่อน แล้วช่องของ YouTube จะเติมส่วนที่เหลือ</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube ไม่รับการลงชื่อเข้าใช้นี้อีกต่อไป โปรดออกจากระบบแล้วลงชื่อเข้าใช้อีกครั้ง</string>
     <string name="youtube_isnt_sending_256_kbps">ขณะนี้ YouTube ไม่ได้ส่ง 256 kbps ให้บัญชีนี้ เพลงจึงเล่นในคุณภาพปกติ</string>
+    <string name="show_furigana">แสดงฟุริงานะ</string>
+    <string name="hiragana_readings_above_kanji">คำอ่านฮิรางานะเหนือคันจิในเนื้อเพลงญี่ปุ่น</string>
+    <string name="furigana_uses_the_japanese_reading_data">ใช้ข้อมูลการอ่านภาษาญี่ปุ่น (ดาวน์โหลดครั้งเดียวด้านล่าง)</string>
 </resources>

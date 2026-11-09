@@ -4810,4 +4810,7 @@
     <string name="speed_dial_your_plays_first_info">YouTube menghantar petak laman webnya kepada Prism, yang bukan petak dalam aplikasinya dan tidak selalu mengikut apa yang anda mainkan. Jika dihidupkan, apa yang paling kerap anda mainkan pada telefon ini dalam tiga bulan lalu muncul dahulu, dan petak YouTube mengisi selebihnya.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube tidak lagi menerima log masuk ini. Log keluar dan log masuk semula.</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube tidak menghantar 256 kbps kepada akaun ini buat masa ini, jadi lagu dimainkan pada kualiti biasa</string>
+    <string name="show_furigana">Tunjukkan furigana</string>
+    <string name="hiragana_readings_above_kanji">Bacaan hiragana di atas kanji dalam lirik Jepun</string>
+    <string name="furigana_uses_the_japanese_reading_data">Menggunakan data bacaan Jepun (dimuat turun sekali di bawah).</string>
 </resources>

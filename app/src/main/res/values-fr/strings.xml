@@ -4938,4 +4938,7 @@
     <string name="speed_dial_your_plays_first_info">YouTube envoie à Prism les tuiles de son site, qui ne sont pas celles de son appli et ne suivent pas toujours ce que vous écoutez. Si c\'est activé, ce que vous avez le plus écouté sur ce téléphone ces trois derniers mois passe en premier, et celles de YouTube complètent le reste.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube n\'accepte plus cette connexion. Déconnectez-vous puis reconnectez-vous.</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube n\'envoie pas de 256 kbit/s à ce compte pour le moment : les titres sont lus en qualité habituelle</string>
+    <string name="show_furigana">Afficher le furigana</string>
+    <string name="hiragana_readings_above_kanji">Lectures en hiragana au-dessus des kanji dans les paroles japonaises</string>
+    <string name="furigana_uses_the_japanese_reading_data">Utilise les données de lecture japonaises (téléchargées une fois ci-dessous).</string>
 </resources>

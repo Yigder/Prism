@@ -4874,4 +4874,7 @@
     <string name="speed_dial_your_plays_first_info">YouTube stuurt Prism de tegels van zijn website. Die zijn anders dan in de app en volgen niet altijd wat je afspeelt. Als dit aan staat, komt eerst wat je de afgelopen drie maanden het meest op deze telefoon hebt afgespeeld, en vullen de tegels van YouTube de rest aan.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube accepteert deze aanmelding niet meer. Meld je af en weer aan.</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube stuurt op dit moment geen 256 kbps naar dit account, dus nummers spelen in de gewone kwaliteit</string>
+    <string name="show_furigana">Furigana tonen</string>
+    <string name="hiragana_readings_above_kanji">Hiragana-lezingen boven de kanji in Japanse songteksten</string>
+    <string name="furigana_uses_the_japanese_reading_data">Gebruikt de Japanse leesgegevens (eenmalig hieronder gedownload).</string>
 </resources>

@@ -18,6 +18,7 @@ What changed in each release. Older releases are described on the [Releases page
 
 ### New
 
+- **Furigana above Japanese kanji.** Japanese lyrics show their hiragana readings over the kanji, line by line and word by word with karaoke timing, so they can be sung along to. It uses the Japanese reading data and can be turned off in Settings → Lyrics & Sing → Show furigana.
 - **Speed dial: your plays first** (#372). Customize Home. Tiles that change as you listen. Off by default.
 - **New folder in Library.** Playlists → New folder makes a folder before anything's in it; until now one could only be made while moving a playlist.
 - **Search in Library** (#357). Playlists, Albums and Artists get a search at the top once there are 8 or more. Playlists finds the ones inside folders too, and folders by name.

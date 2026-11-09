@@ -4938,4 +4938,7 @@
     <string name="speed_dial_your_plays_first_info">O YouTube envia ao Prism os blocos do site dele, que não são os do app e nem sempre acompanham o que você toca. Ativado, o que você mais tocou neste celular nos últimos três meses vem primeiro, e os do YouTube completam o resto.</string>
     <string name="youtube_no_longer_takes_this_sign_in">O YouTube não aceita mais este login. Saia da conta e entre de novo.</string>
     <string name="youtube_isnt_sending_256_kbps">O YouTube não está enviando 256 kbps para esta conta agora, então as músicas tocam na qualidade normal</string>
+    <string name="show_furigana">Mostrar furigana</string>
+    <string name="hiragana_readings_above_kanji">Leituras em hiragana acima dos kanji nas letras japonesas</string>
+    <string name="furigana_uses_the_japanese_reading_data">Usa os dados de leitura japoneses (baixados uma vez abaixo).</string>
 </resources>

@@ -4874,4 +4874,7 @@
     <string name="speed_dial_your_plays_first_info">Το YouTube στέλνει στο Prism τα πλαίσια του ιστότοπού του, που δεν είναι ίδια με της εφαρμογής του και δεν ακολουθούν πάντα ό,τι ακούς. Όταν είναι ενεργό, πρώτα εμφανίζεται ό,τι άκουσες περισσότερο σε αυτό το τηλέφωνο τους τελευταίους τρεις μήνες και ακολουθούν του YouTube.</string>
     <string name="youtube_no_longer_takes_this_sign_in">Το YouTube δεν δέχεται πια αυτή τη σύνδεση. Αποσυνδέσου και συνδέσου ξανά.</string>
     <string name="youtube_isnt_sending_256_kbps">Το YouTube δεν στέλνει τώρα 256 kbps σε αυτόν τον λογαριασμό, οπότε τα τραγούδια παίζουν στη συνηθισμένη ποιότητα</string>
+    <string name="show_furigana">Εμφάνιση φουριγκάνα</string>
+    <string name="hiragana_readings_above_kanji">Αναγνώσεις χιραγκάνα πάνω από τα κάντζι σε ιαπωνικούς στίχους</string>
+    <string name="furigana_uses_the_japanese_reading_data">Χρησιμοποιεί τα ιαπωνικά δεδομένα ανάγνωσης (λήψη μία φορά παρακάτω).</string>
 </resources>

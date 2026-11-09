@@ -4874,4 +4874,7 @@
     <string name="speed_dial_your_plays_first_info">Ang ipinapadala ng YouTube sa Prism ay ang mga tile ng website nito, na hindi katulad ng nasa app nito at hindi laging sumusunod sa pinapatugtog mo. Kapag naka-on, mauuna ang pinakamadalas mong pinatugtog sa teleponong ito sa nakaraang tatlong buwan, at pupunuin ng sa YouTube ang natitira.</string>
     <string name="youtube_no_longer_takes_this_sign_in">Hindi na tinatanggap ng YouTube ang sign-in na ito. Mag-sign out at mag-sign in ulit.</string>
     <string name="youtube_isnt_sending_256_kbps">Hindi nagpapadala ang YouTube ng 256 kbps sa account na ito ngayon, kaya sa karaniwang kalidad tumutugtog ang mga kanta</string>
+    <string name="show_furigana">Ipakita ang furigana</string>
+    <string name="hiragana_readings_above_kanji">Mga pagbasang hiragana sa itaas ng kanji sa mga lirikong Hapon</string>
+    <string name="furigana_uses_the_japanese_reading_data">Gumagamit ng data ng pagbasa ng Hapon (isang beses lang ida-download sa ibaba).</string>
 </resources>

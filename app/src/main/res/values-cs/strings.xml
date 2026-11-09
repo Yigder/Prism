@@ -5002,4 +5002,7 @@
     <string name="speed_dial_your_plays_first_info">YouTube posílá Prismu dlaždice ze svého webu, které nejsou stejné jako v jeho aplikaci a ne vždy odpovídají tomu, co hrajete. Když je to zapnuté, nejdřív se zobrazí to, co jste na tomto telefonu za poslední tři měsíce hráli nejvíc, a zbytek doplní dlaždice YouTube.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube už toto přihlášení nepřijímá. Odhlaste se a znovu se přihlaste.</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube teď tomuto účtu neposílá 256 kb/s, takže skladby hrají v obvyklé kvalitě</string>
+    <string name="show_furigana">Zobrazit furiganu</string>
+    <string name="hiragana_readings_above_kanji">Čtení hiragana nad kandži v japonských textech</string>
+    <string name="furigana_uses_the_japanese_reading_data">Používá japonská čtecí data (stáhnou se jednou níže).</string>
 </resources>

@@ -4874,4 +4874,7 @@
     <string name="speed_dial_your_plays_first_info">YouTube, Prism\'e web sitesinin kutularını gönderir; bunlar uygulamasındakiler değildir ve her zaman çaldıklarını takip etmez. Açıkken, son üç ayda bu telefonda en çok çaldıkların önce gelir, kalanını YouTube\'unkiler doldurur.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube artık bu oturum açmayı kabul etmiyor. Çıkış yapıp yeniden oturum açın.</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube şu anda bu hesaba 256 kbps göndermiyor, bu yüzden şarkılar normal kalitede çalıyor</string>
+    <string name="show_furigana">Furigana göster</string>
+    <string name="hiragana_readings_above_kanji">Japonca şarkı sözlerinde kanjilerin üzerinde hiragana okunuşları</string>
+    <string name="furigana_uses_the_japanese_reading_data">Japonca okuma verilerini kullanır (aşağıda bir kez indirilir).</string>
 </resources>

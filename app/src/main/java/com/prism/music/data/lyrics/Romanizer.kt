@@ -14,6 +14,7 @@ import com.prism.music.data.lyrics.roman.JapaneseKanji
 import com.prism.music.data.lyrics.roman.Kana
 import com.prism.music.data.lyrics.roman.Script
 import com.prism.music.data.lyrics.roman.plainLatin
+import com.prism.music.data.lyrics.RubySpan
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -170,6 +171,26 @@ class Romanizer(
             result
         }
 
+    private val rubyMemory = object : LinkedHashMap<String, List<RubySpan>>(64, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, List<RubySpan>>?) = size > 128
+    }
+
+    /**
+     * Each line's kanji with the hiragana above it ([RubySpan]), line for line; null while the Japanese reading data
+     * isn't on the phone. Lines that need none come back empty.
+     */
+    suspend fun furigana(lines: List<LyricLine>): List<List<RubySpan>>? {
+        if (lines.none { hasKanji(it.text) }) return emptyList()
+        val reader = japaneseReader() ?: return null
+        return withContext(Dispatchers.Default) {
+            lines.map { line ->
+                synchronized(rubyMemory) { rubyMemory[line.text] } ?: reader.furigana(JapaneseKanji.fromChinese(line.text)).also { spans ->
+                    synchronized(rubyMemory) { rubyMemory[line.text] = spans }
+                }
+            }
+        }
+    }
+
     /**
      * The line spelled out on the phone, if every script it needs has an engine here: its text, and each word's
      * spelling (lined up with [LyricLine.words]) for a word-timed line.
@@ -303,7 +324,9 @@ class Romanizer(
         /** Bumped when an engine changes, so songs romanized the old way are romanized again. */
         // 3 (1.7.9.1, #256): Japanese songs spelled by Android's transliterator as Chinese are spelled again.
         // 4 (1.8.2.1, #370): Japanese songs with kanji read as Chinese are spelled again.
-        private const val VERSION = 4
+        // 5: Arabic numbers are read as Japanese numerals, so counters and dates come out right (2人 is ふたり, 4月 is
+        // しがつ): those songs are spelled again.
+        private const val VERSION = 5
         private const val RELEASE_AFTER_MS = 3 * 60_000L
         /** Line-by-line requests are only made for this many lines (a long song's worth). */
         private const val MAX_SINGLE = 80

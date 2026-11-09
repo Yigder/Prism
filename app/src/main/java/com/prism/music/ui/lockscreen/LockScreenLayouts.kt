@@ -87,9 +87,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import com.prism.music.data.lyrics.LyricLine
+import com.prism.music.data.lyrics.RubySpan
 import com.prism.music.data.prefs.LockLayout
 import com.prism.music.ui.player.LyricsLook
 import com.prism.music.ui.player.SungLine
+import com.prism.music.ui.player.TextWithFurigana
 import com.prism.music.ui.player.withWords
 import com.prism.music.ui.theme.PrismIcons
 import com.prism.music.ui.theme.PrismTokens
@@ -599,7 +601,10 @@ private fun GlassPane(modifier: Modifier = Modifier, content: @Composable () -> 
  * ahead. [clock] advances only while the screen is on and the song plays.
  */
 @Composable
-internal fun LockLyricLines(lines: List<LyricLine>, clock: State<Long>, look: LyricsLook, axis: FontFamily?, modifier: Modifier = Modifier) {
+internal fun LockLyricLines(
+    lines: List<LyricLine>, clock: State<Long>, look: LyricsLook, axis: FontFamily?, modifier: Modifier = Modifier,
+    furigana: List<List<RubySpan>>? = null,
+) {
     val index by remember(lines) { derivedStateOf { lines.indexAtOrBefore(clock.value) } }
     val rest = MaterialTheme.typography.headlineMedium.copy(
         fontSize = 26.sp * look.sizeScale, lineHeight = 33.sp * look.sizeScale, fontWeight = FontWeight.Light, textDirection = TextDirection.Content,
@@ -615,19 +620,29 @@ internal fun LockLyricLines(lines: List<LyricLine>, clock: State<Long>, look: Ly
         contentAlignment = Alignment.CenterStart,
         label = "lockLyrics",
     ) { i ->
-        val previous = remember(lines, i) { lines.take(i.coerceAtLeast(0)).lastOrNull { !it.isGap } }
+        val previousIndex = remember(lines, i) { (i.coerceAtLeast(0) - 1 downTo 0).firstOrNull { !lines[it].isGap } }
         val current = lines.getOrNull(i)?.takeIf { !it.isGap }
-        val ahead = remember(lines, i) { lines.drop(i + 1).filter { !it.isGap }.take(2) }
+        val aheadIndexes = remember(lines, i) { (i + 1 until lines.size).filter { !lines[it].isGap }.take(2) }
         Column(Modifier.fillMaxWidth().fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically)) {
-            previous?.let { Text(it.text, style = rest, color = Color.White.copy(alpha = 0.34f), maxLines = 2, overflow = TextOverflow.Ellipsis) }
+            previousIndex?.let { p ->
+                TextWithFurigana(
+                    lines[p].text, furigana?.getOrNull(p)?.takeIf { it.isNotEmpty() }, rest,
+                    Color.White.copy(alpha = 0.34f), maxLines = 2,
+                )
+            }
             when {
                 current == null -> Text("♪", style = sung, color = Color.White)
-                !current.isWordSynced && look.plainWhenLineTimed ->
-                    Text(current.text, style = sung.copy(fontWeight = FontWeight(look.weight + 100)), color = Color.White, maxLines = 4, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
-                else -> SungLine(current, clock, sung, look, axis, Modifier.fillMaxWidth(), maxLines = 4, dimAlpha = 0.45f)
+                !current.isWordSynced && look.plainWhenLineTimed -> TextWithFurigana(
+                    current.text, furigana?.getOrNull(i), sung.copy(fontWeight = FontWeight(look.weight + 100)),
+                    Color.White, Modifier.fillMaxWidth(), maxLines = 4,
+                )
+                else -> SungLine(current, clock, sung, look, axis, Modifier.fillMaxWidth(), maxLines = 4, dimAlpha = 0.45f, ruby = furigana?.getOrNull(i))
             }
-            ahead.forEachIndexed { n, line ->
-                Text(line.text, style = rest, color = Color.White.copy(alpha = if (n == 0) 0.34f else 0.2f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            aheadIndexes.forEachIndexed { n, a ->
+                TextWithFurigana(
+                    lines[a].text, furigana?.getOrNull(a)?.takeIf { it.isNotEmpty() }, rest,
+                    Color.White.copy(alpha = if (n == 0) 0.34f else 0.2f), maxLines = 2,
+                )
             }
         }
     }

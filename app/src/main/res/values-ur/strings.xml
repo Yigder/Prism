@@ -4874,4 +4874,7 @@
     <string name="speed_dial_your_plays_first_info">YouTube، Prism کو اپنی ویب سائٹ کی ٹائلیں بھیجتا ہے، جو اس کی ایپ والی نہیں ہوتیں اور ہمیشہ آپ کے چلائے ہوئے گانوں کے مطابق نہیں ہوتیں۔ آن ہونے پر، پچھلے تین مہینوں میں اس فون پر آپ نے جو سب سے زیادہ چلایا وہ پہلے آتا ہے، اور باقی جگہ YouTube کی ٹائلیں بھرتی ہیں۔</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube اب یہ سائن ان قبول نہیں کرتا۔ سائن آؤٹ کر کے دوبارہ سائن ان کریں۔</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube اس وقت اس اکاؤنٹ کو 256 kbps نہیں بھیج رہا، اس لیے گانے عام کوالٹی میں چل رہے ہیں</string>
+    <string name="show_furigana">فروگانا دکھائیں</string>
+    <string name="hiragana_readings_above_kanji">جاپانی بول میں کانجی کے اوپر ہیراگانا پڑھائی</string>
+    <string name="furigana_uses_the_japanese_reading_data">جاپانی پڑھائی کا ڈیٹا استعمال کرتا ہے (نیچے ایک بار ڈاؤن لوڈ ہوتا ہے)۔</string>
 </resources>

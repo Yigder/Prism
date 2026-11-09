@@ -4810,4 +4810,7 @@
     <string name="speed_dial_your_plays_first_info">YouTube는 Prism에 웹사이트용 타일을 보내는데, 앱의 타일과 다르고 내가 듣는 곡을 항상 따르지는 않습니다. 켜면 지난 3개월 동안 이 휴대전화에서 가장 많이 들은 곡이 먼저 나오고 나머지는 YouTube 타일로 채워집니다.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube에서 더 이상 이 로그인을 받지 않습니다. 로그아웃한 후 다시 로그인하세요.</string>
     <string name="youtube_isnt_sending_256_kbps">지금은 YouTube가 이 계정에 256kbps를 보내지 않아 곡이 일반 음질로 재생됩니다</string>
+    <string name="show_furigana">후리가나 표시</string>
+    <string name="hiragana_readings_above_kanji">일본어 가사에서 한자 위에 히라가나 읽기 표시</string>
+    <string name="furigana_uses_the_japanese_reading_data">일본어 읽기 데이터를 사용합니다(아래에서 한 번 다운로드).</string>
 </resources>

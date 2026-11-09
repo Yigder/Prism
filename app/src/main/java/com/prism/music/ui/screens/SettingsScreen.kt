@@ -2228,6 +2228,10 @@ private fun LyricsSettings() {
                 tr(R.string.romanize_my_own_language_too), tr(R.string.lyrics_too, java.util.Locale.getDefault().displayLanguage), s.romanizeAll,
                 info = tr(R.string.korean_japanese_russian_and_greek_are),
             ) { prefs.setRomanizeAll(it) }
+            Toggle(
+                tr(R.string.show_furigana), tr(R.string.hiragana_readings_above_kanji), s.lyricsFurigana,
+                info = tr(R.string.furigana_uses_the_japanese_reading_data),
+            ) { prefs.setLyricsFurigana(it) }
             JapaneseReadingData()
         }
         SingSettings()

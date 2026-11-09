@@ -5002,4 +5002,7 @@
     <string name="speed_dial_your_plays_first_info">YouTube wysyła do Prism kafelki ze swojej strony, a nie te z aplikacji, i nie zawsze odpowiadają one temu, co grasz. Po włączeniu najpierw pojawia się to, co w ostatnich trzech miesiącach grałeś najczęściej na tym telefonie, a resztę uzupełniają kafelki YouTube.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube nie akceptuje już tego logowania. Wyloguj się i zaloguj ponownie.</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube nie wysyła teraz 256 kb/s na to konto, więc utwory grają w zwykłej jakości</string>
+    <string name="show_furigana">Pokaż furiganę</string>
+    <string name="hiragana_readings_above_kanji">Czytania hiragana nad kanji w japońskich tekstach</string>
+    <string name="furigana_uses_the_japanese_reading_data">Używa japońskich danych czytania (pobieranych raz poniżej).</string>
 </resources>

@@ -5002,4 +5002,7 @@
     <string name="speed_dial_your_plays_first_info">YouTube отправляет в Prism плитки со своего сайта. Они отличаются от плиток в приложении и не всегда соответствуют тому, что вы слушаете. Если включено, сначала идёт то, что вы чаще всего слушали на этом телефоне за последние три месяца, а остальное заполняют плитки YouTube.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube больше не принимает этот вход. Выйдите из аккаунта и войдите снова.</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube сейчас не отправляет на этот аккаунт 256 кбит/с, поэтому песни играют в обычном качестве</string>
+    <string name="show_furigana">Показывать фуригану</string>
+    <string name="hiragana_readings_above_kanji">Чтения хираганой над кандзи в японских текстах</string>
+    <string name="furigana_uses_the_japanese_reading_data">Использует японские данные чтения (загружаются один раз ниже).</string>
 </resources>

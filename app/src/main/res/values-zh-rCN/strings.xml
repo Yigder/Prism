@@ -4810,4 +4810,7 @@
     <string name="speed_dial_your_plays_first_info">YouTube 发给 Prism 的是其网站上的方块，与其应用中的不同，也不一定跟随你的收听内容。开启后，最近三个月你在这部手机上听得最多的内容排在前面，其余由 YouTube 的方块补上。</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube 不再接受此次登录。请退出后重新登录。</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube 目前未向此帐号提供 256 kbps，因此歌曲以普通音质播放</string>
+    <string name="show_furigana">显示振假名</string>
+    <string name="hiragana_readings_above_kanji">在日语歌词的汉字上方显示平假名读音</string>
+    <string name="furigana_uses_the_japanese_reading_data">使用日语读音数据（在下方下载一次）。</string>
 </resources>

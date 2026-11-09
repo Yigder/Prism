@@ -4874,4 +4874,7 @@
     <string name="speed_dial_your_plays_first_info">YouTube schickt Prism die Kacheln seiner Website. Sie sind nicht dieselben wie in der App und folgen nicht immer dem, was du hörst. Wenn das an ist, steht zuerst, was du in den letzten drei Monaten auf diesem Handy am meisten gehört hast, danach folgen die Kacheln von YouTube.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube akzeptiert diese Anmeldung nicht mehr. Melde dich ab und wieder an.</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube sendet diesem Konto gerade keine 256 kbit/s, deshalb laufen Songs in der üblichen Qualität</string>
+    <string name="show_furigana">Furigana anzeigen</string>
+    <string name="hiragana_readings_above_kanji">Hiragana-Lesungen über den Kanji in japanischen Liedtexten</string>
+    <string name="furigana_uses_the_japanese_reading_data">Nutzt die japanischen Lesedaten (einmalig unten heruntergeladen).</string>
 </resources>

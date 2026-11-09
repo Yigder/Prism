@@ -62,6 +62,7 @@ import com.prism.music.ui.components.rememberFrost
 import com.prism.music.ui.components.tickWhileShown
 import com.prism.music.ui.player.currentOutput
 import com.prism.music.ui.player.outputLabel
+import com.prism.music.ui.player.rememberFurigana
 import com.prism.music.ui.player.rememberLyricClock
 import com.prism.music.ui.player.rememberLyricsLook
 import com.prism.music.ui.player.rememberLyricsState
@@ -415,6 +416,7 @@ private fun rememberLockLyrics(song: Song, art: String?): (@Composable (Modifier
     val state = rememberLyricsState(song)
     val look = rememberLyricsLook(s, art).withoutCard(s.lyricsOthersAlpha)
     val lines = remember(state.lines, look.uppercase) { state.lines.map(look::shown) }
+    val furigana = rememberFurigana(state)
     if (lines.none { it.timeMs >= 0 }) return null
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val axis = lockLyricsAxis(s)
@@ -427,7 +429,7 @@ private fun rememberLockLyrics(song: Song, art: String?): (@Composable (Modifier
         onDispose { lifecycle.removeObserver(watch) }
     }
     val clock = rememberLyricClock(active = started && playing)
-    return { modifier -> LockLyricLines(lines, clock, look, axis, modifier) }
+    return { modifier -> LockLyricLines(lines, clock, look, axis, modifier, furigana) }
 }
 
 /** The lyrics' typeface on its weight axis (as immersive mode): null for System and imported fonts. */

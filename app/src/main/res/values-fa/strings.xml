@@ -4874,4 +4874,7 @@
     <string name="speed_dial_your_plays_first_info">YouTube کاشی‌های وب‌سایتش را برای Prism می‌فرستد که با کاشی‌های برنامه‌اش یکی نیستند و همیشه از آنچه پخش می‌کنید پیروی نمی‌کنند. اگر روشن باشد، اول آنچه در سه ماه گذشته در این گوشی بیشتر پخش کرده‌اید می‌آید و بقیه با کاشی‌های YouTube پر می‌شود.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube دیگر این ورود را نمی‌پذیرد. از حساب خارج شوید و دوباره وارد شوید.</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube فعلاً برای این حساب ۲۵۶ کیلوبیت‌برثانیه نمی‌فرستد، پس آهنگ‌ها با کیفیت معمول پخش می‌شوند</string>
+    <string name="show_furigana">نمایش فوریگانا</string>
+    <string name="hiragana_readings_above_kanji">خوانش‌های هیراگانا بالای کانجی در متن ترانه‌های ژاپنی</string>
+    <string name="furigana_uses_the_japanese_reading_data">از داده‌های خواندن ژاپنی استفاده می‌کند (یک‌بار در پایین دانلود می‌شود).</string>
 </resources>

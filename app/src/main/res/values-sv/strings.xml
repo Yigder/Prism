@@ -4874,4 +4874,7 @@
     <string name="speed_dial_your_plays_first_info">YouTube skickar rutorna från sin webbplats till Prism. De är inte samma som i appen och följer inte alltid det du spelar. När det är på kommer det du har spelat mest på den här telefonen de senaste tre månaderna först, och YouTubes rutor fyller på resten.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube godkänner inte längre den här inloggningen. Logga ut och logga in igen.</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube skickar inte 256 kbit/s till det här kontot just nu, så låtar spelas i vanlig kvalitet</string>
+    <string name="show_furigana">Visa furigana</string>
+    <string name="hiragana_readings_above_kanji">Hiraganaläsningar ovanför kanji i japanska låttexter</string>
+    <string name="furigana_uses_the_japanese_reading_data">Använder japanska läsdata (laddas ner en gång nedan).</string>
 </resources>

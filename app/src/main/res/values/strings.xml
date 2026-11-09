@@ -1853,6 +1853,9 @@
     <string name="romanization_romaji_pinyin_latin_letters_transli">romanization romaji pinyin latin letters transliteration korean japanese chinese hindi arabic</string>
     <string name="romanize_my_own_language_too">Romanize my own language too</string>
     <string name="romanization_native_script">romanization native script</string>
+    <string name="show_furigana">Show furigana</string>
+    <string name="hiragana_readings_above_kanji">Hiragana readings above the kanji in Japanese lyrics</string>
+    <string name="furigana_uses_the_japanese_reading_data">Uses the Japanese reading data (downloaded once below).</string>
     <string name="japanese_kanji_readings">Japanese kanji readings</string>
     <string name="romaji_kanji_dictionary_download_kuromoji_japane">romaji kanji dictionary download kuromoji japanese reading data</string>
     <string name="sing">Sing</string>

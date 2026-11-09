@@ -4810,4 +4810,7 @@
     <string name="speed_dial_your_plays_first_info">YouTube が Prism に送るのはウェブサイト用のタイルで、アプリのものとは異なり、聴いている曲に沿うとは限りません。オンにすると、過去 3 か月にこのスマホでよく聴いたものが先に並び、残りを YouTube のタイルが埋めます。</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube はこのログインを受け付けなくなりました。ログアウトしてもう一度ログインしてください。</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube は現在このアカウントに 256 kbps を送っていないため、曲は通常の音質で再生されます</string>
+    <string name="show_furigana">ふりがなを表示</string>
+    <string name="hiragana_readings_above_kanji">日本語の歌詞の漢字の上にひらがなの読みを表示します</string>
+    <string name="furigana_uses_the_japanese_reading_data">日本語の読みデータを使用します（下で一度だけダウンロード）。</string>
 </resources>

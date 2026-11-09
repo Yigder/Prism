@@ -5130,4 +5130,7 @@
     <string name="speed_dial_your_plays_first_info">يرسل YouTube إلى Prism مربعات موقعه، وهي ليست نفس مربعات تطبيقه ولا تتبع دائمًا ما تشغّله. عند التفعيل، يظهر أولًا أكثر ما شغّلته على هذا الهاتف في الأشهر الثلاثة الماضية، ثم تكمل مربعات YouTube الباقي.</string>
     <string name="youtube_no_longer_takes_this_sign_in">لم يعد YouTube يقبل تسجيل الدخول هذا. سجّل الخروج ثم سجّل الدخول مرة أخرى.</string>
     <string name="youtube_isnt_sending_256_kbps">لا يرسل YouTube حاليًا 256 كيلوبت/ث إلى هذا الحساب، لذا تُشغَّل الأغاني بالجودة المعتادة</string>
+    <string name="show_furigana">إظهار الفوريغانا</string>
+    <string name="hiragana_readings_above_kanji">قراءات الهيراغانا فوق الكانجي في كلمات الأغاني اليابانية</string>
+    <string name="furigana_uses_the_japanese_reading_data">يستخدم بيانات القراءة اليابانية (تُنزَّل مرة واحدة أدناه).</string>
 </resources>

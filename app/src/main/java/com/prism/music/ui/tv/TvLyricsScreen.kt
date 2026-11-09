@@ -64,6 +64,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.prism.music.R
 import com.prism.music.data.lyrics.LyricLine
+import com.prism.music.data.lyrics.RubySpan
 import com.prism.music.data.prefs.AppSettings
 import com.prism.music.data.prefs.FontChoice
 import com.prism.music.data.prefs.LyricsAlign
@@ -139,6 +140,8 @@ fun TvLyricsScreen(
     roman: List<LyricLine?>? = null,
     romanInstead: Boolean = false,
     translations: List<String?>? = null,
+    /** Each line's kanji readings, drawn above them (furigana). */
+    furigana: List<List<RubySpan>>? = null,
     /** Puts focus back on the lines (after Back to now, or the timing closing). */
     linesFocus: androidx.compose.ui.focus.FocusRequester? = null,
     overVideo: Boolean = false,
@@ -182,7 +185,7 @@ fun TvLyricsScreen(
         // On its own: the song's progress moving (twice a second) redraws the header and the foot, not the lines.
         TvLyricsList(
             lyrics.lines, lyrics.current, picked, clock, style, look, axis, centred, onCard,
-            note = settings.lyricsGapMark == LyricsGapMark.NOTE, roman, romanInstead, translations, linesFocus, toButtons,
+            note = settings.lyricsGapMark == LyricsGapMark.NOTE, roman, romanInstead, translations, furigana, linesFocus, toButtons,
         )
         TvLyricsChrome(chrome, Modifier.align(Alignment.BottomCenter)) {
             TvProgress(now.fraction, now.played, now.total, Modifier.fillMaxWidth().padding(TvSafe).testTag("$TAG_LYRICS/progress"))
@@ -227,6 +230,7 @@ private fun TvLyricsList(
     roman: List<LyricLine?>?,
     romanInstead: Boolean,
     translations: List<String?>?,
+    furigana: List<List<RubySpan>>?,
     linesFocus: androidx.compose.ui.focus.FocusRequester?,
     toButtons: androidx.compose.ui.focus.FocusRequester?,
 ) {
@@ -299,7 +303,7 @@ private fun TvLyricsList(
                 )
                 TvLyricLine(
                     line, i, active, i == picked, clock, style, look, axis, onCard,
-                    roman?.getOrNull(i), romanInstead, translations?.getOrNull(i),
+                    roman?.getOrNull(i), romanInstead, translations?.getOrNull(i), furigana?.getOrNull(i),
                     Modifier.graphicsLayer {
                         this.alpha = alpha.value
                         // The alpha on each thing drawn, not the line drawn offscreen first (that was every dimmed line,
@@ -356,6 +360,7 @@ private fun TvLyricLine(
     romanLine: LyricLine?,
     romanInstead: Boolean,
     translated: String?,
+    ruby: List<RubySpan>?,
     settle: Modifier,
 ) {
     TvLyricsCounts.lines++
@@ -381,8 +386,9 @@ private fun TvLyricLine(
             }
         }
         if (look.extraAbove) { romanised(); translation() }
-        if (active) SungLine(shown, clock, style, look, axis, Modifier.fillMaxWidth(), onCard = onCard)
-        else RestingLine(shown, style, look, alpha, Modifier.fillMaxWidth())
+        val rubyLine = if (romanInstead) null else ruby
+        if (active) SungLine(shown, clock, style, look, axis, Modifier.fillMaxWidth(), onCard = onCard, ruby = rubyLine)
+        else RestingLine(shown, style, look, alpha, Modifier.fillMaxWidth(), ruby = rubyLine)
         if (!look.extraAbove) romanised()
         // Background vocals: smaller under the line, lit word by word in their own time (as on the phone).
         shown.backgroundLine?.let { bg ->
@@ -447,6 +453,7 @@ fun TvLyricsPlace(
     roman: List<LyricLine?>? = null,
     romanInstead: Boolean = false,
     translations: List<String?>? = null,
+    furigana: List<List<RubySpan>>? = null,
     overVideo: Boolean = false,
     status: String? = null,
     buttons: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit = {},
@@ -520,7 +527,7 @@ fun TvLyricsPlace(
         // The clock is read only where words are drawn (not here, or the whole page would be redrawn every frame).
         TvLyricsScreen(
             now, TvLyrics(lines, current, 0L, source), clock, picked = picked, accent = accent,
-            roman = roman, romanInstead = romanInstead, translations = translations, linesFocus = linesFocus, overVideo = overVideo,
+            roman = roman, romanInstead = romanInstead, translations = translations, furigana = furigana, linesFocus = linesFocus, overVideo = overVideo,
             toButtons = buttonsFocus, chrome = chrome,
             modifier = Modifier.onPreviewKeyEvent { e ->
                 if (e.type != KeyEventType.KeyDown || timing) return@onPreviewKeyEvent false
@@ -698,10 +705,11 @@ fun TvSongLyrics(onGone: () -> Unit, overVideo: Boolean = false) {
     val current by remember(lines) { androidx.compose.runtime.derivedStateOf { com.prism.music.playback.CarLyricsCard.lineAt(lines, clock.value).coerceAtLeast(0) } }
     val roman = com.prism.music.ui.player.rememberRomanized(state)
     val romanInstead = com.prism.music.ui.player.romanizeMode(s.id) == com.prism.music.data.prefs.RomanizeMode.INSTEAD
+    val furigana = com.prism.music.ui.player.rememberFurigana(state)
     val translations = rememberTvTranslations(lines)
     TvLyricsPlace(
         now, lines, current, clock, state.loading, state.unavailable, state.source?.label, accent, onPlayPause = { c.player.togglePlay() },
-        roman = roman, romanInstead = romanInstead, translations = translations, overVideo = overVideo,
+        roman = roman, romanInstead = romanInstead, translations = translations, furigana = furigana, overVideo = overVideo,
     ) { ms -> c.player.seekToLyric(ms) }
 }
 

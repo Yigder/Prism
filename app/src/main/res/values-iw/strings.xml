@@ -4938,4 +4938,7 @@
     <string name="speed_dial_your_plays_first_info">YouTube שולח ל-Prism את המשבצות של האתר שלו, שאינן אלה שבאפליקציה שלו ולא תמיד עוקבות אחרי מה שאתה מנגן. כשזה פועל, קודם מופיע מה שניגנת הכי הרבה בטלפון הזה בשלושת החודשים האחרונים, ומשבצות YouTube משלימות את השאר.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube כבר לא מקבל את הכניסה הזו. צריך לצאת מהחשבון ולהיכנס שוב.</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube לא שולח כרגע 256 kbps לחשבון הזה, ולכן השירים מתנגנים באיכות הרגילה</string>
+    <string name="show_furigana">הצג פוריגנה</string>
+    <string name="hiragana_readings_above_kanji">קריאות היראגנה מעל הקנג׳י במילות שירים יפניות</string>
+    <string name="furigana_uses_the_japanese_reading_data">משתמש בנתוני הקריאה היפניים (נטענים פעם אחת למטה).</string>
 </resources>
