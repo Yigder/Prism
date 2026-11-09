@@ -462,7 +462,9 @@ internal fun phoneMatches(
         val titleMatch = matches(title)
         val artistMatch = matches(artist)
         val albumMatch = matches(album)
-        if (!titleMatch && !artistMatch && !albumMatch) return null
+        // The words can be split across the title, artist and album ("night drive" + "The Band"), as Search always
+        // has; a single field's match still ranks the result above a match across fields.
+        if (!titleMatch && !artistMatch && !albumMatch && !matches("$title $artist $album")) return null
         return when {
             titleMatch && (title.startsWith(q) || title.replace(" ", "").startsWith(joined)) -> 0
             titleMatch -> 1
