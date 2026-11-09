@@ -4938,4 +4938,167 @@
     <string name="speed_dial_your_plays_first_info">O YouTube envia ao Prism os mosaicos do site, que não são os da app e nem sempre seguem o que ouves. Se estiver ativo, primeiro aparece o que mais ouviste neste telemóvel nos últimos três meses, e os do YouTube preenchem o resto.</string>
     <string name="youtube_no_longer_takes_this_sign_in">O YouTube já não aceita este início de sessão. Termina a sessão e volta a iniciá-la.</string>
     <string name="youtube_isnt_sending_256_kbps">O YouTube não está a enviar 256 kbps para esta conta de momento, por isso as músicas tocam na qualidade habitual</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">Permitir no ecrã de bloqueio</string>
+    <string name="lock_screen_maker_xiaomi_detail">Abre as permissões do Prism: ative “Mostrar no ecrã de bloqueio” e “Abrir novas janelas durante a execução em segundo plano”</string>
+    <string name="lock_screen_maker_vivo_detail">Abre as permissões do Prism: ative “Mostrar no ecrã de bloqueio” e “Pop-ups em segundo plano”</string>
+    <string name="lock_screen_maker_info">O fabricante do seu telemóvel acrescenta estas permissões às do Android, e o Android não consegue dizer ao Prism se estão ativas. Sem elas, o leitor pode não aparecer no ecrã de bloqueio.</string>
+    <string name="lock_screen_refused">Da última vez, o seu telemóvel não deixou o leitor aparecer. Verifique as permissões acima.</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">Gostar</string>
+    <string name="unlike">Deixar de gostar</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="one">Remover %d transferência deste telemóvel?</item>
+        <item quantity="many">Remover %d transferências deste telemóvel?</item>
+        <item quantity="other">Remover %d transferências deste telemóvel?</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="one">Remover %1$d música de “%2$s” no YouTube Music?</item>
+        <item quantity="many">Remover %1$d músicas de “%2$s” no YouTube Music?</item>
+        <item quantity="other">Remover %1$d músicas de “%2$s” no YouTube Music?</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">Etiquetas</string>
+    <string name="add_a_tag">Adicionar etiqueta</string>
+    <string name="new_tag">Nova etiqueta</string>
+    <string name="tags_are_your_own_labels">As tuas próprias etiquetas para músicas, como “ginásio” ou “dia de chuva”. Encontra-as em Biblioteca → Etiquetas.</string>
+    <string name="your_tag">A tua etiqueta neste telemóvel</string>
+    <string name="remove_this_tag">Remover esta etiqueta</string>
+    <string name="rename_tag">Mudar o nome da etiqueta</string>
+    <string name="delete_tag">Eliminar etiqueta</string>
+    <string name="delete_the_tag_its_songs_stay">Eliminar a etiqueta “%s”? As músicas dela ficam onde estão.</string>
+    <string name="tag_songs_from_any_song_s">Põe etiquetas nas músicas a partir do menu de qualquer música (⋯ ou manter premido) → Adicionar etiqueta.</string>
+    <string name="tag_n_songs">Etiqueta · %s</string>
+    <plurals name="n_tags">
+        <item quantity="one">%d etiqueta</item>
+        <item quantity="many">%d etiquetas</item>
+        <item quantity="other">%d etiquetas</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">Playlist inteligente</string>
+    <string name="smart_playlist_n">Playlist inteligente · %s</string>
+    <string name="smart_playlist_updates_itself">Playlist inteligente · atualiza-se sozinha</string>
+    <string name="new_smart_playlist">Nova playlist inteligente</string>
+    <string name="edit_rules">Editar regras</string>
+    <string name="save_a_copy_as_a_playlist">Guardar uma cópia como playlist</string>
+    <string name="saved_as_a_playlist">“%s” guardada como playlist</string>
+    <string name="no_song_meets_these_rules">Ainda nenhuma música cumpre estas regras. Muda-as no menu ⋯ → Editar regras.</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="one">%d música ainda não foi medida</item>
+        <item quantity="many">%d músicas ainda não foram medidas</item>
+        <item quantity="other">%d músicas ainda não foram medidas</item>
+    </plurals>
+    <string name="measuring_n_of_n">A medir %1$d de %2$d…</string>
+    <string name="measure_now">Medir agora</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">As músicas deste telemóvel estão a ser medidas. Com Wi-Fi, as outras também.</string>
+    <string name="smart_fast_and_liked">Rápidas e com gosto</string>
+    <string name="smart_not_played_in_a_while">Sem ouvir há algum tempo</string>
+    <string name="smart_goes_with_what_s_playing">Combina com o que está a tocar</string>
+    <string name="the_song_playing_isn_t_measured_yet">A música a tocar ainda não foi medida.</string>
+    <string name="match_all_rules">Cumpre todas as regras</string>
+    <string name="match_any_rule">Cumpre alguma regra</string>
+    <string name="add_a_rule">Adicionar regra</string>
+    <string name="add_a_rule_to_begin">Adiciona uma regra para começar.</string>
+    <string name="finds_n">Encontra %s</string>
+    <string name="up_to">Até</string>
+    <string name="sort_most_played">Mais ouvidas</string>
+    <string name="sort_not_played_lately">Sem ouvir ultimamente</string>
+    <string name="sort_random">Aleatória</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">Tom que combina com</string>
+    <string name="rule_energy">Energia</string>
+    <string name="rule_loudness">Volume (LUFS)</string>
+    <string name="rule_on_phone">Um ficheiro deste telemóvel</string>
+    <string name="rule_tag">Etiqueta</string>
+    <string name="rule_times_played">Vezes ouvida</string>
+    <string name="rule_last_played">Ouvida pela última vez</string>
+    <string name="rule_added">Adicionada à tua biblioteca</string>
+    <string name="rule_never_played">Nunca ouvida</string>
+    <string name="rule_is">É</string>
+    <string name="rule_isn_t">Não é</string>
+    <string name="rule_from">De</string>
+    <string name="rule_to">Até</string>
+    <string name="rule_at_least">Pelo menos</string>
+    <string name="rule_at_most">No máximo</string>
+    <string name="rule_within">Nos últimos</string>
+    <string name="rule_not_within">Não nos últimos</string>
+    <string name="rule_days">dias</string>
+    <string name="genre_example">Pop, hip-hop, rock…</string>
+    <string name="your_listening">O que ouves</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">Músicas de</string>
+    <string name="your_likes_stay_as_they_are">Só muda o que este separador mostra. Os teus gostos ficam como estão.</string>
+    <string name="search_these_songs">Pesquisar nestas músicas</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">Pesquisar na tua biblioteca</string>
+    <string name="nothing_in_your_library_matches">Nada na tua biblioteca corresponde</string>
+    <string name="try_fewer_words_or_another_filter">Experimenta menos palavras ou outro filtro.</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">Encontrar duplicadas</string>
+    <string name="no_song_is_here_twice">Nenhuma música está aqui duas vezes</string>
+    <string name="extra_copy">Cópia a mais</string>
+    <string name="keeping_s">Fica “%s”</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="one">%d música está aqui mais de uma vez</item>
+        <item quantity="many">%d músicas estão aqui mais de uma vez</item>
+        <item quantity="other">%d músicas estão aqui mais de uma vez</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="one">Remover %d cópia a mais</item>
+        <item quantity="many">Remover %d cópias a mais</item>
+        <item quantity="other">Remover %d cópias a mais</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="one">Isto tira %d música desta playlist.</item>
+        <item quantity="many">Isto tira %d músicas desta playlist.</item>
+        <item quantity="other">Isto tira %d músicas desta playlist.</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="one">Isto tira %d música da playlist também no YouTube Music.</item>
+        <item quantity="many">Isto tira %d músicas da playlist também no YouTube Music.</item>
+        <item quantity="other">Isto tira %d músicas da playlist também no YouTube Music.</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">O teu ficheiro</string>
+    <string name="choose_a_file_on_this_phone">Escolher um ficheiro deste telemóvel</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">Um mosaico</string>
+    <string name="pin_to_home_as_one_tile">Afixar no Início como um mosaico</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">Carregar uma música</string>
+    <string name="uploading_s">A carregar %1$s…</string>
+    <string name="uploaded_s_it_shows_up_here">%1$s foi carregado. Aparece aqui quando o YouTube Music o tiver pronto, normalmente em poucos minutos.</string>
+    <string name="couldn_t_upload_it_s">Não foi possível carregar: %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">O YouTube Music aceita ficheiros MP3, M4A, WMA, FLAC e Ogg até 300 MB.</string>
+    <string name="delete_from_your_uploads">Eliminar dos teus carregamentos</string>
+    <string name="delete_s_from_youtube_music">Eliminar \"%1$s\" do YouTube Music?</string>
+    <string name="it_goes_from_your_uploads_for_good">Desaparece dos teus carregamentos em todos os dispositivos, de vez. Não pode ser anulado.</string>
+    <string name="deleted_from_your_uploads">Eliminado dos teus carregamentos</string>
+    <string name="couldn_t_delete_it_s">Não foi possível eliminar: %1$s</string>
+    <string name="uploads_couldn_t_find_it">O YouTube Music já não o lista</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">Playlists inteligentes</string>
+    <string name="tour_183_smart_body">Playlists que se enchem sozinhas com as regras que definires e acompanham a tua biblioteca.</string>
+    <string name="tour_183_smart_point_1">Regras sobre o que gostas, ouves, transferes ou etiquetas</string>
+    <string name="tour_183_smart_point_2">Andamento, tom e energia, medidos no teu telemóvel</string>
+    <string name="tour_183_smart_point_3">Guarda uma cópia como playlist normal quando quiseres</string>
+    <string name="tour_183_tags_title">Etiquetas</string>
+    <string name="tour_183_tags_body">As tuas próprias etiquetas nas músicas, a partir do menu de qualquer música.</string>
+    <string name="tour_183_tags_point_1">Cada etiqueta tem a sua página na Biblioteca</string>
+    <string name="tour_183_tags_point_2">Usa-as em playlists inteligentes</string>
+    <string name="tour_183_tags_point_3">Etiqueta várias músicas de uma vez</string>
+    <string name="tour_183_select_title">Selecionar várias</string>
+    <string name="tour_183_select_body">Mantém premida uma música numa lista para escolher mais e age sobre todas de uma vez.</string>
+    <string name="tour_183_select_point_1">Adicionar a uma playlist ou à fila, etiquetar, gostar ou transferir</string>
+    <string name="tour_183_select_point_2">Tirá-las de uma playlist, com confirmação</string>
+    <string name="tour_183_search_title">Pesquisa na tua biblioteca</string>
+    <string name="tour_183_search_body">Tudo o que tens, encontrado enquanto escreves, com filtros.</string>
+    <string name="tour_183_search_point_1">Músicas, playlists, etiquetas, artistas e álbuns</string>
+    <string name="tour_183_search_point_2">Só gostos, transferidas ou neste telemóvel</string>
+    <string name="tour_183_search_point_3">Títulos em japonês, coreano, russo e grego encontrados em letras latinas</string>
+    <string name="tour_183_also_file">Um ficheiro do telemóvel como versão de uma música</string>
+    <string name="tour_183_also_duplicates">Encontra músicas repetidas numa playlist</string>
+    <string name="tour_183_also_songs_from">Músicas da Biblioteca a partir das playlists que escolheres</string>
+    <string name="tour_183_also_lock">Repetir e A seguir no ecrã de bloqueio</string>
+    <string name="tour_183_also_uploads">Carregar e eliminar em Carregamentos</string>
 </resources>

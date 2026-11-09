@@ -2,6 +2,44 @@
 
 What changed in each release. Older releases are described on the [Releases page](https://github.com/Yigder/Prism/releases).
 
+## 1.8.3
+
+### Your library, smarter
+
+- **Smart playlists.** Library → Playlists → Smart playlist. A playlist made of rules that fills itself and keeps up as your library changes. Rules on the sound (BPM, a key that goes with another, energy, loudness), your library (liked, downloaded, a file on this phone, a tag, genre, artist, album) and your listening (times played, last played, added, never played), meeting all of them or any. Sort and a limit, three starters to pick from ("Fast and liked", "Not played in a while", "Goes with what's playing"), and "Save a copy as a playlist" for a fixed copy. They stay in Prism and in your backups; nothing goes to YouTube.
+- **Tempo, key and energy in one place.** What Mix and DJ mode measure is now kept where smart playlists can use it, and energy is measured in the same scan with no extra work. Songs not measured yet are left out of sound rules; the playlist says how many and has **Measure now** (the songs on the phone, and the others on Wi-Fi).
+- **Tags** (your own labels, like "gym" or "rainy day"). From any song's menu → Add a tag. A song can have several. Library → Tags shows each tag as a page you can play, shuffle, rename or delete. They stay on the phone and in your backups.
+- **Select many** (#381). Hold a song in a list to start picking, tap more, or All. Then Play next, Add to queue, Add to playlist, Add a tag, Like or Unlike, Download or Remove download, and Remove from this playlist. On a YouTube Music playlist, removing asks first, since it changes the playlist on your account.
+- **Search your library.** The search button at the top of Library, or "In your library" in Search. Songs, playlists, tags, artists and albums as you type, with filters for liked, downloaded and on this phone.
+- **Titles in other alphabets found in Latin letters** (#363). "tori no uta" finds とりのうた. Japanese kana, Korean, Russian and Greek work right away; Japanese kanji once Prism's Japanese dictionary is downloaded. Made in the background, a few songs at a time.
+- **Songs from the playlists you choose** (#382). Library → Songs → Songs from: your likes, or any of your playlists together, each song once. Only what the tab shows changes; nothing gets liked.
+- **Find duplicates.** A playlist's ⋯ menu → Find duplicates: songs that are in it twice, also as a video and its song, or two uploads of the same track. Live versions and remixes are kept apart. Remove the extra copies in one go, with a check first.
+- **A file on your phone as a song's version** (#243). Play a different version now lists the matching files on your phone as "Your file", and "Choose a file on this phone" picks any other. The song then plays from the file; Original goes back.
+
+### New
+
+- **Lock screen: Repeat and Up next.** Customize Prism → Player → Lock screen. Each one is its own switch, off by default. Up next shows the next three songs and can't be tapped: the lock screen still only controls what's playing.
+- **A pinned album or playlist as one tile on Home.** Its menu → Pin to Home as one tile, or Customize Home → its menu → One tile. A cover with a play button, instead of its song list.
+- **Uploads: upload and delete.** The upload button on the Uploads page sends a song file from your phone to your YouTube Music uploads (MP3, M4A, WMA, FLAC and Ogg, up to 300 MB). A song's menu there has Delete from your uploads, with a check first, since it can't be undone.
+- **Smart Downloads can use less space:** 256 MB and 512 MB join the choices.
+- **TV: seek with Left and Right on the player.** Press Up from the controls to the progress line, then Left or Right moves 10 seconds; hold it and it speeds up to 30.
+
+### Fixes
+
+- **Opening and closing mixes no longer stutters with Show genres on** (#228). Genres were looked up while the screen waited; they now come in when they're ready.
+- **After Prism is closed by the phone or crashes, the song carries on near where it was** (#388), not from the start. The place is kept every 10 seconds while playing.
+- **The next song's animated cover shows** (#384). It stayed invisible after the first one.
+- **Songs played from a file on your phone get the check mark everywhere** (#385), not only on some lists.
+- **Downloading a music video as audio saves the video's sound** (#390), not the album track, unless "Songs, not videos" is set to Everywhere.
+- **"Songs, not videos: Everywhere" works on more Home playlists** (#383), and songs that YouTube lists as episodes get ⏮ and ⏭ instead of ⏪ and ⏩.
+- **Plays reach a brand account's YouTube history** (#377).
+- **Casting to Sonos and other speakers keeps going in the background** (#239). Prism now holds on while the phone sleeps, and a speaker that can't be reached while Android blocks the network no longer counts as a missed song.
+- **The lock screen player on vivo and Xiaomi (HyperOS) phones.** Its page now shows the extra permission those phones ask for, with a button to it, and says so when the phone didn't let the player come up.
+- **Moods & genres opens at once** after the first time: it's kept for a day, and shown offline too.
+- **TV: lyrics without timing stay where you scrolled,** instead of jumping back to the top.
+- **Dragging songs in the queue** moves the song once, when you let go, instead of at every row it passes. A fast drag no longer leaves it where it was.
+- **ONNX Runtime's start-up helper is gone.** Sing's voice separation library added one that ran at every start, though only Sing uses it.
+
 ## 1.8.2.1
 
 ### Faster and lighter

@@ -24,8 +24,17 @@ data class PrismList(
     val songs: List<Song> = emptyList(),
     val createdAt: Long,
     val updatedAt: Long,
+    /**
+     * A smart playlist's rules (1.8.3): its songs are what they find, worked out again as it opens; [songs] keeps the
+     * last of them for what plays it without opening it (Home, Android Auto, a tile's menu).
+     */
+    val smart: SmartRules? = null,
 ) {
-    fun item() = PlaylistItem(id, title, tr(R.string.prism_playlist, songCount(songs.size)), songs.firstOrNull()?.thumbnail)
+    fun item() = PlaylistItem(
+        id, title,
+        if (smart != null) tr(R.string.smart_playlist_n, songCount(songs.size)) else tr(R.string.prism_playlist, songCount(songs.size)),
+        songs.firstOrNull()?.thumbnail,
+    )
 }
 
 /** An album saved to the library on the phone (the bookmark on an album page, without an account). */
@@ -130,12 +139,35 @@ class PrismLibrary(private val dir: File) {
         return id
     }
 
+    /** A new smart playlist (1.8.3); its id. Its songs come when it's first worked out. */
+    fun createSmart(title: String, rules: SmartRules): String {
+        val now = System.currentTimeMillis()
+        val id = PREFIX + UUID.randomUUID().toString().replace("-", "").take(12)
+        change { it.copy(lists = listOf(PrismList(id, title.trim().ifBlank { tr(R.string.smart_playlist) }, "", emptyList(), now, now, smart = rules)) + it.lists) }
+        return id
+    }
+
+    /** A smart playlist's new name and rules. */
+    fun setSmart(id: String, title: String, rules: SmartRules) = edit(id) { it.copy(title = title.trim().ifBlank { it.title }, smart = rules) }
+
+    /**
+     * What a smart playlist found, kept for what plays it unopened: neither its place among the playlists nor its
+     * "changed" time moves (it's the same playlist), and nothing is written when it found the same.
+     */
+    fun keepFound(id: String, songs: List<Song>) {
+        val l = _lists.value.firstOrNull { it.id == id } ?: return
+        if (l.smart == null || l.songs.map { it.id } == songs.map { it.id }) return
+        change { lib -> lib.copy(lists = lib.lists.map { if (it.id == id) it.copy(songs = songs) else it }) }
+    }
+
     fun rename(id: String, title: String, description: String) = edit(id) { it.copy(title = title.trim().ifBlank { it.title }, description = description.trim()) }
 
     fun delete(id: String) = change { it.copy(lists = it.lists.filterNot { l -> l.id == id }) }
 
     /** Adds the songs not in it yet, at the end; how many were added. */
     fun add(id: String, songs: List<Song>): Int {
+        // A smart playlist's songs are what its rules find.
+        if (list(id)?.smart != null) return 0
         var added = 0
         edit(id) { l ->
             val have = l.songs.map { it.id }.toHashSet()

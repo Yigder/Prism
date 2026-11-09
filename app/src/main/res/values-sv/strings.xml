@@ -4874,4 +4874,159 @@
     <string name="speed_dial_your_plays_first_info">YouTube skickar rutorna från sin webbplats till Prism. De är inte samma som i appen och följer inte alltid det du spelar. När det är på kommer det du har spelat mest på den här telefonen de senaste tre månaderna först, och YouTubes rutor fyller på resten.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube godkänner inte längre den här inloggningen. Logga ut och logga in igen.</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube skickar inte 256 kbit/s till det här kontot just nu, så låtar spelas i vanlig kvalitet</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">Tillåt på låsskärmen</string>
+    <string name="lock_screen_maker_xiaomi_detail">Öppnar Prisms behörigheter: slå på ”Visa på låsskärmen” och ”Öppna nya fönster när appen körs i bakgrunden”</string>
+    <string name="lock_screen_maker_vivo_detail">Öppnar Prisms behörigheter: slå på ”Visa på låsskärmen” och ”Popup-fönster i bakgrunden”</string>
+    <string name="lock_screen_maker_info">Telefonens tillverkare lägger till de här behörigheterna utöver Androids egna, och Android kan inte tala om för Prism om de är på. Utan dem kanske spelaren inte visas på låsskärmen.</string>
+    <string name="lock_screen_refused">Förra gången lät telefonen inte spelaren visas. Kontrollera behörigheterna ovan.</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">Gilla</string>
+    <string name="unlike">Sluta gilla</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="one">Ta bort %d nedladdning från den här telefonen?</item>
+        <item quantity="other">Ta bort %d nedladdningar från den här telefonen?</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="one">Ta bort %1$d låt från ”%2$s” på YouTube Music?</item>
+        <item quantity="other">Ta bort %1$d låtar från ”%2$s” på YouTube Music?</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">Taggar</string>
+    <string name="add_a_tag">Lägg till tagg</string>
+    <string name="new_tag">Ny tagg</string>
+    <string name="tags_are_your_own_labels">Dina egna etiketter för låtar, som ”gym” eller ”regnig dag”. Du hittar dem i Bibliotek → Taggar.</string>
+    <string name="your_tag">Din tagg på den här telefonen</string>
+    <string name="remove_this_tag">Ta bort den här taggen</string>
+    <string name="rename_tag">Byt namn på taggen</string>
+    <string name="delete_tag">Radera tagg</string>
+    <string name="delete_the_tag_its_songs_stay">Radera taggen ”%s”? Dess låtar stannar där de är.</string>
+    <string name="tag_songs_from_any_song_s">Tagga låtar från valfri låts meny (⋯ eller ett långt tryck) → Lägg till tagg.</string>
+    <string name="tag_n_songs">Tagg · %s</string>
+    <plurals name="n_tags">
+        <item quantity="one">%d tagg</item>
+        <item quantity="other">%d taggar</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">Smart spellista</string>
+    <string name="smart_playlist_n">Smart spellista · %s</string>
+    <string name="smart_playlist_updates_itself">Smart spellista · håller sig själv uppdaterad</string>
+    <string name="new_smart_playlist">Ny smart spellista</string>
+    <string name="edit_rules">Redigera regler</string>
+    <string name="save_a_copy_as_a_playlist">Spara en kopia som spellista</string>
+    <string name="saved_as_a_playlist">Sparade ”%s” som spellista</string>
+    <string name="no_song_meets_these_rules">Ingen låt uppfyller reglerna än. Ändra dem i ⋯-menyn → Redigera regler.</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="one">%d låt är inte mätt än</item>
+        <item quantity="other">%d låtar är inte mätta än</item>
+    </plurals>
+    <string name="measuring_n_of_n">Mäter %1$d av %2$d …</string>
+    <string name="measure_now">Mät nu</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">Låtarna på den här telefonen mäts. På wifi mäts de andra också.</string>
+    <string name="smart_fast_and_liked">Snabba och gillade</string>
+    <string name="smart_not_played_in_a_while">Inte spelade på länge</string>
+    <string name="smart_goes_with_what_s_playing">Passar till det som spelas</string>
+    <string name="the_song_playing_isn_t_measured_yet">Låten som spelas är inte mätt än.</string>
+    <string name="match_all_rules">Uppfyller alla regler</string>
+    <string name="match_any_rule">Uppfyller någon regel</string>
+    <string name="add_a_rule">Lägg till regel</string>
+    <string name="add_a_rule_to_begin">Lägg till en regel för att börja.</string>
+    <string name="finds_n">Hittar %s</string>
+    <string name="up_to">Upp till</string>
+    <string name="sort_most_played">Mest spelade</string>
+    <string name="sort_not_played_lately">Inte spelade på sistone</string>
+    <string name="sort_random">Slumpvis</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">Tonart som passar till</string>
+    <string name="rule_energy">Energi</string>
+    <string name="rule_loudness">Ljudstyrka (LUFS)</string>
+    <string name="rule_on_phone">En fil på den här telefonen</string>
+    <string name="rule_tag">Tagg</string>
+    <string name="rule_times_played">Gånger spelad</string>
+    <string name="rule_last_played">Senast spelad</string>
+    <string name="rule_added">Tillagd i ditt bibliotek</string>
+    <string name="rule_never_played">Aldrig spelad</string>
+    <string name="rule_is">Är</string>
+    <string name="rule_isn_t">Är inte</string>
+    <string name="rule_from">Från</string>
+    <string name="rule_to">Till</string>
+    <string name="rule_at_least">Minst</string>
+    <string name="rule_at_most">Högst</string>
+    <string name="rule_within">Under de senaste</string>
+    <string name="rule_not_within">Inte under de senaste</string>
+    <string name="rule_days">dagarna</string>
+    <string name="genre_example">Pop, hiphop, rock …</string>
+    <string name="your_listening">Ditt lyssnande</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">Låtar från</string>
+    <string name="your_likes_stay_as_they_are">Bara det fliken visar ändras. Dina gillade låtar förblir som de är.</string>
+    <string name="search_these_songs">Sök i de här låtarna</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">Sök i ditt bibliotek</string>
+    <string name="nothing_in_your_library_matches">Inget i ditt bibliotek matchar</string>
+    <string name="try_fewer_words_or_another_filter">Prova färre ord eller ett annat filter.</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">Hitta dubbletter</string>
+    <string name="no_song_is_here_twice">Ingen låt finns här två gånger</string>
+    <string name="extra_copy">Dubblett</string>
+    <string name="keeping_s">”%s” blir kvar</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="one">%d låt finns här flera gånger</item>
+        <item quantity="other">%d låtar finns här flera gånger</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="one">Ta bort %d dubblett</item>
+        <item quantity="other">Ta bort %d dubbletter</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="one">Det här tar bort %d låt från spellistan.</item>
+        <item quantity="other">Det här tar bort %d låtar från spellistan.</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="one">Det här tar bort %d låt från spellistan på YouTube Music också.</item>
+        <item quantity="other">Det här tar bort %d låtar från spellistan på YouTube Music också.</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">Din fil</string>
+    <string name="choose_a_file_on_this_phone">Välj en fil på den här telefonen</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">En ruta</string>
+    <string name="pin_to_home_as_one_tile">Fäst på Hem som en ruta</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">Ladda upp en låt</string>
+    <string name="uploading_s">Laddar upp %1$s…</string>
+    <string name="uploaded_s_it_shows_up_here">%1$s är uppladdad. Den visas här när YouTube Music har gjort den klar, oftast inom några minuter.</string>
+    <string name="couldn_t_upload_it_s">Kunde inte ladda upp: %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">YouTube Music tar MP3-, M4A-, WMA-, FLAC- och Ogg-filer på upp till 300 MB.</string>
+    <string name="delete_from_your_uploads">Ta bort från dina uppladdningar</string>
+    <string name="delete_s_from_youtube_music">Ta bort ”%1$s” från YouTube Music?</string>
+    <string name="it_goes_from_your_uploads_for_good">Den försvinner från dina uppladdningar på alla enheter, för gott. Det går inte att ångra.</string>
+    <string name="deleted_from_your_uploads">Borttagen från dina uppladdningar</string>
+    <string name="couldn_t_delete_it_s">Kunde inte ta bort: %1$s</string>
+    <string name="uploads_couldn_t_find_it">YouTube Music visar den inte längre</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">Smarta spellistor</string>
+    <string name="tour_183_smart_body">Spellistor som fyller sig själva efter dina regler och hänger med ditt bibliotek.</string>
+    <string name="tour_183_smart_point_1">Regler om vad du gillar, spelar, laddar ned eller taggar</string>
+    <string name="tour_183_smart_point_2">Tempo, tonart och energi, mätta på din telefon</string>
+    <string name="tour_183_smart_point_3">Spara en kopia som vanlig spellista när du vill</string>
+    <string name="tour_183_tags_title">Taggar</string>
+    <string name="tour_183_tags_body">Dina egna etiketter på låtar, från varje låts meny.</string>
+    <string name="tour_183_tags_point_1">Varje tagg har en egen sida i Bibliotek</string>
+    <string name="tour_183_tags_point_2">Använd dem i smarta spellistor</string>
+    <string name="tour_183_tags_point_3">Tagga många låtar på en gång</string>
+    <string name="tour_183_select_title">Välj flera</string>
+    <string name="tour_183_select_body">Håll på en låt i en lista för att välja fler och gör sedan något med alla på en gång.</string>
+    <string name="tour_183_select_point_1">Lägg till i en spellista eller kön, tagga, gilla eller ladda ned</string>
+    <string name="tour_183_select_point_2">Ta bort dem ur en spellista, efter en fråga</string>
+    <string name="tour_183_search_title">Sök i ditt bibliotek</string>
+    <string name="tour_183_search_body">Allt du har, hittat medan du skriver, med filter.</string>
+    <string name="tour_183_search_point_1">Låtar, spellistor, taggar, artister och album</string>
+    <string name="tour_183_search_point_2">Bara gillade, nedladdade eller på den här telefonen</string>
+    <string name="tour_183_search_point_3">Japanska, koreanska, ryska och grekiska titlar hittade med latinska bokstäver</string>
+    <string name="tour_183_also_file">En fil på telefonen som en låts version</string>
+    <string name="tour_183_also_duplicates">Hitta låtar som finns två gånger i en spellista</string>
+    <string name="tour_183_also_songs_from">Bibliotekets låtar från spellistorna du väljer</string>
+    <string name="tour_183_also_lock">Upprepa och Härnäst på låsskärmen</string>
+    <string name="tour_183_also_uploads">Ladda upp och ta bort i Uppladdningar</string>
 </resources>

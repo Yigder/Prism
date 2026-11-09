@@ -303,6 +303,8 @@ class MixTempo(
     private val playing: () -> Boolean = { false },
     /** Where each scanned song's outline goes, for the waveform progress bar (1.7.4). */
     private val waves: com.prism.music.data.SongWaves? = null,
+    /** Where what's measured goes too, in one table that can be filtered (1.8.3: `song_traits`). */
+    private val traits: com.prism.music.data.TraitsSink? = null,
 ) {
     private val prefs = context.getSharedPreferences("mix_tempo", Context.MODE_PRIVATE)
     /** Song id -> integrated loudness (LUFS; NaN when it couldn't be measured). Also marks a song as scanned. */
@@ -318,6 +320,25 @@ class MixTempo(
     /** Forgets what was measured of [id] (another version of it plays now), so it's measured again. */
     fun forget(id: String) {
         for (p in listOf(prefs, loudPrefs, peakPrefs, keyPrefs, quickPrefs)) p.edit().remove(id).apply()
+        traits?.forget(id)
+    }
+
+    /** Every song measured so far, whole or by a quick scan (what [measuredCount] counts). */
+    fun measuredIds(): Set<String> = loudPrefs.all.keys + quickPrefs.all.keys
+
+    /**
+     * What the prefs hold of [id], as a `song_traits` row (1.8.3's one-time copy). Its energy goes without brightness,
+     * which wasn't kept before 1.8.3 ([Energy.of]).
+     */
+    fun traitsFromPrefs(id: String): com.prism.music.data.SongTraits? {
+        if (scanned(id)) {
+            val tempo = cached(id)
+            val lufs = loudness(id)
+            return com.prism.music.data.SongTraits(id, tempo, key(id), lufs, Energy.of(lufs, tempo?.confidence, null), whole = true)
+        }
+        val (bpm, confidence, lufs) = quick(id) ?: return null
+        val tempo = if (bpm > 0) Tempo(bpm, confidence, 0, 0, 0, 0) else null
+        return com.prism.music.data.SongTraits(id, tempo, key(id), lufs, Energy.of(lufs, tempo?.confidence, null), whole = false)
     }
 
     fun cached(id: String): Tempo? = prefs.getString(id, null)?.let(Tempo::decode)
@@ -345,7 +366,7 @@ class MixTempo(
     /** Scanned before the song's fade-out and intro were measured (for Mix's Auto length): scanned again once. */
     private fun old(id: String) = prefs.getString(id, null)?.let(Tempo::isOld) == true
 
-    private class Scan(val tempo: Tempo?, val lufs: Float?, val key: MusicKey?, val peakDb: Float?)
+    private class Scan(val tempo: Tempo?, val lufs: Float?, val key: MusicKey?, val peakDb: Float?, val brightness: Double?)
 
     // ---------------------------------------------------------------- DJ mode's quick scan
 
@@ -401,6 +422,7 @@ class MixTempo(
                     val (r, bytes) = BackgroundBudget.asJob(scheduled) { quickRead(id, network) } ?: return@withContext QuickResult.NEEDS_NETWORK
                     keyPrefs.edit().putString(id, r.key?.encode() ?: "none:${MusicKey.VERSION}").apply()
                     quickPrefs.edit().putString(id, "${r.tempo?.bpm ?: 0.0}|${r.tempo?.confidence ?: 0.0}|${r.lufs ?: Float.NaN}").apply()
+                    traits?.record(com.prism.music.data.SongTraits(id, r.tempo, r.key, r.lufs, Energy.of(r.lufs, r.tempo?.confidence, r.brightness), whole = false))
                     Log.i(
                         TAG, "quick-scanned $id in ${(System.nanoTime() - started) / 1_000_000} ms (${bytes / 1024} KB): key " +
                             (r.key?.let { "${it.name} (${it.camelot})" } ?: "unclear") + ", " +
@@ -491,6 +513,7 @@ class MixTempo(
                         loudPrefs.edit().putFloat(id, s.lufs ?: Float.NaN).apply()
                         peakPrefs.edit().putFloat(id, s.peakDb ?: Float.NaN).apply()
                         keyPrefs.edit().putString(id, s.key?.encode() ?: "none:${MusicKey.VERSION}").apply()
+                        traits?.record(com.prism.music.data.SongTraits(id, s.tempo, s.key, s.lufs, Energy.of(s.lufs, s.tempo?.confidence, s.brightness), whole = true))
                         val ms = (System.nanoTime() - started) / 1_000_000
                         val t = s.tempo
                         Log.i(TAG, "scanned $id in $ms ms: loudness ${s.lufs?.let { "%.1f LUFS".format(it) } ?: "unknown"}, " +
@@ -541,7 +564,9 @@ class MixTempo(
             val key = runCatching { KeyDetector.detect(pcm, rate, count) }.getOrNull()
             ease()
             val peakDb = decoded.peak.takeIf { it > 0f }?.let { (20 * kotlin.math.log10(it.toDouble())).toFloat() }
-            return Scan(Tempo.analyze(bands, frameMs, offsetMs = VideoSync.WINDOW / 2 * 1000.0 / rate), lufs, key, peakDb)
+            // Energy's brightness from the same bands as the tempo (1.8.3; no extra pass).
+            val brightness = runCatching { Energy.brightness(bands) }.getOrNull()
+            return Scan(Tempo.analyze(bands, frameMs, offsetMs = VideoSync.WINDOW / 2 * 1000.0 / rate), lufs, key, peakDb, brightness)
         } finally {
             file.delete()
         }

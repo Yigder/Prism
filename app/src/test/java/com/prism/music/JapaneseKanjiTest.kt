@@ -118,6 +118,7 @@ class JapaneseKanjiTest {
     }
 
     /** Live: Google's answer for a kanji-only line, asked as Japanese, is no pinyin. */
+    @org.junit.experimental.categories.Category(LiveNetwork::class)
     @Test fun googleReadsTheLineAsJapanese() = runBlocking {
         val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
         val r = romanizer(http).romanize("ja-live2", listOf(LyricLine(0, "夢を見ていた"), LyricLine(2_000, "月光"), LyricLine(4_000, "一生悬命")), emptySet(), network = true)

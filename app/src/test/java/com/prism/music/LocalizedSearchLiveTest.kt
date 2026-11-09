@@ -14,8 +14,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /** Korean and Spanish phones: YouTube answers in their language, and Prism still reads types, years and artists. */
+@Category(LiveNetwork::class)
 class LocalizedSearchLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
     private var settings = AppSettings()

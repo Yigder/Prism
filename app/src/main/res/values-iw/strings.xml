@@ -4938,4 +4938,167 @@
     <string name="speed_dial_your_plays_first_info">YouTube שולח ל-Prism את המשבצות של האתר שלו, שאינן אלה שבאפליקציה שלו ולא תמיד עוקבות אחרי מה שאתה מנגן. כשזה פועל, קודם מופיע מה שניגנת הכי הרבה בטלפון הזה בשלושת החודשים האחרונים, ומשבצות YouTube משלימות את השאר.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube כבר לא מקבל את הכניסה הזו. צריך לצאת מהחשבון ולהיכנס שוב.</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube לא שולח כרגע 256 kbps לחשבון הזה, ולכן השירים מתנגנים באיכות הרגילה</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">לאפשר במסך הנעילה</string>
+    <string name="lock_screen_maker_xiaomi_detail">פותח את ההרשאות של Prism: צריך להפעיל את „הצגה במסך הנעילה” ואת „פתיחת חלונות חדשים בזמן ריצה ברקע”</string>
+    <string name="lock_screen_maker_vivo_detail">פותח את ההרשאות של Prism: צריך להפעיל את „הצגה במסך הנעילה” ואת „חלונות קופצים ברקע”</string>
+    <string name="lock_screen_maker_info">יצרן הטלפון מוסיף את ההרשאות האלה להרשאות של Android, ו-Android לא יכול לדעת אם הן מופעלות. בלעדיהן ייתכן שהנגן לא יופיע במסך הנעילה.</string>
+    <string name="lock_screen_refused">בפעם האחרונה הטלפון לא נתן לנגן להופיע. כדאי לבדוק את ההרשאות שלמעלה.</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">אהבתי</string>
+    <string name="unlike">ביטול אהבתי</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="one">להסיר %d הורדה מהטלפון הזה?</item>
+        <item quantity="two">להסיר %d הורדות מהטלפון הזה?</item>
+        <item quantity="other">להסיר %d הורדות מהטלפון הזה?</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="one">להסיר %1$d שיר מ„%2$s” ב-YouTube Music?</item>
+        <item quantity="two">להסיר %1$d שירים מ„%2$s” ב-YouTube Music?</item>
+        <item quantity="other">להסיר %1$d שירים מ„%2$s” ב-YouTube Music?</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">תגיות</string>
+    <string name="add_a_tag">הוספת תגית</string>
+    <string name="new_tag">תגית חדשה</string>
+    <string name="tags_are_your_own_labels">תוויות משלך לשירים, כמו „חדר כושר” או „יום גשום”. אפשר למצוא אותן בספרייה ← תגיות.</string>
+    <string name="your_tag">התגית שלך בטלפון הזה</string>
+    <string name="remove_this_tag">הסרת התגית הזו</string>
+    <string name="rename_tag">שינוי שם התגית</string>
+    <string name="delete_tag">מחיקת התגית</string>
+    <string name="delete_the_tag_its_songs_stay">למחוק את התגית „%s”? השירים שלה נשארים במקומם.</string>
+    <string name="tag_songs_from_any_song_s">תייגו שירים מהתפריט של כל שיר (⋯ או לחיצה ארוכה) ← הוספת תגית.</string>
+    <string name="tag_n_songs">תגית · %s</string>
+    <plurals name="n_tags">
+        <item quantity="one">תגית %d</item>
+        <item quantity="two">%d תגיות</item>
+        <item quantity="other">%d תגיות</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">פלייליסט חכם</string>
+    <string name="smart_playlist_n">פלייליסט חכם · %s</string>
+    <string name="smart_playlist_updates_itself">פלייליסט חכם · מתעדכן מעצמו</string>
+    <string name="new_smart_playlist">פלייליסט חכם חדש</string>
+    <string name="edit_rules">עריכת הכללים</string>
+    <string name="save_a_copy_as_a_playlist">שמירת עותק כפלייליסט</string>
+    <string name="saved_as_a_playlist">„%s” נשמר כפלייליסט</string>
+    <string name="no_song_meets_these_rules">עדיין אין שיר שעומד בכללים האלה. אפשר לשנות אותם בתפריט ⋯ ← עריכת הכללים.</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="one">שיר %d עדיין לא נמדד</item>
+        <item quantity="two">%d שירים עדיין לא נמדדו</item>
+        <item quantity="other">%d שירים עדיין לא נמדדו</item>
+    </plurals>
+    <string name="measuring_n_of_n">מודד %1$d מתוך %2$d…</string>
+    <string name="measure_now">למדוד עכשיו</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">השירים שבטלפון הזה נמדדים. ב-Wi-Fi גם השאר.</string>
+    <string name="smart_fast_and_liked">מהירים ואהובים</string>
+    <string name="smart_not_played_in_a_while">לא הושמעו מזמן</string>
+    <string name="smart_goes_with_what_s_playing">מתאים למה שמתנגן</string>
+    <string name="the_song_playing_isn_t_measured_yet">השיר שמתנגן עדיין לא נמדד.</string>
+    <string name="match_all_rules">עומד בכל הכללים</string>
+    <string name="match_any_rule">עומד באחד הכללים</string>
+    <string name="add_a_rule">הוספת כלל</string>
+    <string name="add_a_rule_to_begin">כדי להתחיל, הוסיפו כלל.</string>
+    <string name="finds_n">מוצא %s</string>
+    <string name="up_to">עד</string>
+    <string name="sort_most_played">הכי מושמעים</string>
+    <string name="sort_not_played_lately">לא הושמעו לאחרונה</string>
+    <string name="sort_random">אקראי</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">סולם שמתאים ל</string>
+    <string name="rule_energy">אנרגיה</string>
+    <string name="rule_loudness">עוצמה (LUFS)</string>
+    <string name="rule_on_phone">קובץ בטלפון הזה</string>
+    <string name="rule_tag">תגית</string>
+    <string name="rule_times_played">מספר השמעות</string>
+    <string name="rule_last_played">הושמע לאחרונה</string>
+    <string name="rule_added">נוסף לספרייה</string>
+    <string name="rule_never_played">אף פעם לא הושמע</string>
+    <string name="rule_is">כן</string>
+    <string name="rule_isn_t">לא</string>
+    <string name="rule_from">מ</string>
+    <string name="rule_to">עד</string>
+    <string name="rule_at_least">לפחות</string>
+    <string name="rule_at_most">לכל היותר</string>
+    <string name="rule_within">ב-</string>
+    <string name="rule_not_within">לא ב-</string>
+    <string name="rule_days">הימים האחרונים</string>
+    <string name="genre_example">פופ, היפ-הופ, רוק…</string>
+    <string name="your_listening">ההאזנה שלך</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">שירים מתוך</string>
+    <string name="your_likes_stay_as_they_are">רק מה שהכרטיסייה הזו מציגה משתנה. הלייקים שלך נשארים כמו שהם.</string>
+    <string name="search_these_songs">חיפוש בשירים האלה</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">חיפוש בספרייה שלך</string>
+    <string name="nothing_in_your_library_matches">שום דבר בספרייה שלך לא תואם</string>
+    <string name="try_fewer_words_or_another_filter">כדאי לנסות פחות מילים או מסנן אחר.</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">חיפוש כפילויות</string>
+    <string name="no_song_is_here_twice">אין כאן שיר פעמיים</string>
+    <string name="extra_copy">עותק מיותר</string>
+    <string name="keeping_s">„%s” נשאר</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="one">שיר %d מופיע כאן יותר מפעם אחת</item>
+        <item quantity="two">%d שירים מופיעים כאן יותר מפעם אחת</item>
+        <item quantity="other">%d שירים מופיעים כאן יותר מפעם אחת</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="one">הסרת עותק מיותר %d</item>
+        <item quantity="two">הסרת %d עותקים מיותרים</item>
+        <item quantity="other">הסרת %d עותקים מיותרים</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="one">פעולה זו תוציא שיר %d מהפלייליסט.</item>
+        <item quantity="two">פעולה זו תוציא %d שירים מהפלייליסט.</item>
+        <item quantity="other">פעולה זו תוציא %d שירים מהפלייליסט.</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="one">פעולה זו תוציא שיר %d מהפלייליסט גם ב-YouTube Music.</item>
+        <item quantity="two">פעולה זו תוציא %d שירים מהפלייליסט גם ב-YouTube Music.</item>
+        <item quantity="other">פעולה זו תוציא %d שירים מהפלייליסט גם ב-YouTube Music.</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">הקובץ שלך</string>
+    <string name="choose_a_file_on_this_phone">בחירת קובץ מהטלפון הזה</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">אריח אחד</string>
+    <string name="pin_to_home_as_one_tile">הצמדה לדף הבית כאריח אחד</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">העלאת שיר</string>
+    <string name="uploading_s">מעלה את %1$s…</string>
+    <string name="uploaded_s_it_shows_up_here">%1$s הועלה. הוא יופיע כאן כש-YouTube Music יכין אותו, בדרך כלל תוך כמה דקות.</string>
+    <string name="couldn_t_upload_it_s">לא ניתן להעלות: %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">YouTube Music מקבל קובצי MP3,‏ M4A,‏ WMA,‏ FLAC ו-Ogg עד 300MB.</string>
+    <string name="delete_from_your_uploads">מחיקה מההעלאות שלך</string>
+    <string name="delete_s_from_youtube_music">למחוק את „%1$s” מ-YouTube Music?</string>
+    <string name="it_goes_from_your_uploads_for_good">הוא יימחק מההעלאות שלך בכל המכשירים, לתמיד. אי אפשר לבטל.</string>
+    <string name="deleted_from_your_uploads">נמחק מההעלאות שלך</string>
+    <string name="couldn_t_delete_it_s">לא ניתן למחוק: %1$s</string>
+    <string name="uploads_couldn_t_find_it">YouTube Music כבר לא מציג אותו</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">פלייליסטים חכמים</string>
+    <string name="tour_183_smart_body">פלייליסטים שמתמלאים מעצמם לפי הכללים שלך ומתעדכנים עם הספרייה.</string>
+    <string name="tour_183_smart_point_1">כללים לפי מה שאהבת, השמעת, הורדת או תייגת</string>
+    <string name="tour_183_smart_point_2">קצב, סולם ואנרגיה, נמדדים בטלפון</string>
+    <string name="tour_183_smart_point_3">שמירת עותק כפלייליסט רגיל בכל עת</string>
+    <string name="tour_183_tags_title">תגים</string>
+    <string name="tour_183_tags_body">תגים משלך על שירים, מהתפריט של כל שיר.</string>
+    <string name="tour_183_tags_point_1">לכל תג יש דף משלו בספרייה</string>
+    <string name="tour_183_tags_point_2">אפשר להשתמש בהם בפלייליסטים חכמים</string>
+    <string name="tour_183_tags_point_3">תיוג שירים רבים בבת אחת</string>
+    <string name="tour_183_select_title">בחירה מרובה</string>
+    <string name="tour_183_select_body">לוחצים לחיצה ארוכה על שיר ברשימה, בוחרים עוד ופועלים על כולם יחד.</string>
+    <string name="tour_183_select_point_1">הוספה לפלייליסט או לתור, תיוג, לייק או הורדה</string>
+    <string name="tour_183_select_point_2">הסרה מפלייליסט, אחרי אישור</string>
+    <string name="tour_183_search_title">חיפוש בספרייה</string>
+    <string name="tour_183_search_body">כל מה שיש לך, נמצא תוך כדי הקלדה, עם מסננים.</string>
+    <string name="tour_183_search_point_1">שירים, פלייליסטים, תגים, אמנים ואלבומים</string>
+    <string name="tour_183_search_point_2">רק אהובים, שהורדו או בטלפון הזה</string>
+    <string name="tour_183_search_point_3">כותרים ביפנית, קוריאנית, רוסית ויוונית נמצאים גם באותיות לטיניות</string>
+    <string name="tour_183_also_file">קובץ בטלפון כגרסה של שיר</string>
+    <string name="tour_183_also_duplicates">מציאת שירים שמופיעים פעמיים בפלייליסט</string>
+    <string name="tour_183_also_songs_from">שירים בספרייה מהפלייליסטים שבחרת</string>
+    <string name="tour_183_also_lock">חזרה והבא בתור במסך הנעילה</string>
+    <string name="tour_183_also_uploads">העלאה ומחיקה בהעלאות</string>
 </resources>

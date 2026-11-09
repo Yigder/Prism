@@ -4874,4 +4874,159 @@
     <string name="speed_dial_your_plays_first_info">YouTube کاشی‌های وب‌سایتش را برای Prism می‌فرستد که با کاشی‌های برنامه‌اش یکی نیستند و همیشه از آنچه پخش می‌کنید پیروی نمی‌کنند. اگر روشن باشد، اول آنچه در سه ماه گذشته در این گوشی بیشتر پخش کرده‌اید می‌آید و بقیه با کاشی‌های YouTube پر می‌شود.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube دیگر این ورود را نمی‌پذیرد. از حساب خارج شوید و دوباره وارد شوید.</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube فعلاً برای این حساب ۲۵۶ کیلوبیت‌برثانیه نمی‌فرستد، پس آهنگ‌ها با کیفیت معمول پخش می‌شوند</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">اجازه در صفحه قفل</string>
+    <string name="lock_screen_maker_xiaomi_detail">مجوزهای Prism را باز می‌کند: «نمایش در صفحه قفل» و «باز کردن پنجره‌های جدید هنگام اجرا در پس‌زمینه» را روشن کنید</string>
+    <string name="lock_screen_maker_vivo_detail">مجوزهای Prism را باز می‌کند: «نمایش در صفحه قفل» و «پنجره‌های بازشو در پس‌زمینه» را روشن کنید</string>
+    <string name="lock_screen_maker_info">سازنده گوشی شما این مجوزها را به مجوزهای خود Android اضافه می‌کند و Android نمی‌تواند به Prism بگوید روشن هستند یا نه. بدون آن‌ها ممکن است پخش‌کننده روی صفحه قفل نیاید.</string>
+    <string name="lock_screen_refused">دفعه قبل، گوشی شما اجازه نداد پخش‌کننده نمایش داده شود. مجوزهای بالا را بررسی کنید.</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">پسندیدن</string>
+    <string name="unlike">حذف پسند</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="one">%d دانلود از این گوشی حذف شود؟</item>
+        <item quantity="other">%d دانلود از این گوشی حذف شود؟</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="one">%1$d آهنگ از «%2$s» در YouTube Music حذف شود؟</item>
+        <item quantity="other">%1$d آهنگ از «%2$s» در YouTube Music حذف شود؟</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">برچسب‌ها</string>
+    <string name="add_a_tag">افزودن برچسب</string>
+    <string name="new_tag">برچسب تازه</string>
+    <string name="tags_are_your_own_labels">برچسب‌های خودتان برای آهنگ‌ها، مثل «باشگاه» یا «روز بارانی». آن‌ها را در کتابخانه ← برچسب‌ها پیدا کنید.</string>
+    <string name="your_tag">برچسب شما در این گوشی</string>
+    <string name="remove_this_tag">برداشتن این برچسب</string>
+    <string name="rename_tag">تغییر نام برچسب</string>
+    <string name="delete_tag">حذف برچسب</string>
+    <string name="delete_the_tag_its_songs_stay">برچسب «%s» حذف شود؟ آهنگ‌هایش سر جایشان می‌مانند.</string>
+    <string name="tag_songs_from_any_song_s">از منوی هر آهنگ (⋯ یا لمس طولانی) ← افزودن برچسب، به آهنگ‌ها برچسب بزنید.</string>
+    <string name="tag_n_songs">برچسب · %s</string>
+    <plurals name="n_tags">
+        <item quantity="one">%d برچسب</item>
+        <item quantity="other">%d برچسب</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">فهرست پخش هوشمند</string>
+    <string name="smart_playlist_n">فهرست پخش هوشمند · %s</string>
+    <string name="smart_playlist_updates_itself">فهرست پخش هوشمند · خودش به‌روز می‌ماند</string>
+    <string name="new_smart_playlist">فهرست پخش هوشمند تازه</string>
+    <string name="edit_rules">ویرایش قانون‌ها</string>
+    <string name="save_a_copy_as_a_playlist">ذخیرهٔ یک نسخه به‌عنوان فهرست پخش</string>
+    <string name="saved_as_a_playlist">«%s» به‌عنوان فهرست پخش ذخیره شد</string>
+    <string name="no_song_meets_these_rules">هنوز هیچ آهنگی با این قانون‌ها جور نیست. از منوی ⋯ ← ویرایش قانون‌ها عوضشان کنید.</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="one">%d آهنگ هنوز اندازه‌گیری نشده</item>
+        <item quantity="other">%d آهنگ هنوز اندازه‌گیری نشده‌اند</item>
+    </plurals>
+    <string name="measuring_n_of_n">اندازه‌گیری %1$d از %2$d…</string>
+    <string name="measure_now">اکنون اندازه بگیر</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">آهنگ‌های این گوشی اندازه‌گیری می‌شوند. با Wi-Fi بقیه هم.</string>
+    <string name="smart_fast_and_liked">تند و پسندیده</string>
+    <string name="smart_not_played_in_a_while">مدتی پخش نشده</string>
+    <string name="smart_goes_with_what_s_playing">جور با آنچه پخش می‌شود</string>
+    <string name="the_song_playing_isn_t_measured_yet">آهنگ در حال پخش هنوز اندازه‌گیری نشده.</string>
+    <string name="match_all_rules">همهٔ قانون‌ها</string>
+    <string name="match_any_rule">هر قانونی</string>
+    <string name="add_a_rule">افزودن قانون</string>
+    <string name="add_a_rule_to_begin">برای شروع یک قانون بیفزایید.</string>
+    <string name="finds_n">%s پیدا می‌کند</string>
+    <string name="up_to">تا</string>
+    <string name="sort_most_played">پرپخش‌ترین</string>
+    <string name="sort_not_played_lately">اخیراً پخش‌نشده</string>
+    <string name="sort_random">تصادفی</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">گامِ جور با</string>
+    <string name="rule_energy">انرژی</string>
+    <string name="rule_loudness">بلندی (LUFS)</string>
+    <string name="rule_on_phone">فایلی در این گوشی</string>
+    <string name="rule_tag">برچسب</string>
+    <string name="rule_times_played">دفعات پخش</string>
+    <string name="rule_last_played">آخرین پخش</string>
+    <string name="rule_added">افزوده به کتابخانه</string>
+    <string name="rule_never_played">هرگز پخش نشده</string>
+    <string name="rule_is">هست</string>
+    <string name="rule_isn_t">نیست</string>
+    <string name="rule_from">از</string>
+    <string name="rule_to">تا</string>
+    <string name="rule_at_least">دست‌کم</string>
+    <string name="rule_at_most">حداکثر</string>
+    <string name="rule_within">در آخرین</string>
+    <string name="rule_not_within">نه در آخرین</string>
+    <string name="rule_days">روز</string>
+    <string name="genre_example">پاپ، هیپ‌هاپ، راک…</string>
+    <string name="your_listening">شنیده‌های شما</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">آهنگ‌ها از</string>
+    <string name="your_likes_stay_as_they_are">فقط آنچه این زبانه نشان می‌دهد عوض می‌شود. پسندهای شما همان‌طور می‌مانند.</string>
+    <string name="search_these_songs">جست‌وجو در این آهنگ‌ها</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">جست‌وجو در کتابخانهٔ شما</string>
+    <string name="nothing_in_your_library_matches">چیزی در کتابخانهٔ شما پیدا نشد</string>
+    <string name="try_fewer_words_or_another_filter">کلمه‌های کمتر یا فیلتر دیگری را امتحان کنید.</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">یافتن تکراری‌ها</string>
+    <string name="no_song_is_here_twice">هیچ آهنگی اینجا دو بار نیست</string>
+    <string name="extra_copy">نسخهٔ اضافه</string>
+    <string name="keeping_s">«%s» می‌ماند</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="one">%d آهنگ بیش از یک بار اینجاست</item>
+        <item quantity="other">%d آهنگ بیش از یک بار اینجا هستند</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="one">حذف %d نسخهٔ اضافه</item>
+        <item quantity="other">حذف %d نسخهٔ اضافه</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="one">این کار %d آهنگ را از این فهرست پخش برمی‌دارد.</item>
+        <item quantity="other">این کار %d آهنگ را از این فهرست پخش برمی‌دارد.</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="one">این کار %d آهنگ را در YouTube Music هم از فهرست برمی‌دارد.</item>
+        <item quantity="other">این کار %d آهنگ را در YouTube Music هم از فهرست برمی‌دارد.</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">فایل شما</string>
+    <string name="choose_a_file_on_this_phone">انتخاب فایلی از این گوشی</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">یک کاشی</string>
+    <string name="pin_to_home_as_one_tile">سنجاق به خانه به‌صورت یک کاشی</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">بارگذاری آهنگ</string>
+    <string name="uploading_s">در حال بارگذاری %1$s…</string>
+    <string name="uploaded_s_it_shows_up_here">%1$s بارگذاری شد. وقتی YouTube Music آماده‌اش کند اینجا نشان داده می‌شود، معمولاً تا چند دقیقه.</string>
+    <string name="couldn_t_upload_it_s">بارگذاری نشد: %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">YouTube Music فایل‌های MP3، M4A، WMA، FLAC و Ogg تا ۳۰۰ مگابایت را می‌پذیرد.</string>
+    <string name="delete_from_your_uploads">حذف از بارگذاری‌های شما</string>
+    <string name="delete_s_from_youtube_music">«%1$s» از YouTube Music حذف شود؟</string>
+    <string name="it_goes_from_your_uploads_for_good">از بارگذاری‌های شما در همهٔ دستگاه‌ها برای همیشه حذف می‌شود. قابل بازگشت نیست.</string>
+    <string name="deleted_from_your_uploads">از بارگذاری‌های شما حذف شد</string>
+    <string name="couldn_t_delete_it_s">حذف نشد: %1$s</string>
+    <string name="uploads_couldn_t_find_it">YouTube Music دیگر آن را نشان نمی‌دهد</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">فهرست‌های پخش هوشمند</string>
+    <string name="tour_183_smart_body">فهرست‌هایی که با قانون‌های شما خودشان پر می‌شوند و با کتابخانه‌تان پیش می‌روند.</string>
+    <string name="tour_183_smart_point_1">قانون بر اساس آنچه می‌پسندید، پخش می‌کنید، بارگیری یا برچسب می‌زنید</string>
+    <string name="tour_183_smart_point_2">تمپو، گام و انرژی، اندازه‌گیری‌شده روی گوشی شما</string>
+    <string name="tour_183_smart_point_3">هر وقت خواستید یک نسخه را به‌صورت فهرست ساده ذخیره کنید</string>
+    <string name="tour_183_tags_title">برچسب‌ها</string>
+    <string name="tour_183_tags_body">برچسب‌های خودتان روی آهنگ‌ها، از منوی هر آهنگ.</string>
+    <string name="tour_183_tags_point_1">هر برچسب صفحهٔ خودش را در کتابخانه دارد</string>
+    <string name="tour_183_tags_point_2">در فهرست‌های هوشمند از آن‌ها استفاده کنید</string>
+    <string name="tour_183_tags_point_3">به چند آهنگ با هم برچسب بزنید</string>
+    <string name="tour_183_select_title">انتخاب چندتایی</string>
+    <string name="tour_183_select_body">آهنگی را در فهرست نگه دارید تا موارد بیشتری انتخاب کنید و یکجا روی همه عمل کنید.</string>
+    <string name="tour_183_select_point_1">افزودن به فهرست یا صف، برچسب زدن، پسندیدن یا بارگیری</string>
+    <string name="tour_183_select_point_2">برداشتن از فهرست، با تأیید</string>
+    <string name="tour_183_search_title">جست‌وجو در کتابخانه</string>
+    <string name="tour_183_search_body">هرچه دارید، هنگام تایپ پیدا می‌شود، با فیلترها.</string>
+    <string name="tour_183_search_point_1">آهنگ‌ها، فهرست‌ها، برچسب‌ها، هنرمندان و آلبوم‌ها</string>
+    <string name="tour_183_search_point_2">فقط پسندیده، بارگیری‌شده یا روی این گوشی</string>
+    <string name="tour_183_search_point_3">عنوان‌های ژاپنی، کره‌ای، روسی و یونانی با حروف لاتین هم پیدا می‌شوند</string>
+    <string name="tour_183_also_file">فایلی روی گوشی به‌عنوان نسخه‌ای از آهنگ</string>
+    <string name="tour_183_also_duplicates">یافتن آهنگ‌هایی که دو بار در یک فهرست هستند</string>
+    <string name="tour_183_also_songs_from">آهنگ‌های کتابخانه از فهرست‌هایی که انتخاب می‌کنید</string>
+    <string name="tour_183_also_lock">تکرار و بعدی در صفحهٔ قفل</string>
+    <string name="tour_183_also_uploads">بارگذاری و حذف در بارگذاری‌ها</string>
 </resources>

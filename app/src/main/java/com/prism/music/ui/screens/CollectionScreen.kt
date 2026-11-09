@@ -1,5 +1,6 @@
 package com.prism.music.ui.screens
 
+import kotlinx.coroutines.flow.runningFold
 import com.prism.music.R
 import com.prism.music.tr
 import com.prism.music.trp
@@ -138,7 +139,11 @@ import com.prism.music.ui.theme.LocalUi
 import kotlinx.coroutines.launch
 
 /** [PRISM]: a playlist made in Prism and kept on the phone ([com.prism.music.data.PrismLibrary]). */
-enum class CollectionType { ALBUM, PLAYLIST, LIKED, DOWNLOADS, MIX, PRISM }
+enum class CollectionType {
+    ALBUM, PLAYLIST, LIKED, DOWNLOADS, MIX, PRISM,
+    /** One of the listener's tags (1.8.3): its songs, newest tagged first; renamed or deleted from its ⋯. */
+    TAG,
+}
 
 /** Names of artists YouTube Music lists as similar ("Fans might also like"), for classifying obscure artists. */
 private suspend fun relatedArtists(c: com.prism.music.AppContainer, s: Song): List<String> {
@@ -206,7 +211,28 @@ fun CollectionScreen(type: CollectionType, id: String, initialGenre: String?, bo
     val page: Load<LiveCollection> = when (type) {
         CollectionType.PRISM -> {
             val list = prismLists.firstOrNull { it.id == id }
+            val rules = list?.smart
+            // A smart playlist (1.8.3): what its rules find, again whenever the library's songs, plays, tags or
+            // measurements change; the last of them shows meanwhile.
+            // Counted, not the changed tables' names: two changes to the same table in a row are equal sets, and the
+            // state would skip the second.
+            val changes by remember(rules != null) {
+                if (rules != null) c.db.invalidationTracker.createFlow("songs", "song_traits", "song_tags", "play_events")
+                    .runningFold(0) { n, _ -> n + 1 } else kotlinx.coroutines.flow.flowOf(0)
+            }.collectAsState(0)
+            val downloadsNow = if (rules != null) downloads.size else 0
+            val found by androidx.compose.runtime.produceState<com.prism.music.data.SmartResult?>(null, rules, changes, downloadsNow) {
+                if (rules != null) value = runCatching { c.smart.run(rules) }.onFailure { android.util.Log.w("PrismSmart", "smart playlist didn't run", it) }.getOrNull() ?: value
+            }
+            LaunchedEffect(found) { found?.let { c.prismLibrary.keepFound(id, it.songs) } }
             if (list == null) Load.Err(tr(R.string.this_playlist_isn_t_on_this))
+            else if (rules != null) Load.Ok(remember(list.title, found) {
+                LiveCollection(
+                    CollectionPage(list.id, CollectionKind.PLAYLIST, list.title, tr(R.string.smart_playlist_updates_itself),
+                        thumbnail = (found?.songs ?: list.songs).firstOrNull()?.thumbnail, songs = found?.songs ?: list.songs),
+                    c.scope, null, unmeasured = found?.unmeasured ?: 0,
+                )
+            })
             else Load.Ok(remember(list) {
                 LiveCollection(
                     CollectionPage(list.id, CollectionKind.PLAYLIST, list.title, tr(R.string.prism_playlist_on_this_phone), description = list.description.ifBlank { null },
@@ -223,6 +249,15 @@ fun CollectionScreen(type: CollectionType, id: String, initialGenre: String?, bo
             Load.Ok(remember(songs) {
                 LiveCollection(CollectionPage("downloads", CollectionKind.PLAYLIST, tr(R.string.downloads), tr(R.string.available_offline), thumbnail = null, songs = songs), c.scope, null)
             })
+        }
+        CollectionType.TAG -> {
+            val tagged by remember(id) { c.tags.songs(id) }.collectAsState(null)
+            when (val songs = tagged) {
+                null -> Load.Loading
+                else -> Load.Ok(remember(songs) {
+                    LiveCollection(CollectionPage(TAG_PAGE + id, CollectionKind.PLAYLIST, id, tr(R.string.your_tag), thumbnail = songs.firstOrNull()?.thumbnail, songs = songs), c.scope, null)
+                })
+            }
         }
         else -> remote!!.state
     }
@@ -255,6 +290,8 @@ class LiveCollection(
     val offline: Boolean = false,
     /** Not a kept copy: made from the album's songs on the phone. */
     val fromPhone: Boolean = false,
+    /** A smart playlist's songs its Sound rules can't see yet (1.8.3). */
+    val unmeasured: Int = 0,
 ) {
     val songs = kotlinx.coroutines.flow.MutableStateFlow(page.songs.distinctBy { it.id })
     /** Each song's slot in an owned playlist, for taking it out again. */
@@ -302,7 +339,7 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
     val sortList = when (type) {
         CollectionType.LIKED -> "liked"
         CollectionType.DOWNLOADS -> "downloads"
-        CollectionType.PLAYLIST, CollectionType.PRISM -> "playlist:${page.id}"
+        CollectionType.PLAYLIST, CollectionType.PRISM, CollectionType.TAG -> "playlist:${page.id}"
         else -> null
     }
     var sort by remember(page.id) {
@@ -532,9 +569,16 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
         })
     }
 
+    // A smart playlist (1.8.3): its songs are what its rules find, so none is taken out or moved by hand.
+    val smartRules = if (type == CollectionType.PRISM) c.prismLibrary.lists.collectAsState().value.firstOrNull { it.id == page.id }?.smart else null
+    val measuring = if (smartRules?.usesSound == true) c.smartMeasure.progress.collectAsState().value else null
     // Owned playlists: a song can be taken out of it.
     val slots by live.setVideoIds.collectAsState()
     fun removeAction(s: Song): List<SheetItem> {
+        if (smartRules != null) return emptyList()
+        if (type == CollectionType.TAG) return listOf(SheetItem(PrismIcons.PlaylistRemove, tr(R.string.remove_this_tag)) {
+            scope.launch { c.tags.remove(page.title, listOf(s.id)) }
+        })
         if (type == CollectionType.PRISM) return listOf(SheetItem(PrismIcons.PlaylistRemove, tr(R.string.remove_from_this_playlist)) {
             c.prismLibrary.remove(page.id, s.id)
             Toast.makeText(context, tr(R.string.removed_from, page.title), Toast.LENGTH_SHORT).show()
@@ -553,6 +597,40 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                     }
             }
         })
+    }
+
+    // Select many (1.8.3): picked songs out of an own playlist at once; a YouTube one is asked first (the bar does).
+    val selectRemover = when {
+        smartRules != null -> null
+        type == CollectionType.TAG -> com.prism.music.ui.components.SelectionRemover(page.title, asks = false, label = tr(R.string.remove_this_tag)) { picked ->
+            scope.launch { c.tags.remove(page.title, picked.map { it.id }) }
+        }
+        type == CollectionType.PRISM -> com.prism.music.ui.components.SelectionRemover(page.title, asks = false) { picked ->
+            picked.forEach { c.prismLibrary.remove(page.id, it.id) }
+            Toast.makeText(context, tr(R.string.removed_from, page.title), Toast.LENGTH_SHORT).show()
+        }
+        type == CollectionType.PLAYLIST && live.page.owned -> com.prism.music.ui.components.SelectionRemover(page.title, asks = true) { picked ->
+            val gone = picked.filter { slots[it.id] != null }
+            val before = live.songs.value
+            live.songs.value = before.filterNot { s -> gone.any { it.id == s.id } }
+            scope.launch {
+                // One after another, as the song's own menu does it; any that fail come back.
+                var error: Throwable? = null
+                val failed = gone.filter { s ->
+                    runCatching { c.ytm.removeFromPlaylist(page.id, s.id, slots[s.id]!!) }.onFailure { if (error == null) error = it }.isFailure
+                }
+                // Picked songs without the playlist's id for removing them (not loaded: offline, or a kept copy) weren't
+                // removed either: said, not "Removed".
+                val skipped = gone.size < picked.size
+                if (failed.isEmpty() && !skipped) Toast.makeText(context, tr(R.string.removed_from, page.title), Toast.LENGTH_SHORT).show()
+                else {
+                    live.songs.value = before.filter { s -> gone.none { it.id == s.id } || failed.any { it.id == s.id } }
+                    val why = error?.friendlyMessage() ?: tr(R.string.try_again_in_a_moment)
+                    Toast.makeText(context, tr(R.string.couldn_t_remove_it, why), Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        else -> null
     }
 
     confirm?.let { (text, action) ->
@@ -577,7 +655,8 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
     // Rearranging an owned playlist's songs (#140): each drop goes to YouTube Music at once (one move each, in order) or
     // straight into a Prism playlist; the page shows it moved, and puts it back if YouTube refuses.
     var rearranging by remember(page.id) { mutableStateOf(false) }
-    val canRearrange = (type == CollectionType.PLAYLIST && live.page.owned || type == CollectionType.PRISM) && songs.size > 1
+    val selection = com.prism.music.ui.components.LocalSongSelection.current
+    val canRearrange = (type == CollectionType.PLAYLIST && live.page.owned || type == CollectionType.PRISM && smartRules == null) && songs.size > 1
     val moves = remember(page.id) { kotlinx.coroutines.sync.Mutex() }
     val reorder = rememberLazyReorder(listState, songs)
     fun startRearranging() {
@@ -590,6 +669,7 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                 if (sort != SortMode.DEFAULT) pickSort(SortMode.DEFAULT)
                 if (groupByGenre) toggleGenreGroups()
                 genreFilter = null; query = ""
+                selection?.clear()
                 rearranging = true
             }
         }
@@ -626,7 +706,11 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
     var sharing by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
+    // Duplicates found (1.8.3), shown in a sheet to take the extra copies out.
+    var dupes by remember { mutableStateOf<List<com.prism.music.data.Duplicates.Group>?>(null) }
     var title by remember(page.id) { mutableStateOf(page.title) }
+    // A smart playlist renamed in its rules' editor.
+    LaunchedEffect(live.page.title) { title = live.page.title }
     var description by remember(page.id) { mutableStateOf(page.description) }
     var pageMenu by remember { mutableStateOf(false) }
     fun shareTarget(): ShareTarget = when (type) {
@@ -638,7 +722,7 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
         CollectionType.LIKED -> ShareTarget(tr(R.string.liked_songs), com.prism.music.data.model.songCount(songs.size), tr(R.string.playlist), art, null, songs = songs)
         CollectionType.DOWNLOADS -> ShareTarget(tr(R.string.downloads), com.prism.music.data.model.songCount(songs.size), tr(R.string.playlist), art, null, songs = songs)
         CollectionType.MIX -> ShareTarget(title, page.subtitle, tr(R.string.mix_2), art, null, songs = songs)
-        CollectionType.PRISM -> ShareTarget(title, com.prism.music.data.model.songCount(songs.size), tr(R.string.playlist), art, null, songs = songs)
+        CollectionType.PRISM, CollectionType.TAG -> ShareTarget(title, com.prism.music.data.model.songCount(songs.size), tr(R.string.playlist), art, null, songs = songs)
     }
 
     // A wide landscape window (a tablet on its side) keeps the cover and its details beside the songs, as Apple Music
@@ -706,6 +790,7 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                 playRow()
                 about()
             }
+            com.prism.music.ui.components.SelectableSongs(visible, selectRemover) {
             LazyColumn(
                 state = listState,
                 modifier = (if (sideBySide) Modifier.padding(start = sideWidth) else Modifier)
@@ -726,6 +811,10 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                     )
                 }
                 if (!sideBySide) item("play") { playRow() }
+                // Songs a smart playlist's Sound rules can't see yet, and Measure now (1.8.3).
+                if (smartRules != null && (live.unmeasured > 0 || measuring != null)) item("measure") {
+                    SmartMeasureRow(smartRules, live.unmeasured, measuring)
+                }
                 // Rearranging (#140): the songs in the playlist's own order, to hold and move; nothing else in the way.
                 if (rearranging) {
                     rearrangeSongs(reorder, onDone = { rearranging = false }, onReorder = ::reorderTo)
@@ -774,7 +863,8 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                     else EmptyState(when (type) { CollectionType.LIKED -> PrismIcons.HeartFilled; CollectionType.DOWNLOADS -> PrismIcons.DownloadDone; else -> PrismIcons.Song }, genreFilter?.let { tr(R.string.no_songs, com.prism.music.data.meta.Genres.shown(it)) } ?: tr(R.string.nothing_here_yet),
                         when (type) {
                             CollectionType.LIKED -> tr(R.string.like_songs_from_the_player_and)
-                            CollectionType.PRISM -> tr(R.string.add_songs_from_any_song_s)
+                            CollectionType.PRISM -> if (smartRules != null) tr(R.string.no_song_meets_these_rules) else tr(R.string.add_songs_from_any_song_s)
+                            CollectionType.TAG -> tr(R.string.tag_songs_from_any_song_s)
                             else -> tr(R.string.songs_you_add_will_show_up)
                         })
                 }
@@ -834,6 +924,7 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                     }
                     live.page.artists.firstOrNull { it.id != null }?.let { a -> item("moreby") { MoreBy(a.name, a.id!!, page.id) } }
                 }
+            }
             }
 
             if (likedRefresh) androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator(
@@ -895,7 +986,14 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                 if (type == CollectionType.ALBUM) add(SheetItem(PrismIcons.Photo, tr(R.string.change_cover)) { albumCover = true })
                 // A holiday mix: pinned to Home on its own, or kept as a Prism playlist (1.8.0).
                 if (type == CollectionType.MIX) com.prism.music.data.seasonal.HolidayMixes.byId(page.id)?.let { addAll(holidayActions(c, context, it)) }
-                if ((type == CollectionType.PLAYLIST && live.page.owned) || type == CollectionType.PRISM) add(SheetItem(PrismIcons.Edit, tr(R.string.edit_details)) { editing = true })
+                if (smartRules != null) {
+                    add(SheetItem(PrismIcons.Edit, tr(R.string.edit_rules)) { editing = true })
+                    add(SheetItem(PrismIcons.PlaylistAdd, tr(R.string.save_a_copy_as_a_playlist)) {
+                        val copy = c.prismLibrary.create(title, songs)
+                        Toast.makeText(context, tr(R.string.saved_as_a_playlist, title), Toast.LENGTH_SHORT).show()
+                        nav.go(com.prism.music.ui.Routes.playlist(copy))
+                    })
+                } else if ((type == CollectionType.PLAYLIST && live.page.owned) || type == CollectionType.PRISM) add(SheetItem(PrismIcons.Edit, tr(R.string.edit_details)) { editing = true })
                 if (canRearrange) add(SheetItem(PrismIcons.SwapVertical, tr(R.string.rearrange_songs)) { startRearranging() })
                 // A sleep or kids' playlist: plays as usual, but doesn't shape recommendations.
                 if (type == CollectionType.PLAYLIST) {
@@ -907,6 +1005,15 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
                     })
                 }
                 addAll(downloadsItems)
+                if (type == CollectionType.TAG) {
+                    add(SheetItem(PrismIcons.Edit, tr(R.string.rename_tag)) { editing = true })
+                    add(SheetItem(PrismIcons.Delete, tr(R.string.delete_tag), danger = true) { deleting = true })
+                }
+                // 1.8.3: the same song twice (a video and its song, two uploads), from a list one can take songs out of.
+                if (selectRemover != null && type != CollectionType.TAG) add(SheetItem(PrismIcons.Copy, tr(R.string.find_duplicates)) {
+                    val found = com.prism.music.data.Duplicates.find(songs)
+                    if (found.isEmpty()) Toast.makeText(context, tr(R.string.no_song_is_here_twice), Toast.LENGTH_SHORT).show() else dupes = found
+                })
                 if ((type == CollectionType.PLAYLIST && live.page.owned) || type == CollectionType.PRISM) add(SheetItem(PrismIcons.Delete, tr(R.string.delete_playlist_2), danger = true) { deleting = true })
             }
             // The songs as the page shows them (filtered, sorted; offline only those on the phone).
@@ -921,7 +1028,22 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
             ) { pageMenu = false }
         }
 
-        if (editing && type == CollectionType.PRISM) EditPlaylistDialog(title, description.orEmpty(), null, onDismiss = { editing = false }) { t, d, _ ->
+        dupes?.let { groups ->
+            DuplicatesSheet(groups, youTube = type == CollectionType.PLAYLIST, onDismiss = { dupes = null }) { extras ->
+                selectRemover?.remove?.invoke(extras)
+                dupes = null
+            }
+        }
+
+        if (editing && type == CollectionType.TAG) RenameTagDialog(page.title, onDismiss = { editing = false }) { to ->
+            editing = false
+            scope.launch {
+                val name = c.tags.rename(page.title, to) ?: return@launch
+                // The page is the tag's by name: the renamed one opens in its place.
+                if (name != page.title) { nav.back(); nav.go(com.prism.music.ui.Routes.tag(name)) }
+            }
+        } else if (editing && smartRules != null) com.prism.music.ui.components.SmartEditorSheet(page.id) { editing = false }
+        else if (editing && type == CollectionType.PRISM) EditPlaylistDialog(title, description.orEmpty(), null, onDismiss = { editing = false }) { t, d, _ ->
             editing = false
             c.prismLibrary.rename(page.id, t, d)
             title = t; description = d.ifBlank { null }
@@ -943,7 +1065,19 @@ private fun CollectionContent(type: CollectionType, live: LiveCollection, initia
             }
         }
     }
-    if (deleting) AlertDialog(
+    if (deleting && type == CollectionType.TAG) AlertDialog(
+        onDismissRequest = { deleting = false },
+        title = { Text(tr(R.string.delete_tag)) },
+        text = { Text(tr(R.string.delete_the_tag_its_songs_stay, page.title)) },
+        confirmButton = {
+            PrismTextButton(onClick = {
+                deleting = false
+                scope.launch { c.tags.delete(page.title) }
+                nav.back()
+            }) { Text(tr(R.string.delete), color = MaterialTheme.colorScheme.error) }
+        },
+        dismissButton = { PrismTextButton(onClick = { deleting = false }) { Text(tr(R.string.cancel)) } },
+    ) else if (deleting) AlertDialog(
         onDismissRequest = { deleting = false },
         title = { Text(tr(R.string.delete_playlist)) },
         text = { Text(if (type == CollectionType.PRISM) tr(R.string.will_be_deleted_from_this_phone, title) else tr(R.string.will_be_deleted_from_your_youtube, title)) },
@@ -1543,7 +1677,59 @@ private fun androidx.compose.foundation.lazy.LazyListScope.rearrangeSongs(r: Laz
     }
 }
 /** Lists whose own order is the order songs came in, so the other way round means something (#141). */
-private val REVERSIBLE = setOf(CollectionType.DOWNLOADS, CollectionType.LIKED, CollectionType.PLAYLIST, CollectionType.PRISM)
+private val REVERSIBLE = setOf(CollectionType.DOWNLOADS, CollectionType.LIKED, CollectionType.PLAYLIST, CollectionType.PRISM, CollectionType.TAG)
+
+/** A tag's page id is this and the tag; a playlist item with such an id opens the tag (a search result). */
+const val TAG_PAGE = "tag:"
+
+/** A tag as a playlist item (Search's library results), opening its page. */
+fun tagItem(t: com.prism.music.data.db.TagSummary) =
+    PlaylistItem(TAG_PAGE + t.tag, t.tag, tr(R.string.tag_n_songs, com.prism.music.data.model.songCount(t.songs)), t.thumbnail)
+
+/**
+ * A smart playlist's songs its Sound rules can't see yet (1.8.3): how many, and Measure now (the scan Normalize and DJ
+ * mode use, one song after another; songs not on the phone only on Wi-Fi); while it runs, how far it is.
+ */
+@Composable
+private fun SmartMeasureRow(rules: com.prism.music.data.SmartRules, unmeasured: Int, progress: Pair<Int, Int>?) {
+    val c = LocalContainer.current
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 2.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            if (progress != null) tr(R.string.measuring_n_of_n, progress.first, progress.second) else trp(R.plurals.n_songs_aren_t_measured_yet, unmeasured, unmeasured),
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f),
+        )
+        if (progress != null) PrismTextButton(onClick = { c.smartMeasure.stop() }) { Text(tr(R.string.stop)) }
+        else PrismTextButton(onClick = {
+            scope.launch {
+                val ids = c.smart.unmeasuredIds(rules, com.prism.music.data.SmartMeasure.AT_ONCE)
+                val streams = c.smartMeasure.start(ids)
+                if (!streams) Toast.makeText(context, tr(R.string.on_wi_fi_songs_not_on_the_phone_are_measured_too), Toast.LENGTH_LONG).show()
+            }
+        }, modifier = Modifier.testTag("measureNow")) { Text(tr(R.string.measure_now)) }
+    }
+}
+
+/** A tag's new name; the same name or an empty one does nothing. */
+@Composable
+private fun RenameTagDialog(tag: String, onDismiss: () -> Unit, onRename: (String) -> Unit) {
+    var name by remember { mutableStateOf(tag) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(tr(R.string.rename_tag)) },
+        text = {
+            com.prism.music.ui.components.PrismTextField(
+                name, { name = it.take(com.prism.music.data.TagStore.MAX_LENGTH) }, Modifier.fillMaxWidth().testTag("tagName"),
+                label = { Text(tr(R.string.name)) }, singleLine = true,
+            )
+        },
+        confirmButton = {
+            PrismTextButton(onClick = { onRename(name) }, enabled = com.prism.music.data.TagStore.clean(name).let { it != null && it != tag }) { Text(tr(R.string.rename)) }
+        },
+        dismissButton = { PrismTextButton(onClick = onDismiss) { Text(tr(R.string.cancel)) } },
+    )
+}
 
 /**
  * [SortMode.OLDEST] is the list's own order reversed. Downloads and Liked songs start with the newest, so that's

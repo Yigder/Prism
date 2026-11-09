@@ -14,6 +14,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import org.junit.experimental.categories.Category
 
 /**
  * The Spotify connection against Spotify itself (1.8.1): skipped unless a developer app's Client ID and a refresh token
@@ -24,6 +25,7 @@ import org.robolectric.annotation.Config
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
+@Category(LiveNetwork::class)
 class SpotifyLiveTest {
     private val clientId = System.getenv("PRISM_SPOTIFY_CLIENT_ID")
     private val refresh = System.getenv("PRISM_SPOTIFY_REFRESH_TOKEN")

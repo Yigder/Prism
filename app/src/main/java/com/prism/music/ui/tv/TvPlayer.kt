@@ -39,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -75,6 +76,8 @@ fun TvNowPlayingScreen(
     onMore: () -> Unit,
     modifier: Modifier = Modifier,
     accent: Color? = null,
+    /** Seeks by this many ms: the progress line takes focus and ← → move along it (1.8.3, D29). Null: only a line. */
+    onSeek: ((Long) -> Unit)? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     Box(modifier.fillMaxSize().testTag(TAG_PLAYER)) {
@@ -90,7 +93,18 @@ fun TvNowPlayingScreen(
                 Text(now.artist, style = MaterialTheme.typography.headlineSmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (now.album != null) Text(now.album, style = MaterialTheme.typography.titleMedium, color = scheme.onSurfaceVariant.copy(alpha = 0.7f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 TvFitGap(32.dp)
-                TvProgress(now.fraction, now.played, now.total, Modifier.testTag("$TAG_PLAYER/progress"))
+                // Up from the controls lands on it; ← → seek, OK pauses; Down goes back to the controls. A live
+                // stream has nothing to seek in: a plain line.
+                if (onSeek != null && now.total.isNotEmpty()) TvSeekLine(
+                    now, onSeek, onPlayPause,
+                    // The line's ring needs room around it: drawn that much wider, so the bar lines up with the title.
+                    Modifier.testTag("$TAG_PLAYER/progress").layout { m, c ->
+                        val extra = 12.dp.roundToPx()
+                        val w = c.maxWidth + 2 * extra
+                        val p = m.measure(c.copy(minWidth = w, maxWidth = w))
+                        layout(c.maxWidth, p.height) { p.place(-extra, 0) }
+                    },
+                ) else TvProgress(now.fraction, now.played, now.total, Modifier.testTag("$TAG_PLAYER/progress"))
                 TvFitGap(20.dp)
                 Row(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.CenterVertically) {
                     TvIconButton(PrismIcons.Shuffle, tr(R.string.shuffle), onShuffle, Modifier.tvItem("$TAG_PLAYER/shuffle"), on = now.shuffle)

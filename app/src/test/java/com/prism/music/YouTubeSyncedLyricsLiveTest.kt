@@ -10,8 +10,10 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /** YouTube Music's own time-synced lyrics (issue #6), live and signed out. */
+@Category(LiveNetwork::class)
 class YouTubeSyncedLyricsLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
     private var settings = AppSettings()

@@ -11,12 +11,14 @@ import okhttp3.OkHttpClient
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /**
  * 1.8.0: every holiday mix made from YouTube Music, signed out (no cookie in these settings, and the lookups are
  * anonymous anyway): at least 30 songs, under a tenth of them knock-offs, no artist more than three times. Live; prints
  * each mix's first ten songs.
  */
+@Category(LiveNetwork::class)
 class HolidayMixesLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
     private var settings = AppSettings()

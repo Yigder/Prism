@@ -49,6 +49,8 @@ import kotlin.math.roundToInt
  */
 @Composable
 fun SwipeToQueue(song: Song, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    // While songs are being picked (Select many), a sideways drag shouldn't queue one of them.
+    if (LocalSongSelection.current?.selecting == true) { androidx.compose.foundation.layout.Box(modifier) { content() }; return }
     val c = LocalContainer.current
     val context = LocalContext.current
     val together by c.together.state.collectAsState()

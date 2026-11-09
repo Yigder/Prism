@@ -13,12 +13,14 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /**
  * Live against YouTube (#202, 1.7.9): "Songs, not videos → Everywhere" finds the song for an artist's own video that
  * runs over a minute past it, and for a label channel's upload titled 'Artist - "Song" Label'; a video of two songs
  * still has none.
  */
+@Category(LiveNetwork::class)
 class EverywhereLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
     private var settings = AppSettings()

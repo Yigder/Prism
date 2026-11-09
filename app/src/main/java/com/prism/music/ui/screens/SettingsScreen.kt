@@ -1637,6 +1637,8 @@ private fun LockScreenGroup() {
     val resumed = com.prism.music.ui.components.rememberResumeCount()
     // Read again on coming back from Android's page.
     val canStart = remember(resumed, b.lockScreen) { gate.canStartDirectly(context) }
+    val maker = remember { com.prism.music.ui.lockscreen.LockScreenMaker.of() }
+    val refused = remember(resumed, b.lockScreen) { com.prism.music.ui.lockscreen.LockScreenRefusals.lately(context) }
     val song by container.player.currentSong.collectAsState()
     Group(tr(R.string.lock_screen_title)) {
         Toggle(tr(R.string.lock_screen_title), tr(R.string.lock_screen_detail), b.lockScreen, info = tr(R.string.lock_screen_info)) { on ->
@@ -1654,6 +1656,13 @@ private fun LockScreenGroup() {
                     Item(tr(R.string.lock_screen_allow), tr(R.string.lock_screen_allow_detail), onClick = { gate.openPermissionPage(context) }, info = tr(R.string.lock_screen_allow_info))
                 }
             }
+            // D43 (1.8.3): vivo and Xiaomi add permissions of their own that Android can't read: one more step there,
+            // and a line when the phone refused the player last time.
+            maker?.let { m ->
+                val detail = if (m == com.prism.music.ui.lockscreen.LockScreenMaker.XIAOMI) R.string.lock_screen_maker_xiaomi_detail else R.string.lock_screen_maker_vivo_detail
+                Item(tr(R.string.lock_screen_maker_step), tr(detail), onClick = { com.prism.music.ui.lockscreen.LockScreenMaker.openPage(context, m) }, info = tr(R.string.lock_screen_maker_info))
+            }
+            if (canStart && refused) Note(tr(R.string.lock_screen_refused))
             Label(tr(R.string.lock_screen_layout_label))
             if (s.performanceMode) Note(tr(R.string.lock_screen_performance))
             ChoiceCards(
@@ -1666,6 +1675,9 @@ private fun LockScreenGroup() {
                     ShowOption(tr(R.string.volume), b.lockScreenVolume) { prefs.setLockScreenVolume(it) },
                     ShowOption(tr(R.string.lock_screen_show_like), b.lockScreenLike) { prefs.setLockScreenLike(it) },
                     ShowOption(tr(R.string.lock_screen_show_output), b.lockScreenOutput) { prefs.setLockScreenOutput(it) },
+                    // 1.8.3 (D47): off by default; the cards above show them once on.
+                    ShowOption(tr(R.string.repeat), b.lockScreenRepeat) { prefs.setLockScreenRepeat(it) },
+                    ShowOption(tr(R.string.up_next), b.lockScreenUpNext) { prefs.setLockScreenUpNext(it) },
                 ),
             )
             Label(tr(R.string.lock_screen_paused_label), info = tr(R.string.lock_screen_paused_info))

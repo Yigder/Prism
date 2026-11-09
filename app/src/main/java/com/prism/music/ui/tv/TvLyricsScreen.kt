@@ -455,7 +455,11 @@ fun TvLyricsPlace(
     onSeek: (Long) -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
-    var picked by remember(lines) { mutableStateOf<Int?>(null) }
+    // D45 (1.8.3): the pick goes with the lyrics' words, so the same lyrics coming again (a new list of the same lines)
+    // keep it; and lyrics with no timing have no sung line to go back to, so their pick stays until it's moved.
+    val words = remember(lines) { lines.map { it.text } }
+    val untimed = remember(lines) { lines.none { it.timeMs >= 0 } }
+    var picked by remember(words) { mutableStateOf<Int?>(null) }
     var timing by remember { mutableStateOf(false) }
     var lastKey by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
     val linesFocus = remember { androidx.compose.ui.focus.FocusRequester() }
@@ -465,8 +469,8 @@ fun TvLyricsPlace(
     androidx.activity.compose.BackHandler(enabled = picked != null && !timing) { follow() }
     // "Back to now" has focus: the release check found it taken away with focus on it when the pick ran out.
     var nowFocused by remember { mutableStateOf(false) }
-    LaunchedEffect(picked, lastKey) {
-        if (picked == null) return@LaunchedEffect
+    LaunchedEffect(picked, lastKey, untimed) {
+        if (picked == null || untimed) return@LaunchedEffect
         delay(TV_PICK_RETURN_MS)
         // The button goes with the pick: focus onto the lines first, never left on nothing.
         if (nowFocused) runCatching { linesFocus.requestFocus() }

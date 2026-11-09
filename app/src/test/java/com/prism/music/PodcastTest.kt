@@ -39,6 +39,7 @@ class PodcastTest {
         assertEquals(10_250L, later[0].timeMs)
     }
 
+    @org.junit.experimental.categories.Category(LiveNetwork::class)
     @Test
     fun podcastsPageHasShowsAndEpisodes() = runBlocking {
         val shelves = ytm.podcastsHome()
@@ -48,6 +49,7 @@ class PodcastTest {
         assertTrue("no episodes", items.any { it is SongItem && it.song.isEpisode && !it.song.isVideo })
     }
 
+    @org.junit.experimental.categories.Category(LiveNetwork::class)
     @Test
     fun showPageListsEpisodesAndMore() = runBlocking {
         val show = ytm.search("joe rogan experience", SearchFilter.PODCASTS).items.filterIsInstance<PodcastItem>().first()
@@ -67,6 +69,7 @@ class PodcastTest {
         }
     }
 
+    @org.junit.experimental.categories.Category(LiveNetwork::class)
     @Test
     fun episodeSearchFindsEpisodesWithTheirShow() = runBlocking {
         val eps = ytm.search("joe rogan", SearchFilter.EPISODES).items.filterIsInstance<SongItem>().map { it.song }

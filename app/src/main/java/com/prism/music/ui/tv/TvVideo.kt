@@ -103,6 +103,14 @@ fun tvSeekStep(repeatCount: Int): Boolean = repeatCount % SEEK_REPEAT_EVERY == 0
 
 private const val SEEK_REPEAT_EVERY = 3
 
+/**
+ * How far a step goes (1.8.3, D29): [TV_SEEK_STEP_MS] for a press, three times that once the key has been held about
+ * a second and a half ([SEEK_FASTER_AFTER] repeats), to cross a long song or a mix.
+ */
+fun tvSeekStepMs(repeatCount: Int): Long = if (repeatCount >= SEEK_FASTER_AFTER) TV_SEEK_STEP_MS * 3 else TV_SEEK_STEP_MS
+
+private const val SEEK_FASTER_AFTER = 30
+
 /** How long the video's controls stay after the last key. */
 const val TV_VIDEO_CONTROLS_MS = 4_000L
 
@@ -187,10 +195,11 @@ fun TvSeekLine(now: TvNow, onSeek: (Long) -> Unit, onPlayPause: () -> Unit, modi
             .semantics { contentDescription = description }
             .onKeyEvent { e ->
                 if (e.type != KeyEventType.KeyDown) return@onKeyEvent false
-                val step = tvSeekStep(e.nativeKeyEvent.repeatCount)
+                val repeats = e.nativeKeyEvent.repeatCount
+                val step = tvSeekStep(repeats)
                 when (e.key) {
-                    Key.DirectionLeft -> { if (step) onSeek(-TV_SEEK_STEP_MS); true }
-                    Key.DirectionRight -> { if (step) onSeek(TV_SEEK_STEP_MS); true }
+                    Key.DirectionLeft -> { if (step) onSeek(-tvSeekStepMs(repeats)); true }
+                    Key.DirectionRight -> { if (step) onSeek(tvSeekStepMs(repeats)); true }
                     Key.DirectionCenter, Key.Enter, Key.NumPadEnter -> { if (e.nativeKeyEvent.repeatCount == 0) onPlayPause(); true }
                     else -> false
                 }

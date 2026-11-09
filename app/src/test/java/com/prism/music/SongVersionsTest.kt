@@ -61,8 +61,8 @@ class SongVersionsTest {
         val v = SongVersions(prefs)
         v.set("a", SongVersions.Pick("c", "The Band · Roads (Deluxe) · 3:20"))
         assertEquals("c", SongVersions(prefs).of("a"))
-        assertEquals("c", SongVersions(prefs).streamOf("a"))
-        assertNull(SongVersions(prefs).localIdOf("a"))
+        assertEquals("c", SongVersions(prefs).streamedOf("a"))
+        assertNull(SongVersions(prefs).fileOf("a"))
         assertEquals("The Band · Roads (Deluxe) · 3:20", SongVersions(prefs).picks.value["a"]?.label)
         v.set("a", null)
         assertNull(SongVersions(prefs).of("a"))
@@ -84,8 +84,8 @@ class SongVersionsTest {
             val kept = SongVersions(prefs)
             // The file itself is the pick, kept across a restart, and isn't a YouTube recording to resolve.
             assertEquals("local:42", kept.of("a"))
-            assertEquals("local:42", kept.localIdOf("a"))
-            assertNull(kept.streamOf("a"))
+            assertEquals("local:42", kept.fileOf("a"))
+            assertNull(kept.streamedOf("a"))
             // The song shows the file's details and keeps its own id.
             val shown = kept.shown(mine)
             assertEquals("a", shown.id)

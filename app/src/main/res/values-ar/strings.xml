@@ -5130,4 +5130,191 @@
     <string name="speed_dial_your_plays_first_info">يرسل YouTube إلى Prism مربعات موقعه، وهي ليست نفس مربعات تطبيقه ولا تتبع دائمًا ما تشغّله. عند التفعيل، يظهر أولًا أكثر ما شغّلته على هذا الهاتف في الأشهر الثلاثة الماضية، ثم تكمل مربعات YouTube الباقي.</string>
     <string name="youtube_no_longer_takes_this_sign_in">لم يعد YouTube يقبل تسجيل الدخول هذا. سجّل الخروج ثم سجّل الدخول مرة أخرى.</string>
     <string name="youtube_isnt_sending_256_kbps">لا يرسل YouTube حاليًا 256 كيلوبت/ث إلى هذا الحساب، لذا تُشغَّل الأغاني بالجودة المعتادة</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">اسمح به على شاشة القفل</string>
+    <string name="lock_screen_maker_xiaomi_detail">يفتح أذونات Prism: فعّل «العرض على شاشة القفل» و«فتح نوافذ جديدة أثناء العمل في الخلفية»</string>
+    <string name="lock_screen_maker_vivo_detail">يفتح أذونات Prism: فعّل «العرض على شاشة القفل» و«النوافذ المنبثقة في الخلفية»</string>
+    <string name="lock_screen_maker_info">تضيف الشركة المصنّعة لهاتفك هذه الأذونات إلى أذونات Android، ولا يستطيع Android إخبار Prism بما إذا كانت مفعّلة. من دونها قد لا يظهر المشغّل على شاشة القفل.</string>
+    <string name="lock_screen_refused">في المرة الأخيرة لم يسمح هاتفك بظهور المشغّل. تحقّق من الأذونات أعلاه.</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">أعجبني</string>
+    <string name="unlike">إلغاء الإعجاب</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="zero">إزالة التنزيلات (%d) من هذا الهاتف؟</item>
+        <item quantity="one">إزالة التنزيلات (%d) من هذا الهاتف؟</item>
+        <item quantity="two">إزالة التنزيلات (%d) من هذا الهاتف؟</item>
+        <item quantity="few">إزالة التنزيلات (%d) من هذا الهاتف؟</item>
+        <item quantity="many">إزالة التنزيلات (%d) من هذا الهاتف؟</item>
+        <item quantity="other">إزالة التنزيلات (%d) من هذا الهاتف؟</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="zero">إزالة الأغاني (%1$d) من «%2$s» على YouTube Music؟</item>
+        <item quantity="one">إزالة الأغاني (%1$d) من «%2$s» على YouTube Music؟</item>
+        <item quantity="two">إزالة الأغاني (%1$d) من «%2$s» على YouTube Music؟</item>
+        <item quantity="few">إزالة الأغاني (%1$d) من «%2$s» على YouTube Music؟</item>
+        <item quantity="many">إزالة الأغاني (%1$d) من «%2$s» على YouTube Music؟</item>
+        <item quantity="other">إزالة الأغاني (%1$d) من «%2$s» على YouTube Music؟</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">الوسوم</string>
+    <string name="add_a_tag">إضافة وسم</string>
+    <string name="new_tag">وسم جديد</string>
+    <string name="tags_are_your_own_labels">تسمياتك الخاصة للأغاني، مثل «رياضة» أو «يوم ممطر». تجدها في المكتبة ← الوسوم.</string>
+    <string name="your_tag">وسمك على هذا الهاتف</string>
+    <string name="remove_this_tag">إزالة هذا الوسم</string>
+    <string name="rename_tag">إعادة تسمية الوسم</string>
+    <string name="delete_tag">حذف الوسم</string>
+    <string name="delete_the_tag_its_songs_stay">حذف الوسم «%s»؟ تبقى أغانيه في أماكنها.</string>
+    <string name="tag_songs_from_any_song_s">ضع وسومًا على الأغاني من قائمة أي أغنية (⋯ أو ضغطة مطولة) ← إضافة وسم.</string>
+    <string name="tag_n_songs">وسم · %s</string>
+    <plurals name="n_tags">
+        <item quantity="zero">%d وسم</item>
+        <item quantity="one">%d وسم</item>
+        <item quantity="two">%d وسمان</item>
+        <item quantity="few">%d وسوم</item>
+        <item quantity="many">%d وسمًا</item>
+        <item quantity="other">%d وسم</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">قائمة تشغيل ذكية</string>
+    <string name="smart_playlist_n">قائمة تشغيل ذكية · %s</string>
+    <string name="smart_playlist_updates_itself">قائمة تشغيل ذكية · تحدّث نفسها</string>
+    <string name="new_smart_playlist">قائمة تشغيل ذكية جديدة</string>
+    <string name="edit_rules">تعديل القواعد</string>
+    <string name="save_a_copy_as_a_playlist">حفظ نسخة كقائمة تشغيل</string>
+    <string name="saved_as_a_playlist">حُفظت «%s» كقائمة تشغيل</string>
+    <string name="no_song_meets_these_rules">لا توجد أغنية تطابق هذه القواعد بعد. غيّرها من القائمة ⋯ ← تعديل القواعد.</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="zero">%d أغنية لم تُقَس بعد</item>
+        <item quantity="one">%d أغنية لم تُقَس بعد</item>
+        <item quantity="two">%d أغنيتان لم تُقاسا بعد</item>
+        <item quantity="few">%d أغانٍ لم تُقَس بعد</item>
+        <item quantity="many">%d أغنية لم تُقَس بعد</item>
+        <item quantity="other">%d أغنية لم تُقَس بعد</item>
+    </plurals>
+    <string name="measuring_n_of_n">جارٍ قياس %1$d من %2$d…</string>
+    <string name="measure_now">القياس الآن</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">يجري قياس الأغاني الموجودة على هذا الهاتف. وعلى شبكة Wi-Fi تُقاس البقية أيضًا.</string>
+    <string name="smart_fast_and_liked">سريعة ومحبوبة</string>
+    <string name="smart_not_played_in_a_while">لم تُشغَّل منذ مدة</string>
+    <string name="smart_goes_with_what_s_playing">تناسب ما يُشغَّل الآن</string>
+    <string name="the_song_playing_isn_t_measured_yet">الأغنية الجارية لم تُقَس بعد.</string>
+    <string name="match_all_rules">تطابق كل القواعد</string>
+    <string name="match_any_rule">تطابق أي قاعدة</string>
+    <string name="add_a_rule">إضافة قاعدة</string>
+    <string name="add_a_rule_to_begin">أضف قاعدة للبدء.</string>
+    <string name="finds_n">تجد %s</string>
+    <string name="up_to">حتى</string>
+    <string name="sort_most_played">الأكثر تشغيلًا</string>
+    <string name="sort_not_played_lately">لم تُشغَّل مؤخرًا</string>
+    <string name="sort_random">عشوائي</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">مقام يناسب</string>
+    <string name="rule_energy">الطاقة</string>
+    <string name="rule_loudness">الجهارة (LUFS)</string>
+    <string name="rule_on_phone">ملف على هذا الهاتف</string>
+    <string name="rule_tag">وسم</string>
+    <string name="rule_times_played">عدد مرات التشغيل</string>
+    <string name="rule_last_played">آخر تشغيل</string>
+    <string name="rule_added">أُضيفت إلى مكتبتك</string>
+    <string name="rule_never_played">لم تُشغَّل قط</string>
+    <string name="rule_is">نعم</string>
+    <string name="rule_isn_t">لا</string>
+    <string name="rule_from">من</string>
+    <string name="rule_to">إلى</string>
+    <string name="rule_at_least">على الأقل</string>
+    <string name="rule_at_most">على الأكثر</string>
+    <string name="rule_within">خلال آخر</string>
+    <string name="rule_not_within">ليس خلال آخر</string>
+    <string name="rule_days">يومًا</string>
+    <string name="genre_example">بوب، هيب هوب، روك…</string>
+    <string name="your_listening">ما تستمع إليه</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">أغانٍ من</string>
+    <string name="your_likes_stay_as_they_are">يتغير ما يعرضه هذا التبويب فقط. تبقى إعجاباتك كما هي.</string>
+    <string name="search_these_songs">البحث في هذه الأغاني</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">البحث في مكتبتك</string>
+    <string name="nothing_in_your_library_matches">لا شيء في مكتبتك يطابق</string>
+    <string name="try_fewer_words_or_another_filter">جرّب كلمات أقل أو عامل تصفية آخر.</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">العثور على المكرر</string>
+    <string name="no_song_is_here_twice">لا توجد أغنية مكررة هنا</string>
+    <string name="extra_copy">نسخة زائدة</string>
+    <string name="keeping_s">ستبقى «%s»</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="zero">%d أغنية مكررة هنا</item>
+        <item quantity="one">أغنية واحدة مكررة هنا</item>
+        <item quantity="two">أغنيتان مكررتان هنا</item>
+        <item quantity="few">%d أغانٍ مكررة هنا</item>
+        <item quantity="many">%d أغنية مكررة هنا</item>
+        <item quantity="other">%d أغنية مكررة هنا</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="zero">إزالة %d نسخة زائدة</item>
+        <item quantity="one">إزالة نسخة زائدة واحدة</item>
+        <item quantity="two">إزالة نسختين زائدتين</item>
+        <item quantity="few">إزالة %d نسخ زائدة</item>
+        <item quantity="many">إزالة %d نسخة زائدة</item>
+        <item quantity="other">إزالة %d نسخة زائدة</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="zero">سيُزيل هذا %d أغنية من قائمة التشغيل.</item>
+        <item quantity="one">سيُزيل هذا أغنية واحدة من قائمة التشغيل.</item>
+        <item quantity="two">سيُزيل هذا أغنيتين من قائمة التشغيل.</item>
+        <item quantity="few">سيُزيل هذا %d أغانٍ من قائمة التشغيل.</item>
+        <item quantity="many">سيُزيل هذا %d أغنية من قائمة التشغيل.</item>
+        <item quantity="other">سيُزيل هذا %d أغنية من قائمة التشغيل.</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="zero">سيُزيل هذا %d أغنية من القائمة على YouTube Music أيضًا.</item>
+        <item quantity="one">سيُزيل هذا أغنية واحدة من القائمة على YouTube Music أيضًا.</item>
+        <item quantity="two">سيُزيل هذا أغنيتين من القائمة على YouTube Music أيضًا.</item>
+        <item quantity="few">سيُزيل هذا %d أغانٍ من القائمة على YouTube Music أيضًا.</item>
+        <item quantity="many">سيُزيل هذا %d أغنية من القائمة على YouTube Music أيضًا.</item>
+        <item quantity="other">سيُزيل هذا %d أغنية من القائمة على YouTube Music أيضًا.</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">ملفك</string>
+    <string name="choose_a_file_on_this_phone">اختيار ملف من هذا الهاتف</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">مربع واحد</string>
+    <string name="pin_to_home_as_one_tile">تثبيت في الرئيسية كمربع واحد</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">رفع أغنية</string>
+    <string name="uploading_s">جارٍ رفع %1$s…</string>
+    <string name="uploaded_s_it_shows_up_here">تم رفع %1$s. ستظهر هنا عندما يجهّزها YouTube Music، عادةً خلال دقائق.</string>
+    <string name="couldn_t_upload_it_s">تعذّر الرفع: %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">يقبل YouTube Music ملفات MP3 وM4A وWMA وFLAC وOgg حتى 300 ميغابايت.</string>
+    <string name="delete_from_your_uploads">حذف من ملفاتك المرفوعة</string>
+    <string name="delete_s_from_youtube_music">حذف «%1$s» من YouTube Music؟</string>
+    <string name="it_goes_from_your_uploads_for_good">تُحذف من ملفاتك المرفوعة على كل أجهزتك نهائيًا. لا يمكن التراجع عن ذلك.</string>
+    <string name="deleted_from_your_uploads">حُذفت من ملفاتك المرفوعة</string>
+    <string name="couldn_t_delete_it_s">تعذّر الحذف: %1$s</string>
+    <string name="uploads_couldn_t_find_it">لم يعد YouTube Music يعرضها</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">قوائم تشغيل ذكية</string>
+    <string name="tour_183_smart_body">قوائم تمتلئ تلقائيًا وفق القواعد التي تضعها وتواكب مكتبتك.</string>
+    <string name="tour_183_smart_point_1">قواعد حسب ما تعجب به أو تشغّله أو تنزّله أو تضع له وسمًا</string>
+    <string name="tour_183_smart_point_2">الإيقاع والمقام والطاقة، تُقاس على هاتفك</string>
+    <string name="tour_183_smart_point_3">احفظ نسخة كقائمة عادية متى شئت</string>
+    <string name="tour_183_tags_title">الوسوم</string>
+    <string name="tour_183_tags_body">وسومك الخاصة على الأغاني، من قائمة أي أغنية.</string>
+    <string name="tour_183_tags_point_1">لكل وسم صفحته الخاصة في المكتبة</string>
+    <string name="tour_183_tags_point_2">استخدمها في القوائم الذكية</string>
+    <string name="tour_183_tags_point_3">ضع وسمًا لأغانٍ كثيرة دفعة واحدة</string>
+    <string name="tour_183_select_title">تحديد عدة عناصر</string>
+    <string name="tour_183_select_body">اضغط مطولًا على أغنية في قائمة لاختيار المزيد، ثم نفّذ على الجميع معًا.</string>
+    <string name="tour_183_select_point_1">أضف إلى قائمة أو إلى قائمة الانتظار، ضع وسمًا، أعجب أو نزّل</string>
+    <string name="tour_183_select_point_2">أزلها من قائمة بعد التأكيد</string>
+    <string name="tour_183_search_title">ابحث في مكتبتك</string>
+    <string name="tour_183_search_body">كل ما لديك، يظهر أثناء الكتابة، مع عوامل تصفية.</string>
+    <string name="tour_183_search_point_1">الأغاني والقوائم والوسوم والفنانون والألبومات</string>
+    <string name="tour_183_search_point_2">المعجب بها أو المنزّلة أو الموجودة على هذا الهاتف فقط</string>
+    <string name="tour_183_search_point_3">عناوين يابانية وكورية وروسية ويونانية تُعثر عليها بحروف لاتينية</string>
+    <string name="tour_183_also_file">ملف على هاتفك كنسخة من أغنية</string>
+    <string name="tour_183_also_duplicates">اعثر على الأغاني المكررة في قائمة</string>
+    <string name="tour_183_also_songs_from">أغاني المكتبة من القوائم التي تختارها</string>
+    <string name="tour_183_also_lock">التكرار والتالي على شاشة القفل</string>
+    <string name="tour_183_also_uploads">الرفع والحذف في الملفات المرفوعة</string>
 </resources>

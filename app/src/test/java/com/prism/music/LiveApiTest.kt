@@ -34,11 +34,13 @@ import org.schabi.newpipe.extractor.localization.Localization
 import org.schabi.newpipe.extractor.stream.DeliveryMethod
 import org.schabi.newpipe.extractor.stream.StreamInfo
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /**
  * Live integration checks against YouTube Music and the lyric/metadata
  * providers, run on the JVM (signed-out). Run with: gradlew :app:testReleaseUnitTest
  */
+@Category(LiveNetwork::class)
 class LiveApiTest {
     companion object {
         private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()

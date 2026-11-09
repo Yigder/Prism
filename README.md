@@ -49,23 +49,24 @@ The optional lock screen player needs a permission called "Display over other ap
 
 Prism walks you through this on the setting's page. It uses the permission only to bring its player up on your lock screen, and never draws over other apps.
 
-## New in 1.8.2.1
+## New in 1.8.3
 
-Fixes, and lighter on your battery.
+Your library, smarter.
 
-- **Less work in the background.** Prism now slows or stops its song scans when you've left it, and they create far less work for your phone's memory.
-- **The player opens more smoothly,** with its cover ready before it slides up.
-- **Quick picks** come sooner, and pulling down really gives you new songs.
-- **Search in Library,** and a scrollbar you can hold on long lists.
-- **New folder** in Library, and an easier-to-read album description.
-- **Your photo background is back** if your phone is in German, Italian, Russian, Polish, Swedish, Hungarian, Malay or Filipino.
+- **Smart playlists** fill themselves from rules you set: tempo, key and energy, what you like, play, download or tag.
+- **Tags:** your own labels on songs, each with its own page in Library.
+- **Select many:** hold a song in a list to pick more, then add, tag, like or download them all at once.
+- **Search your library** as you type, with filters. Japanese, Korean, Russian and Greek titles can be found in Latin letters.
+- **Also new:** find duplicates in a playlist, a file on your phone as a song's version, Repeat and Up next on the lock screen, upload and delete in Uploads.
+- **Fixes** for mixes that stuttered, songs starting over after Prism was closed, casting in the background, and more.
 
 See every change in the [changelog](CHANGELOG.md).
 
 <p align="center">
-<img src="docs/screenshots/library-search.jpg" width="32%" alt="Search at the top of Library's playlists">
-<img src="docs/screenshots/library-scrollbar.jpg" width="32%" alt="A scrollbar you can hold on a long list, with a bubble showing where you are">
-<img src="docs/screenshots/album-about.jpg" width="32%" alt="An album page with Play and Shuffle above its description, in its own box with Show more and a small credit line">
+<img src="docs/screenshots/smart-playlist.jpg" width="24%" alt="A new smart playlist: starters to pick from, a Tag rule, sorted by most played, up to 50 songs">
+<img src="docs/screenshots/tags.jpg" width="24%" alt="A tag's page in Library, with Play and Shuffle and its songs">
+<img src="docs/screenshots/select-many.jpg" width="24%" alt="Two songs picked in a playlist, with Play next, Add to queue and Add to playlist in the bar at the bottom">
+<img src="docs/screenshots/lock-up-next.jpg" width="24%" alt="The lock screen player with a Repeat button and the next two songs under Up next">
 </p>
 
 ## What Prism does
@@ -163,6 +164,8 @@ Big lyrics, music videos and Sing, with screens made for a remote. Your phone ca
 
 > [!WARNING]
 > **Android Auto lyrics are for passengers and for use while parked only.** Do not read lyrics while driving. You can turn car lyrics off in Settings → Devices & connections → Android Auto, or with the lyrics button on the car's player.
+
+**Prism not in Android Auto's list?** Android Auto hides apps that don't come from the Play Store. Open Android Auto's settings, tap the version number about 10 times, then in the ⋮ menu → Developer settings turn on **Unknown sources**.
 
 ## Privacy
 

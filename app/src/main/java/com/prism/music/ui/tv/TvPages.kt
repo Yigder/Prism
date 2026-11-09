@@ -290,6 +290,7 @@ fun TvPlayerPage(nav: TvNav) {
                 onLike = { c.player.currentSong.value?.let { c.library.toggleLike(it) } },
                 onMore = { panel = Panel.MORE },
                 accent = accent,
+                onSeek = { ms -> c.player.seekBy(ms) },
             )
         }
         when (panel) {

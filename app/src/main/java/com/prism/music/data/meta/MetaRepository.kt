@@ -5,8 +5,11 @@ import com.prism.music.data.db.MetaDao
 import com.prism.music.data.innertube.InnerTube
 import com.prism.music.data.innertube.str
 import com.prism.music.data.model.Song
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.channels.Channel
+import kotlin.coroutines.ContinuationInterceptor
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -358,7 +361,7 @@ class MetaRepository(private val http: OkHttpClient, private val dao: MetaDao) {
         songs: List<Song>,
         primary: Map<String, String>,
         onBatch: (Map<String, List<String>>) -> Unit,
-    ) = coroutineScope {
+    ) = onIo(onBatch) { emit ->
         val byArtist = songs.filter { it.id in primary }.groupBy { it.primaryArtist to primary.getValue(it.id) }
         val results = Channel<Pair<List<String>, List<Song>>>(Channel.UNLIMITED)
         byArtist.forEach { (artist, list) -> launch { results.send(artistExtraGenres(artist.first, artist.second) to list) } }
@@ -368,7 +371,7 @@ class MetaRepository(private val http: OkHttpClient, private val dao: MetaDao) {
             val (extras, list) = results.receive()
             if (extras.isNotEmpty()) list.forEach { buffer[it.id] = extras }
             if (buffer.isNotEmpty() && (n == byArtist.size - 1 || buffer.size >= 25 || System.currentTimeMillis() - lastEmit > 600)) {
-                onBatch(buffer.toMap())
+                emit(buffer.toMap())
                 buffer.clear()
                 lastEmit = System.currentTimeMillis()
             }
@@ -624,9 +627,9 @@ class MetaRepository(private val http: OkHttpClient, private val dao: MetaDao) {
         related: (suspend (Song) -> List<String>)? = null,
         refineInline: Boolean = true,
         onBatch: (Map<String, String>) -> Unit,
-    ) = coroutineScope {
+    ) = onIo(onBatch) { emit ->
         val known = cachedGenres(songs).toMutableMap()
-        if (known.isNotEmpty()) onBatch(known.toMap())
+        if (known.isNotEmpty()) emit(known.toMap())
         val pending = songs.filter { it.id !in known }.groupBy { it.primaryArtist }
         // Every artist is looked up concurrently (the rate limiters pace the requests); results
         // stream back and are handed over in small batches as they arrive.
@@ -642,7 +645,7 @@ class MetaRepository(private val http: OkHttpClient, private val dao: MetaDao) {
             val last = n == pending.size - 1
             if (buffer.isNotEmpty() && (last || buffer.size >= 25 || System.currentTimeMillis() - lastEmit > 600)) {
                 known += buffer
-                onBatch(buffer.toMap())
+                emit(buffer.toMap())
                 buffer.clear()
                 lastEmit = System.currentTimeMillis()
             }
@@ -651,9 +654,9 @@ class MetaRepository(private val http: OkHttpClient, private val dao: MetaDao) {
         val missing = songs.filter { it.id !in known }
         if (missing.isNotEmpty()) {
             val fallback = known.values.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key ?: "Pop"
-            onBatch(missing.associate { it.id to fallback })
+            emit(missing.associate { it.id to fallback })
         }
-        if (!refineInline) return@coroutineScope
+        if (!refineInline) return@onIo
         // Then each song's own genre from iTunes, artist by artist (most songs first), as iTunes allows (~20 a minute).
         val byArtist = songs.filter { it.primaryArtist.isNotBlank() }.groupBy { it.primaryArtist }.entries.sortedByDescending { it.value.size }
         for ((artist, list) in byArtist) {
@@ -664,8 +667,20 @@ class MetaRepository(private val http: OkHttpClient, private val dao: MetaDao) {
                 val g = dao.genre(songKey)?.genre ?: songGenre(s, its)?.also { dao.putGenre(GenreEntity(songKey, it, System.currentTimeMillis())) }
                 g?.takeIf { it != known[s.id] }?.let { s.id to it }
             }.toMap()
-            if (changed.isNotEmpty()) { known += changed; onBatch(changed) }
+            if (changed.isNotEmpty()) { known += changed; emit(changed) }
             if (!cached) majority(its)?.let { dao.putGenre(GenreEntity(exactArtistKey(artist), it, System.currentTimeMillis())) }
+        }
+    }
+
+    /**
+     * #228 (1.8.3): a screen calls the genre lookups from its own (main) thread, and some of them wait on Deezer and
+     * iTunes over the network, which stalled opening and closing mixes for half a second at a time. All of the work
+     * runs on the IO threads; each batch is handed back on the caller's thread, where the screen's state lives.
+     */
+    private suspend fun <T> onIo(onBatch: (T) -> Unit, block: suspend CoroutineScope.(emit: suspend (T) -> Unit) -> Unit) {
+        val caller = currentCoroutineContext()[ContinuationInterceptor]
+        withContext(Dispatchers.IO) {
+            block { b -> if (caller == null) onBatch(b) else withContext(caller) { onBatch(b) } }
         }
     }
 }

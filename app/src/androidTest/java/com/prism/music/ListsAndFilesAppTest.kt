@@ -11,11 +11,9 @@ import androidx.compose.ui.test.isOff
 import androidx.compose.ui.test.isOn
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
-import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
-import androidx.compose.ui.test.performTouchInput
 import androidx.media3.exoplayer.offline.Download
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -164,7 +162,8 @@ class ListsAndFilesAppTest {
         val remove = hasClickAction() and hasContentDescription("Remove downloads")
         assertTrue("not all of it's down yet", compose.onAllNodes(remove).fetchSemanticsNodes().isEmpty())
 
-        compose.onNode(hasText("Test song 3")).performTouchInput { longClick() }
+        // The song's menu (a long press picks songs since Select many, 1.8.3).
+        compose.clickWhenFound(hasContentDescription("More") and hasClickAction() and androidx.compose.ui.test.hasParent(hasText("Test song 3")))
         compose.clickWhenFound(hasText("Skip in downloads") and hasClickAction())
         compose.waitUntil(5_000) { songs[2].id in c.downloadSkips.ids.value }
         compose.waitForText("Skipped in downloads")

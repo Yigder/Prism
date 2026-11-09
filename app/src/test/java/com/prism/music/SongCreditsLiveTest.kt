@@ -10,8 +10,10 @@ import okhttp3.OkHttpClient
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /** Song credits (Reddit 1.7: "view song credits"), live against YouTube Music. */
+@Category(LiveNetwork::class)
 class SongCreditsLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
     private var settings = AppSettings()

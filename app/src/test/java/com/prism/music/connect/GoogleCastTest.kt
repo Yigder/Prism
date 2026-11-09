@@ -141,6 +141,23 @@ class GoogleCastTest {
         }
     }
 
+    /** The same with Conscrypt (the phone's TLS) as the JVM's default, as Robolectric tests earlier in a full run leave it:
+     *  the handshake used to hang there (2026-11-07), so the test above failed in every full run and passed alone. */
+    @Test
+    fun overTlsWithThePhonesTls() = runBlocking {
+        val conscrypt = Class.forName("org.conscrypt.Conscrypt").getMethod("newProvider").invoke(null) as java.security.Provider
+        val added = java.security.Security.getProvider(conscrypt.name) == null
+        if (added) java.security.Security.insertProviderAt(conscrypt, 1)
+        try {
+            FakeCastDevice(fetch = false, tls = true).use { fake ->
+                val link = GoogleCastLink(fake.renderer())
+                try { assertEquals("NO_MEDIA_PRESENT", link.transport().state) } finally { link.close() }
+            }
+        } finally {
+            if (added) java.security.Security.removeProvider(conscrypt.name)
+        }
+    }
+
     @Test
     fun anotherAppTakingOverEndsCasting() = runBlocking {
         FakeCastDevice(fetch = false).use { fake ->

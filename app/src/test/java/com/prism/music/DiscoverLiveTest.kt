@@ -18,11 +18,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /**
  * New to you and Deep cuts from real YouTube Music answers, signed out (1.8.2): a listener who knows the top songs of three
  * rock bands and three pop acts. Prints what it made, to read by eye; asserts the rules hold on real data. Live.
  */
+@Category(LiveNetwork::class)
 class DiscoverLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
     private var settings = AppSettings()

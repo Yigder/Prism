@@ -14,7 +14,7 @@ val Song.shown: Song get() = SongVersions.shownOf(this)
  * Everything that fetches the song's sound (playing, caching, downloading, scans) asks for the pick instead
  * ([com.prism.music.data.stream.StreamResolver.versionOf]); the song keeps its own id, lyrics, likes and history.
  * A pick can also be one of the phone's own files ([Song.isLocal], chosen in the sheet's search): then there's no
- * stream to ask for ([streamOf]) and the player reads the file in its place ([localIdOf]).
+ * stream to ask for ([streamedOf]) and the player reads the file in its place ([fileOf]).
  * Where it shows (#328, 1.8.1.1: the player, lists, the notification, the car, widgets), it shows as the pick: its
  * cover, title, artists, album and length ([shown], and [com.prism.music.data.PlaylistCovers.art] for the cover).
  */
@@ -39,11 +39,14 @@ class SongVersions(private val prefs: SharedPreferences) {
     /** The recording that plays for [songId], or null for its own. */
     fun of(songId: String): String? = _picks.value[songId]?.id
 
-    /** The file on the phone picked for [songId], by its song id; null when the pick is another recording (or none). */
-    fun localIdOf(songId: String): String? = of(songId)?.takeIf { it.startsWith(Song.LOCAL_PREFIX) }
+    /** A file on this phone picked for [songId] (1.8.3, #243): its local id. It plays from the file. */
+    fun fileOf(songId: String): String? = of(songId)?.takeIf { it.startsWith(Song.LOCAL_PREFIX) }
 
-    /** The YouTube recording picked for [songId], or null for its own (a file on the phone is no stream). */
-    fun streamOf(songId: String): String? = of(songId)?.takeUnless { it.startsWith(Song.LOCAL_PREFIX) }
+    /**
+     * The recording to fetch from YouTube for [songId]: its pick, unless that's a file on the phone, which is never
+     * streamed (casting, downloads and scans then use the song's own).
+     */
+    fun streamedOf(songId: String): String? = of(songId)?.takeUnless { it.startsWith(Song.LOCAL_PREFIX) }
 
     /** Plays [pick] for [songId] from now on; null goes back to the song's own. */
     fun set(songId: String, pick: Pick?) {

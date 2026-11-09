@@ -73,13 +73,23 @@ class TourTest {
         assertTrue(page.showMe!!.startsWith("settings/library"))
     }
 
+    /** 1.8.3: an update from 1.8.2.1 (58) shows smart playlists, tags, select many, library search and the rest. */
+    @Test
+    fun anUpdateFrom182ShowsThe183Pages() {
+        val pages = Tour.stepsAfter(58)
+        assertEquals(5, pages.size)
+        assertTrue(pages.all { it.since == 59 })
+        assertEquals(tr(R.string.tour_183_smart_title), pages.first().title)
+        assertEquals(com.prism.music.ui.Routes.librarySearch(), pages.first { it.title == tr(R.string.tour_183_search_title) }.showMe)
+    }
+
     /** Every "Show me" opens a page that exists: a settings page by a key Settings knows, or one of the app's routes. */
     @Test
     fun everyShowMeOpensARealPage() {
         val keys = com.prism.music.ui.screens.SettingsSection.entries.map { it.key }.toSet()
         val routes = setOf(
             com.prism.music.ui.Routes.SETTINGS, com.prism.music.ui.Routes.SEARCH, com.prism.music.ui.Routes.CATALOGUE,
-            com.prism.music.ui.Routes.BRING_HISTORY,
+            com.prism.music.ui.Routes.BRING_HISTORY, com.prism.music.ui.Routes.LIBRARY, com.prism.music.ui.Routes.librarySearch(),
         )
         for (route in Tour.steps.mapNotNull { it.showMe }) {
             if (route.startsWith("settings/")) {

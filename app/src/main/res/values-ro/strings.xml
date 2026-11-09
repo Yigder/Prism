@@ -4938,4 +4938,167 @@
     <string name="speed_dial_your_plays_first_info">YouTube îi trimite lui Prism plăcile de pe site-ul său, care nu sunt cele din aplicație și nu urmăresc mereu ce asculți. Când este activat, mai întâi apare ce ai ascultat cel mai mult pe acest telefon în ultimele trei luni, iar plăcile YouTube completează restul.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube nu mai acceptă această conectare. Deconectează-te și conectează-te din nou.</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube nu trimite acum 256 kbps către acest cont, așa că melodiile se aud la calitatea obișnuită</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">Permite pe ecranul de blocare</string>
+    <string name="lock_screen_maker_xiaomi_detail">Deschide permisiunile Prism: activează „Afișează pe ecranul de blocare” și „Deschide ferestre noi în timp ce rulează în fundal”</string>
+    <string name="lock_screen_maker_vivo_detail">Deschide permisiunile Prism: activează „Afișează pe ecranul de blocare” și „Ferestre pop-up în fundal”</string>
+    <string name="lock_screen_maker_info">Producătorul telefonului adaugă aceste permisiuni la cele ale Android, iar Android nu poate spune Prism dacă sunt activate. Fără ele, playerul s-ar putea să nu apară pe ecranul de blocare.</string>
+    <string name="lock_screen_refused">Data trecută, telefonul nu a lăsat playerul să apară. Verifică permisiunile de mai sus.</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">Apreciază</string>
+    <string name="unlike">Anulează aprecierea</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="one">Elimini %d descărcare de pe acest telefon?</item>
+        <item quantity="few">Elimini %d descărcări de pe acest telefon?</item>
+        <item quantity="other">Elimini %d de descărcări de pe acest telefon?</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="one">Elimini %1$d melodie din „%2$s” pe YouTube Music?</item>
+        <item quantity="few">Elimini %1$d melodii din „%2$s” pe YouTube Music?</item>
+        <item quantity="other">Elimini %1$d de melodii din „%2$s” pe YouTube Music?</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">Etichete</string>
+    <string name="add_a_tag">Adaugă o etichetă</string>
+    <string name="new_tag">Etichetă nouă</string>
+    <string name="tags_are_your_own_labels">Etichetele tale pentru melodii, cum ar fi „sală” sau „zi ploioasă”. Le găsești în Bibliotecă → Etichete.</string>
+    <string name="your_tag">Eticheta ta pe acest telefon</string>
+    <string name="remove_this_tag">Scoate această etichetă</string>
+    <string name="rename_tag">Redenumește eticheta</string>
+    <string name="delete_tag">Șterge eticheta</string>
+    <string name="delete_the_tag_its_songs_stay">Ștergi eticheta „%s”? Melodiile ei rămân unde sunt.</string>
+    <string name="tag_songs_from_any_song_s">Etichetează melodii din meniul oricărei melodii (⋯ sau apăsare lungă) → Adaugă o etichetă.</string>
+    <string name="tag_n_songs">Etichetă · %s</string>
+    <plurals name="n_tags">
+        <item quantity="one">%d etichetă</item>
+        <item quantity="few">%d etichete</item>
+        <item quantity="other">%d de etichete</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">Playlist inteligent</string>
+    <string name="smart_playlist_n">Playlist inteligent · %s</string>
+    <string name="smart_playlist_updates_itself">Playlist inteligent · se actualizează singur</string>
+    <string name="new_smart_playlist">Playlist inteligent nou</string>
+    <string name="edit_rules">Editează regulile</string>
+    <string name="save_a_copy_as_a_playlist">Salvează o copie ca playlist</string>
+    <string name="saved_as_a_playlist">„%s” a fost salvat ca playlist</string>
+    <string name="no_song_meets_these_rules">Încă nicio melodie nu îndeplinește aceste reguli. Schimbă-le din meniul ⋯ → Editează regulile.</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="one">%d melodie nu e încă măsurată</item>
+        <item quantity="few">%d melodii nu sunt încă măsurate</item>
+        <item quantity="other">%d de melodii nu sunt încă măsurate</item>
+    </plurals>
+    <string name="measuring_n_of_n">Se măsoară %1$d din %2$d…</string>
+    <string name="measure_now">Măsoară acum</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">Se măsoară melodiile de pe acest telefon. Pe Wi-Fi, și celelalte.</string>
+    <string name="smart_fast_and_liked">Rapide și apreciate</string>
+    <string name="smart_not_played_in_a_while">Neascultate de ceva vreme</string>
+    <string name="smart_goes_with_what_s_playing">Se potrivește cu ce se aude</string>
+    <string name="the_song_playing_isn_t_measured_yet">Melodia care se aude nu e încă măsurată.</string>
+    <string name="match_all_rules">Îndeplinește toate regulile</string>
+    <string name="match_any_rule">Îndeplinește o regulă</string>
+    <string name="add_a_rule">Adaugă o regulă</string>
+    <string name="add_a_rule_to_begin">Adaugă o regulă ca să începi.</string>
+    <string name="finds_n">Găsește %s</string>
+    <string name="up_to">Până la</string>
+    <string name="sort_most_played">Cele mai ascultate</string>
+    <string name="sort_not_played_lately">Neascultate în ultima vreme</string>
+    <string name="sort_random">Aleatoriu</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">Tonalitate potrivită cu</string>
+    <string name="rule_energy">Energie</string>
+    <string name="rule_loudness">Intensitate (LUFS)</string>
+    <string name="rule_on_phone">Un fișier de pe acest telefon</string>
+    <string name="rule_tag">Etichetă</string>
+    <string name="rule_times_played">De câte ori ascultată</string>
+    <string name="rule_last_played">Ascultată ultima dată</string>
+    <string name="rule_added">Adăugată în bibliotecă</string>
+    <string name="rule_never_played">Niciodată ascultată</string>
+    <string name="rule_is">Este</string>
+    <string name="rule_isn_t">Nu este</string>
+    <string name="rule_from">De la</string>
+    <string name="rule_to">Până la</string>
+    <string name="rule_at_least">Cel puțin</string>
+    <string name="rule_at_most">Cel mult</string>
+    <string name="rule_within">În ultimele</string>
+    <string name="rule_not_within">Nu în ultimele</string>
+    <string name="rule_days">zile</string>
+    <string name="genre_example">Pop, hip-hop, rock…</string>
+    <string name="your_listening">Ce asculți</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">Melodii din</string>
+    <string name="your_likes_stay_as_they_are">Se schimbă doar ce arată această filă. Aprecierile tale rămân la fel.</string>
+    <string name="search_these_songs">Caută în aceste melodii</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">Caută în biblioteca ta</string>
+    <string name="nothing_in_your_library_matches">Nimic din biblioteca ta nu se potrivește</string>
+    <string name="try_fewer_words_or_another_filter">Încearcă mai puține cuvinte sau alt filtru.</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">Găsește dublurile</string>
+    <string name="no_song_is_here_twice">Nicio melodie nu e aici de două ori</string>
+    <string name="extra_copy">Copie în plus</string>
+    <string name="keeping_s">Rămâne „%s”</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="one">%d melodie e aici de mai multe ori</item>
+        <item quantity="few">%d melodii sunt aici de mai multe ori</item>
+        <item quantity="other">%d de melodii sunt aici de mai multe ori</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="one">Elimină %d copie în plus</item>
+        <item quantity="few">Elimină %d copii în plus</item>
+        <item quantity="other">Elimină %d de copii în plus</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="one">Asta scoate %d melodie din acest playlist.</item>
+        <item quantity="few">Asta scoate %d melodii din acest playlist.</item>
+        <item quantity="other">Asta scoate %d de melodii din acest playlist.</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="one">Asta scoate %d melodie din playlist și pe YouTube Music.</item>
+        <item quantity="few">Asta scoate %d melodii din playlist și pe YouTube Music.</item>
+        <item quantity="other">Asta scoate %d de melodii din playlist și pe YouTube Music.</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">Fișierul tău</string>
+    <string name="choose_a_file_on_this_phone">Alege un fișier de pe acest telefon</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">O singură casetă</string>
+    <string name="pin_to_home_as_one_tile">Fixează pe Acasă ca o casetă</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">Încarcă o melodie</string>
+    <string name="uploading_s">Se încarcă %1$s…</string>
+    <string name="uploaded_s_it_shows_up_here">%1$s a fost încărcat. Apare aici după ce YouTube Music îl pregătește, de obicei în câteva minute.</string>
+    <string name="couldn_t_upload_it_s">Nu s-a putut încărca: %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">YouTube Music acceptă fișiere MP3, M4A, WMA, FLAC și Ogg de până la 300 MB.</string>
+    <string name="delete_from_your_uploads">Șterge din încărcările tale</string>
+    <string name="delete_s_from_youtube_music">Ștergi „%1$s” din YouTube Music?</string>
+    <string name="it_goes_from_your_uploads_for_good">Dispare din încărcările tale pe toate dispozitivele, definitiv. Nu se poate anula.</string>
+    <string name="deleted_from_your_uploads">Șters din încărcările tale</string>
+    <string name="couldn_t_delete_it_s">Nu s-a putut șterge: %1$s</string>
+    <string name="uploads_couldn_t_find_it">YouTube Music nu-l mai afișează</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">Playlisturi inteligente</string>
+    <string name="tour_183_smart_body">Playlisturi care se umplu singure după regulile tale și țin pasul cu biblioteca.</string>
+    <string name="tour_183_smart_point_1">Reguli după ce apreciezi, asculți, descarci sau etichetezi</string>
+    <string name="tour_183_smart_point_2">Tempo, tonalitate și energie, măsurate pe telefon</string>
+    <string name="tour_183_smart_point_3">Salvează oricând o copie ca playlist obișnuit</string>
+    <string name="tour_183_tags_title">Etichete</string>
+    <string name="tour_183_tags_body">Etichetele tale pe melodii, din meniul oricărei melodii.</string>
+    <string name="tour_183_tags_point_1">Fiecare etichetă are pagina ei în Bibliotecă</string>
+    <string name="tour_183_tags_point_2">Folosește-le în playlisturi inteligente</string>
+    <string name="tour_183_tags_point_3">Etichetează multe melodii deodată</string>
+    <string name="tour_183_select_title">Selectează mai multe</string>
+    <string name="tour_183_select_body">Ține apăsat pe o melodie dintr-o listă ca să alegi mai multe, apoi acționează asupra tuturor.</string>
+    <string name="tour_183_select_point_1">Adaugă într-un playlist sau în coadă, etichetează, apreciază sau descarcă</string>
+    <string name="tour_183_select_point_2">Scoate-le dintr-un playlist, cu confirmare</string>
+    <string name="tour_183_search_title">Caută în biblioteca ta</string>
+    <string name="tour_183_search_body">Tot ce ai, găsit pe măsură ce scrii, cu filtre.</string>
+    <string name="tour_183_search_point_1">Melodii, playlisturi, etichete, artiști și albume</string>
+    <string name="tour_183_search_point_2">Doar apreciate, descărcate sau pe acest telefon</string>
+    <string name="tour_183_search_point_3">Titluri japoneze, coreene, rusești și grecești găsite cu litere latine</string>
+    <string name="tour_183_also_file">Un fișier de pe telefon ca versiune a unei melodii</string>
+    <string name="tour_183_also_duplicates">Găsește melodiile care apar de două ori într-un playlist</string>
+    <string name="tour_183_also_songs_from">Melodiile din Bibliotecă din playlisturile alese</string>
+    <string name="tour_183_also_lock">Repetă și Urmează pe ecranul de blocare</string>
+    <string name="tour_183_also_uploads">Încărcare și ștergere în Încărcări</string>
 </resources>

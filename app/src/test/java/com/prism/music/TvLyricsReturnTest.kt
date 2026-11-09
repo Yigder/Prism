@@ -131,6 +131,27 @@ class TvLyricsReturnTest {
         compose.waitUntil(3_000) { compose.onAllNodes(hasTestTag("$TAG_LYRICS/nudge") and androidx.compose.ui.test.isFocused(), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
     }
 
+    /** D45 (1.8.3): lyrics with no timing have no sung line; a line scrolled to stays (it went back to the top). */
+    @Test fun untimedLyricsKeepThePick() {
+        val plain = (0 until 10).map { i -> LyricLine(-1, "Plain line ${i + 1}") }
+        val shown = androidx.compose.runtime.mutableStateOf(plain)
+        compose.setContent {
+            TvTheme(AppSettings()) {
+                val memory = remember { TvFocusMemory() }
+                CompositionLocalProvider(LocalTvFocusMemory provides memory, LocalTvScreen provides "lyrics") {
+                    TvLyricsPlace(now, shown.value, 0, remember { mutableLongStateOf(8_500L) }, loading = false, unavailable = false, source = null, accent = null) {}
+                }
+            }
+        }
+        pick()
+        compose.mainClock.advanceTimeBy(5_000); compose.waitForIdle()
+        assertTrue("still where it was moved to after 5 s", chip())
+        // The same lyrics again (a new list of the same lines): the pick stays.
+        compose.runOnUiThread { shown.value = plain.map { it.copy(endMs = 0) } }
+        compose.waitForIdle()
+        assertTrue("kept when the same lyrics come again", chip())
+    }
+
     @Test fun aPickedLineLetsGoAfterAMoment() {
         show()
         pick()

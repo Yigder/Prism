@@ -106,7 +106,10 @@ internal object LockTags {
     const val NEXT = "lockNext"
     const val SEEK = "lockSeek"
     const val VOLUME = "lockVolume"
-    val touchable = setOf(COVER, LIKE, PREVIOUS, PLAY, NEXT, SEEK, VOLUME)
+    const val REPEAT = "lockRepeat"
+    /** The read-only "Up next" lines (1.8.3, D47): tagged to be found, never touchable. */
+    const val UP_NEXT = "lockUpNext"
+    val touchable = setOf(COVER, LIKE, PREVIOUS, PLAY, NEXT, SEEK, VOLUME, REPEAT)
 }
 
 /** Which layout is showing, for tests (no accessibility service reads it). */
@@ -143,6 +146,10 @@ internal class LockScreenContent(
     val date: String,
     /** The synced lyrics for the Lyrics layout; null while there are none, and the cover takes their place. */
     val lyrics: (@Composable (Modifier) -> Unit)? = null,
+    /** The repeat button's state (a Player.REPEAT_MODE_*), or null for no button (1.8.3, D47). */
+    val repeat: Int? = null,
+    /** The next songs as "Title · Artist", read only (1.8.3, D47); empty for none. */
+    val upNext: List<String> = emptyList(),
 )
 
 /** What a touch does: all that can be done while locked. Null on the settings' examples, which can't be touched. */
@@ -155,6 +162,8 @@ internal class LockScreenActions(
     val onSeek: (Float) -> Unit,
     val onVolume: (Float) -> Unit,
     val onVolumeDone: () -> Unit,
+    /** Off → all → one → off, as on the player. */
+    val onRepeat: () -> Unit = {},
 )
 
 private val LocalLockActions = staticCompositionLocalOf<LockScreenActions?> { null }
@@ -203,6 +212,7 @@ private fun CoverLayout(c: LockScreenContent, compact: Boolean) {
                 Spacer(Modifier.height(if (compact) 4.dp else 14.dp))
                 Output(it)
             }
+            UpNext(c, if (compact) 2 else 3, Modifier.padding(top = if (compact) 8.dp else 16.dp))
         }
         Spacer(Modifier.height(if (compact) 10.dp else 22.dp))
         Unlock()
@@ -244,6 +254,7 @@ private fun FullCoverLayout(c: LockScreenContent, compact: Boolean, height: Dp) 
             Spacer(Modifier.height(if (compact) 8.dp else 16.dp))
             Output(it)
         }
+        UpNext(c, if (compact) 2 else 3, Modifier.padding(start = 28.dp, end = 28.dp, top = if (compact) 8.dp else 14.dp))
         Spacer(Modifier.height(if (compact) 8.dp else 16.dp))
         Unlock()
         Spacer(Modifier.height(if (compact) 10.dp else 18.dp))
@@ -273,9 +284,16 @@ private fun LyricsLayout(c: LockScreenContent, compact: Boolean) {
                     Glyph(PrismIcons.Next, tr(R.string.widget_next), 26.dp, 1f, LockTags.NEXT) { it.onNext() }
                 }
                 Spacer(Modifier.height(12.dp))
-                Progress(c, 3.dp, times = false)
+                // Repeat sits at the line's end here, so the title keeps its room on a narrow phone.
+                if (c.repeat != null) Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) { Progress(c, 3.dp, times = false) }
+                    Spacer(Modifier.width(6.dp))
+                    RepeatGlyph(c, 20.dp)
+                } else Progress(c, 3.dp, times = false)
             }
         }
+        // The lyrics keep their room: two songs ahead at most.
+        UpNext(c, if (compact) 1 else 2, Modifier.padding(start = 28.dp, end = 28.dp, top = if (compact) 8.dp else 12.dp))
         Spacer(Modifier.height(if (compact) 8.dp else 16.dp))
         Unlock()
         Spacer(Modifier.height(if (compact) 10.dp else 18.dp))
@@ -301,12 +319,17 @@ private fun QuietLayout(c: LockScreenContent, compact: Boolean) {
             Progress(c, 2.dp, times = false)
             Spacer(Modifier.height(20.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                // With repeat, the same room on the left keeps Play in the middle, and it all fits a 360 dp phone.
+                val inner = if (c.repeat != null) 16.dp else 24.dp
+                if (c.repeat != null) { Spacer(Modifier.width(22.dp + 20.dp)); Spacer(Modifier.width(8.dp)) }
                 Glyph(PrismIcons.Previous, tr(R.string.widget_previous), 30.dp, 0.85f, LockTags.PREVIOUS) { it.onPrevious() }
-                Spacer(Modifier.width(24.dp))
+                Spacer(Modifier.width(inner))
                 QuietPlay(c)
-                Spacer(Modifier.width(24.dp))
+                Spacer(Modifier.width(inner))
                 Glyph(PrismIcons.Next, tr(R.string.widget_next), 30.dp, 0.85f, LockTags.NEXT) { it.onNext() }
+                if (c.repeat != null) { Spacer(Modifier.width(8.dp)); RepeatGlyph(c, 22.dp) }
             }
+            UpNext(c, 3, Modifier.padding(top = if (compact) 14.dp else 24.dp))
         }
         Spacer(Modifier.height(if (compact) 24.dp else 44.dp))
         Unlock()
@@ -489,12 +512,72 @@ private fun LockBar(
 
 @Composable
 private fun Transport(c: LockScreenContent, disc: Dp, gap: Dp) {
+    if (c.repeat != null) {
+        // With repeat on the right, the same room on the left keeps Play in the middle; the gaps give way on a narrow phone.
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+            Row(
+                Modifier.widthIn(max = REPEAT_ROOM * 2 + 54.dp * 2 + disc + (gap - 10.dp) * 4).fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Spacer(Modifier.width(REPEAT_ROOM))
+                Glyph(PrismIcons.Previous, tr(R.string.widget_previous), 34.dp, 1f, LockTags.PREVIOUS) { it.onPrevious() }
+                Disc(c, disc)
+                Glyph(PrismIcons.Next, tr(R.string.widget_next), 34.dp, 1f, LockTags.NEXT) { it.onNext() }
+                RepeatGlyph(c, 24.dp)
+            }
+        }
+        return
+    }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
         Glyph(PrismIcons.Previous, tr(R.string.widget_previous), 34.dp, 1f, LockTags.PREVIOUS) { it.onPrevious() }
         Spacer(Modifier.width(gap - 10.dp))
         Disc(c, disc)
         Spacer(Modifier.width(gap - 10.dp))
         Glyph(PrismIcons.Next, tr(R.string.widget_next), 34.dp, 1f, LockTags.NEXT) { it.onNext() }
+    }
+}
+
+/** What the repeat button takes across (its glyph and a finger's room) at its largest. */
+private val REPEAT_ROOM = 44.dp
+
+/** Repeat (1.8.3, D47): dim when off, bright for all, with a small "1" for one song. Nothing when not shown. */
+@Composable
+private fun RepeatGlyph(c: LockScreenContent, size: Dp) {
+    val mode = c.repeat ?: return
+    val actions = LocalLockActions.current
+    val haptics = rememberHaptics()
+    val label = tr(
+        when (mode) {
+            androidx.media3.common.Player.REPEAT_MODE_ALL -> R.string.repeat_all
+            androidx.media3.common.Player.REPEAT_MODE_ONE -> R.string.repeat_one
+            else -> R.string.repeat_off
+        },
+    )
+    Box(
+        Modifier.size(size + 20.dp).then(
+            if (actions != null) Modifier.testTag(LockTags.REPEAT).clickable(remember { MutableInteractionSource() }, null, onClickLabel = label) { haptics.click(); actions.onRepeat() }
+            else Modifier,
+        ),
+        contentAlignment = Alignment.Center,
+    ) {
+        val on = mode != androidx.media3.common.Player.REPEAT_MODE_OFF
+        Icon(PrismIcons.Repeat, label, Modifier.size(size), tint = Color.White.copy(alpha = if (on) 1f else 0.45f))
+        if (mode == androidx.media3.common.Player.REPEAT_MODE_ONE) Text(
+            "1", Modifier.align(Alignment.TopEnd).padding(top = 4.dp, end = 4.dp).clip(CircleShape).background(Color.White).padding(horizontal = 4.dp),
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, lineHeight = 11.sp), fontWeight = FontWeight.Bold, color = Color.Black,
+        )
+    }
+}
+
+/** The next songs, to read only: the lock screen controls what's playing, nothing more (1.8.3, D47). */
+@Composable
+private fun UpNext(c: LockScreenContent, most: Int, modifier: Modifier = Modifier) {
+    if (c.upNext.isEmpty()) return
+    Column(modifier.fillMaxWidth().testTag(LockTags.UP_NEXT), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Text(tr(R.string.up_next).uppercase(), style = MaterialTheme.typography.labelSmall, letterSpacing = 1.4.sp, color = Color.White.copy(alpha = 0.6f), maxLines = 1)
+        c.upNext.take(most).forEach { line ->
+            Text(line, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.8f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
     }
 }
 
@@ -664,6 +747,11 @@ internal fun LockScreenSample(layout: LockLayout, song: com.prism.music.data.mod
         time = "9:41",
         date = date,
         lyrics = { m -> LockLyricLines(lines, clock, com.prism.music.ui.player.LyricsLook.Classic, null, m) },
+        repeat = if (s.behavior.lockScreenRepeat) androidx.media3.common.Player.REPEAT_MODE_ALL else null,
+        // Prism's own example words stand in for the songs ahead.
+        upNext = if (s.behavior.lockScreenUpNext && !hide) {
+            listOf(R.string.every_color_finds_its_way, R.string.we_follow_the_line_of_the, R.string.into_the_bright_of_the_day).map { tr(it) + " · " + tr(R.string.prism_sample) }
+        } else emptyList(),
     )
     com.prism.music.ui.screens.PreviewPhone(width, modifier.clearAndSetSemantics { }) {
         com.prism.music.ui.screens.LookTheme(s, true) { LockScreenLayout(shown, content, null) }

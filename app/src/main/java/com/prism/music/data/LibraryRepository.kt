@@ -183,17 +183,29 @@ class LibraryRepository(private val c: AppContainer) {
     fun setLiked(song: Song, liked: Boolean) {
         // An episode from a feed: nothing Liked songs, the account or a Replay list could do anything with.
         if (song.isRss) return
-        c.scope.launch(Dispatchers.IO) {
-            val existing = songs.get(song.id)
-            songs.upsert(song.toEntity(existing).copy(liked = liked, likedAt = if (liked) System.currentTimeMillis() else 0))
-            // "Love on Last.fm when I like a song" (#133), local files included.
-            c.lastFm.liked(song, liked)
-            // A file on the phone is liked in Prism only: there's nothing to download or tell YouTube.
-            if (song.isLocal) return@launch
-            if (liked && c.settings.current.downloadLikes) c.downloads.download(song)
-            if (c.settings.current.isLoggedIn) {
-                runCatching { c.ytm.like(song.id, liked) }.onFailure { lastError.value = tr(R.string.couldn_t_sync_like, it.friendlyMessage()) }
-            }
+        c.scope.launch(Dispatchers.IO) { likeNow(song, liked) }
+    }
+
+    /**
+     * Select many (1.8.3): several songs liked or unliked, one after another rather than all at once (a whole playlist
+     * picked was hundreds of calls to YouTube Music side by side).
+     */
+    fun setLiked(many: List<Song>, liked: Boolean) {
+        val likable = many.filter { !it.isRss }
+        if (likable.isEmpty()) return
+        c.scope.launch(Dispatchers.IO) { likable.forEach { runCatching { likeNow(it, liked) } } }
+    }
+
+    private suspend fun likeNow(song: Song, liked: Boolean) {
+        val existing = songs.get(song.id)
+        songs.upsert(song.toEntity(existing).copy(liked = liked, likedAt = if (liked) System.currentTimeMillis() else 0))
+        // "Love on Last.fm when I like a song" (#133), local files included.
+        c.lastFm.liked(song, liked)
+        // A file on the phone is liked in Prism only: there's nothing to download or tell YouTube.
+        if (song.isLocal) return
+        if (liked && c.settings.current.downloadLikes) c.downloads.download(song)
+        if (c.settings.current.isLoggedIn) {
+            runCatching { c.ytm.like(song.id, liked) }.onFailure { lastError.value = tr(R.string.couldn_t_sync_like, it.friendlyMessage()) }
         }
     }
 

@@ -2,6 +2,11 @@ package com.prism.music
 
 import com.prism.music.data.PrismLibrary
 import com.prism.music.data.SavedAlbum
+import com.prism.music.data.SmartField
+import com.prism.music.data.SmartMatch
+import com.prism.music.data.SmartRule
+import com.prism.music.data.SmartRules
+import com.prism.music.data.SmartSort
 import com.prism.music.data.model.ArtistRef
 import com.prism.music.data.model.Song
 import org.junit.Assert.assertEquals
@@ -54,6 +59,35 @@ class PrismLibraryTest {
         lib.unsaveAlbum("MPREb_1")
         assertFalse(PrismLibrary(dir).isSaved("MPREb_1"))
         assertTrue(PrismLibrary(dir).isSaved("MPREb_2"))
+        dir.deleteRecursively()
+    }
+
+    /**
+     * A smart playlist's rules are kept in prism.json (so a Library backup carries them); songs can't be added by hand,
+     * and what it found is kept without moving it up the list.
+     */
+    @Test
+    fun smartPlaylistsKeepTheirRules() {
+        val dir = Files.createTempDirectory("prismlib").toFile()
+        val lib = PrismLibrary(dir)
+        val rules = SmartRules(
+            listOf(SmartRule(SmartField.BPM, min = 120.0, max = 140.0), SmartRule(SmartField.TAG, not = true, text = "gym")),
+            SmartMatch.ANY, SmartSort.ENERGY, null,
+        )
+        val id = lib.createSmart("Fast", rules)
+        val plain = lib.create("Plain")
+        assertEquals("nothing added by hand", 0, lib.add(id, listOf(song("a"))))
+        lib.keepFound(id, listOf(song("b"), song("c")))
+        assertEquals("finding songs doesn't move it up", plain, lib.lists.value.first().id)
+
+        val again = PrismLibrary(dir).list(id)!!
+        assertEquals(rules, again.smart)
+        assertEquals(listOf("b", "c"), again.songs.map { it.id })
+        assertNull("a plain playlist has no rules", PrismLibrary(dir).list(plain)!!.smart)
+
+        lib.setSmart(id, "Faster", rules.copy(limit = 25))
+        assertEquals(25, PrismLibrary(dir).list(id)!!.smart!!.limit)
+        assertEquals("Faster", PrismLibrary(dir).list(id)!!.title)
         dir.deleteRecursively()
     }
 

@@ -12,6 +12,7 @@ import okhttp3.OkHttpClient
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /**
  * Search finds the song a title is known for (owner, 1.8.0 on the TV: "upside down" didn't show Jack Johnson's song,
@@ -21,6 +22,7 @@ import java.util.concurrent.TimeUnit
  * down, hello and dreams missed), 30 of 30 after. Later that day YouTube's card for "yesterday" became the 2019 film's
  * soundtrack album and for "africa" a new 2026 album: both give way to the song now.
  */
+@Category(LiveNetwork::class)
 class SearchAccuracyLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
     private var settings = AppSettings()

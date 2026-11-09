@@ -10,11 +10,13 @@ import okhttp3.OkHttpClient
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /**
  * Live against YouTube: a song's music video is the artist's own (their channel, VEVO), never a fan's lyric video or a
  * cover. "What You Need" (Bring Me The Horizon) and "Memories" (Panic! At The Disco) used to open fan uploads.
  */
+@Category(LiveNetwork::class)
 class MusicVideoLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
     private var settings = AppSettings()

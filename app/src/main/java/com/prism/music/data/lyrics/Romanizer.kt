@@ -65,6 +65,21 @@ class Romanizer(
         _overrides.value = if (on == null) _overrides.value - songId else _overrides.value + (songId to on)
     }
 
+    /**
+     * A title in Latin letters, for finding it by typing (1.8.3, #363: "tori no uta" finds とりのうた): the phone's own
+     * engines only (kana, Hangul, Cyrillic, Greek; kanji only once the Japanese dictionary is downloaded), never the
+     * network. Null when it needs none, or no engine here can spell all of it.
+     */
+    suspend fun spellTitle(text: String): String? = withContext(Dispatchers.Default) {
+        val scripts = Script.foreignIn(text)
+        if (scripts.isEmpty()) return@withContext null
+        val japanese = Script.KANA in scripts || (Script.HAN in scripts && japaneseReady)
+        runCatching { localSpelling(LyricLine(0, text), scripts, japanese) }.getOrNull()?.first?.takeIf { it.isNotBlank() && it != text }
+    }
+
+    /** Whether kanji can be read on the phone (the Japanese dictionary is downloaded). */
+    val japaneseReady: Boolean get() = japaneseForTests != null || models.ready(ModelStore.Model.JAPANESE)
+
     @Serializable
     private data class Stored(val t: String, val w: List<String>? = null, val b: String? = null, val bw: List<String>? = null)
 

@@ -12,8 +12,10 @@ import okhttp3.OkHttpClient
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /** The "Live" search filter and artist-page livestreams, live against youtube.com (Lofi Girl streams 24/7). */
+@Category(LiveNetwork::class)
 class LiveStreamsLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
     private var settings = AppSettings()

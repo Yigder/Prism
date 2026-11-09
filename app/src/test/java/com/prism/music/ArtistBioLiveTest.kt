@@ -10,12 +10,14 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /**
  * The artist page's bio live against Wikipedia. The names here are the ones a plain lookup gets wrong (2026-11-05: "Prince"
  * is Prince William's article, "Nirvana" the Buddhist idea, "Muse" the goddesses, "Boston" the city, and Drake, Queen and
  * Bush are disambiguation pages), with a few of each artist's titles as YouTube Music lists them.
  */
+@Category(LiveNetwork::class)
 class ArtistBioLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
     private val finder = WikipediaBios(http, "Prism-test (https://github.com/Yigder/Prism)")
