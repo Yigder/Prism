@@ -108,9 +108,9 @@ fun ActionSheet(
 /**
  * What's left of an upward scroll or fling once the menu has reached its end stays with the menu (#147): handed to the
  * sheet, a fast fling pushed the whole sheet up past its top, under the status bar, and it bounced back down. Downward
- * leftovers still go to the sheet, so pulling it down closes it as before.
+ * leftovers still go to the sheet, so pulling it down closes it as before. Add to playlist's list has it too (#401).
  */
-private val KeepUpwardScroll = object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+internal val KeepUpwardScroll = object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
     override fun onPostScroll(consumed: androidx.compose.ui.geometry.Offset, available: androidx.compose.ui.geometry.Offset, source: androidx.compose.ui.input.nestedscroll.NestedScrollSource) =
         if (available.y < 0f) androidx.compose.ui.geometry.Offset(0f, available.y) else androidx.compose.ui.geometry.Offset.Zero
 

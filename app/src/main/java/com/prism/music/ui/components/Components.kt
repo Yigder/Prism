@@ -5,6 +5,7 @@ import com.prism.music.tr
 import com.prism.music.download.forRow
 import com.prism.music.ui.theme.lit
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.stateDescription
@@ -65,6 +66,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -804,7 +806,7 @@ fun PlaylistPicker(songs: List<Song>, what: String, onDismiss: () -> Unit) {
                     c.ytm.createPlaylist(name, ids.take(50), privacy = privacy)?.also { if (ids.size > 50) runCatching { c.ytm.addAllToPlaylist(it, ids.drop(50)) } }
                 }.getOrNull()
                 toast(if (id != null) tr(R.string.added_to, name) else tr(R.string.couldn_t_make_the_playlist))
-                if (id != null) c.library.refreshCollections()
+                if (id != null) c.library.created(id, name, ids.size)
             }
         }
         return
@@ -823,7 +825,7 @@ fun PlaylistPicker(songs: List<Song>, what: String, onDismiss: () -> Unit) {
         }
     }
     PrismSheet(onDismiss = onDismiss) { close ->
-        Column(Modifier.padding(bottom = 20.dp)) {
+        Column(Modifier.padding(bottom = 20.dp).testTag("playlistPicker")) {
             Text(tr(R.string.add_to_playlist), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Medium, modifier = Modifier.padding(horizontal = 20.dp))
             Text(
                 if (many) "$what · ${com.prism.music.data.model.songCount(songs.size)}" else what,
@@ -836,61 +838,76 @@ fun PlaylistPicker(songs: List<Song>, what: String, onDismiss: () -> Unit) {
                 if (signedIn) tr(R.string.your_playlists_show_up_here_once) else tr(R.string.make_your_first_playlist_it_s), style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(20.dp),
             )
-            androidx.compose.foundation.lazy.LazyColumn(Modifier.heightIn(max = 440.dp)) {
+            // #401: a fast fling's leftover at the list's end stays with the list (it pushed the sheet past its top).
+            androidx.compose.foundation.lazy.LazyColumn(
+                Modifier.heightIn(max = 440.dp).nestedScroll(KeepUpwardScroll).testTag("playlistPickerList"),
+            ) {
                 items(shown, key = { it.id }) { p ->
-                    Row(
-                        Modifier.fillMaxWidth().clickable {
-                            close {
-                                if (com.prism.music.data.PrismLibrary.isPrismList(p.id)) {
-                                    val added = c.prismLibrary.add(p.id, songs)
-                                    toast(
-                                        when {
-                                            added == 0 -> tr(R.string.already_in, p.title)
-                                            many -> tr(R.string.added_to_2, com.prism.music.data.model.songCount(added), p.title)
-                                            else -> tr(R.string.added_to, p.title)
-                                        },
-                                    )
-                                    return@close
-                                }
-                                c.scope.launch(kotlinx.coroutines.Dispatchers.Main) {
-                                    // Only what YouTube says went in is called added (Reddit, 1.7.9: "Added" for songs
-                                    // that never got there).
-                                    val result = runCatching { c.ytm.addSongsToPlaylist(p.id, ids) }
-                                    toast(addedMessage(result.getOrNull(), p.title, many))
-                                    // #246: the next time the sheet opens it says they're in, though the kept copy predates them.
-                                    result.getOrNull()?.takeIf { it.added + it.alreadyThere > 0 }?.let { com.prism.music.data.PlaylistMembership.noteAdded(p.id, ids) }
-                                    if ((result.getOrNull()?.added ?: 0) > 0) c.library.playlistChanged(p.id)
-                                }
+                    val has = holds[p.id] ?: 0
+                    // #246: says when it's in there already (or how many of several are).
+                    val line = when {
+                        has == 0 -> p.subtitle.removePrefix("Playlist • ").takeIf { it.isNotBlank() }
+                        !many -> tr(R.string.already_has_this_song)
+                        has >= ids.distinct().size -> tr(R.string.already_has_all_of_these)
+                        else -> tr(R.string.already_has_n_of_these, has, ids.distinct().size)
+                    }
+                    PickerRow(c.covers.art(p), p.title, line, has > 0, if (has > 0) tr(R.string.already_in, p.title) else null, p.id) {
+                        close {
+                            if (com.prism.music.data.PrismLibrary.isPrismList(p.id)) {
+                                val added = c.prismLibrary.add(p.id, songs)
+                                toast(
+                                    when {
+                                        added == 0 -> tr(R.string.already_in, p.title)
+                                        many -> tr(R.string.added_to_2, com.prism.music.data.model.songCount(added), p.title)
+                                        else -> tr(R.string.added_to, p.title)
+                                    },
+                                )
+                                return@close
                             }
-                        }.padding(horizontal = 20.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Artwork(c.covers.art(p), Modifier.size(46.dp), com.prism.music.ui.theme.LocalUi.current.smallArt, size = 120, placeholderIcon = PrismIcons.QueueMusic)
-                        Spacer(Modifier.width(14.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(p.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            val has = holds[p.id] ?: 0
-                            // #246: says when it's in there already (or how many of several are).
-                            val line = when {
-                                has == 0 -> p.subtitle.removePrefix("Playlist • ").takeIf { it.isNotBlank() }
-                                !many -> tr(R.string.already_has_this_song)
-                                has >= ids.distinct().size -> tr(R.string.already_has_all_of_these)
-                                else -> tr(R.string.already_has_n_of_these, has, ids.distinct().size)
+                            c.scope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                                // Only what YouTube says went in is called added (Reddit, 1.7.9: "Added" for songs
+                                // that never got there).
+                                val result = runCatching { c.ytm.addSongsToPlaylist(p.id, ids) }
+                                toast(addedMessage(result.getOrNull(), p.title, many))
+                                // #246: the next time the sheet opens it says they're in, though the kept copy predates them.
+                                result.getOrNull()?.takeIf { it.added + it.alreadyThere > 0 }?.let { com.prism.music.data.PlaylistMembership.noteAdded(p.id, ids) }
+                                if ((result.getOrNull()?.added ?: 0) > 0) c.library.playlistChanged(p.id)
                             }
-                            if (line != null) Text(
-                                line, style = MaterialTheme.typography.bodySmall,
-                                color = if (has > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1, overflow = TextOverflow.Ellipsis,
-                            )
                         }
-                        if ((holds[p.id] ?: 0) > 0) Icon(
-                            PrismIcons.Check, tr(R.string.already_in, p.title),
-                            Modifier.padding(start = 8.dp).size(20.dp).testTag("inPlaylist:${p.id}"), tint = MaterialTheme.colorScheme.onSurface,
-                        )
                     }
                 }
             }
         }
+    }
+}
+
+/**
+ * One playlist in [PlaylistPicker]: its cover, its name, [line] under it (null: none; [strong] when it says the songs are
+ * in there), and a ✓ described as [mark] (tagged with the playlist's [id]) when they are.
+ */
+@Composable
+internal fun PickerRow(art: String?, title: String, line: String?, strong: Boolean, mark: String?, id: String, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 20.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Artwork(art, Modifier.size(46.dp), com.prism.music.ui.theme.LocalUi.current.smallArt, size = 120, placeholderIcon = PrismIcons.QueueMusic)
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            // Always two lines tall (#401): the marks come in after the sheet opens, and a row that grew a line then
+            // changed the list's heights in the middle of a fling. (A space, not "": an empty line is drawn shorter.)
+            Text(
+                line ?: " ", style = MaterialTheme.typography.bodySmall,
+                modifier = if (line == null) Modifier.clearAndSetSemantics {} else Modifier,
+                color = if (strong) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (mark != null) Icon(
+            PrismIcons.Check, mark,
+            Modifier.padding(start = 8.dp).size(20.dp).testTag("inPlaylist:$id"), tint = MaterialTheme.colorScheme.onSurface,
+        )
     }
 }
 

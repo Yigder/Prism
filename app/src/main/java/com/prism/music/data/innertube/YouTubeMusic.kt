@@ -241,25 +241,42 @@ class YouTubeMusic(
      * the song search leaves it out ("halo": Beyoncé's, under a Halo game soundtrack card).
      */
     suspend fun youtubeTop(query: String): Pair<BrowseItem?, List<SongItem>> {
-        val res = api.postAnonymous("search", buildJsonObject { put("query", query) })
-        val card = res.findAll("musicCardShelfRenderer").firstOrNull()?.let { Parser.card(it) }
-        val songs = res.findAll("musicResponsiveListItemRenderer").mapNotNull { Parser.responsive(it) as? SongItem }.filter { !it.song.isVideo }
-        return card to songs
+        fun read(res: JsonObject): Pair<BrowseItem?, List<SongItem>> {
+            val card = res.findAll("musicCardShelfRenderer").firstOrNull()?.let { Parser.card(it) }
+            val songs = res.findAll("musicResponsiveListItemRenderer").mapNotNull { Parser.responsive(it) as? SongItem }.filter { !it.song.isVideo }
+            return card to songs
+        }
+        return searchAsked(query, SearchFilter.TOP, buildJsonObject { put("query", query) }, ::read) { it.first == null && it.second.isEmpty() }
+    }
+
+    /** #396: searches go with the account for the rest of the session ([SearchAccount]). */
+    @Volatile private var searchWithAccount = false
+
+    /**
+     * A search request read by [read]: without the account (signed in, YouTube keeps every search in the account's
+     * history, #27), unless [SearchAccount] says it goes with it, or asks it again with it when nothing was found.
+     */
+    private suspend fun <T> searchAsked(query: String, filter: SearchFilter, body: JsonObject, read: (JsonObject) -> T, nextPage: Boolean = false, urlQuery: String = "", empty: (T) -> Boolean): T {
+        if (SearchAccount.withAccount(api.signedIn, searchWithAccount)) return read(api.post("search", body, urlQuery))
+        val found = read(api.postAnonymous("search", body, urlQuery))
+        if (!SearchAccount.askAgain(api.signedIn, query, filter, empty(found), nextPage)) return found
+        val again = try { read(api.post("search", body, urlQuery)) } catch (e: java.io.IOException) { return found }
+        if (empty(again)) return found
+        searchWithAccount = true
+        return again
     }
 
     suspend fun search(query: String, filter: SearchFilter, continuation: String? = null): SearchResult {
         if (filter == SearchFilter.LIVE) return searchLive(query, continuation)
-        // Without the account: signed in, YouTube keeps every search in the account's history (#27).
-        val res = if (continuation != null) {
-            api.postAnonymous("search", buildJsonObject { put("continuation", continuation) }, "&ctoken=$continuation&continuation=$continuation&type=next")
-        } else {
-            api.postAnonymous("search", buildJsonObject {
-                put("query", query)
-                filter.params?.let { put("params", it.replace("%3D", "=")) }
-            })
+        val body = if (continuation != null) buildJsonObject { put("continuation", continuation) } else buildJsonObject {
+            put("query", query)
+            filter.params?.let { put("params", it.replace("%3D", "=")) }
         }
-        val items = res.findAll("musicResponsiveListItemRenderer").mapNotNull { Parser.responsive(it) }
-        return SearchResult(items, Parser.continuation(res.obj("contents") ?: res.obj("continuationContents")))
+        val urlQuery = if (continuation != null) "&ctoken=$continuation&continuation=$continuation&type=next" else ""
+        return searchAsked(query, filter, body, { res ->
+            val items = res.findAll("musicResponsiveListItemRenderer").mapNotNull { Parser.responsive(it) }
+            SearchResult(items, Parser.continuation(res.obj("contents") ?: res.obj("continuationContents")))
+        }, nextPage = continuation != null, urlQuery = urlQuery) { it.items.isEmpty() }
     }
 
     private suspend fun searchLive(query: String, continuation: String?): SearchResult {

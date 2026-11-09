@@ -1760,7 +1760,12 @@ data class AppSettings(
     fun lyricsSourceOn(src: LyricsSource) = if (src == LyricsSource.EMBEDDED) behavior.embeddedLyrics else src !in lyricsOff
 }
 
-class SettingsRepository(private val context: Context, scope: CoroutineScope) {
+/** [writer]: where the settings' writes run, one at a time (tests hold it back to line writes up). */
+class SettingsRepository(
+    private val context: Context,
+    scope: CoroutineScope,
+    writer: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO,
+) {
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
     private object K {
@@ -2784,15 +2789,56 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     // dispatcher wasn't enough: an edit suspends inside DataStore and lets the next one start, so they could still land
     // out of order. One reader takes them off a queue and finishes each before the next (what's waiting by then goes in
     // the same edit, still in order).
-    private val writes = kotlinx.coroutines.channels.Channel<(MutablePreferences) -> Unit>(kotlinx.coroutines.channels.Channel.UNLIMITED)
+    // editNow (a restore, a Look, a sign-in) waits its turn in the same queue (1.8.3.1): written straight to the store,
+    // a change still queued could land after it and undo part of it.
+    /** A change to the store; [done] when its caller waits for it to land ([editNow]). */
+    private class Write(val block: (MutablePreferences) -> Unit, val done: kotlinx.coroutines.CompletableDeferred<Unit>? = null)
+
+    /** An editNow's writer has stopped (its scope ended): the caller writes it itself. */
+    private class WriterGone : IllegalStateException()
+
+    private val writes = kotlinx.coroutines.channels.Channel<Write>(kotlinx.coroutines.channels.Channel.UNLIMITED)
 
     init {
-        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            for (first in writes) {
-                val batch = mutableListOf(first)
-                while (true) batch += writes.tryReceive().getOrNull() ?: break
-                runCatching { context.dataStore.edit { p -> batch.forEach { b -> runCatching { b(p) } } } }
-                    .onFailure { android.util.Log.w("PrismSettings", "a settings write failed", it) }
+        val job = scope.launch(writer) {
+            // An editNow taken off the queue while gathering a batch: written after the batch.
+            var next: Write? = null
+            try {
+                while (true) {
+                    val first = next ?: writes.receive()
+                    next = null
+                    val done = first.done
+                    if (done != null) {
+                        // In an edit of its own: its caller hears how it went, and a failing one writes none of itself.
+                        try {
+                            context.dataStore.edit { first.block(it) }
+                            done.complete(Unit)
+                        } catch (e: kotlinx.coroutines.CancellationException) {
+                            done.completeExceptionally(WriterGone()); throw e
+                        } catch (e: Throwable) {
+                            done.completeExceptionally(e)
+                        }
+                        continue
+                    }
+                    val batch = mutableListOf(first.block)
+                    while (true) {
+                        val w = writes.tryReceive().getOrNull() ?: break
+                        if (w.done != null) { next = w; break }
+                        batch += w.block
+                    }
+                    runCatching { context.dataStore.edit { p -> batch.forEach { b -> runCatching { b(p) } } } }
+                        .onFailure { android.util.Log.w("PrismSettings", "a settings write failed", it) }
+                }
+            } finally {
+                next?.done?.completeExceptionally(WriterGone())
+            }
+        }
+        // Once the writer has stopped (also when it never started), nobody waits on it.
+        job.invokeOnCompletion {
+            writes.close()
+            while (true) {
+                val w = writes.tryReceive().getOrNull() ?: break
+                w.done?.completeExceptionally(WriterGone())
             }
         }
         // #378: photos saved under a translated word get their right name back, for everything that reads them
@@ -2807,10 +2853,19 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     }
 
     private fun edit(block: (MutablePreferences) -> Unit) {
-        writes.trySend(block)
+        writes.trySend(Write(block))
     }
 
+    /**
+     * A change that's in the store when this returns, after everything asked for before it (a restore, a Look, a
+     * sign-in). A [block] that throws writes nothing and its error comes back here.
+     */
     suspend fun editNow(block: (MutablePreferences) -> Unit) {
+        val w = Write(block, kotlinx.coroutines.CompletableDeferred())
+        if (writes.trySend(w).isSuccess) {
+            try { w.done!!.await(); return } catch (gone: WriterGone) { /* written below */ }
+        }
+        // The writer has stopped (its scope ended; Robolectric ends the app's after each test): straight to the store.
         context.dataStore.edit { block(it) }
     }
 
