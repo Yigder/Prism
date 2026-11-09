@@ -308,6 +308,8 @@ object PrismIcons {
     val ThumbDownFilled = drawn("ThumbDown", filled = true)
     val Bookmark = drawn("Bookmark")
     val BookmarkFilled = drawn("Bookmark", filled = true)
+    /** The listener's tags on songs (1.8.3). */
+    val Tag = drawn("Tag")
     val Folder = drawn("Folder")
     val FolderFilled = drawn("Folder", filled = true)
     val Pin = drawn("Pin")

@@ -85,6 +85,12 @@ class Backup(private val c: AppContainer) {
                 zip.write(InnerTube.json.encodeToString(SETTINGS_MAP, settings).toByteArray())
                 zip.closeEntry()
             }
+            // Tags (1.8.3) live in the database (History) but belong to the library: they go as a file of their own.
+            if (BackupPart.LIBRARY in parts) {
+                zip.putNextEntry(ZipEntry(TAGS_ENTRY))
+                zip.write(c.tags.exportJson(c.tags.export()).toByteArray())
+                zip.closeEntry()
+            }
             filesToBackUp(parts).forEach { f ->
                 zip.putNextEntry(ZipEntry(f.relativeTo(data).invariantSeparatorsPath))
                 f.inputStream().use { it.copyTo(zip) }
@@ -105,6 +111,8 @@ class Backup(private val c: AppContainer) {
         ctx.filesDir.walkTopDown()
             .onEnter { dir -> dir == ctx.filesDir || filePart(dir.relativeTo(ctx.filesDir).invariantSeparatorsPath.substringBefore('/')) in parts }
             .filter { it.isFile && (it.parentFile != ctx.filesDir || filePart(it.name) in parts) }
+            // A restore's tags not read in yet: the database's are written above instead.
+            .filter { "files/" + it.relativeTo(ctx.filesDir).invariantSeparatorsPath != TAGS_ENTRY }
             .forEach { keep += it }
         return keep
     }
@@ -242,6 +250,8 @@ class Backup(private val c: AppContainer) {
         /** Prism's playlists in the library file's own format, at the library file's own place in a backup. */
         private const val BRING_LIBRARY = "files/library/prism.json"
         private const val BRING_LOOK = "bring/look.txt"
+        /** The library's tags (1.8.3), read in at the next start ([TagStore.readPending]). */
+        private const val TAGS_ENTRY = "files/library/" + TagStore.PENDING
         /** All a bundle may unpack to (its own size is held to [com.prism.music.connect.BringTransfer.MAX_BYTES]). */
         private const val BRING_UNPACKED_MAX = 128L * 1024 * 1024
 
@@ -372,6 +382,11 @@ class Backup(private val c: AppContainer) {
                 val data = files.parentFile!!
                 val whole = m.parts == null
                 val parts = m.partSet()
+                // Tags are the library's, kept in the database: a restore of the history alone keeps this phone's.
+                if (BackupPart.HISTORY in parts && BackupPart.LIBRARY !in parts) TagStore.readFrom(File(data, "databases/$DB"))?.let { mine ->
+                    File(files, "library").mkdirs()
+                    File(files, "library/" + TagStore.PENDING).writeText(InnerTube.json.encodeToString(TagsFile.serializer(), mine))
+                }
                 // Out with what the backup replaces.
                 File(data, "databases").listFiles()?.forEach {
                     if ((BackupPart.HISTORY in parts && it.name.startsWith(DB)) || (BackupPart.DOWNLOADS in parts && it.name.startsWith(EXO_DB))) it.delete()

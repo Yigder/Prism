@@ -4874,6 +4874,161 @@
     <string name="speed_dial_your_plays_first_info">YouTube stuurt Prism de tegels van zijn website. Die zijn anders dan in de app en volgen niet altijd wat je afspeelt. Als dit aan staat, komt eerst wat je de afgelopen drie maanden het meest op deze telefoon hebt afgespeeld, en vullen de tegels van YouTube de rest aan.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube accepteert deze aanmelding niet meer. Meld je af en weer aan.</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube stuurt op dit moment geen 256 kbps naar dit account, dus nummers spelen in de gewone kwaliteit</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">Toestaan op het vergrendelscherm</string>
+    <string name="lock_screen_maker_xiaomi_detail">Opent de machtigingen van Prism: zet ‘Op vergrendelscherm tonen’ en ‘Nieuwe vensters openen tijdens uitvoeren op achtergrond’ aan</string>
+    <string name="lock_screen_maker_vivo_detail">Opent de machtigingen van Prism: zet ‘Op vergrendelscherm tonen’ en ‘Pop-ups op de achtergrond’ aan</string>
+    <string name="lock_screen_maker_info">De maker van je telefoon voegt deze machtigingen toe aan die van Android, en Android kan Prism niet vertellen of ze aan staan. Zonder deze verschijnt de speler misschien niet op het vergrendelscherm.</string>
+    <string name="lock_screen_refused">De vorige keer liet je telefoon de speler niet verschijnen. Controleer de machtigingen hierboven.</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">Leuk vinden</string>
+    <string name="unlike">Niet meer leuk vinden</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="one">%d download van deze telefoon verwijderen?</item>
+        <item quantity="other">%d downloads van deze telefoon verwijderen?</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="one">%1$d nummer uit ‘%2$s’ op YouTube Music verwijderen?</item>
+        <item quantity="other">%1$d nummers uit ‘%2$s’ op YouTube Music verwijderen?</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">Tags</string>
+    <string name="add_a_tag">Tag toevoegen</string>
+    <string name="new_tag">Nieuwe tag</string>
+    <string name="tags_are_your_own_labels">Je eigen labels voor nummers, zoals ‘sportschool’ of ‘regenachtige dag’. Je vindt ze in Bibliotheek → Tags.</string>
+    <string name="your_tag">Je tag op deze telefoon</string>
+    <string name="remove_this_tag">Deze tag weghalen</string>
+    <string name="rename_tag">Tag hernoemen</string>
+    <string name="delete_tag">Tag verwijderen</string>
+    <string name="delete_the_tag_its_songs_stay">De tag ‘%s’ verwijderen? De nummers blijven waar ze zijn.</string>
+    <string name="tag_songs_from_any_song_s">Tag nummers via het menu van een nummer (⋯ of lang indrukken) → Tag toevoegen.</string>
+    <string name="tag_n_songs">Tag · %s</string>
+    <plurals name="n_tags">
+        <item quantity="one">%d tag</item>
+        <item quantity="other">%d tags</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">Slimme playlist</string>
+    <string name="smart_playlist_n">Slimme playlist · %s</string>
+    <string name="smart_playlist_updates_itself">Slimme playlist · houdt zichzelf bij</string>
+    <string name="new_smart_playlist">Nieuwe slimme playlist</string>
+    <string name="edit_rules">Regels bewerken</string>
+    <string name="save_a_copy_as_a_playlist">Kopie als playlist opslaan</string>
+    <string name="saved_as_a_playlist">‘%s’ als playlist opgeslagen</string>
+    <string name="no_song_meets_these_rules">Nog geen nummer voldoet aan deze regels. Pas ze aan via het ⋯-menu → Regels bewerken.</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="one">%d nummer is nog niet gemeten</item>
+        <item quantity="other">%d nummers zijn nog niet gemeten</item>
+    </plurals>
+    <string name="measuring_n_of_n">%1$d van %2$d meten…</string>
+    <string name="measure_now">Nu meten</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">De nummers op deze telefoon worden gemeten. Op wifi ook de andere.</string>
+    <string name="smart_fast_and_liked">Snel en geliket</string>
+    <string name="smart_not_played_in_a_while">Al een tijd niet gespeeld</string>
+    <string name="smart_goes_with_what_s_playing">Past bij wat er speelt</string>
+    <string name="the_song_playing_isn_t_measured_yet">Het nummer dat speelt is nog niet gemeten.</string>
+    <string name="match_all_rules">Voldoet aan alle regels</string>
+    <string name="match_any_rule">Voldoet aan een regel</string>
+    <string name="add_a_rule">Regel toevoegen</string>
+    <string name="add_a_rule_to_begin">Voeg een regel toe om te beginnen.</string>
+    <string name="finds_n">Vindt %s</string>
+    <string name="up_to">Tot</string>
+    <string name="sort_most_played">Meest gespeeld</string>
+    <string name="sort_not_played_lately">Lang niet gespeeld</string>
+    <string name="sort_random">Willekeurig</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">Toonsoort die past bij</string>
+    <string name="rule_energy">Energie</string>
+    <string name="rule_loudness">Luidheid (LUFS)</string>
+    <string name="rule_on_phone">Een bestand op deze telefoon</string>
+    <string name="rule_tag">Tag</string>
+    <string name="rule_times_played">Keer gespeeld</string>
+    <string name="rule_last_played">Laatst gespeeld</string>
+    <string name="rule_added">Toegevoegd aan je bibliotheek</string>
+    <string name="rule_never_played">Nooit gespeeld</string>
+    <string name="rule_is">Is</string>
+    <string name="rule_isn_t">Is niet</string>
+    <string name="rule_from">Van</string>
+    <string name="rule_to">Tot</string>
+    <string name="rule_at_least">Minstens</string>
+    <string name="rule_at_most">Hooguit</string>
+    <string name="rule_within">In de laatste</string>
+    <string name="rule_not_within">Niet in de laatste</string>
+    <string name="rule_days">dagen</string>
+    <string name="genre_example">Pop, hiphop, rock…</string>
+    <string name="your_listening">Wat je luistert</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">Nummers uit</string>
+    <string name="your_likes_stay_as_they_are">Alleen wat dit tabblad toont verandert. Je likes blijven zoals ze zijn.</string>
+    <string name="search_these_songs">Zoek in deze nummers</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">Zoek in je bibliotheek</string>
+    <string name="nothing_in_your_library_matches">Niets in je bibliotheek komt overeen</string>
+    <string name="try_fewer_words_or_another_filter">Probeer minder woorden of een ander filter.</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">Dubbele zoeken</string>
+    <string name="no_song_is_here_twice">Geen nummer staat hier twee keer</string>
+    <string name="extra_copy">Dubbel</string>
+    <string name="keeping_s">‘%s’ blijft</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="one">%d nummer staat hier vaker</item>
+        <item quantity="other">%d nummers staan hier vaker</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="one">%d dubbele verwijderen</item>
+        <item quantity="other">%d dubbele verwijderen</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="one">Dit haalt %d nummer uit deze playlist.</item>
+        <item quantity="other">Dit haalt %d nummers uit deze playlist.</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="one">Dit haalt %d nummer ook op YouTube Music uit de playlist.</item>
+        <item quantity="other">Dit haalt %d nummers ook op YouTube Music uit de playlist.</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">Je bestand</string>
+    <string name="choose_a_file_on_this_phone">Kies een bestand op deze telefoon</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">Eén tegel</string>
+    <string name="pin_to_home_as_one_tile">Vastzetten op Start als één tegel</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">Nummer uploaden</string>
+    <string name="uploading_s">%1$s uploaden…</string>
+    <string name="uploaded_s_it_shows_up_here">%1$s is geüpload. Het verschijnt hier zodra YouTube Music het klaar heeft, meestal binnen een paar minuten.</string>
+    <string name="couldn_t_upload_it_s">Uploaden lukte niet: %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">YouTube Music neemt MP3-, M4A-, WMA-, FLAC- en Ogg-bestanden tot 300 MB.</string>
+    <string name="delete_from_your_uploads">Verwijderen uit je uploads</string>
+    <string name="delete_s_from_youtube_music">‘%1$s’ verwijderen uit YouTube Music?</string>
+    <string name="it_goes_from_your_uploads_for_good">Het verdwijnt op al je apparaten uit je uploads, voorgoed. Dit kan niet ongedaan worden.</string>
+    <string name="deleted_from_your_uploads">Verwijderd uit je uploads</string>
+    <string name="couldn_t_delete_it_s">Verwijderen lukte niet: %1$s</string>
+    <string name="uploads_couldn_t_find_it">YouTube Music toont het niet meer</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">Slimme playlists</string>
+    <string name="tour_183_smart_body">Playlists die zichzelf vullen met jouw regels en meegaan met je bibliotheek.</string>
+    <string name="tour_183_smart_point_1">Regels over wat je leuk vindt, afspeelt, downloadt of tagt</string>
+    <string name="tour_183_smart_point_2">Tempo, toonsoort en energie, gemeten op je telefoon</string>
+    <string name="tour_183_smart_point_3">Bewaar altijd een kopie als gewone playlist</string>
+    <string name="tour_183_tags_title">Tags</string>
+    <string name="tour_183_tags_body">Je eigen labels op nummers, via het menu van elk nummer.</string>
+    <string name="tour_183_tags_point_1">Elke tag heeft een eigen pagina in Bibliotheek</string>
+    <string name="tour_183_tags_point_2">Gebruik ze in slimme playlists</string>
+    <string name="tour_183_tags_point_3">Tag veel nummers tegelijk</string>
+    <string name="tour_183_select_title">Meerdere selecteren</string>
+    <string name="tour_183_select_body">Houd een nummer in een lijst vast om er meer te kiezen en doe dan alles in één keer.</string>
+    <string name="tour_183_select_point_1">Toevoegen aan een playlist of de wachtrij, taggen, liken of downloaden</string>
+    <string name="tour_183_select_point_2">Uit een playlist halen, na een check</string>
+    <string name="tour_183_search_title">Zoek in je bibliotheek</string>
+    <string name="tour_183_search_body">Alles wat je hebt, gevonden terwijl je typt, met filters.</string>
+    <string name="tour_183_search_point_1">Nummers, playlists, tags, artiesten en albums</string>
+    <string name="tour_183_search_point_2">Alleen geliket, gedownload of op deze telefoon</string>
+    <string name="tour_183_search_point_3">Japanse, Koreaanse, Russische en Griekse titels gevonden in Latijnse letters</string>
+    <string name="tour_183_also_file">Een bestand op je telefoon als versie van een nummer</string>
+    <string name="tour_183_also_duplicates">Vind nummers die twee keer in een playlist staan</string>
+    <string name="tour_183_also_songs_from">Nummers in Bibliotheek uit de playlists die je kiest</string>
+    <string name="tour_183_also_lock">Herhalen en Hierna op het vergrendelscherm</string>
+    <string name="tour_183_also_uploads">Uploaden en verwijderen in Uploads</string>
     <string name="show_furigana">Furigana tonen</string>
     <string name="hiragana_readings_above_kanji">Hiragana-lezingen boven de kanji in Japanse songteksten</string>
     <string name="furigana_uses_the_japanese_reading_data">Gebruikt de Japanse leesgegevens (eenmalig hieronder gedownload).</string>

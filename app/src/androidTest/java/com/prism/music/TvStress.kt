@@ -102,6 +102,8 @@ object TvStress {
      * channels, as a singer is. Delete it with its uri.
      */
     fun music(title: String, seconds: Int): android.net.Uri {
+        // RELATIVE_PATH and IS_PENDING are Android 10+; on 9 the media store refuses the write (no WRITE_EXTERNAL_STORAGE).
+        org.junit.Assume.assumeTrue("music files are written through the media store (Android 10+)", android.os.Build.VERSION.SDK_INT >= 29)
         val rate = 44_100
         val samples = rate * seconds
         val data = java.io.ByteArrayOutputStream(44 + samples * 4)

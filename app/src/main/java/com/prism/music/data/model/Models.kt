@@ -311,6 +311,10 @@ data class NextResult(
      * its counterpart, for the player's Video button), and videos with no song version (fan uploads, live clips) are
      * left out. If that would leave almost nothing, the queue stays as it was.
      */
+    /** #383 (1.8.3): each music video in the panel that YouTube pairs with its song: video id -> the song. */
+    fun videoSongs(): Map<String, Song> = songs.filter { it.isVideo && !it.isLive && !it.isEpisode }
+        .mapNotNull { v -> counterpartSongs[v.id]?.takeIf { !it.isVideo }?.let { v.id to it } }.toMap()
+
     fun songsOnly(keepFirst: Boolean = false): NextResult {
         val pairs = counterparts.toMutableMap()
         val swapped = songs.mapIndexedNotNull { i, s ->

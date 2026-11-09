@@ -14,8 +14,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /** #211's numbers, live against YouTube (a song, its music video). */
+@Category(LiveNetwork::class)
 class SongFactsLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
     private var settings = AppSettings()

@@ -231,7 +231,7 @@ class SimulatedRendererTest {
      * Not a test: a renderer on this PC for the phone to cast to, out loud, for [minutes] (env PRISM_FAKE_RENDERER).
      * With the phone on USB: `adb reverse tcp:49152 tcp:49152` and `adb forward tcp:47322 tcp:47322`, then point the
      * debug copy at http://127.0.0.1:49152/description.xml (files/connect_renderer.txt). Its log goes to
-     * build/fake-renderer.log.
+     * build/fake-renderer.log. PRISM_FAKE_RENDERER_QUIET set: nothing out loud (a check at night).
      */
     @Test
     fun castFromThePhone() {
@@ -239,7 +239,8 @@ class SimulatedRendererTest {
         assumeTrue(minutes != null)
         val log = java.io.File("build/fake-renderer.log").apply { writeText("") }
         val t0 = System.currentTimeMillis()
-        FakeRenderer(bind = "127.0.0.1", port = 49152, audible = true, name = "PC speakers (test)", log = { line ->
+        val audible = System.getenv("PRISM_FAKE_RENDERER_QUIET") == null
+        FakeRenderer(bind = "127.0.0.1", port = 49152, audible = audible, name = "PC speakers (test)", log = { line ->
             log.appendText("%7.2f %s\n".format((System.currentTimeMillis() - t0) / 1000.0, line))
         }).use { fake ->
             val until = System.currentTimeMillis() + minutes!! * 60_000L

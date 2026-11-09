@@ -23,9 +23,19 @@ class PhotoBackgroundLanguageTest {
     @get:Rule val shots = ScreenshotOnFailure()
     private val c get() = Fixture.container
 
-    /** How much of the screen is the test photo's green (under the theme's wash). */
-    private fun greenShare(): Float {
-        val shot = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot() ?: return 0f
+    /**
+     * Whether the test photo's green covers a quarter of the screen. A missing screenshot is asked for again rather than
+     * read as "no photo". (The flake in 1.8.2.1 and 1.8.3 on mid was the check coming right after a shell `screencap`:
+     * the screen was green, saved before and on failure, while the check said no. It now comes before; 12 of 12 passed.)
+     */
+    private fun greenShows(): Boolean {
+        repeat(5) { greenShare()?.let { return it > 0.25f }; Thread.sleep(300) }
+        return false
+    }
+
+    /** How much of the screen is the test photo's green (under the theme's wash), or null with no screenshot. */
+    private fun greenShare(): Float? {
+        val shot = InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot() ?: return null
         var green = 0
         var all = 0
         for (y in 0 until shot.height step 16) for (x in 0 until shot.width step 16) {
@@ -47,12 +57,13 @@ class PhotoBackgroundLanguageTest {
         c.settings.setPureBlack(pureBlack)
         c.settings.setBackdrops(mapOf(BackdropScreen.HOME.name to "$value|${file.path}"))
         Fixture.launch()
-        compose.waitUntil(20_000) { greenShare() > 0.25f }
+        compose.waitUntil(20_000) { greenShows() }
         // Still there once Prism has settled (a screenshot in the first moments can catch the start-up: 3 of 12 runs on mid).
         Thread.sleep(3_000)
-        compose.waitUntil(10_000) { greenShare() > 0.25f }
+        compose.waitUntil(10_000) { greenShows() }
+        // Checked before the screenshot is saved: uiAutomation's screenshot right after a shell `screencap` read as no green.
+        assertTrue(greenShows())
         Fixture.screenshot(shot)
-        assertTrue(greenShare() > 0.25f)
     }
 
     @Test fun aPhotoSavedInGermanShows() = photoShows("FOTO", pureBlack = false, shot = "photo-foto")

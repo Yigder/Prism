@@ -56,7 +56,8 @@ class SingSpeedTest {
     @Test fun measure() {
         assumeTrue(args.getString("singBench") == "true")
         args.getString("singPoolPriority")?.toIntOrNull()?.let { Spleeter.workerPriority = it }
-        val store = ModelStore(context, OkHttpClient())
+        // A minute per read: OkHttp's 10 s default timed the download out while GitHub was slow (1.8.3).
+        val store = ModelStore(context, OkHttpClient.Builder().readTimeout(60, java.util.concurrent.TimeUnit.SECONDS).build())
         // No engine for this processor (a 32-bit x86 TV emulator): the quick way and the transforms only.
         val runtime = ModelStore.Model.singRuntime()
         if (runtime != null) {
@@ -105,7 +106,8 @@ class SingSpeedTest {
     @Test fun quality() {
         val folder = args.getString("singQuality")?.let(::File)
         assumeTrue(args.getString("singBench") == "true" && folder != null && ModelStore.Model.singRuntime() != null)
-        val store = ModelStore(context, OkHttpClient())
+        // A minute per read: OkHttp's 10 s default timed the download out while GitHub was slow (1.8.3).
+        val store = ModelStore(context, OkHttpClient.Builder().readTimeout(60, java.util.concurrent.TimeUnit.SECONDS).build())
         val runtime = ModelStore.Model.singRuntime()!!
         check(runBlocking { store.download(runtime) && store.download(ModelStore.Model.SING_MODEL) })
         val env = OrtLoader.environment(store.dir(runtime))

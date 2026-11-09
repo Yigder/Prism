@@ -529,5 +529,15 @@
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
         </service>
+
+        <!--
+             1.8.3 (#388's log): ONNX Runtime (Sing) brings a content provider that runs at every start-up to set up its
+             telemetry, and fails there anyway (its native library is only downloaded with Sing). Prism sends nothing
+             anywhere and Sing loads the library itself when used, so the provider is left out.
+        -->
+        <provider
+            android:name="ai.onnxruntime.TelemetryInitializer"
+            android:authorities="${applicationId}.onnxruntime_telemetry_initializer"
+            tools:node="remove" />
     </application>
 </manifest>

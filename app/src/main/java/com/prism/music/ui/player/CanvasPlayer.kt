@@ -70,9 +70,11 @@ fun CanvasPlayer(
 ) {
     val context = LocalContext.current
     val c = LocalContainer.current
-    var url by remember(canvas) { mutableStateOf(canvas.url) }
-    var rendered by remember(canvas) { mutableStateOf(false) }
-    var aspect by remember(canvas) { mutableFloatStateOf(0f) }
+    // #384 (1.8.3): one state for every clip this player shows. It was remembered per canvas, but the player's and the
+    // video view's listeners are set up once and kept writing the first song's, so the next song's clip never showed.
+    val clip = remember { ClipState(canvas) }
+    LaunchedEffect(canvas) { clip.show(canvas) }
+    val url = clip.url
     var texture by remember { mutableStateOf<TextureView?>(null) }
 
     // The player is borrowed from [CanvasPlayers] and handed back when the clip leaves the screen, so opening the
@@ -86,29 +88,26 @@ fun CanvasPlayer(
     DisposableEffect(player) {
         val listener = object : Player.Listener {
             override fun onVideoSizeChanged(videoSize: VideoSize) {
-                val w = videoSize.width * videoSize.pixelWidthHeightRatio
-                aspect = if (w > 0 && videoSize.height > 0) w / videoSize.height else 0f
-                texture?.cropTo(aspect)
+                clip.videoSize(videoSize.width * videoSize.pixelWidthHeightRatio, videoSize.height)
+                texture?.cropTo(clip.aspect)
             }
 
-            override fun onPlayerError(error: PlaybackException) {
-                val alt = canvas.fallbackUrl
-                if (alt != null && alt != url) url = alt else rendered = false
-            }
+            override fun onPlayerError(error: PlaybackException) = clip.failed()
         }
         player.addListener(listener)
         onDispose { player.removeListener(listener) }
     }
     LaunchedEffect(url) {
-        rendered = false
+        clip.rendered = false
         // The same clip as last time the player was open: it carries on, no new loading or decoder.
         if (CanvasPlayers.playing(player, url)) {
             val v = player.videoSize
-            val w = v.width * v.pixelWidthHeightRatio
-            aspect = if (w > 0 && v.height > 0) w / v.height else 0f
-            texture?.cropTo(aspect)
+            clip.videoSize(v.width * v.pixelWidthHeightRatio, v.height)
+            texture?.cropTo(clip.aspect)
             return@LaunchedEffect
         }
+        // A new clip: nothing shows until its own size and first frame are known (not the last clip's).
+        clip.aspect = 0f
         val item = MediaItem.Builder().setUri(url)
         if (url.substringBefore('?').endsWith(".m3u8")) item.setMimeType(MimeTypes.APPLICATION_M3U8)
         player.setMediaItem(item.build())
@@ -126,7 +125,7 @@ fun CanvasPlayer(
     }
     LaunchedEffect(foreground, isPlaying, hold) { player.playWhenReady = foreground && !hold }
 
-    val alpha by animateFloatAsState(if (rendered) 1f else 0f, tween(320), label = "canvasAlpha")
+    val alpha by animateFloatAsState(if (clip.rendered) 1f else 0f, tween(320), label = "canvasAlpha")
     val cover by rememberUpdatedState(onCoverChanged)
     // Held, the still cover shows in the clip's place (the video view is taken off screen, below).
     LaunchedEffect(alpha, hold) { cover(if (hold) 0f else alpha * presentationAlpha()) }
@@ -144,18 +143,15 @@ fun CanvasPlayer(
                     override fun onSurfaceTextureAvailable(s: SurfaceTexture, w: Int, h: Int) { delegate?.onSurfaceTextureAvailable(s, w, h) }
                     override fun onSurfaceTextureSizeChanged(s: SurfaceTexture, w: Int, h: Int) {
                         delegate?.onSurfaceTextureSizeChanged(s, w, h)
-                        cropTo(aspect)
+                        cropTo(clip.aspect)
                     }
                     override fun onSurfaceTextureDestroyed(s: SurfaceTexture): Boolean {
-                        rendered = false
+                        clip.rendered = false
                         return delegate?.onSurfaceTextureDestroyed(s) ?: true
                     }
                     override fun onSurfaceTextureUpdated(s: SurfaceTexture) {
                         delegate?.onSurfaceTextureUpdated(s)
-                        if (!rendered && aspect > 0f) {
-                            cropTo(aspect)
-                            rendered = true
-                        }
+                        if (clip.frame()) cropTo(clip.aspect)
                     }
                 }
             }
@@ -171,11 +167,46 @@ fun CanvasPlayer(
             // in the window, and dragging the ⋯ sheet over an animated cover kept sticking.
             frame.visibility = if (hold) android.view.View.INVISIBLE else android.view.View.VISIBLE
             tv.alpha = alpha * presentationAlpha()
-            tv.cropTo(aspect)
+            tv.cropTo(clip.aspect)
             if (Build.VERSION.SDK_INT >= 31) tv.bottomFade(bottomFade) else frame.fade = bottomFade
         },
         modifier = modifier,
     )
+}
+
+/**
+ * What a [CanvasPlayer] knows about the clip it shows now (#384, 1.8.3): one object for every clip, so the listeners set
+ * up once (the player's, the video view's) always reach the current clip's state.
+ */
+internal class ClipState(first: CanvasArtwork) {
+    var canvas by mutableStateOf(first); private set
+    var url by mutableStateOf(first.url); private set
+    var rendered by mutableStateOf(false)
+    var aspect by mutableFloatStateOf(0f)
+
+    /** The song's clip changed: start over with it. */
+    fun show(next: CanvasArtwork) {
+        if (next == canvas) return
+        // The same clip under another song (an album's one video for all its tracks): it plays on as it is; resetting
+        // here would hide it for good, since nothing loads again to show it.
+        if (next.url == canvas.url) { canvas = next; return }
+        canvas = next; url = next.url; rendered = false; aspect = 0f
+    }
+
+    fun videoSize(width: Float, height: Int) { aspect = if (width > 0 && height > 0) width / height else 0f }
+
+    /** A frame landed: the clip shows once its size is known. True when it has just become visible. */
+    fun frame(): Boolean {
+        if (rendered || aspect <= 0f) return false
+        rendered = true
+        return true
+    }
+
+    /** The clip couldn't play: its other rendition, else the still cover stays. */
+    fun failed() {
+        val alt = canvas.fallbackUrl
+        if (alt != null && alt != url) url = alt else rendered = false
+    }
 }
 
 /**

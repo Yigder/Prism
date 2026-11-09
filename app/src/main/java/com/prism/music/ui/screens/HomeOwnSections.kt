@@ -2,6 +2,30 @@ package com.prism.music.ui.screens
 
 import com.prism.music.R
 import com.prism.music.tr
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.prism.music.ui.components.Artwork
+import com.prism.music.ui.components.pane
+import com.prism.music.ui.theme.PrismIcons
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.produceState
@@ -59,6 +83,21 @@ object OwnSections {
             else -> null
         }
     }
+
+    /** Pins that can show as one tile (1.8.3, D48): those with a page of their own to open. */
+    fun canTile(key: String) = key.startsWith(HomeSections.PIN_PREFIX) && pageOf(key) != null
+
+    /** What a tile says under its name: "Album", "Playlist", "Artist". */
+    fun kindOf(key: String): String? = when (key.removePrefix(HomeSections.PIN_PREFIX).substringBefore(':')) {
+        "album" -> tr(R.string.album)
+        "playlist", HomeSections.HOLIDAY_PIN -> tr(R.string.playlist)
+        "artist" -> tr(R.string.artist)
+        else -> null
+    }
+
+    /** [key]'s songs, kept ones if loaded this session (a tile asks only when Play is tapped). */
+    suspend fun songs(c: AppContainer, key: String): List<Song> =
+        cache.value[key] ?: load(c, key).also { if (it.isNotEmpty()) cache.value = cache.value + (key to it) }
 
     /** What a rule section says about itself under its name. */
     fun strapline(key: String): String? = when {
@@ -128,4 +167,31 @@ object OwnSections {
 
     /** Which pull to refresh each section was last loaded for. */
     private val loadedAt = java.util.concurrent.ConcurrentHashMap<String, Int>()
+}
+
+/**
+ * A pinned album or playlist as one tile (1.8.3, D48, Reddit): its cover, name and kind, and a play button. Tapping
+ * the tile opens its page; nothing is loaded until Play is tapped.
+ */
+@Composable
+fun PinnedTile(title: String, kind: String?, art: String?, onOpen: () -> Unit, onPlay: () -> Unit, modifier: Modifier = Modifier) {
+    val ui = com.prism.music.ui.theme.LocalUi.current
+    val scheme = MaterialTheme.colorScheme
+    Row(
+        modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = ui.gap(10.dp))
+            .pane(ui.tile, scheme.surfaceContainerHigh.copy(alpha = 0.9f)).clickable(onClick = onOpen).padding(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Artwork(art, Modifier.size(84.dp), shape = ui.shape(10.dp), size = 300)
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if (kind != null) Text(kind, style = MaterialTheme.typography.bodyMedium, color = scheme.onSurfaceVariant, maxLines = 1)
+        }
+        Spacer(Modifier.width(8.dp))
+        Box(
+            Modifier.size(48.dp).clip(CircleShape).background(scheme.primary).clickable(onClick = onPlay).testTag("pinTilePlay"),
+            contentAlignment = Alignment.Center,
+        ) { Icon(PrismIcons.Play, tr(R.string.play, title), Modifier.size(24.dp), tint = scheme.onPrimary) }
+    }
 }

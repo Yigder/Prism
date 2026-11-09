@@ -40,6 +40,17 @@ internal object LockScreenRules {
     /** "Off" while paused still lets a pause be undone: it isn't taken away from under the finger that pressed it. */
     const val OFF_GRACE_MS = 3_000L
 
+    /**
+     * "Up next" (1.8.3, D47): the next [count] songs in the order they'll play (shuffle followed), as "Title · Artist".
+     * None while the song is hidden: the songs ahead would say what's playing.
+     */
+    fun upNextLines(queue: List<com.prism.music.playback.QueueEntry>, order: List<Int>, hideSong: Boolean, count: Int = 3): List<String> {
+        if (hideSong) return emptyList()
+        val byIndex = queue.associateBy { it.index }
+        return order.asSequence().mapNotNull { byIndex[it]?.song }.take(count)
+            .map { s -> listOf(s.title, s.artistText).filter { it.isNotBlank() }.joinToString(" · ") }.toList()
+    }
+
     /** Performance mode always gets Quiet; a hidden song has no lyrics to show, so the Lyrics layout falls back to Cover. */
     fun layoutFor(chosen: LockLayout, performanceMode: Boolean, hideSong: Boolean): LockLayout = when {
         performanceMode -> LockLayout.QUIET
@@ -120,8 +131,9 @@ class LockScreenGate(private val context: Context, private val settings: Flow<Ap
         private var triedDirect = false
 
         /** The screen came up from a direct start: that way works, however long ago it was and whatever's closed it since. */
-        internal fun directStartWorked() {
+        internal fun directStartWorked(context: Context) {
             triedDirect = false
+            LockScreenRefusals.clear(context)
         }
 
         internal fun cancelFallback(context: Context) {
@@ -277,8 +289,11 @@ class LockScreenGate(private val context: Context, private val settings: Flow<Ap
      */
     private fun show(woken: Boolean) {
         if (LockScreenActivity.live != null || somethingMoreImportant()) return
-        val direct = canStartDirectly(context) && !(woken && triedDirect)
+        val refused = woken && triedDirect
+        val direct = canStartDirectly(context) && !refused
         Log.i(TAG, "showing, way=${if (direct) "direct" else "full-screen"} woken=$woken")
+        // D43: allowed, started, and still not up as the phone wakes: the phone refused it. The settings page says so.
+        if (refused && canStartDirectly(context)) LockScreenRefusals.note(context)
         val start = Intent(context, LockScreenActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION)
         if (direct) {
             triedDirect = true

@@ -158,14 +158,14 @@ fun ScheduleKeptBar(modifier: Modifier = Modifier) {
  * real glass, which only costs while it's up, a few seconds at a time.
  */
 @Composable
-private fun BarSurface(glass: Boolean, shape: RoundedCornerShape, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+internal fun BarSurface(glass: Boolean, shape: RoundedCornerShape, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     if (glass) com.prism.music.ui.theme.GlassSurface(modifier, shape = shape, elevation = 6.dp) { content() }
     else Box(modifier.clip(shape).background(MaterialTheme.colorScheme.inverseSurface)) { content() }
 }
 
 /** What's written on a [BarSurface]: its text, and its buttons. */
 @Composable
-private fun barInk(glass: Boolean): Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color> {
+internal fun barInk(glass: Boolean): Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color> {
     val scheme = MaterialTheme.colorScheme
     return if (glass) scheme.onSurface to scheme.primary else scheme.inverseOnSurface to scheme.inversePrimary
 }

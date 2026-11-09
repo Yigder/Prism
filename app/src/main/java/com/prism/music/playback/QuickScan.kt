@@ -22,17 +22,20 @@ object QuickScan {
         if (durationMs < WHOLE_BELOW_MS) listOf(0L to durationMs.coerceAtLeast(1))
         else listOf(0.25, 0.5, 0.75).map { f -> ((durationMs * f).toLong() - WINDOW_MS / 2).coerceAtLeast(0) to WINDOW_MS }
 
-    class Result(val key: MusicKey?, val tempo: Tempo?, val lufs: Float?)
+    /** [brightness]: [Energy.brightness] over the stretches (1.8.3), from the same band features as the tempo. */
+    class Result(val key: MusicKey?, val tempo: Tempo?, val lufs: Float?, val brightness: Double? = null)
 
     /** The key from all the stretches together, the tempo from the one with the clearest beat, the loudness over all. */
     fun analyse(pieces: List<FloatArray>, rate: Int): Result {
         val all = FloatArray(pieces.sumOf { it.size }).also { out -> var at = 0; pieces.forEach { p -> p.copyInto(out, at); at += p.size } }
         val key = runCatching { KeyDetector.detect(all, rate) }.getOrNull()
         val frameMs = (rate / 100) * 1000.0 / rate
-        val tempo = pieces.mapNotNull { p -> runCatching { Tempo.analyze(VideoSync.bandFeatures(p, rate), frameMs) }.getOrNull() }
+        val bands = pieces.map { p -> runCatching { VideoSync.bandFeatures(p, rate) }.getOrNull() }
+        val tempo = bands.mapNotNull { b -> b?.let { runCatching { Tempo.analyze(it, frameMs) }.getOrNull() } }
             .maxByOrNull { it.confidence }
+        val brightness = bands.mapNotNull { b -> b?.let(Energy::brightness) }.takeIf { it.isNotEmpty() }?.average()
         val lufs = MixTempo.integratedLoudness(all, rate)?.let { it + MONO_TO_STEREO_DB }
-        return Result(key, tempo, lufs)
+        return Result(key, tempo, lufs, brightness)
     }
 
     /**

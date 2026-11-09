@@ -17,8 +17,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /** The word-by-word sources: QQ (Better Lyrics "Portato"), NetEase YRC and KuGou KRC. */
+@Category(LiveNetwork::class)
 class WordLyricsLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
     private var settings = AppSettings()

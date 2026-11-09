@@ -95,7 +95,7 @@ class TvNowPlayingFitTest {
     private val noop = {}
 
     @Composable
-    private fun player(n: TvNow) = TvNowPlayingScreen(n, noop, noop, noop, noop, noop, noop, noop, noop, noop, noop)
+    private fun player(n: TvNow) = TvNowPlayingScreen(n, noop, noop, noop, noop, noop, noop, noop, noop, noop, noop, onSeek = {})
 
     private fun node(tag: String): SemanticsNode = compose.onAllNodes(hasTestTag(tag), useUnmergedTree = true).fetchSemanticsNodes().first()
 

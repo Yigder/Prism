@@ -133,6 +133,7 @@ class HeadphoneEqTest {
     }
 
     @Test
+    @org.junit.experimental.categories.Category(LiveNetwork::class)
     fun autoEqLive() {
         // AutoEq's index and one real profile, from GitHub.
         val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()

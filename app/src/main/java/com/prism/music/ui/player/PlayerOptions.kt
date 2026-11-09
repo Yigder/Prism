@@ -116,6 +116,9 @@ fun PlayerOptionsSheet(
     var coverPick by remember { mutableStateOf(false) }
     if (coverPick) { com.prism.music.ui.components.CoverPickSheet(com.prism.music.ui.components.CoverFor.OfSong(song, c.covers.songKey(song.id))) { coverPick = false; onDismiss() }; return }
     if (pickPlaylist) { PlaylistPicker(song) { pickPlaylist = false; onDismiss() }; return }
+    var tagging by remember { mutableStateOf(false) }
+    if (tagging) { com.prism.music.ui.components.TagPicker(listOf(song), song.title) { tagging = false; onDismiss() }; return }
+    val songTags by remember(song.id) { c.tags.tagsOf(song.id) }.collectAsState(emptyList())
     // Speakers and TVs, from the menu too (Reddit 1.7: "where's the cast button?").
     if (outputs) {
         val profile by c.account.profile.collectAsState()
@@ -189,6 +192,7 @@ fun PlayerOptionsSheet(
     fun put(a: MenuAction, item: ActionItem?) { if (item != null) items[a] = listOf(item) }
     // This song
     put(MenuAction.ADD_TO_PLAYLIST, ActionItem(PrismIcons.PlaylistAdd, tr(R.string.add_to_playlist), keepOpen = true) { pickPlaylist = true })
+    put(MenuAction.TAGS, ActionItem(PrismIcons.Tag, tr(R.string.add_a_tag), value = com.prism.music.ui.components.tagsValue(songTags), active = songTags.isNotEmpty(), keepOpen = true) { tagging = true })
     if (!local) put(MenuAction.RADIO, ActionItem(PrismIcons.Radio, tr(R.string.start_radio)) { c.player.playRadio(song) })
     if (!local) put(MenuAction.DOWNLOAD, downloadItem)
     put(MenuAction.ALBUM, song.shown.album?.id?.let { id -> ActionItem(PrismIcons.Album, tr(R.string.go_to_album)) { onCollapse(); nav.go(Routes.album(id)) } })
@@ -325,6 +329,7 @@ private fun ActionItem.tile(a: MenuAction): ActionItem {
 /** An action's icon and name in Edit this menu, whatever song is playing. */
 internal fun menuIcon(a: MenuAction): ImageVector = when (a) {
     MenuAction.ADD_TO_PLAYLIST -> PrismIcons.PlaylistAdd
+    MenuAction.TAGS -> PrismIcons.Tag
     MenuAction.RADIO -> PrismIcons.Radio
     MenuAction.DOWNLOAD -> PrismIcons.Download
     MenuAction.ALBUM -> PrismIcons.Album
@@ -363,6 +368,7 @@ internal fun menuIcon(a: MenuAction): ImageVector = when (a) {
 
 internal fun menuLabel(a: MenuAction): String = when (a) {
     MenuAction.ADD_TO_PLAYLIST -> tr(R.string.add_to_playlist)
+    MenuAction.TAGS -> tr(R.string.add_a_tag)
     MenuAction.RADIO -> tr(R.string.start_radio)
     MenuAction.DOWNLOAD -> tr(R.string.download)
     MenuAction.ALBUM -> tr(R.string.go_to_album)

@@ -10,8 +10,10 @@ import okhttp3.OkHttpClient
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /** #130: Search's playlists come as YouTube Music's own (Featured) and people's (Community). Live against YouTube Music. */
+@Category(LiveNetwork::class)
 class SearchPlaylistsLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
     private var settings = AppSettings()

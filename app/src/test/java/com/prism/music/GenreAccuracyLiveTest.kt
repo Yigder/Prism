@@ -11,6 +11,7 @@ import okhttp3.OkHttpClient
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /**
  * How often Prism's genre for a song is right, live against Deezer (and iTunes), on well-known songs across every
@@ -18,6 +19,7 @@ import java.util.concurrent.TimeUnit
  * where a song can't just take its artist's usual genre. Each song lists the answers a listener would accept.
  * Prints every miss; fails below 90%.
  */
+@Category(LiveNetwork::class)
 class GenreAccuracyLiveTest {
     private val http = OkHttpClient.Builder().connectTimeout(15, TimeUnit.SECONDS).readTimeout(20, TimeUnit.SECONDS).build()
 

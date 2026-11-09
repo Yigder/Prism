@@ -4874,6 +4874,161 @@
     <string name="speed_dial_your_plays_first_info">A YouTube a webhelye csempéit küldi a Prismnek, amelyek nem azonosak az alkalmazáséval, és nem mindig követik azt, amit hallgatsz. Ha be van kapcsolva, előbb az jön, amit az elmúlt három hónapban a legtöbbet hallgattál ezen a telefonon, a többit a YouTube csempéi töltik ki.</string>
     <string name="youtube_no_longer_takes_this_sign_in">A YouTube már nem fogadja el ezt a bejelentkezést. Jelentkezz ki, majd be újra.</string>
     <string name="youtube_isnt_sending_256_kbps">A YouTube most nem küld 256 kbps-t ennek a fióknak, ezért a dalok a szokásos minőségben szólnak</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">Engedélyezés a lezárási képernyőn</string>
+    <string name="lock_screen_maker_xiaomi_detail">Megnyitja a Prism engedélyeit: kapcsold be a „Megjelenítés a lezárási képernyőn” és a „Új ablakok nyitása háttérben futás közben” lehetőséget</string>
+    <string name="lock_screen_maker_vivo_detail">Megnyitja a Prism engedélyeit: kapcsold be a „Megjelenítés a lezárási képernyőn” és a „Háttérben felugró ablakok” lehetőséget</string>
+    <string name="lock_screen_maker_info">A telefonod gyártója ezeket az engedélyeket az Android sajátjai mellé teszi, és az Android nem tudja megmondani a Prismnek, hogy be vannak-e kapcsolva. Nélkülük előfordulhat, hogy a lejátszó nem jelenik meg a lezárási képernyőn.</string>
+    <string name="lock_screen_refused">Legutóbb a telefonod nem engedte megjelenni a lejátszót. Nézd meg a fenti engedélyeket.</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">Kedvelés</string>
+    <string name="unlike">Kedvelés visszavonása</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="one">Eltávolítasz %d letöltést erről a telefonról?</item>
+        <item quantity="other">Eltávolítasz %d letöltést erről a telefonról?</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="one">Eltávolítasz %1$d dalt a(z) „%2$s” listából a YouTube Musicon?</item>
+        <item quantity="other">Eltávolítasz %1$d dalt a(z) „%2$s” listából a YouTube Musicon?</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">Címkék</string>
+    <string name="add_a_tag">Címke hozzáadása</string>
+    <string name="new_tag">Új címke</string>
+    <string name="tags_are_your_own_labels">Saját címkék a dalaidhoz, például „edzés” vagy „esős nap”. A Könyvtár → Címkék alatt találod őket.</string>
+    <string name="your_tag">A címkéd ezen a telefonon</string>
+    <string name="remove_this_tag">Címke eltávolítása</string>
+    <string name="rename_tag">Címke átnevezése</string>
+    <string name="delete_tag">Címke törlése</string>
+    <string name="delete_the_tag_its_songs_stay">Törlöd a(z) „%s” címkét? A dalai ott maradnak, ahol vannak.</string>
+    <string name="tag_songs_from_any_song_s">Címkézz dalokat bármely dal menüjéből (⋯ vagy hosszú nyomás) → Címke hozzáadása.</string>
+    <string name="tag_n_songs">Címke · %s</string>
+    <plurals name="n_tags">
+        <item quantity="one">%d címke</item>
+        <item quantity="other">%d címke</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">Okos lejátszási lista</string>
+    <string name="smart_playlist_n">Okos lejátszási lista · %s</string>
+    <string name="smart_playlist_updates_itself">Okos lejátszási lista · magától frissül</string>
+    <string name="new_smart_playlist">Új okos lejátszási lista</string>
+    <string name="edit_rules">Szabályok szerkesztése</string>
+    <string name="save_a_copy_as_a_playlist">Másolat mentése lejátszási listaként</string>
+    <string name="saved_as_a_playlist">„%s” elmentve lejátszási listaként</string>
+    <string name="no_song_meets_these_rules">Még egy dal sem felel meg ezeknek a szabályoknak. Módosítsd őket a ⋯ menüben → Szabályok szerkesztése.</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="one">%d dal még nincs lemérve</item>
+        <item quantity="other">%d dal még nincs lemérve</item>
+    </plurals>
+    <string name="measuring_n_of_n">Mérés: %1$d / %2$d…</string>
+    <string name="measure_now">Mérés most</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">A telefonon lévő dalok mérése folyik. Wi-Fin a többié is.</string>
+    <string name="smart_fast_and_liked">Gyors és kedvelt</string>
+    <string name="smart_not_played_in_a_while">Régóta nem játszott</string>
+    <string name="smart_goes_with_what_s_playing">Illik ahhoz, ami szól</string>
+    <string name="the_song_playing_isn_t_measured_yet">Az éppen szóló dal még nincs lemérve.</string>
+    <string name="match_all_rules">Minden szabálynak megfelel</string>
+    <string name="match_any_rule">Valamelyik szabálynak megfelel</string>
+    <string name="add_a_rule">Szabály hozzáadása</string>
+    <string name="add_a_rule_to_begin">A kezdéshez adj hozzá egy szabályt.</string>
+    <string name="finds_n">Talál: %s</string>
+    <string name="up_to">Legfeljebb</string>
+    <string name="sort_most_played">Legtöbbet játszott</string>
+    <string name="sort_not_played_lately">Mostanában nem játszott</string>
+    <string name="sort_random">Véletlenszerű</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">Hozzá illő hangnem</string>
+    <string name="rule_energy">Energia</string>
+    <string name="rule_loudness">Hangosság (LUFS)</string>
+    <string name="rule_on_phone">Fájl ezen a telefonon</string>
+    <string name="rule_tag">Címke</string>
+    <string name="rule_times_played">Lejátszások száma</string>
+    <string name="rule_last_played">Utoljára játszva</string>
+    <string name="rule_added">Könyvtárhoz adva</string>
+    <string name="rule_never_played">Soha nem játszott</string>
+    <string name="rule_is">Igen</string>
+    <string name="rule_isn_t">Nem</string>
+    <string name="rule_from">Ettől</string>
+    <string name="rule_to">Eddig</string>
+    <string name="rule_at_least">Legalább</string>
+    <string name="rule_at_most">Legfeljebb</string>
+    <string name="rule_within">Az elmúlt</string>
+    <string name="rule_not_within">Nem az elmúlt</string>
+    <string name="rule_days">napban</string>
+    <string name="genre_example">Pop, hiphop, rock…</string>
+    <string name="your_listening">Hallgatásaid</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">Dalok innen</string>
+    <string name="your_likes_stay_as_they_are">Csak az változik, amit ez a lap mutat. A kedvelt dalaid maradnak.</string>
+    <string name="search_these_songs">Keresés ezekben a dalokban</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">Keresés a könyvtáradban</string>
+    <string name="nothing_in_your_library_matches">A könyvtáradban semmi sem egyezik</string>
+    <string name="try_fewer_words_or_another_filter">Próbálj kevesebb szót vagy másik szűrőt.</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">Ismétlődések keresése</string>
+    <string name="no_song_is_here_twice">Egy dal sincs itt kétszer</string>
+    <string name="extra_copy">Felesleges példány</string>
+    <string name="keeping_s">Marad: „%s”</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="one">%d dal többször is szerepel</item>
+        <item quantity="other">%d dal többször is szerepel</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="one">%d felesleges példány eltávolítása</item>
+        <item quantity="other">%d felesleges példány eltávolítása</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="one">Ezzel %d dal kikerül a lejátszási listából.</item>
+        <item quantity="other">Ezzel %d dal kikerül a lejátszási listából.</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="one">Ezzel %d dal a YouTube Musicon is kikerül a listából.</item>
+        <item quantity="other">Ezzel %d dal a YouTube Musicon is kikerül a listából.</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">Saját fájl</string>
+    <string name="choose_a_file_on_this_phone">Fájl választása a telefonról</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">Egy csempe</string>
+    <string name="pin_to_home_as_one_tile">Kitűzés a Kezdőlapra egy csempeként</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">Dal feltöltése</string>
+    <string name="uploading_s">%1$s feltöltése…</string>
+    <string name="uploaded_s_it_shows_up_here">%1$s feltöltve. Akkor jelenik meg itt, amikor a YouTube Music elkészül vele, általában pár perc alatt.</string>
+    <string name="couldn_t_upload_it_s">Nem sikerült feltölteni: %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">A YouTube Music MP3, M4A, WMA, FLAC és Ogg fájlokat fogad el, legfeljebb 300 MB-ig.</string>
+    <string name="delete_from_your_uploads">Törlés a feltöltéseid közül</string>
+    <string name="delete_s_from_youtube_music">Törlöd a(z) „%1$s” dalt a YouTube Musicból?</string>
+    <string name="it_goes_from_your_uploads_for_good">Minden eszközödön eltűnik a feltöltéseid közül, végleg. Nem vonható vissza.</string>
+    <string name="deleted_from_your_uploads">Törölve a feltöltéseid közül</string>
+    <string name="couldn_t_delete_it_s">Nem sikerült törölni: %1$s</string>
+    <string name="uploads_couldn_t_find_it">A YouTube Music már nem listázza</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">Okos lejátszási listák</string>
+    <string name="tour_183_smart_body">Listák, amelyek a szabályaid szerint maguktól telnek meg, és követik a könyvtáradat.</string>
+    <string name="tour_183_smart_point_1">Szabályok arra, amit kedvelsz, hallgatsz, letöltesz vagy címkézel</string>
+    <string name="tour_183_smart_point_2">Tempó, hangnem és energia, a telefonon mérve</string>
+    <string name="tour_183_smart_point_3">Bármikor menthetsz egy másolatot sima listaként</string>
+    <string name="tour_183_tags_title">Címkék</string>
+    <string name="tour_183_tags_body">Saját címkéid a dalokon, bármelyik dal menüjéből.</string>
+    <string name="tour_183_tags_point_1">Minden címkének saját oldala van a Könyvtárban</string>
+    <string name="tour_183_tags_point_2">Használd őket okos listákban</string>
+    <string name="tour_183_tags_point_3">Sok dal felcímkézése egyszerre</string>
+    <string name="tour_183_select_title">Több kijelölése</string>
+    <string name="tour_183_select_body">Tarts nyomva egy dalt a listában, válassz többet, és intézd el egyszerre.</string>
+    <string name="tour_183_select_point_1">Listához vagy sorhoz adás, címkézés, kedvelés vagy letöltés</string>
+    <string name="tour_183_select_point_2">Eltávolítás egy listáról, megerősítéssel</string>
+    <string name="tour_183_search_title">Keresés a könyvtáradban</string>
+    <string name="tour_183_search_body">Minden, ami a tiéd, gépelés közben megtalálva, szűrőkkel.</string>
+    <string name="tour_183_search_point_1">Dalok, listák, címkék, előadók és albumok</string>
+    <string name="tour_183_search_point_2">Csak kedvelt, letöltött vagy ezen a telefonon lévő</string>
+    <string name="tour_183_search_point_3">Japán, koreai, orosz és görög címek latin betűkkel is megtalálva</string>
+    <string name="tour_183_also_file">Egy fájl a telefonodról mint a dal egy változata</string>
+    <string name="tour_183_also_duplicates">Kétszer szereplő dalok keresése egy listában</string>
+    <string name="tour_183_also_songs_from">A Könyvtár dalai a választott listákból</string>
+    <string name="tour_183_also_lock">Ismétlés és Következő a lezárási képernyőn</string>
+    <string name="tour_183_also_uploads">Feltöltés és törlés a Feltöltésekben</string>
     <string name="show_furigana">Furigana megjelenítése</string>
     <string name="hiragana_readings_above_kanji">Hiragana olvasatok a kandzsik felett a japán dalszövegekben</string>
     <string name="furigana_uses_the_japanese_reading_data">A japán olvasási adatokat használja (egyszer lent letöltve).</string>

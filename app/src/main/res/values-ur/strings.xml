@@ -4874,6 +4874,161 @@
     <string name="speed_dial_your_plays_first_info">YouTube، Prism کو اپنی ویب سائٹ کی ٹائلیں بھیجتا ہے، جو اس کی ایپ والی نہیں ہوتیں اور ہمیشہ آپ کے چلائے ہوئے گانوں کے مطابق نہیں ہوتیں۔ آن ہونے پر، پچھلے تین مہینوں میں اس فون پر آپ نے جو سب سے زیادہ چلایا وہ پہلے آتا ہے، اور باقی جگہ YouTube کی ٹائلیں بھرتی ہیں۔</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube اب یہ سائن ان قبول نہیں کرتا۔ سائن آؤٹ کر کے دوبارہ سائن ان کریں۔</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube اس وقت اس اکاؤنٹ کو 256 kbps نہیں بھیج رہا، اس لیے گانے عام کوالٹی میں چل رہے ہیں</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">لاک اسکرین پر اجازت دیں</string>
+    <string name="lock_screen_maker_xiaomi_detail">Prism کی اجازتیں کھولتا ہے: “لاک اسکرین پر دکھائیں” اور “پس منظر میں چلتے ہوئے نئی ونڈوز کھولیں” آن کریں</string>
+    <string name="lock_screen_maker_vivo_detail">Prism کی اجازتیں کھولتا ہے: “لاک اسکرین پر دکھائیں” اور “پس منظر کے پاپ اپ” آن کریں</string>
+    <string name="lock_screen_maker_info">آپ کے فون کا بنانے والا Android کی اپنی اجازتوں میں یہ اجازتیں شامل کرتا ہے، اور Android، Prism کو نہیں بتا سکتا کہ یہ آن ہیں یا نہیں۔ ان کے بغیر پلیئر شاید لاک اسکرین پر نہ آئے۔</string>
+    <string name="lock_screen_refused">پچھلی بار آپ کے فون نے پلیئر کو آنے نہیں دیا۔ اوپر دی گئی اجازتیں دیکھیں۔</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">پسند کریں</string>
+    <string name="unlike">پسند ہٹائیں</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="one">اس فون سے %d ڈاؤن لوڈ ہٹائیں؟</item>
+        <item quantity="other">اس فون سے %d ڈاؤن لوڈز ہٹائیں؟</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="one">YouTube Music پر “%2$s” سے %1$d گانا ہٹائیں؟</item>
+        <item quantity="other">YouTube Music پر “%2$s” سے %1$d گانے ہٹائیں؟</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">ٹیگ</string>
+    <string name="add_a_tag">ٹیگ شامل کریں</string>
+    <string name="new_tag">نیا ٹیگ</string>
+    <string name="tags_are_your_own_labels">گانوں کے لیے آپ کے اپنے لیبل، جیسے “جم” یا “بارش کا دن”۔ یہ لائبریری ← ٹیگ میں ملیں گے۔</string>
+    <string name="your_tag">اس فون پر آپ کا ٹیگ</string>
+    <string name="remove_this_tag">یہ ٹیگ ہٹائیں</string>
+    <string name="rename_tag">ٹیگ کا نام بدلیں</string>
+    <string name="delete_tag">ٹیگ حذف کریں</string>
+    <string name="delete_the_tag_its_songs_stay">ٹیگ “%s” حذف کریں؟ اس کے گانے جہاں ہیں وہیں رہیں گے۔</string>
+    <string name="tag_songs_from_any_song_s">کسی بھی گانے کے مینو (⋯ یا دبا کر رکھیں) ← ٹیگ شامل کریں سے گانوں کو ٹیگ کریں۔</string>
+    <string name="tag_n_songs">ٹیگ · %s</string>
+    <plurals name="n_tags">
+        <item quantity="one">%d ٹیگ</item>
+        <item quantity="other">%d ٹیگ</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">اسمارٹ پلے لسٹ</string>
+    <string name="smart_playlist_n">اسمارٹ پلے لسٹ · %s</string>
+    <string name="smart_playlist_updates_itself">اسمارٹ پلے لسٹ · خود اپ ڈیٹ رہتی ہے</string>
+    <string name="new_smart_playlist">نئی اسمارٹ پلے لسٹ</string>
+    <string name="edit_rules">قواعد بدلیں</string>
+    <string name="save_a_copy_as_a_playlist">کاپی کو پلے لسٹ کے طور پر محفوظ کریں</string>
+    <string name="saved_as_a_playlist">“%s” پلے لسٹ کے طور پر محفوظ ہو گئی</string>
+    <string name="no_song_meets_these_rules">ابھی کوئی گانا ان قواعد پر پورا نہیں اترتا۔ ⋯ مینو ← قواعد بدلیں سے انہیں بدلیں۔</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="one">%d گانا ابھی ناپا نہیں گیا</item>
+        <item quantity="other">%d گانے ابھی ناپے نہیں گئے</item>
+    </plurals>
+    <string name="measuring_n_of_n">%2$d میں سے %1$d ناپ رہے ہیں…</string>
+    <string name="measure_now">ابھی ناپیں</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">اس فون کے گانے ناپے جا رہے ہیں۔ Wi-Fi پر باقی بھی۔</string>
+    <string name="smart_fast_and_liked">تیز اور پسندیدہ</string>
+    <string name="smart_not_played_in_a_while">کافی دیر سے نہیں چلے</string>
+    <string name="smart_goes_with_what_s_playing">جو چل رہا ہے اس سے میل کھاتے</string>
+    <string name="the_song_playing_isn_t_measured_yet">چلنے والا گانا ابھی ناپا نہیں گیا۔</string>
+    <string name="match_all_rules">تمام قواعد پورے کرے</string>
+    <string name="match_any_rule">کوئی بھی قاعدہ پورا کرے</string>
+    <string name="add_a_rule">قاعدہ شامل کریں</string>
+    <string name="add_a_rule_to_begin">شروع کرنے کے لیے ایک قاعدہ شامل کریں۔</string>
+    <string name="finds_n">%s ملے</string>
+    <string name="up_to">زیادہ سے زیادہ</string>
+    <string name="sort_most_played">سب سے زیادہ چلے</string>
+    <string name="sort_not_played_lately">حال میں نہیں چلے</string>
+    <string name="sort_random">بے ترتیب</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">اس سے میل کھاتا اسکیل</string>
+    <string name="rule_energy">توانائی</string>
+    <string name="rule_loudness">بلندی (LUFS)</string>
+    <string name="rule_on_phone">اس فون کی فائل</string>
+    <string name="rule_tag">ٹیگ</string>
+    <string name="rule_times_played">کتنی بار چلا</string>
+    <string name="rule_last_played">آخری بار چلا</string>
+    <string name="rule_added">آپ کی لائبریری میں شامل</string>
+    <string name="rule_never_played">کبھی نہیں چلا</string>
+    <string name="rule_is">ہاں</string>
+    <string name="rule_isn_t">نہیں</string>
+    <string name="rule_from">سے</string>
+    <string name="rule_to">تک</string>
+    <string name="rule_at_least">کم از کم</string>
+    <string name="rule_at_most">زیادہ سے زیادہ</string>
+    <string name="rule_within">پچھلے</string>
+    <string name="rule_not_within">پچھلے … میں نہیں</string>
+    <string name="rule_days">دنوں میں</string>
+    <string name="genre_example">پاپ، ہپ ہاپ، راک…</string>
+    <string name="your_listening">آپ کا سننا</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">گانے یہاں سے</string>
+    <string name="your_likes_stay_as_they_are">صرف وہ بدلتا ہے جو یہ ٹیب دکھاتا ہے۔ آپ کی پسند ویسی ہی رہتی ہے۔</string>
+    <string name="search_these_songs">ان گانوں میں تلاش کریں</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">اپنی لائبریری میں تلاش کریں</string>
+    <string name="nothing_in_your_library_matches">آپ کی لائبریری میں کچھ نہیں ملا</string>
+    <string name="try_fewer_words_or_another_filter">کم الفاظ یا کوئی اور فلٹر آزمائیں۔</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">دہرائے گانے تلاش کریں</string>
+    <string name="no_song_is_here_twice">یہاں کوئی گانا دو بار نہیں</string>
+    <string name="extra_copy">اضافی کاپی</string>
+    <string name="keeping_s">“%s” رہے گا</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="one">%d گانا یہاں ایک سے زیادہ بار ہے</item>
+        <item quantity="other">%d گانے یہاں ایک سے زیادہ بار ہیں</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="one">%d اضافی کاپی ہٹائیں</item>
+        <item quantity="other">%d اضافی کاپیاں ہٹائیں</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="one">اس سے %d گانا اس پلے لسٹ سے نکل جائے گا۔</item>
+        <item quantity="other">اس سے %d گانے اس پلے لسٹ سے نکل جائیں گے۔</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="one">اس سے %d گانا YouTube Music پر بھی پلے لسٹ سے نکل جائے گا۔</item>
+        <item quantity="other">اس سے %d گانے YouTube Music پر بھی پلے لسٹ سے نکل جائیں گے۔</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">آپ کی فائل</string>
+    <string name="choose_a_file_on_this_phone">اس فون سے فائل چنیں</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">ایک ٹائل</string>
+    <string name="pin_to_home_as_one_tile">ہوم پر ایک ٹائل کے طور پر پن کریں</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">گانا اپ لوڈ کریں</string>
+    <string name="uploading_s">%1$s اپ لوڈ ہو رہا ہے…</string>
+    <string name="uploaded_s_it_shows_up_here">%1$s اپ لوڈ ہو گیا۔ YouTube Music کے تیار کرتے ہی یہ یہاں دکھے گا، عموماً چند منٹ میں۔</string>
+    <string name="couldn_t_upload_it_s">اپ لوڈ نہیں ہو سکا: %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">YouTube Music زیادہ سے زیادہ 300 MB کی MP3، M4A، WMA، FLAC اور Ogg فائلیں لیتا ہے۔</string>
+    <string name="delete_from_your_uploads">اپنے اپ لوڈز سے حذف کریں</string>
+    <string name="delete_s_from_youtube_music">YouTube Music سے “%1$s” حذف کریں؟</string>
+    <string name="it_goes_from_your_uploads_for_good">یہ آپ کے تمام آلات پر اپ لوڈز سے ہمیشہ کے لیے ہٹ جائے گا۔ اسے واپس نہیں کیا جا سکتا۔</string>
+    <string name="deleted_from_your_uploads">آپ کے اپ لوڈز سے حذف ہو گیا</string>
+    <string name="couldn_t_delete_it_s">حذف نہیں ہو سکا: %1$s</string>
+    <string name="uploads_couldn_t_find_it">YouTube Music اب اسے نہیں دکھاتا</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">اسمارٹ پلے لسٹس</string>
+    <string name="tour_183_smart_body">آپ کے اصولوں سے خود بھرنے والی پلے لسٹس، جو آپ کی لائبریری کے ساتھ اپ ڈیٹ رہتی ہیں۔</string>
+    <string name="tour_183_smart_point_1">جو آپ پسند کریں، سنیں، ڈاؤن لوڈ کریں یا ٹیگ کریں اس پر اصول</string>
+    <string name="tour_183_smart_point_2">ٹیمپو، اسکیل اور انرجی، آپ کے فون پر ناپی گئی</string>
+    <string name="tour_183_smart_point_3">جب چاہیں عام پلے لسٹ کے طور پر کاپی محفوظ کریں</string>
+    <string name="tour_183_tags_title">ٹیگز</string>
+    <string name="tour_183_tags_body">گانوں پر آپ کے اپنے لیبل، کسی بھی گانے کے مینو سے۔</string>
+    <string name="tour_183_tags_point_1">ہر ٹیگ کا لائبریری میں اپنا صفحہ ہے</string>
+    <string name="tour_183_tags_point_2">انہیں اسمارٹ پلے لسٹس میں استعمال کریں</string>
+    <string name="tour_183_tags_point_3">بہت سے گانوں کو ایک ساتھ ٹیگ کریں</string>
+    <string name="tour_183_select_title">کئی منتخب کریں</string>
+    <string name="tour_183_select_body">فہرست میں کسی گانے کو دبائے رکھیں، مزید چنیں، پھر سب پر ایک ساتھ عمل کریں۔</string>
+    <string name="tour_183_select_point_1">پلے لسٹ یا قطار میں شامل کریں، ٹیگ، پسند یا ڈاؤن لوڈ کریں</string>
+    <string name="tour_183_select_point_2">تصدیق کے بعد پلے لسٹ سے ہٹائیں</string>
+    <string name="tour_183_search_title">اپنی لائبریری میں تلاش کریں</string>
+    <string name="tour_183_search_body">آپ کا سب کچھ، ٹائپ کرتے ہی مل جاتا ہے، فلٹرز کے ساتھ۔</string>
+    <string name="tour_183_search_point_1">گانے، پلے لسٹس، ٹیگز، فنکار اور البمز</string>
+    <string name="tour_183_search_point_2">صرف پسندیدہ، ڈاؤن لوڈ شدہ یا اس فون پر</string>
+    <string name="tour_183_search_point_3">جاپانی، کوریائی، روسی اور یونانی عنوان لاطینی حروف میں بھی ملتے ہیں</string>
+    <string name="tour_183_also_file">فون کی ایک فائل گانے کے ورژن کے طور پر</string>
+    <string name="tour_183_also_duplicates">پلے لسٹ میں دو بار موجود گانے تلاش کریں</string>
+    <string name="tour_183_also_songs_from">آپ کی چنی ہوئی پلے لسٹس سے لائبریری کے گانے</string>
+    <string name="tour_183_also_lock">لاک اسکرین پر دہرائیں اور اگلا</string>
+    <string name="tour_183_also_uploads">اپ لوڈز میں اپ لوڈ اور حذف</string>
     <string name="show_furigana">فروگانا دکھائیں</string>
     <string name="hiragana_readings_above_kanji">جاپانی بول میں کانجی کے اوپر ہیراگانا پڑھائی</string>
     <string name="furigana_uses_the_japanese_reading_data">جاپانی پڑھائی کا ڈیٹا استعمال کرتا ہے (نیچے ایک بار ڈاؤن لوڈ ہوتا ہے)۔</string>

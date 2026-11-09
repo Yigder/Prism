@@ -32,6 +32,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import java.time.Instant
 import java.time.ZoneId
+import org.junit.experimental.categories.Category
 
 /**
  * YouTube Music (live) (1.8.1): what's new between two reads of the account's History page (FEmusic_history, answered by
@@ -40,6 +41,7 @@ import java.time.ZoneId
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = android.app.Application::class)
+@Category(LiveNetwork::class)
 class YouTubeLiveTest {
     private val app = RuntimeEnvironment.getApplication()
     private val db = Room.inMemoryDatabaseBuilder(app, PrismDatabase::class.java).allowMainThreadQueries().build()

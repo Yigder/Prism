@@ -118,6 +118,23 @@ class LockScreenGateTest {
         assertTrue(lockScreenStarted())
     }
 
+    /** D43 (1.8.3): started as the screen went off, still not up as the phone wakes: the settings page says it was refused. */
+    @Test fun aQuietlyRefusedStartIsNotedForTheSettingsPage() {
+        com.prism.music.ui.lockscreen.LockScreenRefusals.clear(app)
+        locked(true)
+        interactive(false)
+        start(LockPaused.TEN_MINUTES)
+        screen(Intent.ACTION_SCREEN_OFF)
+        assertTrue("started as the screen went off", lockScreenStarted())
+        // The phone wakes and it never came up (a maker's own permission held it back).
+        interactive(true)
+        screen(Intent.ACTION_SCREEN_ON)
+        assertTrue(com.prism.music.ui.lockscreen.LockScreenRefusals.lately(app))
+        // The next one that comes up clears it.
+        LockScreenGate.directStartWorked(app)
+        assertFalse(com.prism.music.ui.lockscreen.LockScreenRefusals.lately(app))
+    }
+
     /** A start that came up last time says nothing against starting it directly now. */
     @Test fun aDirectStartThatWorkedIsUsedAgain() {
         locked(true)
@@ -125,7 +142,7 @@ class LockScreenGateTest {
         start(LockPaused.TEN_MINUTES)
         screen(Intent.ACTION_SCREEN_OFF)
         assertTrue("up as the screen goes off", lockScreenStarted())
-        LockScreenGate.directStartWorked()
+        LockScreenGate.directStartWorked(app)
 
         // It was closed since; then Android's own lock screen controls start the music again, the screen on.
         interactive(true)

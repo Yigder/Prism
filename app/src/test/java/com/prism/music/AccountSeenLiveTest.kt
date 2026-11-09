@@ -7,11 +7,13 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.experimental.categories.Category
 
 /**
  * Live: YouTube's own word on whether a request counted as signed in is where [YouTubeSeen] reads it. Without an account
  * here, the answer asked anonymously has to say "not signed in"; on a signed-in phone, the diagnostics' line says the rest.
  */
+@Category(LiveNetwork::class)
 class AccountSeenLiveTest {
     @Test fun anAnonymousAnswerSaysItIsNotSignedIn() = runBlocking {
         val api = InnerTube(OkHttpClient(), { AppSettings() })

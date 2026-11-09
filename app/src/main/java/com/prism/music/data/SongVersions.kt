@@ -37,6 +37,15 @@ class SongVersions(private val prefs: SharedPreferences) {
     /** The recording that plays for [songId], or null for its own. */
     fun of(songId: String): String? = _picks.value[songId]?.id
 
+    /** A file on this phone picked for [songId] (1.8.3, #243): its local id. It plays from the file. */
+    fun fileOf(songId: String): String? = of(songId)?.takeIf { it.startsWith(Song.LOCAL_PREFIX) }
+
+    /**
+     * The recording to fetch from YouTube for [songId]: its pick, unless that's a file on the phone, which is never
+     * streamed (casting, downloads and scans then use the song's own).
+     */
+    fun streamedOf(songId: String): String? = of(songId)?.takeUnless { it.startsWith(Song.LOCAL_PREFIX) }
+
     /** Plays [pick] for [songId] from now on; null goes back to the song's own. */
     fun set(songId: String, pick: Pick?) {
         val ed = prefs.edit()

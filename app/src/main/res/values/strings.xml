@@ -4816,6 +4816,11 @@
     <string name="lock_screen_allow_step">2. Allow it</string>
     <string name="lock_screen_allow_detail">Opens Android\'s list: find Prism and turn it on</string>
     <string name="lock_screen_allow_info">Android only lets a screen start in the background with this permission. Without it, some phones can still bring up the player a moment after waking, and others won\'t show it at all.</string>
+    <string name="lock_screen_maker_step">Allow it on the lock screen</string>
+    <string name="lock_screen_maker_xiaomi_detail">Opens Prism\'s permissions: turn on “Show on Lock screen” and “Open new windows while running in the background”</string>
+    <string name="lock_screen_maker_vivo_detail">Opens Prism\'s permissions: turn on “Display on lock screen” and “Background pop-ups”</string>
+    <string name="lock_screen_maker_info">Your phone\'s maker adds these permissions to Android\'s own, and Android can\'t tell Prism whether they\'re on. Without them the player may not come up on the lock screen.</string>
+    <string name="lock_screen_refused">Last time, your phone didn\'t let the player come up. Check the permissions above.</string>
     <string name="lock_screen_app_info">1. Open App info</string>
     <string name="lock_screen_app_info_detail">⋮ at the top right → Allow restricted settings. Nothing there? Go on to 2</string>
     <string name="lock_screen_app_info_info">Android holds this permission back for apps that weren\'t installed from a store, and says the app was denied access. Allowing restricted settings in App info lifts that, after you confirm it\'s you.</string>
@@ -4907,4 +4912,153 @@
     <string name="youtube_isnt_sending_256_kbps">YouTube isn\'t sending this account 256 kbps right now, so songs play at the usual quality</string>
     <string name="glass_on_more_of_the_screen_detail">Cards, chips, round buttons and the Undo bar</string>
     <string name="glass_on_more_of_the_screen_info">Cards and settings panels get a light falling on them and a brighter edge, chips and round buttons a brighter edge, and Frost reaches them all. They use no live blur, so they cost next to nothing, and they show on pages with a background behind them. The Undo bar is real glass while it\'s up. Performance mode turns this off. More places may follow.</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">Like</string>
+    <string name="unlike">Unlike</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="one">Remove %d download from this phone?</item>
+        <item quantity="other">Remove %d downloads from this phone?</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="one">Remove %1$d song from “%2$s” on YouTube Music?</item>
+        <item quantity="other">Remove %1$d songs from “%2$s” on YouTube Music?</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">Tags</string>
+    <string name="add_a_tag">Add a tag</string>
+    <string name="new_tag">New tag</string>
+    <string name="tags_are_your_own_labels">Your own labels for songs, like “gym” or “rainy day”. Find them in Library → Tags.</string>
+    <string name="your_tag">Your tag on this phone</string>
+    <string name="remove_this_tag">Remove this tag</string>
+    <string name="rename_tag">Rename tag</string>
+    <string name="delete_tag">Delete tag</string>
+    <string name="delete_the_tag_its_songs_stay">Delete the tag “%s”? Its songs stay where they are.</string>
+    <string name="tag_songs_from_any_song_s">Tag songs from any song\'s menu (⋯ or a long press) → Add a tag.</string>
+    <string name="tag_n_songs">Tag · %s</string>
+    <plurals name="n_tags">
+        <item quantity="one">%d tag</item>
+        <item quantity="other">%d tags</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">Smart playlist</string>
+    <string name="smart_playlist_n">Smart playlist · %s</string>
+    <string name="smart_playlist_updates_itself">Smart playlist · keeps itself up to date</string>
+    <string name="new_smart_playlist">New smart playlist</string>
+    <string name="edit_rules">Edit rules</string>
+    <string name="save_a_copy_as_a_playlist">Save a copy as a playlist</string>
+    <string name="saved_as_a_playlist">Saved “%s” as a playlist</string>
+    <string name="no_song_meets_these_rules">No song meets these rules yet. Change them from the ⋯ menu → Edit rules.</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="one">%d song isn\'t measured yet</item>
+        <item quantity="other">%d songs aren\'t measured yet</item>
+    </plurals>
+    <string name="measuring_n_of_n">Measuring %1$d of %2$d…</string>
+    <string name="measure_now">Measure now</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">Measuring the songs on this phone. On Wi-Fi, the others are measured too.</string>
+    <string name="smart_fast_and_liked">Fast and liked</string>
+    <string name="smart_not_played_in_a_while">Not played in a while</string>
+    <string name="smart_goes_with_what_s_playing">Goes with what\'s playing</string>
+    <string name="the_song_playing_isn_t_measured_yet">The song playing isn\'t measured yet.</string>
+    <string name="match_all_rules">Meets all rules</string>
+    <string name="match_any_rule">Meets any rule</string>
+    <string name="add_a_rule">Add a rule</string>
+    <string name="add_a_rule_to_begin">Add a rule to begin.</string>
+    <string name="finds_n">Finds %s</string>
+    <string name="up_to">Up to</string>
+    <string name="sort_most_played">Most played</string>
+    <string name="sort_not_played_lately">Not played lately</string>
+    <string name="sort_random">Random</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">Key that goes with</string>
+    <string name="rule_energy">Energy</string>
+    <string name="rule_loudness">Loudness (LUFS)</string>
+    <string name="rule_on_phone">A file on this phone</string>
+    <string name="rule_tag">Tag</string>
+    <string name="rule_times_played">Times played</string>
+    <string name="rule_last_played">Last played</string>
+    <string name="rule_added">Added to your library</string>
+    <string name="rule_never_played">Never played</string>
+    <string name="rule_is">Is</string>
+    <string name="rule_isn_t">Isn\'t</string>
+    <string name="rule_from">From</string>
+    <string name="rule_to">To</string>
+    <string name="rule_at_least">At least</string>
+    <string name="rule_at_most">At most</string>
+    <string name="rule_within">In the last</string>
+    <string name="rule_not_within">Not in the last</string>
+    <string name="rule_days">days</string>
+    <string name="genre_example">Pop, Hip-hop, Rock…</string>
+    <string name="your_listening">Your listening</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">Songs from</string>
+    <string name="your_likes_stay_as_they_are">Only what this tab shows changes. Your likes stay as they are.</string>
+    <string name="search_these_songs">Search these songs</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">Search your library</string>
+    <string name="nothing_in_your_library_matches">Nothing in your library matches</string>
+    <string name="try_fewer_words_or_another_filter">Try fewer words or another filter.</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">Find duplicates</string>
+    <string name="no_song_is_here_twice">No song is here twice</string>
+    <string name="extra_copy">Extra copy</string>
+    <string name="keeping_s">Keeping “%s”</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="one">%d song is here more than once</item>
+        <item quantity="other">%d songs are here more than once</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="one">Remove %d extra copy</item>
+        <item quantity="other">Remove %d extra copies</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="one">This takes %d song out of this playlist.</item>
+        <item quantity="other">This takes %d songs out of this playlist.</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="one">This takes %d song out of the playlist on YouTube Music too.</item>
+        <item quantity="other">This takes %d songs out of the playlist on YouTube Music too.</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">Your file</string>
+    <string name="choose_a_file_on_this_phone">Choose a file on this phone</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">One tile</string>
+    <string name="pin_to_home_as_one_tile">Pin to Home as one tile</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">Upload a song</string>
+    <string name="uploading_s">Uploading %1$s…</string>
+    <string name="uploaded_s_it_shows_up_here">%1$s is uploaded. It shows up here once YouTube Music has it ready, usually in a few minutes.</string>
+    <string name="couldn_t_upload_it_s">Couldn\'t upload it: %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">YouTube Music takes MP3, M4A, WMA, FLAC and Ogg files of up to 300 MB.</string>
+    <string name="delete_from_your_uploads">Delete from your uploads</string>
+    <string name="delete_s_from_youtube_music">Delete “%1$s” from YouTube Music?</string>
+    <string name="it_goes_from_your_uploads_for_good">It goes from your uploads on every device, for good. This can\'t be undone.</string>
+    <string name="deleted_from_your_uploads">Deleted from your uploads</string>
+    <string name="couldn_t_delete_it_s">Couldn\'t delete it: %1$s</string>
+    <string name="uploads_couldn_t_find_it">YouTube Music didn\'t list it any more</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">Smart playlists</string>
+    <string name="tour_183_smart_body">Playlists that fill themselves from rules you set, and keep up as your library changes.</string>
+    <string name="tour_183_smart_point_1">Rules on what you like, play, download or tag</string>
+    <string name="tour_183_smart_point_2">Tempo, key and energy, measured on your phone</string>
+    <string name="tour_183_smart_point_3">Save a copy as a plain playlist any time</string>
+    <string name="tour_183_tags_title">Tags</string>
+    <string name="tour_183_tags_body">Your own labels on songs, from any song\'s menu.</string>
+    <string name="tour_183_tags_point_1">Each tag has a page of its own in Library</string>
+    <string name="tour_183_tags_point_2">Use them in smart playlists</string>
+    <string name="tour_183_tags_point_3">Tag many songs at once</string>
+    <string name="tour_183_select_title">Select many</string>
+    <string name="tour_183_select_body">Hold a song in a list to pick more, then act on all of them at once.</string>
+    <string name="tour_183_select_point_1">Add to a playlist or the queue, tag, like or download</string>
+    <string name="tour_183_select_point_2">Take them out of a playlist, with a check first</string>
+    <string name="tour_183_search_title">Search your library</string>
+    <string name="tour_183_search_body">Everything you have, found as you type, with filters.</string>
+    <string name="tour_183_search_point_1">Songs, playlists, tags, artists and albums</string>
+    <string name="tour_183_search_point_2">Only liked, downloaded or on this phone</string>
+    <string name="tour_183_search_point_3">Japanese, Korean, Russian and Greek titles found in Latin letters</string>
+    <string name="tour_183_also_file">A file on your phone as a song\'s version</string>
+    <string name="tour_183_also_duplicates">Find songs that are in a playlist twice</string>
+    <string name="tour_183_also_songs_from">Library\'s Songs from the playlists you choose</string>
+    <string name="tour_183_also_lock">Repeat and Up next on the lock screen</string>
+    <string name="tour_183_also_uploads">Upload and delete in Uploads</string>
 </resources>

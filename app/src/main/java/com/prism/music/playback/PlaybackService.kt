@@ -514,6 +514,14 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession = session
 
+    /**
+     * #239 (1.8.3): while casting, the service stays in the foreground whatever the muted phone player is doing. Out of
+     * it, Android blocks a background app's network a few seconds after it leaves the screen: the speaker could no longer
+     * be reached (or fetch the song from the phone), and casting ended as "lost the connection" ~30 s later.
+     */
+    override fun onUpdateNotification(session: MediaSession, startInForegroundRequired: Boolean) =
+        super.onUpdateNotification(session, startInForegroundRequired || c.castingNow)
+
     /** Whether this service is in the foreground now (only known on Android 10+; below, it says yes). */
     private fun inForeground(): Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || foregroundServiceType != 0
 
@@ -852,6 +860,9 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
         }
         if (!isPlaying) saveEpisodePosition()
         pushWidgets()
+        // #388: the place in the song is kept every 10 s while playing, for a restart after a crash.
+        placeJob?.cancel()
+        placeJob = if (isPlaying) scope.launch { while (true) { delay(PlaceKeeper.EVERY_MS); placeKeeper.tick(currentPlace()) } } else null
         if (isPlaying) playStartedAt = now
         else if (playStartedAt > 0) {
             accumulatedMs += now - playStartedAt
@@ -2335,6 +2346,17 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             scope.launch { applyStreamStats(item.mediaId) }
             return uri
         }
+        // A file on the phone picked as this song's version (1.8.3, #243): played from the file, whatever the lossless
+        // switches say. A file that's gone plays the song as usual.
+        c.versions.fileOf(item.mediaId)?.let { file ->
+            // Once the phone's files have been read, only one that's still there (before that, its MediaStore address).
+            (c.localMusic.track(file)?.uri ?: c.localMusic.uriFor(file).takeIf { !c.localMusic.scanned.value })?.let { uri ->
+                val format = c.localMusic.track(file)?.mime?.let(::fileFormatName)
+                c.streamDetails[item.mediaId] = "Your file on this phone" + (format?.let { " · $it" } ?: "") to null
+                scope.launch { applyStreamStats(item.mediaId) }
+                return uri
+            }
+        }
         // Lossless files need lossless playback, as in 1.8.0; your own MP3/AAC/Ogg files (#314) need only their switch,
         // and give way to a lossless file of the same song ([com.prism.music.data.local.PlaySourceRule]).
         val kinds = com.prism.music.data.local.OwnFiles.kinds(c.settings.current)
@@ -2355,6 +2377,25 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
     // ------------------------------------------------------------ Queue persistence
 
     private val queueFile get() = File(filesDir, "queue.json")
+    private val placeFile get() = File(filesDir, "queue-place.json")
+    private var placeJob: Job? = null
+    private val placeKeeper = PlaceKeeper { p ->
+        val text = InnerTube.json.encodeToString(QueuePlace.serializer(), p)
+        scope.launch(queueWriter) { runCatching { placeFile.writeText(text) } }
+    }
+
+    private fun currentPlace(): QueuePlace? {
+        if (!::player.isInitialized) return null
+        val id = player.currentMediaItem?.mediaId ?: return null
+        return QueuePlace(id, player.currentMediaItemIndex, player.currentPosition)
+    }
+
+    /** The kept place, when it was written after queue.json (else the queue file's own place is the newer one). */
+    private fun keptPlace(): QueuePlace? = runCatching {
+        val f = placeFile
+        if (!f.exists() || f.lastModified() < queueFile.lastModified()) null
+        else InnerTube.json.decodeFromString(QueuePlace.serializer(), f.readText())
+    }.getOrNull()
 
     private fun scheduleSave() {
         saveJob?.cancel()
@@ -2380,6 +2421,7 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             shuffle = player.shuffleModeEnabled, shuffleOrder = order, repeat = player.repeatMode,
         )
         val text = InnerTube.json.encodeToString(SavedQueue.serializer(), q)
+        placeKeeper.saved(currentPlace())
         if (now) writeQueue(text) else scope.launch(queueWriter) { writeQueue(text) }
     }
 
@@ -2403,7 +2445,8 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             return
         }
         c.queue.source.value = QueueSource(QueueKind.OTHER, q.title)
-        player.setMediaItems(q.songs.map { it.toMediaItem() }, q.index.coerceIn(0, q.songs.lastIndex), q.positionMs)
+        val (index, position) = PlaceKeeper.start(q.songs.map { it.id }, q.index, q.positionMs, keptPlace(), placeIsNewer = true)
+        player.setMediaItems(q.songs.map { it.toMediaItem() }, index.coerceIn(0, q.songs.lastIndex), position)
         // Shuffle and repeat as they were, in the same order.
         if (q.shuffle) {
             if (q.shuffleOrder.size == q.songs.size && q.shuffleOrder.sorted() == q.songs.indices.toList()) {
@@ -2712,14 +2755,15 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
             controller: MediaSession.ControllerInfo,
             isForPlayback: Boolean,
         ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> = scope.future {
-            val q = withContext(Dispatchers.IO) {
-                runCatching { InnerTube.json.decodeFromString(SavedQueue.serializer(), queueFile.readText()) }.getOrNull()
+            val (q, place) = withContext(Dispatchers.IO) {
+                runCatching { InnerTube.json.decodeFromString(SavedQueue.serializer(), queueFile.readText()) }.getOrNull() to keptPlace()
             }
             if (q == null || q.songs.isEmpty()) {
                 MediaSession.MediaItemsWithStartPosition(emptyList(), 0, C.TIME_UNSET)
             } else {
                 c.queue.source.value = QueueSource(QueueKind.OTHER, q.title)
-                MediaSession.MediaItemsWithStartPosition(q.songs.map { it.toMediaItem() }, q.index.coerceIn(0, q.songs.lastIndex), q.positionMs)
+                val (index, position) = PlaceKeeper.start(q.songs.map { it.id }, q.index, q.positionMs, place, placeIsNewer = true)
+                MediaSession.MediaItemsWithStartPosition(q.songs.map { it.toMediaItem() }, index.coerceIn(0, q.songs.lastIndex), position)
             }
         }
     }

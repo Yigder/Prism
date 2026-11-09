@@ -20,7 +20,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -74,6 +77,16 @@ fun SongVersionsSheet(song: Song, onDismiss: () -> Unit) {
         ).show()
         onDismiss()
     }
+    // Files on this phone (1.8.3, #243): those with the song's title, and any other the listener picks.
+    val files by c.localMusic.tracks.collectAsState()
+    val canSeeFiles = remember { c.localMusic.hasPermission() }
+    androidx.compose.runtime.LaunchedEffect(Unit) { if (canSeeFiles && !c.localMusic.scanned.value) c.localMusic.scan() }
+    val fileMatches = remember(files, song.id) {
+        val want = SongVersions.bare(song.title)
+        if (want.isEmpty() || song.isLocal) emptyList() else files.filter { SongVersions.bare(it.song.title) == want }.take(6)
+    }
+    var choosingFile by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    if (choosingFile) { PhoneFilePicker(files.map { it.song }) { f -> choosingFile = false; f?.let { choose(SongVersions.Pick(it.id, fileLabel(it), it)) } }; return }
     PrismSheet(onDismiss) { _ ->
         Column(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp).navigationBarsPadding(),
@@ -84,6 +97,26 @@ fun SongVersionsSheet(song: Song, onDismiss: () -> Unit) {
                 Text(tr(R.string.the_one_you_pick_plays_for), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             VersionRow(song, tr(R.string.version_original), picked == null, Modifier.testTag("version:own")) { choose(null) }
+            // A file of the song on the phone plays from the file (a FLAC of an album bought elsewhere, say).
+            if (!song.isLocal) {
+                fileMatches.forEach { t ->
+                    VersionRow(t.song, tr(R.string.your_file), picked == t.song.id, Modifier.testTag("version:${t.song.id}")) {
+                        choose(SongVersions.Pick(t.song.id, fileLabel(t.song), t.song))
+                    }
+                }
+                // A picked file that doesn't match the title still shows, ticked.
+                picks[song.id]?.song?.takeIf { it.isLocal && fileMatches.none { t -> t.song.id == it.id } }?.let { f ->
+                    VersionRow(f, tr(R.string.your_file), true, Modifier.testTag("version:${f.id}")) {}
+                }
+                if (canSeeFiles && files.isNotEmpty()) Row(
+                    Modifier.fillMaxWidth().clickable { choosingFile = true }.padding(horizontal = 22.dp, vertical = 12.dp).testTag("version:chooseFile"),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(PrismIcons.Folder, null, Modifier.size(22.dp))
+                    Spacer(Modifier.width(14.dp))
+                    Text(tr(R.string.choose_a_file_on_this_phone), style = MaterialTheme.typography.bodyLarge)
+                }
+            }
             val r = found
             when {
                 r == null -> PrismSpinner(Modifier.padding(22.dp).size(22.dp), stroke = 2.dp)
@@ -106,6 +139,34 @@ fun versionLabel(v: Song): String = listOfNotNull(
     if (v.isVideo) tr(R.string.video) else v.album?.title?.takeIf { it.isNotBlank() },
     formatDuration(v.durationSec).takeIf { it.isNotEmpty() },
 ).joinToString(" · ")
+
+/** A file's row: "Your file · Artist · 3:41" (in the song menu once picked). */
+private fun fileLabel(f: Song): String = listOf(tr(R.string.your_file), versionLabel(f)).filter { it.isNotBlank() }.joinToString(" · ")
+
+/** Any music file on the phone, found by typing (1.8.3, #243); null: none picked. */
+@Composable
+private fun PhoneFilePicker(files: List<Song>, onPick: (Song?) -> Unit) {
+    var query by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    val shown = remember(files, query) {
+        if (query.isBlank()) files.take(300)
+        else {
+            val words = com.prism.music.data.LibrarySearch.norm(query).split(' ').filter { it.isNotBlank() }
+            files.filter { f -> com.prism.music.data.LibrarySearch.norm("${f.title} ${f.artistText} ${f.album?.title.orEmpty()}").let { hay -> words.all { it in hay } } }.take(300)
+        }
+    }
+    PrismSheet({ onPick(null) }) { _ ->
+        Column(Modifier.fillMaxWidth().padding(bottom = 16.dp).navigationBarsPadding().testTag("filePicker")) {
+            Text(tr(R.string.choose_a_file_on_this_phone), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 22.dp))
+            SearchField(query, tr(R.string.search), { query = it }, Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp))
+            androidx.compose.foundation.lazy.LazyColumn(Modifier.weight(1f, fill = false)) {
+                items(shown.size, key = { shown[it].id }) { i ->
+                    val f = shown[i]
+                    VersionRow(f, null, false, Modifier.testTag("file:${f.id}")) { onPick(f) }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun Quiet(text: String) = Text(

@@ -182,12 +182,12 @@ class LocalLossless(private val context: Context) {
      * in 1.8.0), else one of your own files that is strictly the same song ([OwnFiles.sameSong]). [lossless] / [lossy]:
      * which kinds the settings allow right now (turned off, a kind is passed over at once, before the next scan).
      */
-    fun match(song: Song, lossless: Boolean = true, lossy: Boolean = true): Track? {
+    fun match(song: Song, lossless: Boolean = true, lossy: Boolean = true, note: Boolean = true): Track? {
         if (byTitle.isEmpty() || song.isVideo) return null
         fun allowed(t: Track) = t.uri !in unplayable && (if (t.lossy) lossy && PlaySourceRule.beatsStream(t) else lossless)
         val tied = linked[song.id]?.let { uri -> tracks.firstOrNull { it.uri == uri && allowed(it) } }
         // A tied lossy file still gives way to a lossless one of the same song.
-        if (tied != null && !tied.lossy) { matched[song.id] = tied; return tied }
+        if (tied != null && !tied.lossy) { if (note) matched[song.id] = tied; return tied }
         val candidates = byTitle[norm(song.title)]?.filter(::allowed).orEmpty()
         val artist = norm(song.primaryArtist)
         val hit = candidates.firstOrNull { t ->
@@ -198,7 +198,8 @@ class LocalLossless(private val context: Context) {
             artistOk && lengthOk
         } ?: tied ?: candidates.firstOrNull { it.lossy && OwnFiles.sameSong(it.title, it.artist, it.durationMs, song) }
         hit ?: return null
-        matched[song.id] = hit
+        // [note]: a play, kept for the stats; a song row only asking (#385) isn't one.
+        if (note) matched[song.id] = hit
         return hit
     }
 
@@ -209,11 +210,18 @@ class LocalLossless(private val context: Context) {
 
         /** "Mr. Brightside (Remastered 2020) [feat. X]" -> "mr brightside" */
         fun norm(s: String): String = Normalizer.normalize(s.lowercase(), Normalizer.Form.NFD)
-            .replace(Regex("\\(.*?\\)|\\[.*?]"), "")
-            .replace(Regex("\\s-\\s.*(remaster|version|edit|mix|live).*"), "")
-            .replace(Regex("\\b(feat|ft|featuring)\\b.*"), "")
-            .replace(Regex("[^\\p{L}\\p{N} ]"), "")
-            .replace(Regex("\\s+"), " ")
+            .replace(BRACKETS, "")
+            .replace(VERSION_TAIL, "")
+            .replace(FEATURING, "")
+            .replace(NOT_WORD, "")
+            .replace(SPACES, " ")
             .trim()
+
+        // Compiled once: song rows ask the matcher too (#385), not only playback.
+        private val BRACKETS = Regex("\\(.*?\\)|\\[.*?]")
+        private val VERSION_TAIL = Regex("\\s-\\s.*(remaster|version|edit|mix|live).*")
+        private val FEATURING = Regex("\\b(feat|ft|featuring)\\b.*")
+        private val NOT_WORD = Regex("[^\\p{L}\\p{N} ]")
+        private val SPACES = Regex("\\s+")
     }
 }

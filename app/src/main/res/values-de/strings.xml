@@ -4874,6 +4874,161 @@
     <string name="speed_dial_your_plays_first_info">YouTube schickt Prism die Kacheln seiner Website. Sie sind nicht dieselben wie in der App und folgen nicht immer dem, was du hörst. Wenn das an ist, steht zuerst, was du in den letzten drei Monaten auf diesem Handy am meisten gehört hast, danach folgen die Kacheln von YouTube.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube akzeptiert diese Anmeldung nicht mehr. Melde dich ab und wieder an.</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube sendet diesem Konto gerade keine 256 kbit/s, deshalb laufen Songs in der üblichen Qualität</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">Auf dem Sperrbildschirm erlauben</string>
+    <string name="lock_screen_maker_xiaomi_detail">Öffnet die Berechtigungen von Prism: „Auf Sperrbildschirm anzeigen“ und „Neue Fenster öffnen, während im Hintergrund ausgeführt“ einschalten</string>
+    <string name="lock_screen_maker_vivo_detail">Öffnet die Berechtigungen von Prism: „Auf Sperrbildschirm anzeigen“ und „Pop-ups im Hintergrund“ einschalten</string>
+    <string name="lock_screen_maker_info">Der Hersteller deines Handys ergänzt Androids Berechtigungen um diese, und Android kann Prism nicht sagen, ob sie an sind. Ohne sie kommt der Player auf dem Sperrbildschirm vielleicht nicht.</string>
+    <string name="lock_screen_refused">Beim letzten Mal hat dein Handy den Player nicht erscheinen lassen. Prüfe die Berechtigungen oben.</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">Gefällt mir</string>
+    <string name="unlike">Gefällt mir nicht mehr</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="one">%d Download von diesem Handy entfernen?</item>
+        <item quantity="other">%d Downloads von diesem Handy entfernen?</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="one">%1$d Song aus „%2$s“ in YouTube Music entfernen?</item>
+        <item quantity="other">%1$d Songs aus „%2$s“ in YouTube Music entfernen?</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">Tags</string>
+    <string name="add_a_tag">Tag hinzufügen</string>
+    <string name="new_tag">Neuer Tag</string>
+    <string name="tags_are_your_own_labels">Deine eigenen Labels für Songs, etwa „Gym“ oder „Regentag“. Du findest sie unter Mediathek → Tags.</string>
+    <string name="your_tag">Dein Tag auf diesem Handy</string>
+    <string name="remove_this_tag">Diesen Tag entfernen</string>
+    <string name="rename_tag">Tag umbenennen</string>
+    <string name="delete_tag">Tag löschen</string>
+    <string name="delete_the_tag_its_songs_stay">Den Tag „%s“ löschen? Seine Songs bleiben, wo sie sind.</string>
+    <string name="tag_songs_from_any_song_s">Vergib Tags über das Menü eines Songs (⋯ oder lange drücken) → Tag hinzufügen.</string>
+    <string name="tag_n_songs">Tag · %s</string>
+    <plurals name="n_tags">
+        <item quantity="one">%d Tag</item>
+        <item quantity="other">%d Tags</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">Smarte Playlist</string>
+    <string name="smart_playlist_n">Smarte Playlist · %s</string>
+    <string name="smart_playlist_updates_itself">Smarte Playlist · hält sich selbst aktuell</string>
+    <string name="new_smart_playlist">Neue smarte Playlist</string>
+    <string name="edit_rules">Regeln bearbeiten</string>
+    <string name="save_a_copy_as_a_playlist">Kopie als Playlist speichern</string>
+    <string name="saved_as_a_playlist">„%s“ als Playlist gespeichert</string>
+    <string name="no_song_meets_these_rules">Noch passt kein Song zu diesen Regeln. Ändere sie über das ⋯-Menü → Regeln bearbeiten.</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="one">%d Song ist noch nicht gemessen</item>
+        <item quantity="other">%d Songs sind noch nicht gemessen</item>
+    </plurals>
+    <string name="measuring_n_of_n">Messe %1$d von %2$d …</string>
+    <string name="measure_now">Jetzt messen</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">Die Songs auf diesem Handy werden gemessen. Im WLAN auch die anderen.</string>
+    <string name="smart_fast_and_liked">Schnell und gelikt</string>
+    <string name="smart_not_played_in_a_while">Lange nicht gespielt</string>
+    <string name="smart_goes_with_what_s_playing">Passt zum aktuellen Song</string>
+    <string name="the_song_playing_isn_t_measured_yet">Der laufende Song ist noch nicht gemessen.</string>
+    <string name="match_all_rules">Erfüllt alle Regeln</string>
+    <string name="match_any_rule">Erfüllt eine Regel</string>
+    <string name="add_a_rule">Regel hinzufügen</string>
+    <string name="add_a_rule_to_begin">Füge eine Regel hinzu, um anzufangen.</string>
+    <string name="finds_n">Findet %s</string>
+    <string name="up_to">Bis zu</string>
+    <string name="sort_most_played">Am meisten gespielt</string>
+    <string name="sort_not_played_lately">Lange nicht gespielt</string>
+    <string name="sort_random">Zufällig</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">Tonart passend zu</string>
+    <string name="rule_energy">Energie</string>
+    <string name="rule_loudness">Lautheit (LUFS)</string>
+    <string name="rule_on_phone">Datei auf diesem Handy</string>
+    <string name="rule_tag">Tag</string>
+    <string name="rule_times_played">Wie oft gespielt</string>
+    <string name="rule_last_played">Zuletzt gespielt</string>
+    <string name="rule_added">Zur Mediathek hinzugefügt</string>
+    <string name="rule_never_played">Nie gespielt</string>
+    <string name="rule_is">Ist</string>
+    <string name="rule_isn_t">Ist nicht</string>
+    <string name="rule_from">Von</string>
+    <string name="rule_to">Bis</string>
+    <string name="rule_at_least">Mindestens</string>
+    <string name="rule_at_most">Höchstens</string>
+    <string name="rule_within">In den letzten</string>
+    <string name="rule_not_within">Nicht in den letzten</string>
+    <string name="rule_days">Tagen</string>
+    <string name="genre_example">Pop, Hip-Hop, Rock …</string>
+    <string name="your_listening">Dein Hören</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">Songs aus</string>
+    <string name="your_likes_stay_as_they_are">Nur die Anzeige dieses Tabs ändert sich. Deine Likes bleiben, wie sie sind.</string>
+    <string name="search_these_songs">Diese Songs durchsuchen</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">Mediathek durchsuchen</string>
+    <string name="nothing_in_your_library_matches">Nichts in deiner Mediathek passt</string>
+    <string name="try_fewer_words_or_another_filter">Versuch es mit weniger Wörtern oder einem anderen Filter.</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">Doppelte finden</string>
+    <string name="no_song_is_here_twice">Kein Song ist doppelt</string>
+    <string name="extra_copy">Doppelt</string>
+    <string name="keeping_s">„%s“ bleibt</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="one">%d Song ist mehrfach hier</item>
+        <item quantity="other">%d Songs sind mehrfach hier</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="one">%d doppelten entfernen</item>
+        <item quantity="other">%d doppelte entfernen</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="one">Damit kommt %d Song aus dieser Playlist.</item>
+        <item quantity="other">Damit kommen %d Songs aus dieser Playlist.</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="one">Damit kommt %d Song auch auf YouTube Music aus der Playlist.</item>
+        <item quantity="other">Damit kommen %d Songs auch auf YouTube Music aus der Playlist.</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">Deine Datei</string>
+    <string name="choose_a_file_on_this_phone">Datei auf diesem Handy wählen</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">Eine Kachel</string>
+    <string name="pin_to_home_as_one_tile">Als eine Kachel an Start anheften</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">Song hochladen</string>
+    <string name="uploading_s">%1$s wird hochgeladen…</string>
+    <string name="uploaded_s_it_shows_up_here">%1$s ist hochgeladen. Es erscheint hier, sobald YouTube Music es bereit hat, meist in ein paar Minuten.</string>
+    <string name="couldn_t_upload_it_s">Hochladen nicht möglich: %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">YouTube Music nimmt MP3-, M4A-, WMA-, FLAC- und Ogg-Dateien bis 300 MB.</string>
+    <string name="delete_from_your_uploads">Aus deinen Uploads löschen</string>
+    <string name="delete_s_from_youtube_music">„%1$s“ aus YouTube Music löschen?</string>
+    <string name="it_goes_from_your_uploads_for_good">Es verschwindet auf allen Geräten aus deinen Uploads, für immer. Das lässt sich nicht rückgängig machen.</string>
+    <string name="deleted_from_your_uploads">Aus deinen Uploads gelöscht</string>
+    <string name="couldn_t_delete_it_s">Löschen nicht möglich: %1$s</string>
+    <string name="uploads_couldn_t_find_it">YouTube Music führt es nicht mehr</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">Intelligente Playlists</string>
+    <string name="tour_183_smart_body">Playlists, die sich nach deinen Regeln selbst füllen und mit deiner Mediathek mitgehen.</string>
+    <string name="tour_183_smart_point_1">Regeln nach dem, was du likest, hörst, herunterlädst oder taggst</string>
+    <string name="tour_183_smart_point_2">Tempo, Tonart und Energie, gemessen auf deinem Handy</string>
+    <string name="tour_183_smart_point_3">Jederzeit als normale Playlist kopieren</string>
+    <string name="tour_183_tags_title">Tags</string>
+    <string name="tour_183_tags_body">Deine eigenen Etiketten für Songs, aus dem Menü jedes Songs.</string>
+    <string name="tour_183_tags_point_1">Jeder Tag hat eine eigene Seite in der Mediathek</string>
+    <string name="tour_183_tags_point_2">Nutze sie in intelligenten Playlists</string>
+    <string name="tour_183_tags_point_3">Viele Songs auf einmal taggen</string>
+    <string name="tour_183_select_title">Mehrere auswählen</string>
+    <string name="tour_183_select_body">Halte einen Song in einer Liste, um weitere auszuwählen, und mach dann alles auf einmal.</string>
+    <string name="tour_183_select_point_1">Zu einer Playlist oder Warteschlange hinzufügen, taggen, liken oder herunterladen</string>
+    <string name="tour_183_select_point_2">Aus einer Playlist entfernen, mit Rückfrage</string>
+    <string name="tour_183_search_title">Deine Mediathek durchsuchen</string>
+    <string name="tour_183_search_body">Alles, was du hast, beim Tippen gefunden, mit Filtern.</string>
+    <string name="tour_183_search_point_1">Songs, Playlists, Tags, Künstler und Alben</string>
+    <string name="tour_183_search_point_2">Nur gelikte, heruntergeladene oder auf diesem Handy</string>
+    <string name="tour_183_search_point_3">Japanische, koreanische, russische und griechische Titel in lateinischen Buchstaben gefunden</string>
+    <string name="tour_183_also_file">Eine Datei auf deinem Handy als Version eines Songs</string>
+    <string name="tour_183_also_duplicates">Songs finden, die doppelt in einer Playlist sind</string>
+    <string name="tour_183_also_songs_from">Songs in der Mediathek aus Playlists deiner Wahl</string>
+    <string name="tour_183_also_lock">Wiederholen und Als Nächstes auf dem Sperrbildschirm</string>
+    <string name="tour_183_also_uploads">Hochladen und Löschen in Uploads</string>
     <string name="show_furigana">Furigana anzeigen</string>
     <string name="hiragana_readings_above_kanji">Hiragana-Lesungen über den Kanji in japanischen Liedtexten</string>
     <string name="furigana_uses_the_japanese_reading_data">Nutzt die japanischen Lesedaten (einmalig unten heruntergeladen).</string>

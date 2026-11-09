@@ -15,12 +15,14 @@ import okhttp3.OkHttpClient
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /**
  * Daily Mixes made from real YouTube Music answers (1.7.9): a listener of three rock bands and of three pop acts,
  * NSYNC most of all. Two days of each mix are made and printed; the new songs must come from many artists, most of
  * them new to the listener, and the two days must differ. Live.
  */
+@Category(LiveNetwork::class)
 class RecommendationsLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
     private var settings = AppSettings()

@@ -512,7 +512,23 @@ fun HomeScreen(bottomPadding: androidx.compose.ui.unit.Dp) {
                             }
                         }
                         // Your own (1.7.6): a pinned album, playlist, artist or mix, or a rule over your listening.
-                        else -> if (OwnSections.isOwn(cfg.key)) {
+                        else -> if (cfg.tile && OwnSections.canTile(cfg.key)) {
+                            // A pin as one tile (1.8.3, D48): opens its page; Play loads and plays it.
+                            val scope = androidx.compose.runtime.rememberCoroutineScope()
+                            val context = androidx.compose.ui.platform.LocalContext.current
+                            PinnedTile(
+                                cfg.titled(), OwnSections.kindOf(cfg.key), cfg.art,
+                                onOpen = { OwnSections.pageOf(cfg.key)?.let { nav.go(it) } },
+                                onPlay = {
+                                    scope.launch {
+                                        val songs = OwnSections.songs(c, cfg.key).filter(offline)
+                                        if (songs.isEmpty()) android.widget.Toast.makeText(context, tr(R.string.couldn_t_load, cfg.titled()), android.widget.Toast.LENGTH_SHORT).show()
+                                        else c.player.playQueue(songs, 0, QueueSource(QueueKind.OTHER, cfg.titled()))
+                                    }
+                                },
+                                modifier = Modifier.testTag("pinTile:${cfg.key}"),
+                            )
+                        } else if (OwnSections.isOwn(cfg.key)) {
                             val songs by OwnSections.rememberSongs(cfg.key, refreshes)
                             val shownSongs = songs.filter(offline).take(if (cfg.style == SectionStyle.LIST) 20 else 30)
                             if (shownSongs.isNotEmpty()) SongSection(
