@@ -21,6 +21,7 @@ What changed in each release. Older releases are described on the [Releases page
 - **Speed dial: your plays first** (#372). Customize Home. Tiles that change as you listen. Off by default.
 - **New folder in Library.** Playlists → New folder makes a folder before anything's in it; until now one could only be made while moving a playlist.
 - **Search in Library** (#357). Playlists, Albums and Artists get a search at the top once there are 8 or more. Playlists finds the ones inside folders too, and folders by name.
+- **On this phone in any script** (#363). Each file's title, artists and album are kept in Latin letters as it's scanned too, so "tori no uta" or "torinouta" finds 鳥の歌, とりのうた and トリノウタ alike.
 - **A scrollbar you can hold, on Library's long lists and Search's results** (#376). It shows while the list moves, is wide enough for a finger, and only the bar itself takes touches, so everything else along the edge still works.
 - **Translations in Immersive mode** (#358). Your lyric translation shows under the lines, as on the lyrics page, with the switch in its menu too.
 

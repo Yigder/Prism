@@ -268,7 +268,15 @@ fun LocalMusicScreen(bottomPadding: Dp) {
     val found = remember(tracks, sort, query) {
         val words = query.trim().lowercase().split(Regex("\\s+")).filter { it.isNotEmpty() }
         if (words.isEmpty()) emptyList()
-        else sorted(tracks, sort).map { it.song }.filter { s -> "${s.title} ${s.artistText} ${s.album?.title.orEmpty()}".lowercase().let { hay -> words.all { it in hay } } }
+        else {
+            val joined = words.joinToString("")
+            sorted(tracks, sort).filter { t ->
+                val s = t.song
+                val hay = "${s.title} ${s.artistText} ${s.album?.title.orEmpty()} " +
+                    "${t.searchTags.joinToString(" ")} ${t.artistTags.joinToString(" ")} ${t.albumTags.joinToString(" ")}".lowercase()
+                words.all { it in hay } || joined in hay.replace(" ", "")
+            }.map { it.song }
+        }
     }
     val section = sections.getOrNull(pager.currentPage)
     fun playable(): Pair<List<Song>, String> = when {
