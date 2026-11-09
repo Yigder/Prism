@@ -19,6 +19,8 @@ import java.util.TreeSet
 class SmartCacheEvictor(
     private val maxBytes: () -> Long,
     private val favoured: (String) -> Boolean,
+    /** All of Smart Downloads' space; below 1 GB (256 and 512 MB, 1.8.3 D42) the floor shrinks with it. */
+    private val totalBytes: () -> Long = { Long.MAX_VALUE },
 ) : CacheEvictor {
     /** Each span's eviction rank, fixed when it's added (the set's order mustn't change under it). */
     private val rank = IdentityHashMap<CacheSpan, Long>()
@@ -57,7 +59,7 @@ class SmartCacheEvictor(
     fun trim(cache: Cache) = synchronized(cache) { evict(cache, 0) }
 
     private fun evict(cache: Cache, required: Long) {
-        val max = maxBytes().coerceAtLeast(MIN_BYTES)
+        val max = limit(maxBytes(), totalBytes())
         while (size + required > max && spans.isNotEmpty()) {
             val first = spans.first()
             cache.removeSpan(first)
@@ -71,5 +73,12 @@ class SmartCacheEvictor(
         const val MIN_BYTES = 256L * 1024 * 1024
         /** Liked songs are kept as if they'd been played this much more recently. */
         const val FAVOURED_BONUS_MS = 30L * 86_400_000
+
+        /**
+         * The cache's room: what the picks leave, never under [MIN_BYTES], or under the picks' unused share
+         * (a quarter) of a space smaller than 1 GB, so picks and cache together keep within a 256 or 512 MB choice.
+         */
+        fun limit(left: Long, total: Long): Long =
+            left.coerceAtLeast(minOf(MIN_BYTES, (total * (1 - SmartDownloadWorker.PICK_SHARE)).toLong()))
     }
 }

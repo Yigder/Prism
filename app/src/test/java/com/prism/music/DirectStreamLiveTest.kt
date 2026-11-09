@@ -15,11 +15,13 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /**
  * The direct stream lookup ([InnerTube.visionOsPlayer]): one request answers with plain stream URLs (no signature, no
  * "n"), and googlevideo serves them past the first megabyte through Prism's own stream path. Live against YouTube.
  */
+@Category(LiveNetwork::class)
 class DirectStreamLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
     private val innerTube = InnerTube(http, { AppSettings() })

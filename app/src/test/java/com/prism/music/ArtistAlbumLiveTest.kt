@@ -14,8 +14,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /** Album stars (Apple Music's "popular" marks) and artist-page data, live against YouTube Music. */
+@Category(LiveNetwork::class)
 class ArtistAlbumLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
     private var settings = AppSettings()

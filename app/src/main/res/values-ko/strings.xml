@@ -4810,4 +4810,154 @@
     <string name="speed_dial_your_plays_first_info">YouTube는 Prism에 웹사이트용 타일을 보내는데, 앱의 타일과 다르고 내가 듣는 곡을 항상 따르지는 않습니다. 켜면 지난 3개월 동안 이 휴대전화에서 가장 많이 들은 곡이 먼저 나오고 나머지는 YouTube 타일로 채워집니다.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube에서 더 이상 이 로그인을 받지 않습니다. 로그아웃한 후 다시 로그인하세요.</string>
     <string name="youtube_isnt_sending_256_kbps">지금은 YouTube가 이 계정에 256kbps를 보내지 않아 곡이 일반 음질로 재생됩니다</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">잠금 화면에서 허용</string>
+    <string name="lock_screen_maker_xiaomi_detail">Prism 권한을 엽니다: ‘잠금 화면에 표시’와 ‘백그라운드에서 실행 중 새 창 열기’를 켜세요</string>
+    <string name="lock_screen_maker_vivo_detail">Prism 권한을 엽니다: ‘잠금 화면에 표시’와 ‘백그라운드 팝업’을 켜세요</string>
+    <string name="lock_screen_maker_info">휴대전화 제조사가 Android 권한에 이 권한들을 더해 두었고, Android는 이것들이 켜져 있는지 Prism에 알려 줄 수 없어요. 꺼져 있으면 잠금 화면에 플레이어가 뜨지 않을 수 있어요.</string>
+    <string name="lock_screen_refused">지난번에 휴대전화가 플레이어를 띄우지 못하게 했어요. 위의 권한을 확인하세요.</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">좋아요</string>
+    <string name="unlike">좋아요 취소</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="other">이 휴대전화에서 다운로드 %d개를 삭제할까요?</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="other">YouTube Music의 ‘%2$s’에서 노래 %1$d곡을 삭제할까요?</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">태그</string>
+    <string name="add_a_tag">태그 추가</string>
+    <string name="new_tag">새 태그</string>
+    <string name="tags_are_your_own_labels">‘운동’이나 ‘비 오는 날’처럼 곡에 붙이는 나만의 라벨이에요. 보관함 → 태그에서 볼 수 있어요.</string>
+    <string name="your_tag">이 휴대전화의 내 태그</string>
+    <string name="remove_this_tag">이 태그 빼기</string>
+    <string name="rename_tag">태그 이름 바꾸기</string>
+    <string name="delete_tag">태그 삭제</string>
+    <string name="delete_the_tag_its_songs_stay">‘%s’ 태그를 삭제할까요? 곡은 그대로 남아요.</string>
+    <string name="tag_songs_from_any_song_s">곡 메뉴(⋯ 또는 길게 누르기) → 태그 추가로 곡에 태그를 붙이세요.</string>
+    <string name="tag_n_songs">태그 · %s</string>
+    <plurals name="n_tags">
+        <item quantity="other">태그 %d개</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">스마트 재생목록</string>
+    <string name="smart_playlist_n">스마트 재생목록 · %s</string>
+    <string name="smart_playlist_updates_itself">스마트 재생목록 · 알아서 업데이트돼요</string>
+    <string name="new_smart_playlist">새 스마트 재생목록</string>
+    <string name="edit_rules">규칙 편집</string>
+    <string name="save_a_copy_as_a_playlist">사본을 재생목록으로 저장</string>
+    <string name="saved_as_a_playlist">‘%s’을(를) 재생목록으로 저장했어요</string>
+    <string name="no_song_meets_these_rules">아직 이 규칙에 맞는 곡이 없어요. ⋯ 메뉴 → 규칙 편집에서 바꾸세요.</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="other">%d곡이 아직 측정되지 않았어요</item>
+    </plurals>
+    <string name="measuring_n_of_n">%2$d곡 중 %1$d곡 측정 중…</string>
+    <string name="measure_now">지금 측정</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">이 휴대전화에 있는 곡을 측정하고 있어요. Wi-Fi에서는 나머지 곡도 측정해요.</string>
+    <string name="smart_fast_and_liked">빠르고 좋아한 곡</string>
+    <string name="smart_not_played_in_a_while">한동안 안 들은 곡</string>
+    <string name="smart_goes_with_what_s_playing">지금 곡과 어울리는 곡</string>
+    <string name="the_song_playing_isn_t_measured_yet">재생 중인 곡이 아직 측정되지 않았어요.</string>
+    <string name="match_all_rules">모든 규칙에 맞음</string>
+    <string name="match_any_rule">하나라도 맞음</string>
+    <string name="add_a_rule">규칙 추가</string>
+    <string name="add_a_rule_to_begin">규칙을 추가해 시작하세요.</string>
+    <string name="finds_n">%s 찾음</string>
+    <string name="up_to">최대</string>
+    <string name="sort_most_played">많이 들은 순</string>
+    <string name="sort_not_played_lately">최근에 안 들은 순</string>
+    <string name="sort_random">무작위</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">어울리는 키</string>
+    <string name="rule_energy">에너지</string>
+    <string name="rule_loudness">음량(LUFS)</string>
+    <string name="rule_on_phone">이 휴대전화의 파일</string>
+    <string name="rule_tag">태그</string>
+    <string name="rule_times_played">재생 횟수</string>
+    <string name="rule_last_played">마지막 재생</string>
+    <string name="rule_added">보관함에 추가</string>
+    <string name="rule_never_played">들은 적 없음</string>
+    <string name="rule_is">예</string>
+    <string name="rule_isn_t">아니요</string>
+    <string name="rule_from">부터</string>
+    <string name="rule_to">까지</string>
+    <string name="rule_at_least">최소</string>
+    <string name="rule_at_most">최대</string>
+    <string name="rule_within">최근</string>
+    <string name="rule_not_within">최근 … 아님</string>
+    <string name="rule_days">일</string>
+    <string name="genre_example">팝, 힙합, 록…</string>
+    <string name="your_listening">내 감상</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">곡 가져올 곳</string>
+    <string name="your_likes_stay_as_they_are">이 탭에 보이는 것만 바뀌어요. 좋아요는 그대로예요.</string>
+    <string name="search_these_songs">이 곡들에서 검색</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">보관함 검색</string>
+    <string name="nothing_in_your_library_matches">보관함에 일치하는 항목이 없어요</string>
+    <string name="try_fewer_words_or_another_filter">단어를 줄이거나 다른 필터를 써 보세요.</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">중복 찾기</string>
+    <string name="no_song_is_here_twice">두 번 들어 있는 곡이 없어요</string>
+    <string name="extra_copy">중복</string>
+    <string name="keeping_s">‘%s’은(는) 남겨요</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="other">%d곡이 두 번 이상 들어 있어요</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="other">중복 %d개 삭제</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="other">이 재생목록에서 %d곡을 뺍니다.</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="other">YouTube Music의 재생목록에서도 %d곡을 뺍니다.</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">내 파일</string>
+    <string name="choose_a_file_on_this_phone">이 휴대전화의 파일 선택</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">타일 하나</string>
+    <string name="pin_to_home_as_one_tile">홈에 타일 하나로 고정</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">노래 업로드</string>
+    <string name="uploading_s">%1$s 업로드 중…</string>
+    <string name="uploaded_s_it_shows_up_here">%1$s 업로드 완료. YouTube Music에서 준비되면 여기에 표시됩니다. 보통 몇 분 걸립니다.</string>
+    <string name="couldn_t_upload_it_s">업로드하지 못했습니다: %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">YouTube Music은 300MB 이하의 MP3, M4A, WMA, FLAC, Ogg 파일을 받습니다.</string>
+    <string name="delete_from_your_uploads">업로드에서 삭제</string>
+    <string name="delete_s_from_youtube_music">YouTube Music에서 \'%1$s\'을(를) 삭제할까요?</string>
+    <string name="it_goes_from_your_uploads_for_good">모든 기기의 업로드에서 영구히 삭제됩니다. 되돌릴 수 없습니다.</string>
+    <string name="deleted_from_your_uploads">업로드에서 삭제했습니다</string>
+    <string name="couldn_t_delete_it_s">삭제하지 못했습니다: %1$s</string>
+    <string name="uploads_couldn_t_find_it">YouTube Music에 더 이상 표시되지 않습니다</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">스마트 재생목록</string>
+    <string name="tour_183_smart_body">내가 정한 규칙대로 알아서 채워지고 보관함에 맞춰 바뀌는 재생목록.</string>
+    <string name="tour_183_smart_point_1">좋아요, 재생, 저장, 태그한 곡을 기준으로 규칙 설정</string>
+    <string name="tour_183_smart_point_2">템포, 키, 에너지를 휴대전화에서 측정</string>
+    <string name="tour_183_smart_point_3">언제든 일반 재생목록으로 사본 저장</string>
+    <string name="tour_183_tags_title">태그</string>
+    <string name="tour_183_tags_body">어느 곡의 메뉴에서나 붙이는 나만의 라벨.</string>
+    <string name="tour_183_tags_point_1">태그마다 보관함에 페이지가 있습니다</string>
+    <string name="tour_183_tags_point_2">스마트 재생목록에서 사용</string>
+    <string name="tour_183_tags_point_3">여러 곡에 한 번에 태그</string>
+    <string name="tour_183_select_title">여러 개 선택</string>
+    <string name="tour_183_select_body">목록에서 곡을 길게 눌러 더 고른 뒤 한 번에 처리하세요.</string>
+    <string name="tour_183_select_point_1">재생목록이나 대기열에 추가, 태그, 좋아요, 저장</string>
+    <string name="tour_183_select_point_2">확인 후 재생목록에서 삭제</string>
+    <string name="tour_183_search_title">보관함 검색</string>
+    <string name="tour_183_search_body">입력하는 대로 찾아 주는 필터 있는 검색.</string>
+    <string name="tour_183_search_point_1">곡, 재생목록, 태그, 아티스트, 앨범</string>
+    <string name="tour_183_search_point_2">좋아요한 곡, 저장한 곡, 이 휴대전화의 곡만</string>
+    <string name="tour_183_search_point_3">일본어, 한국어, 러시아어, 그리스어 제목을 로마자로도 검색</string>
+    <string name="tour_183_also_file">휴대전화의 파일을 곡의 다른 버전으로</string>
+    <string name="tour_183_also_duplicates">재생목록에 두 번 들어간 곡 찾기</string>
+    <string name="tour_183_also_songs_from">선택한 재생목록으로 보관함 노래 보기</string>
+    <string name="tour_183_also_lock">잠금 화면의 반복 및 다음 곡</string>
+    <string name="tour_183_also_uploads">업로드에서 업로드 및 삭제</string>
+    <string name="show_furigana">후리가나 표시</string>
+    <string name="hiragana_readings_above_kanji">일본어 가사에서 한자 위에 히라가나 읽기 표시</string>
+    <string name="furigana_uses_the_japanese_reading_data">일본어 읽기 데이터를 사용합니다(아래에서 한 번 다운로드).</string>
 </resources>

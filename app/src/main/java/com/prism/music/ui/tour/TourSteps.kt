@@ -57,6 +57,8 @@ private const val V1_8_0 = 53
 private const val V1_8_1 = 55
 /** Prism 1.8.2 (build 57): the lock screen player. */
 private const val V1_8_2 = 57
+/** Prism 1.8.3 (build 59): your library, smarter. */
+private const val V1_8_3 = 59
 
     /** Every step, in the order they're shown. */
     val steps: List<TourStep> = listOf(
@@ -545,6 +547,39 @@ private const val V1_8_2 = 57
                 tr(R.string.tour_182_also_pages),
                 tr(R.string.tour_182_also_files),
                 tr(R.string.tour_182_also_crossfade),
+            ),
+        ),
+        TourStep(
+            V1_8_3, PrismIcons.SmartShuffle, tr(R.string.tour_183_smart_title),
+            tr(R.string.tour_183_smart_body),
+            listOf(tr(R.string.tour_183_smart_point_1), tr(R.string.tour_183_smart_point_2), tr(R.string.tour_183_smart_point_3)),
+            showMe = Routes.LIBRARY,
+        ),
+        TourStep(
+            V1_8_3, PrismIcons.Tag, tr(R.string.tour_183_tags_title),
+            tr(R.string.tour_183_tags_body),
+            listOf(tr(R.string.tour_183_tags_point_1), tr(R.string.tour_183_tags_point_2), tr(R.string.tour_183_tags_point_3)),
+        ),
+        TourStep(
+            V1_8_3, PrismIcons.CheckCircle, tr(R.string.tour_183_select_title),
+            tr(R.string.tour_183_select_body),
+            listOf(tr(R.string.tour_183_select_point_1), tr(R.string.tour_183_select_point_2)),
+        ),
+        TourStep(
+            V1_8_3, PrismIcons.Search, tr(R.string.tour_183_search_title),
+            tr(R.string.tour_183_search_body),
+            listOf(tr(R.string.tour_183_search_point_1), tr(R.string.tour_183_search_point_2), tr(R.string.tour_183_search_point_3)),
+            showMe = Routes.librarySearch(),
+        ),
+        TourStep(
+            V1_8_3, PrismIcons.QueueMusic, tr(R.string.also_new),
+            tr(R.string.from_your_requests),
+            listOf(
+                tr(R.string.tour_183_also_file),
+                tr(R.string.tour_183_also_duplicates),
+                tr(R.string.tour_183_also_songs_from),
+                tr(R.string.tour_183_also_lock),
+                tr(R.string.tour_183_also_uploads),
             ),
         ),
         TourStep(

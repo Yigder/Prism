@@ -8,8 +8,10 @@ import okhttp3.OkHttpClient
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /** 1.7.6 Search: typing suggestions come with artists, songs and albums (and their pictures). Live against YouTube Music. */
+@Category(LiveNetwork::class)
 class SearchSuggestionsLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
     private var settings = AppSettings()

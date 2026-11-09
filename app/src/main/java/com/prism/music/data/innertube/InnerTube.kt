@@ -96,6 +96,12 @@ class InnerTube(
         return parts[0].takeIf { parts.size > 1 && parts[1].isNotBlank() && it.isNotBlank() }
     }
 
+    /** The language and country pages are asked in ("en-US"): what's kept of a page is only reused for the same. */
+    val pageLanguage: String get() = "$hl-$gl"
+
+    /** Signed in with a brand channel in use (for the diagnostics). */
+    val brandChannel: Boolean get() = current.isLoggedIn && onBehalfOfUser() != null
+
     private fun cookieMap(): Map<String, String> = current.cookie.split(";")
         .mapNotNull { part ->
             val i = part.indexOf('=')
@@ -240,6 +246,47 @@ class InnerTube(
         runCatching {
             http.newCall(req).execute().use { resp -> if (resp.isSuccessful) json.parseToJsonElement(resp.body.string()).jsonObject else null }
         }.getOrNull()
+    }
+
+    /**
+     * Uploads a music file to the signed-in account (1.8.3, D49): the two requests ytmusicapi's upload_song makes. The
+     * first says the file's name and size and gets an address back; the second sends the file there. Throws when
+     * YouTube refuses either. Only ever on the listener's tap.
+     */
+    fun uploadSong(fileName: String, size: Long, body: okhttp3.RequestBody) {
+        val s = current
+        if (!s.isLoggedIn) throw InnerTubeException("Not signed in")
+        val form = "application/x-www-form-urlencoded;charset=utf-8"
+        fun Request.Builder.asAccount(): Request.Builder {
+            header("User-Agent", USER_AGENT)
+            header("Origin", ORIGIN)
+            header("Referer", "$ORIGIN/")
+            header("Cookie", s.cookie)
+            authorization()?.let { header("Authorization", it) }
+            header("X-Goog-AuthUser", s.authUser.toString())
+            return this
+        }
+        // A file of up to 300 MB on a slow uplink: minutes, not the API's seconds.
+        val client = http.newBuilder().writeTimeout(15, java.util.concurrent.TimeUnit.MINUTES).readTimeout(2, java.util.concurrent.TimeUnit.MINUTES).build()
+        val start = Request.Builder()
+            .url("https://upload.youtube.com/upload/usermusic/http?authuser=${s.authUser}")
+            .post("filename=$fileName".toRequestBody(form.toMediaType()))
+            .asAccount()
+            .header("X-Goog-Upload-Command", "start")
+            .header("X-Goog-Upload-Header-Content-Length", size.toString())
+            .header("X-Goog-Upload-Protocol", "resumable")
+            .build()
+        val address = client.newCall(start).execute().use { r ->
+            if (!r.isSuccessful) throw InnerTubeException("YouTube Music didn't take the upload (HTTP ${r.code})", r.code)
+            r.header("X-Goog-Upload-URL")
+        } ?: throw InnerTubeException("YouTube Music gave no address to upload to")
+        val send = Request.Builder().url(address).post(body).asAccount()
+            .header("X-Goog-Upload-Command", "upload, finalize")
+            .header("X-Goog-Upload-Offset", "0")
+            .build()
+        client.newCall(send).execute().use { r ->
+            if (r.code != 200) throw InnerTubeException("YouTube Music didn't take the file (HTTP ${r.code})", r.code)
+        }
     }
 
     private fun postOnce(endpoint: String, body: JsonObject, query: String, anonymous: Boolean = false): JsonObject {
@@ -523,10 +570,15 @@ class InnerTube(
         return visionOsPost("player", body, visionVisitor())
     }
 
-    /** Fire-and-forget GET used for playback-history pings. */
+    /**
+     * Fire-and-forget GET used for playback-history pings. #377 (1.8.3): with a brand channel in use the ping also
+     * names the channel (`X-Goog-PageId`, as YouTube's own pages do), else the cookies alone credit the Google
+     * account's own channel and the play never shows in the brand channel's history.
+     */
     suspend fun ping(url: String): Int? = withContext(Dispatchers.IO) {
         runCatching {
-            val req = Request.Builder().url(url).get().applyHeaders().build()
+            val req = Request.Builder().url(url).get().applyHeaders()
+                .apply { if (current.isLoggedIn) onBehalfOfUser()?.let { header("X-Goog-PageId", it) } }.build()
             http.newCall(req).execute().use { it.code }
         }.getOrNull()
     }

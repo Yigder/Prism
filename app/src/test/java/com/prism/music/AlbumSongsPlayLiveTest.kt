@@ -10,12 +10,14 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /**
  * Reddit R1 (2026-10-26): signed out, YouTube's album pages list tracks as their music videos where they have one
  * (MUSIC_VIDEO_TYPE_OMV), so "Death & Romance" from "Imaginal Disk" played its 8-minute video with "Fear, Sex" in it,
  * and "BUZZ" its video. The album's own playlist (OLAK…) still lists the songs, in the same order. Live.
  */
+@Category(LiveNetwork::class)
 class AlbumSongsPlayLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
     private var settings = AppSettings()

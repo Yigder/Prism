@@ -210,10 +210,11 @@ class FakeCastDevice(
         p.inputStream.readBytes()
         check(p.waitFor() == 0) { "keytool failed" }
         val store = java.security.KeyStore.getInstance("PKCS12").apply { file.inputStream().use { load(it, pass) } }
-        // The JDK's own TLS for the device's end: Robolectric tests that ran earlier in this JVM make Conscrypt (the
-        // phone's TLS) the default, which the app's end then uses, as on a phone.
+        // The device's end uses the same TLS as the app's end (the JVM's default now). Robolectric tests that ran earlier
+        // in this JVM make Conscrypt (the phone's TLS) the default, and the app's Conscrypt against the JDK's own TLS
+        // here never finished its handshake (2026-11-07: overTlsLikeARealDevice failed in every full run, passed alone).
         val kmf = javax.net.ssl.KeyManagerFactory.getInstance("SunX509", "SunJSSE").apply { init(store, pass) }
-        val ctx = javax.net.ssl.SSLContext.getInstance("TLS", "SunJSSE").apply { init(kmf.keyManagers, null, null) }
+        val ctx = javax.net.ssl.SSLContext.getInstance("TLS").apply { init(kmf.keyManagers, null, null) }
         return ctx.serverSocketFactory.createServerSocket(port, 4, InetAddress.getByName(bind))
     }
 

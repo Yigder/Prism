@@ -334,6 +334,10 @@ data class BehaviorPrefs(
     val lockScreenVolume: Boolean = true,
     val lockScreenLike: Boolean = true,
     val lockScreenOutput: Boolean = true,
+    /** 1.8.3 (D47, Reddit): a repeat button beside the controls. Off by default. */
+    val lockScreenRepeat: Boolean = false,
+    /** 1.8.3 (D47): the next three songs, to read only (the lock screen only controls what's playing). Off by default. */
+    val lockScreenUpNext: Boolean = false,
     /** How long it stays once the music is paused, before Android's own lock screen takes over. */
     val lockScreenPaused: LockPaused = LockPaused.TEN_MINUTES,
     /** No title, artist, cover or lyrics while locked: someone picking the phone up only sees that music is playing. */
@@ -567,7 +571,10 @@ enum class MenuGroup(val label: String) { SONG(tr(R.string.this_song)), LYRICS(t
  * a [foldable] one of them can still go under "More" while the player has another way to it ([menuFolds]).
  */
 enum class MenuAction(val group: MenuGroup, val fromPlayer: Boolean = false, val foldable: Boolean = !fromPlayer) {
-    ADD_TO_PLAYLIST(MenuGroup.SONG), RADIO(MenuGroup.SONG), DOWNLOAD(MenuGroup.SONG), ALBUM(MenuGroup.SONG), ARTIST(MenuGroup.SONG),
+    ADD_TO_PLAYLIST(MenuGroup.SONG),
+    /** 1.8.3: the listener's own tags on the song. */
+    TAGS(MenuGroup.SONG),
+    RADIO(MenuGroup.SONG), DOWNLOAD(MenuGroup.SONG), ALBUM(MenuGroup.SONG), ARTIST(MenuGroup.SONG),
     CREDITS(MenuGroup.SONG),
     /** #211 (1.8.2): its plays and dates. */
     DETAILS(MenuGroup.SONG),
@@ -1055,6 +1062,8 @@ data class HomeSectionConfig(
     val name: String? = null,
     /** A pinned album's, playlist's or artist's picture (1.7.6), for Customize Home's list. */
     val art: String? = null,
+    /** A pinned album or playlist as one tile (cover, name, play) in place of its songs (1.8.3, D48). Off by default. */
+    val tile: Boolean = false,
 ) {
     /** What Home calls it: the listener's name for it, else [default] (or its own title). */
     fun titled(default: String = title) = name ?: default
@@ -1352,6 +1361,8 @@ data class AppSettings(
     val romanize: RomanizeMode = RomanizeMode.UNDER,
     /** Also scripts of the phone's own language (off: a Korean phone isn't shown Korean in Latin letters). */
     val romanizeAll: Boolean = false,
+    /** Hiragana (furigana) above the kanji in Japanese lyrics. */
+    val lyricsFurigana: Boolean = true,
     /** Sing gets songs ready (downloads them whole) on mobile data too. */
     val singOnCellular: Boolean = false,
     /** Settings → Lyrics → Sing: the playing and next songs are got ready even while Sing is off, so it starts at once. */
@@ -1826,6 +1837,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val lyricsFileTranslation = booleanPreferencesKey("lyrics_file_translation")
         val romanize = stringPreferencesKey("romanize_lyrics")
         val romanizeAll = booleanPreferencesKey("romanize_all")
+        val lyricsFurigana = booleanPreferencesKey("lyrics_furigana")
         val singOnCellular = booleanPreferencesKey("sing_cellular")
         val singAlwaysReady = booleanPreferencesKey("sing_always_ready")
         val singCacheMb = intPreferencesKey("sing_cache_mb")
@@ -2132,6 +2144,8 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
         val lockScreenVolume = booleanPreferencesKey("lock_screen_volume")
         val lockScreenLike = booleanPreferencesKey("lock_screen_like")
         val lockScreenOutput = booleanPreferencesKey("lock_screen_output")
+        val lockScreenRepeat = booleanPreferencesKey("lock_screen_repeat")
+        val lockScreenUpNext = booleanPreferencesKey("lock_screen_up_next")
         val lockScreenPaused = stringPreferencesKey("lock_screen_paused")
         val lockScreenHideSong = booleanPreferencesKey("lock_screen_hide_song")
         // 1.8.0 player editor ([PlayerParts]): the hidden parts are part of a Look, the menu's choices aren't.
@@ -2226,7 +2240,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 "onboarded", "cookie", "visitor_data", "data_sync_id", "auth_user", "discord_presence", "account_name", "account_email",
                 "account_avatar", "haptics", "immersive_player", "preload", "preload_cellular", "canvas_enabled", "canvas_on_cellular",
                 "soft_spatial", "soft_spatial_amount", "lyrics_on_player", "lyrics_order", "lyrics_off", "prefer_synced", "skip_censored",
-                "lyrics_translate", "lyrics_translate_to", "romanize_lyrics", "romanize_all", "sing_cellular", "sing_always_ready",
+                "lyrics_translate", "lyrics_translate_to", "romanize_lyrics", "romanize_all", "lyrics_furigana", "sing_cellular", "sing_always_ready",
                 "sing_cache_mb", "dj_flow", "release_notifications", "rewind_notification", "web_remote", "handoff_available",
                 "car_lyrics", "car_lyrics_style", "car_lyrics_on_phone", "car_lyrics_keep_title", "auto_grid", "nerd_stats",
                 "show_quality", "square_video_covers", "lyrics_on_mobile_data", "best_part_button", "show_video_switch",
@@ -2245,6 +2259,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 "mini_swipe_left", "mini_swipe_right", "mini_swipe_down", "mini_swipe_up",
                 // 1.7.8 ([BehaviorPrefs]).
                 "lock_screen_player", "lock_screen_layout", "lock_screen_volume", "lock_screen_like", "lock_screen_output", "lock_screen_paused", "lock_screen_hide_song",
+                "lock_screen_repeat", "lock_screen_up_next",
                 "lock_portrait", "pause_on_mute", "pip_mode", "panel_swipes", "recent_shows", "queue_locked", "scroll_shows_controls", "playlist_genres", "artist_bio", "artist_you", "artist_essentials", "screen_fades", "player_gestures_everywhere", "page_slide", "tab_bar_position",
                 // 1.8.0 ([TvPrefs]): how Prism behaves on a TV and in desk mode.
                 "tv_ambient_minutes", "desk_mode", "tv_lyrics_scale", "tv_welcomed", "tv_home_layout", "tv_backdrop_dim",
@@ -2387,6 +2402,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
             lyricsFileTranslation = p[K.lyricsFileTranslation] ?: d.lyricsFileTranslation,
             romanize = p.enum(K.romanize, d.romanize),
             romanizeAll = p[K.romanizeAll] ?: d.romanizeAll,
+            lyricsFurigana = p[K.lyricsFurigana] ?: d.lyricsFurigana,
             singOnCellular = p[K.singOnCellular] ?: d.singOnCellular,
             singAlwaysReady = p[K.singAlwaysReady] ?: d.singAlwaysReady,
             singCacheMb = p[K.singCacheMb] ?: d.singCacheMb,
@@ -2578,6 +2594,8 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
                 lockScreenVolume = p[K.lockScreenVolume] ?: d.behavior.lockScreenVolume,
                 lockScreenLike = p[K.lockScreenLike] ?: d.behavior.lockScreenLike,
                 lockScreenOutput = p[K.lockScreenOutput] ?: d.behavior.lockScreenOutput,
+                lockScreenRepeat = p[K.lockScreenRepeat] ?: d.behavior.lockScreenRepeat,
+                lockScreenUpNext = p[K.lockScreenUpNext] ?: d.behavior.lockScreenUpNext,
                 lockScreenPaused = p.enum(K.lockScreenPaused, d.behavior.lockScreenPaused),
                 lockScreenHideSong = p[K.lockScreenHideSong] ?: d.behavior.lockScreenHideSong,
                 quickPicksSource = p.enum(K.quickPicksSource, d.behavior.quickPicksSource),
@@ -2970,6 +2988,7 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     fun setLyricsFileTranslation(v: Boolean) = edit { it[K.lyricsFileTranslation] = v }
     fun setRomanize(v: RomanizeMode) = edit { it[K.romanize] = v.name }
     fun setRomanizeAll(v: Boolean) = edit { it[K.romanizeAll] = v }
+    fun setLyricsFurigana(v: Boolean) = edit { it[K.lyricsFurigana] = v }
     fun setSingOnCellular(v: Boolean) = edit { it[K.singOnCellular] = v }
     fun setSingAlwaysReady(v: Boolean) = edit { it[K.singAlwaysReady] = v }
     fun setSingCacheMb(v: Int) = edit { it[K.singCacheMb] = v }
@@ -3256,6 +3275,8 @@ class SettingsRepository(private val context: Context, scope: CoroutineScope) {
     fun setLockScreenVolume(v: Boolean) = edit { it[K.lockScreenVolume] = v }
     fun setLockScreenLike(v: Boolean) = edit { it[K.lockScreenLike] = v }
     fun setLockScreenOutput(v: Boolean) = edit { it[K.lockScreenOutput] = v }
+    fun setLockScreenRepeat(v: Boolean) = edit { it[K.lockScreenRepeat] = v }
+    fun setLockScreenUpNext(v: Boolean) = edit { it[K.lockScreenUpNext] = v }
     fun setLockScreenPaused(v: LockPaused) = edit { it[K.lockScreenPaused] = v.name }
     fun setLockScreenHideSong(v: Boolean) = edit { it[K.lockScreenHideSong] = v }
 

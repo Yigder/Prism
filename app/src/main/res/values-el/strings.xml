@@ -4874,4 +4874,162 @@
     <string name="speed_dial_your_plays_first_info">Το YouTube στέλνει στο Prism τα πλαίσια του ιστότοπού του, που δεν είναι ίδια με της εφαρμογής του και δεν ακολουθούν πάντα ό,τι ακούς. Όταν είναι ενεργό, πρώτα εμφανίζεται ό,τι άκουσες περισσότερο σε αυτό το τηλέφωνο τους τελευταίους τρεις μήνες και ακολουθούν του YouTube.</string>
     <string name="youtube_no_longer_takes_this_sign_in">Το YouTube δεν δέχεται πια αυτή τη σύνδεση. Αποσυνδέσου και συνδέσου ξανά.</string>
     <string name="youtube_isnt_sending_256_kbps">Το YouTube δεν στέλνει τώρα 256 kbps σε αυτόν τον λογαριασμό, οπότε τα τραγούδια παίζουν στη συνηθισμένη ποιότητα</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">Να επιτρέπεται στην οθόνη κλειδώματος</string>
+    <string name="lock_screen_maker_xiaomi_detail">Ανοίγει τα δικαιώματα του Prism: ενεργοποίησε «Εμφάνιση στην οθόνη κλειδώματος» και «Άνοιγμα νέων παραθύρων κατά την εκτέλεση στο παρασκήνιο»</string>
+    <string name="lock_screen_maker_vivo_detail">Ανοίγει τα δικαιώματα του Prism: ενεργοποίησε «Εμφάνιση στην οθόνη κλειδώματος» και «Αναδυόμενα στο παρασκήνιο»</string>
+    <string name="lock_screen_maker_info">Ο κατασκευαστής του τηλεφώνου σου προσθέτει αυτά τα δικαιώματα σε εκείνα του Android, και το Android δεν μπορεί να πει στο Prism αν είναι ενεργά. Χωρίς αυτά, η αναπαραγωγή ίσως δεν εμφανιστεί στην οθόνη κλειδώματος.</string>
+    <string name="lock_screen_refused">Την τελευταία φορά το τηλέφωνό σου δεν άφησε να εμφανιστεί η αναπαραγωγή. Έλεγξε τα δικαιώματα παραπάνω.</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">Μου αρέσει</string>
+    <string name="unlike">Δεν μου αρέσει πια</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="one">Αφαίρεση %d λήψης από αυτό το τηλέφωνο;</item>
+        <item quantity="other">Αφαίρεση %d λήψεων από αυτό το τηλέφωνο;</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="one">Αφαίρεση %1$d τραγουδιού από το «%2$s» στο YouTube Music;</item>
+        <item quantity="other">Αφαίρεση %1$d τραγουδιών από το «%2$s» στο YouTube Music;</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">Ετικέτες</string>
+    <string name="add_a_tag">Προσθήκη ετικέτας</string>
+    <string name="new_tag">Νέα ετικέτα</string>
+    <string name="tags_are_your_own_labels">Οι δικές σου ετικέτες για τραγούδια, όπως «γυμναστήριο» ή «βροχερή μέρα». Θα τις βρεις στη Βιβλιοθήκη → Ετικέτες.</string>
+    <string name="your_tag">Η ετικέτα σου σε αυτό το τηλέφωνο</string>
+    <string name="remove_this_tag">Αφαίρεση αυτής της ετικέτας</string>
+    <string name="rename_tag">Μετονομασία ετικέτας</string>
+    <string name="delete_tag">Διαγραφή ετικέτας</string>
+    <string name="delete_the_tag_its_songs_stay">Διαγραφή της ετικέτας «%s»; Τα τραγούδια της μένουν εκεί που είναι.</string>
+    <string name="tag_songs_from_any_song_s">Βάλε ετικέτες από το μενού οποιουδήποτε τραγουδιού (⋯ ή παρατεταμένο πάτημα) → Προσθήκη ετικέτας.</string>
+    <string name="tag_n_songs">Ετικέτα · %s</string>
+    <plurals name="n_tags">
+        <item quantity="one">%d ετικέτα</item>
+        <item quantity="other">%d ετικέτες</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">Έξυπνη playlist</string>
+    <string name="smart_playlist_n">Έξυπνη playlist · %s</string>
+    <string name="smart_playlist_updates_itself">Έξυπνη playlist · ενημερώνεται μόνη της</string>
+    <string name="new_smart_playlist">Νέα έξυπνη playlist</string>
+    <string name="edit_rules">Επεξεργασία κανόνων</string>
+    <string name="save_a_copy_as_a_playlist">Αποθήκευση αντιγράφου ως playlist</string>
+    <string name="saved_as_a_playlist">Το «%s» αποθηκεύτηκε ως playlist</string>
+    <string name="no_song_meets_these_rules">Κανένα τραγούδι δεν ταιριάζει ακόμα σε αυτούς τους κανόνες. Άλλαξέ τους από το μενού ⋯ → Επεξεργασία κανόνων.</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="one">%d τραγούδι δεν έχει μετρηθεί ακόμα</item>
+        <item quantity="other">%d τραγούδια δεν έχουν μετρηθεί ακόμα</item>
+    </plurals>
+    <string name="measuring_n_of_n">Μέτρηση %1$d από %2$d…</string>
+    <string name="measure_now">Μέτρηση τώρα</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">Μετριούνται τα τραγούδια αυτού του τηλεφώνου. Με Wi-Fi και τα υπόλοιπα.</string>
+    <string name="smart_fast_and_liked">Γρήγορα και αγαπημένα</string>
+    <string name="smart_not_played_in_a_while">Καιρό δεν έπαιξαν</string>
+    <string name="smart_goes_with_what_s_playing">Ταιριάζει με αυτό που παίζει</string>
+    <string name="the_song_playing_isn_t_measured_yet">Το τραγούδι που παίζει δεν έχει μετρηθεί ακόμα.</string>
+    <string name="match_all_rules">Πληροί όλους τους κανόνες</string>
+    <string name="match_any_rule">Πληροί κάποιον κανόνα</string>
+    <string name="add_a_rule">Προσθήκη κανόνα</string>
+    <string name="add_a_rule_to_begin">Πρόσθεσε έναν κανόνα για να ξεκινήσεις.</string>
+    <string name="finds_n">Βρίσκει %s</string>
+    <string name="up_to">Έως</string>
+    <string name="sort_most_played">Τα πιο ακουσμένα</string>
+    <string name="sort_not_played_lately">Δεν έπαιξαν πρόσφατα</string>
+    <string name="sort_random">Τυχαία</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">Τονικότητα που ταιριάζει με</string>
+    <string name="rule_energy">Ενέργεια</string>
+    <string name="rule_loudness">Ένταση (LUFS)</string>
+    <string name="rule_on_phone">Αρχείο σε αυτό το τηλέφωνο</string>
+    <string name="rule_tag">Ετικέτα</string>
+    <string name="rule_times_played">Φορές που έπαιξε</string>
+    <string name="rule_last_played">Τελευταία φορά που έπαιξε</string>
+    <string name="rule_added">Προστέθηκε στη βιβλιοθήκη σου</string>
+    <string name="rule_never_played">Δεν έπαιξε ποτέ</string>
+    <string name="rule_is">Είναι</string>
+    <string name="rule_isn_t">Δεν είναι</string>
+    <string name="rule_from">Από</string>
+    <string name="rule_to">Έως</string>
+    <string name="rule_at_least">Τουλάχιστον</string>
+    <string name="rule_at_most">Το πολύ</string>
+    <string name="rule_within">Τις τελευταίες</string>
+    <string name="rule_not_within">Όχι τις τελευταίες</string>
+    <string name="rule_days">ημέρες</string>
+    <string name="genre_example">Pop, hip-hop, rock…</string>
+    <string name="your_listening">Τι ακούς</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">Τραγούδια από</string>
+    <string name="your_likes_stay_as_they_are">Αλλάζει μόνο ό,τι δείχνει αυτή η καρτέλα. Τα «μου αρέσει» σου μένουν ως έχουν.</string>
+    <string name="search_these_songs">Αναζήτηση σε αυτά τα τραγούδια</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">Αναζήτηση στη βιβλιοθήκη σου</string>
+    <string name="nothing_in_your_library_matches">Τίποτα στη βιβλιοθήκη σου δεν ταιριάζει</string>
+    <string name="try_fewer_words_or_another_filter">Δοκίμασε λιγότερες λέξεις ή άλλο φίλτρο.</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">Εύρεση διπλότυπων</string>
+    <string name="no_song_is_here_twice">Κανένα τραγούδι δεν είναι εδώ δύο φορές</string>
+    <string name="extra_copy">Επιπλέον αντίγραφο</string>
+    <string name="keeping_s">Μένει το «%s»</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="one">%d τραγούδι είναι εδώ πάνω από μία φορά</item>
+        <item quantity="other">%d τραγούδια είναι εδώ πάνω από μία φορά</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="one">Αφαίρεση %d επιπλέον αντιγράφου</item>
+        <item quantity="other">Αφαίρεση %d επιπλέον αντιγράφων</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="one">Αυτό βγάζει %d τραγούδι από αυτή την playlist.</item>
+        <item quantity="other">Αυτό βγάζει %d τραγούδια από αυτή την playlist.</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="one">Αυτό βγάζει %d τραγούδι από την playlist και στο YouTube Music.</item>
+        <item quantity="other">Αυτό βγάζει %d τραγούδια από την playlist και στο YouTube Music.</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">Το αρχείο σου</string>
+    <string name="choose_a_file_on_this_phone">Επίλεξε αρχείο από αυτό το τηλέφωνο</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">Ένα πλακίδιο</string>
+    <string name="pin_to_home_as_one_tile">Καρφίτσωμα στην Αρχική ως ένα πλακίδιο</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">Μεταφόρτωση τραγουδιού</string>
+    <string name="uploading_s">Μεταφόρτωση %1$s…</string>
+    <string name="uploaded_s_it_shows_up_here">Το %1$s μεταφορτώθηκε. Θα εμφανιστεί εδώ μόλις το ετοιμάσει το YouTube Music, συνήθως σε λίγα λεπτά.</string>
+    <string name="couldn_t_upload_it_s">Δεν ήταν δυνατή η μεταφόρτωση: %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">Το YouTube Music δέχεται αρχεία MP3, M4A, WMA, FLAC και Ogg έως 300 MB.</string>
+    <string name="delete_from_your_uploads">Διαγραφή από τις μεταφορτώσεις σου</string>
+    <string name="delete_s_from_youtube_music">Διαγραφή του «%1$s» από το YouTube Music;</string>
+    <string name="it_goes_from_your_uploads_for_good">Φεύγει από τις μεταφορτώσεις σου σε όλες τις συσκευές, οριστικά. Δεν αναιρείται.</string>
+    <string name="deleted_from_your_uploads">Διαγράφηκε από τις μεταφορτώσεις σου</string>
+    <string name="couldn_t_delete_it_s">Δεν ήταν δυνατή η διαγραφή: %1$s</string>
+    <string name="uploads_couldn_t_find_it">Το YouTube Music δεν το εμφανίζει πια</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">Έξυπνες λίστες</string>
+    <string name="tour_183_smart_body">Λίστες που γεμίζουν μόνες τους με τους κανόνες σου και ακολουθούν τη βιβλιοθήκη σου.</string>
+    <string name="tour_183_smart_point_1">Κανόνες για ό,τι σου αρέσει, ακούς, κατεβάζεις ή βάζεις ετικέτα</string>
+    <string name="tour_183_smart_point_2">Ρυθμός, τονικότητα και ενέργεια, μετρημένα στο τηλέφωνο</string>
+    <string name="tour_183_smart_point_3">Αποθήκευσε αντίγραφο ως απλή λίστα όποτε θες</string>
+    <string name="tour_183_tags_title">Ετικέτες</string>
+    <string name="tour_183_tags_body">Οι δικές σου ετικέτες στα τραγούδια, από το μενού κάθε τραγουδιού.</string>
+    <string name="tour_183_tags_point_1">Κάθε ετικέτα έχει δική της σελίδα στη Βιβλιοθήκη</string>
+    <string name="tour_183_tags_point_2">Χρησιμοποίησέ τες σε έξυπνες λίστες</string>
+    <string name="tour_183_tags_point_3">Βάλε ετικέτα σε πολλά τραγούδια μαζί</string>
+    <string name="tour_183_select_title">Επιλογή πολλών</string>
+    <string name="tour_183_select_body">Κράτησε πατημένο ένα τραγούδι σε λίστα για να διαλέξεις κι άλλα και κάνε τα όλα μαζί.</string>
+    <string name="tour_183_select_point_1">Προσθήκη σε λίστα ή ουρά, ετικέτα, μου αρέσει ή λήψη</string>
+    <string name="tour_183_select_point_2">Αφαίρεση από λίστα, με επιβεβαίωση</string>
+    <string name="tour_183_search_title">Αναζήτηση στη βιβλιοθήκη σου</string>
+    <string name="tour_183_search_body">Ό,τι έχεις, καθώς πληκτρολογείς, με φίλτρα.</string>
+    <string name="tour_183_search_point_1">Τραγούδια, λίστες, ετικέτες, καλλιτέχνες και άλμπουμ</string>
+    <string name="tour_183_search_point_2">Μόνο αγαπημένα, ληφθέντα ή σε αυτό το τηλέφωνο</string>
+    <string name="tour_183_search_point_3">Ιαπωνικοί, κορεατικοί, ρωσικοί και ελληνικοί τίτλοι και με λατινικά γράμματα</string>
+    <string name="tour_183_also_file">Ένα αρχείο του τηλεφώνου ως εκδοχή τραγουδιού</string>
+    <string name="tour_183_also_duplicates">Βρες τραγούδια που υπάρχουν δύο φορές σε μια λίστα</string>
+    <string name="tour_183_also_songs_from">Τραγούδια της Βιβλιοθήκης από τις λίστες που διαλέγεις</string>
+    <string name="tour_183_also_lock">Επανάληψη και Επόμενα στην οθόνη κλειδώματος</string>
+    <string name="tour_183_also_uploads">Μεταφόρτωση και διαγραφή στις Μεταφορτώσεις</string>
+    <string name="show_furigana">Εμφάνιση φουριγκάνα</string>
+    <string name="hiragana_readings_above_kanji">Αναγνώσεις χιραγκάνα πάνω από τα κάντζι σε ιαπωνικούς στίχους</string>
+    <string name="furigana_uses_the_japanese_reading_data">Χρησιμοποιεί τα ιαπωνικά δεδομένα ανάγνωσης (λήψη μία φορά παρακάτω).</string>
 </resources>

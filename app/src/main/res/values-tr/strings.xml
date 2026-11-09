@@ -4874,4 +4874,162 @@
     <string name="speed_dial_your_plays_first_info">YouTube, Prism\'e web sitesinin kutularını gönderir; bunlar uygulamasındakiler değildir ve her zaman çaldıklarını takip etmez. Açıkken, son üç ayda bu telefonda en çok çaldıkların önce gelir, kalanını YouTube\'unkiler doldurur.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube artık bu oturum açmayı kabul etmiyor. Çıkış yapıp yeniden oturum açın.</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube şu anda bu hesaba 256 kbps göndermiyor, bu yüzden şarkılar normal kalitede çalıyor</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">Kilit ekranında izin ver</string>
+    <string name="lock_screen_maker_xiaomi_detail">Prism\'in izinlerini açar: “Kilit ekranında göster” ve “Arka planda çalışırken yeni pencere aç” seçeneklerini açın</string>
+    <string name="lock_screen_maker_vivo_detail">Prism\'in izinlerini açar: “Kilit ekranında göster” ve “Arka plan açılır pencereleri” seçeneklerini açın</string>
+    <string name="lock_screen_maker_info">Telefonunuzun üreticisi bu izinleri Android\'in kendi izinlerine ekler ve Android, açık olup olmadıklarını Prism\'e söyleyemez. Bunlar olmadan oynatıcı kilit ekranında görünmeyebilir.</string>
+    <string name="lock_screen_refused">Geçen sefer telefonunuz oynatıcının görünmesine izin vermedi. Yukarıdaki izinleri kontrol edin.</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">Beğen</string>
+    <string name="unlike">Beğenmekten vazgeç</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="one">Bu telefondan %d indirme kaldırılsın mı?</item>
+        <item quantity="other">Bu telefondan %d indirme kaldırılsın mı?</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="one">YouTube Music\'teki “%2$s” listesinden %1$d şarkı kaldırılsın mı?</item>
+        <item quantity="other">YouTube Music\'teki “%2$s” listesinden %1$d şarkı kaldırılsın mı?</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">Etiketler</string>
+    <string name="add_a_tag">Etiket ekle</string>
+    <string name="new_tag">Yeni etiket</string>
+    <string name="tags_are_your_own_labels">Şarkılar için kendi etiketlerin, örneğin “spor” ya da “yağmurlu gün”. Kitaplık → Etiketler’de bulabilirsin.</string>
+    <string name="your_tag">Bu telefondaki etiketin</string>
+    <string name="remove_this_tag">Bu etiketi kaldır</string>
+    <string name="rename_tag">Etiketi yeniden adlandır</string>
+    <string name="delete_tag">Etiketi sil</string>
+    <string name="delete_the_tag_its_songs_stay">“%s” etiketi silinsin mi? Şarkıları oldukları yerde kalır.</string>
+    <string name="tag_songs_from_any_song_s">Herhangi bir şarkının menüsünden (⋯ ya da uzun basma) → Etiket ekle ile şarkılara etiket koy.</string>
+    <string name="tag_n_songs">Etiket · %s</string>
+    <plurals name="n_tags">
+        <item quantity="one">%d etiket</item>
+        <item quantity="other">%d etiket</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">Akıllı çalma listesi</string>
+    <string name="smart_playlist_n">Akıllı çalma listesi · %s</string>
+    <string name="smart_playlist_updates_itself">Akıllı çalma listesi · kendini güncel tutar</string>
+    <string name="new_smart_playlist">Yeni akıllı çalma listesi</string>
+    <string name="edit_rules">Kuralları düzenle</string>
+    <string name="save_a_copy_as_a_playlist">Kopyasını çalma listesi olarak kaydet</string>
+    <string name="saved_as_a_playlist">“%s” çalma listesi olarak kaydedildi</string>
+    <string name="no_song_meets_these_rules">Henüz bu kurallara uyan şarkı yok. ⋯ menüsü → Kuralları düzenle ile değiştir.</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="one">%d şarkı henüz ölçülmedi</item>
+        <item quantity="other">%d şarkı henüz ölçülmedi</item>
+    </plurals>
+    <string name="measuring_n_of_n">%1$d / %2$d ölçülüyor…</string>
+    <string name="measure_now">Şimdi ölç</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">Bu telefondaki şarkılar ölçülüyor. Wi-Fi’da diğerleri de.</string>
+    <string name="smart_fast_and_liked">Hızlı ve beğenilen</string>
+    <string name="smart_not_played_in_a_while">Uzun süredir çalınmayan</string>
+    <string name="smart_goes_with_what_s_playing">Çalana uyanlar</string>
+    <string name="the_song_playing_isn_t_measured_yet">Çalan şarkı henüz ölçülmedi.</string>
+    <string name="match_all_rules">Tüm kurallara uyar</string>
+    <string name="match_any_rule">Herhangi bir kurala uyar</string>
+    <string name="add_a_rule">Kural ekle</string>
+    <string name="add_a_rule_to_begin">Başlamak için bir kural ekle.</string>
+    <string name="finds_n">%s buluyor</string>
+    <string name="up_to">En fazla</string>
+    <string name="sort_most_played">En çok çalınan</string>
+    <string name="sort_not_played_lately">Son zamanlarda çalınmayan</string>
+    <string name="sort_random">Rastgele</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">Uyumlu ton</string>
+    <string name="rule_energy">Enerji</string>
+    <string name="rule_loudness">Ses yüksekliği (LUFS)</string>
+    <string name="rule_on_phone">Bu telefondaki bir dosya</string>
+    <string name="rule_tag">Etiket</string>
+    <string name="rule_times_played">Çalınma sayısı</string>
+    <string name="rule_last_played">Son çalınma</string>
+    <string name="rule_added">Kitaplığına eklenme</string>
+    <string name="rule_never_played">Hiç çalınmamış</string>
+    <string name="rule_is">Evet</string>
+    <string name="rule_isn_t">Hayır</string>
+    <string name="rule_from">En az</string>
+    <string name="rule_to">En çok</string>
+    <string name="rule_at_least">En az</string>
+    <string name="rule_at_most">En çok</string>
+    <string name="rule_within">Son</string>
+    <string name="rule_not_within">Son … içinde değil</string>
+    <string name="rule_days">gün</string>
+    <string name="genre_example">Pop, hip hop, rock…</string>
+    <string name="your_listening">Dinlediklerin</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">Şuradaki şarkılar</string>
+    <string name="your_likes_stay_as_they_are">Yalnızca bu sekmenin gösterdiği değişir. Beğenilerin olduğu gibi kalır.</string>
+    <string name="search_these_songs">Bu şarkılarda ara</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">Kitaplığında ara</string>
+    <string name="nothing_in_your_library_matches">Kitaplığında eşleşen bir şey yok</string>
+    <string name="try_fewer_words_or_another_filter">Daha az kelime ya da başka bir filtre dene.</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">Tekrarlananları bul</string>
+    <string name="no_song_is_here_twice">Burada iki kez olan şarkı yok</string>
+    <string name="extra_copy">Fazla kopya</string>
+    <string name="keeping_s">“%s” kalıyor</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="one">%d şarkı burada birden fazla kez var</item>
+        <item quantity="other">%d şarkı burada birden fazla kez var</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="one">%d fazla kopyayı kaldır</item>
+        <item quantity="other">%d fazla kopyayı kaldır</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="one">Bu, %d şarkıyı bu çalma listesinden çıkarır.</item>
+        <item quantity="other">Bu, %d şarkıyı bu çalma listesinden çıkarır.</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="one">Bu, %d şarkıyı YouTube Music’teki listeden de çıkarır.</item>
+        <item quantity="other">Bu, %d şarkıyı YouTube Music’teki listeden de çıkarır.</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">Senin dosyan</string>
+    <string name="choose_a_file_on_this_phone">Bu telefondan bir dosya seç</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">Tek kutu</string>
+    <string name="pin_to_home_as_one_tile">Ana sayfaya tek kutu olarak sabitle</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">Şarkı yükle</string>
+    <string name="uploading_s">%1$s yükleniyor…</string>
+    <string name="uploaded_s_it_shows_up_here">%1$s yüklendi. YouTube Music hazırladığında burada görünür, genellikle birkaç dakika içinde.</string>
+    <string name="couldn_t_upload_it_s">Yüklenemedi: %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">YouTube Music, 300 MB\'a kadar MP3, M4A, WMA, FLAC ve Ogg dosyalarını kabul eder.</string>
+    <string name="delete_from_your_uploads">Yüklemelerinden sil</string>
+    <string name="delete_s_from_youtube_music">\"%1$s\" YouTube Music\'ten silinsin mi?</string>
+    <string name="it_goes_from_your_uploads_for_good">Tüm cihazlarında yüklemelerinden kalıcı olarak kaldırılır. Geri alınamaz.</string>
+    <string name="deleted_from_your_uploads">Yüklemelerinden silindi</string>
+    <string name="couldn_t_delete_it_s">Silinemedi: %1$s</string>
+    <string name="uploads_couldn_t_find_it">YouTube Music artık bunu listelemiyor</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">Akıllı çalma listeleri</string>
+    <string name="tour_183_smart_body">Koyduğun kurallarla kendiliğinden dolan ve kitaplığınla birlikte güncellenen listeler.</string>
+    <string name="tour_183_smart_point_1">Beğendiğin, dinlediğin, indirdiğin ya da etiketlediğin şeylere göre kurallar</string>
+    <string name="tour_183_smart_point_2">Tempo, ton ve enerji, telefonunda ölçülür</string>
+    <string name="tour_183_smart_point_3">İstediğin an düz bir liste olarak kopyasını kaydet</string>
+    <string name="tour_183_tags_title">Etiketler</string>
+    <string name="tour_183_tags_body">Şarkılara kendi etiketlerin, her şarkının menüsünden.</string>
+    <string name="tour_183_tags_point_1">Her etiketin Kitaplık\'ta kendi sayfası var</string>
+    <string name="tour_183_tags_point_2">Akıllı listelerde kullan</string>
+    <string name="tour_183_tags_point_3">Birçok şarkıyı aynı anda etiketle</string>
+    <string name="tour_183_select_title">Birden çok seç</string>
+    <string name="tour_183_select_body">Listede bir şarkıya basılı tutup başkalarını da seç, sonra hepsine birden uygula.</string>
+    <string name="tour_183_select_point_1">Listeye ya da sıraya ekle, etiketle, beğen veya indir</string>
+    <string name="tour_183_select_point_2">Önce sorarak bir listeden çıkar</string>
+    <string name="tour_183_search_title">Kitaplığında ara</string>
+    <string name="tour_183_search_body">Sahip olduğun her şey, yazarken bulunur, filtrelerle.</string>
+    <string name="tour_183_search_point_1">Şarkılar, listeler, etiketler, sanatçılar ve albümler</string>
+    <string name="tour_183_search_point_2">Sadece beğenilen, indirilen veya bu telefondakiler</string>
+    <string name="tour_183_search_point_3">Japonca, Korece, Rusça ve Yunanca adlar Latin harfleriyle de bulunur</string>
+    <string name="tour_183_also_file">Telefonundaki bir dosya, şarkının bir sürümü olarak</string>
+    <string name="tour_183_also_duplicates">Bir listede iki kez geçen şarkıları bul</string>
+    <string name="tour_183_also_songs_from">Kitaplık\'taki şarkılar, seçtiğin listelerden</string>
+    <string name="tour_183_also_lock">Kilit ekranında Tekrarla ve Sıradaki</string>
+    <string name="tour_183_also_uploads">Yüklemeler\'de yükleme ve silme</string>
+    <string name="show_furigana">Furigana göster</string>
+    <string name="hiragana_readings_above_kanji">Japonca şarkı sözlerinde kanjilerin üzerinde hiragana okunuşları</string>
+    <string name="furigana_uses_the_japanese_reading_data">Japonca okuma verilerini kullanır (aşağıda bir kez indirilir).</string>
 </resources>

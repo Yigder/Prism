@@ -11,8 +11,10 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /** YouTube's "Most replayed" curves, live: songs' own uploads have them, not only music videos. */
+@Category(LiveNetwork::class)
 class HeatmapLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
     private var settings = AppSettings()

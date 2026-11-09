@@ -4810,4 +4810,154 @@
     <string name="speed_dial_your_plays_first_info">YouTube が Prism に送るのはウェブサイト用のタイルで、アプリのものとは異なり、聴いている曲に沿うとは限りません。オンにすると、過去 3 か月にこのスマホでよく聴いたものが先に並び、残りを YouTube のタイルが埋めます。</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube はこのログインを受け付けなくなりました。ログアウトしてもう一度ログインしてください。</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube は現在このアカウントに 256 kbps を送っていないため、曲は通常の音質で再生されます</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">ロック画面での表示を許可</string>
+    <string name="lock_screen_maker_xiaomi_detail">Prism の権限を開きます:「ロック画面に表示」と「バックグラウンドでの実行中に新しいウィンドウを開く」をオンにしてください</string>
+    <string name="lock_screen_maker_vivo_detail">Prism の権限を開きます:「ロック画面に表示」と「バックグラウンドのポップアップ」をオンにしてください</string>
+    <string name="lock_screen_maker_info">スマートフォンのメーカーが Android の権限にこれらを加えており、Android からはオンかどうかを Prism に伝えられません。オフのままだと、ロック画面にプレーヤーが出ないことがあります。</string>
+    <string name="lock_screen_refused">前回はスマートフォンがプレーヤーの表示を許可しませんでした。上の権限を確認してください。</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">高評価</string>
+    <string name="unlike">高評価を取り消す</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="other">このスマートフォンから %d 件のダウンロードを削除しますか？</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="other">YouTube Music の「%2$s」から %1$d 曲を削除しますか？</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">タグ</string>
+    <string name="add_a_tag">タグを追加</string>
+    <string name="new_tag">新しいタグ</string>
+    <string name="tags_are_your_own_labels">「ジム」「雨の日」のような、曲につける自分だけのラベルです。ライブラリ →「タグ」にあります。</string>
+    <string name="your_tag">このスマホのあなたのタグ</string>
+    <string name="remove_this_tag">このタグを外す</string>
+    <string name="rename_tag">タグの名前を変更</string>
+    <string name="delete_tag">タグを削除</string>
+    <string name="delete_the_tag_its_songs_stay">タグ「%s」を削除しますか？曲はそのまま残ります。</string>
+    <string name="tag_songs_from_any_song_s">曲のメニュー（⋯ または長押し）→「タグを追加」で曲にタグをつけられます。</string>
+    <string name="tag_n_songs">タグ · %s</string>
+    <plurals name="n_tags">
+        <item quantity="other">%d 個のタグ</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">スマートプレイリスト</string>
+    <string name="smart_playlist_n">スマートプレイリスト · %s</string>
+    <string name="smart_playlist_updates_itself">スマートプレイリスト · 自動で更新</string>
+    <string name="new_smart_playlist">新しいスマートプレイリスト</string>
+    <string name="edit_rules">ルールを編集</string>
+    <string name="save_a_copy_as_a_playlist">コピーをプレイリストとして保存</string>
+    <string name="saved_as_a_playlist">「%s」をプレイリストとして保存しました</string>
+    <string name="no_song_meets_these_rules">まだルールに合う曲がありません。⋯ メニュー →「ルールを編集」で変更できます。</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="other">%d 曲がまだ測定されていません</item>
+    </plurals>
+    <string name="measuring_n_of_n">%2$d 曲中 %1$d 曲を測定中…</string>
+    <string name="measure_now">今すぐ測定</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">このスマホにある曲を測定しています。Wi-Fi ではほかの曲も測定します。</string>
+    <string name="smart_fast_and_liked">速くてお気に入り</string>
+    <string name="smart_not_played_in_a_while">しばらく聴いていない</string>
+    <string name="smart_goes_with_what_s_playing">再生中の曲に合う</string>
+    <string name="the_song_playing_isn_t_measured_yet">再生中の曲はまだ測定されていません。</string>
+    <string name="match_all_rules">すべてのルールに一致</string>
+    <string name="match_any_rule">いずれかのルールに一致</string>
+    <string name="add_a_rule">ルールを追加</string>
+    <string name="add_a_rule_to_begin">ルールを追加して始めましょう。</string>
+    <string name="finds_n">%s が見つかりました</string>
+    <string name="up_to">最大</string>
+    <string name="sort_most_played">再生回数順</string>
+    <string name="sort_not_played_lately">最近聴いていない順</string>
+    <string name="sort_random">ランダム</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">合うキー</string>
+    <string name="rule_energy">エネルギー</string>
+    <string name="rule_loudness">ラウドネス（LUFS）</string>
+    <string name="rule_on_phone">このスマホのファイル</string>
+    <string name="rule_tag">タグ</string>
+    <string name="rule_times_played">再生回数</string>
+    <string name="rule_last_played">最終再生</string>
+    <string name="rule_added">ライブラリに追加</string>
+    <string name="rule_never_played">未再生</string>
+    <string name="rule_is">はい</string>
+    <string name="rule_isn_t">いいえ</string>
+    <string name="rule_from">から</string>
+    <string name="rule_to">まで</string>
+    <string name="rule_at_least">以上</string>
+    <string name="rule_at_most">以下</string>
+    <string name="rule_within">過去</string>
+    <string name="rule_not_within">過去 … 以外</string>
+    <string name="rule_days">日間</string>
+    <string name="genre_example">ポップ、ヒップホップ、ロック…</string>
+    <string name="your_listening">あなたの再生</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">曲の取得元</string>
+    <string name="your_likes_stay_as_they_are">変わるのはこのタブの表示だけです。高評価はそのままです。</string>
+    <string name="search_these_songs">これらの曲を検索</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">ライブラリを検索</string>
+    <string name="nothing_in_your_library_matches">ライブラリに一致するものがありません</string>
+    <string name="try_fewer_words_or_another_filter">言葉を減らすか、別のフィルタをお試しください。</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">重複を探す</string>
+    <string name="no_song_is_here_twice">重複している曲はありません</string>
+    <string name="extra_copy">重複</string>
+    <string name="keeping_s">「%s」を残す</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="other">%d 曲が重複しています</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="other">重複 %d 件を削除</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="other">このプレイリストから %d 曲を外します。</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="other">YouTube Music のプレイリストからも %d 曲を外します。</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">あなたのファイル</string>
+    <string name="choose_a_file_on_this_phone">このスマホのファイルを選ぶ</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">1つのタイル</string>
+    <string name="pin_to_home_as_one_tile">ホームに1つのタイルとして固定</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">曲をアップロード</string>
+    <string name="uploading_s">%1$s をアップロード中…</string>
+    <string name="uploaded_s_it_shows_up_here">%1$s をアップロードしました。YouTube Music の準備ができるとここに表示されます。通常は数分です。</string>
+    <string name="couldn_t_upload_it_s">アップロードできませんでした: %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">YouTube Music にアップロードできるのは 300 MB までの MP3、M4A、WMA、FLAC、Ogg ファイルです。</string>
+    <string name="delete_from_your_uploads">アップロードから削除</string>
+    <string name="delete_s_from_youtube_music">「%1$s」を YouTube Music から削除しますか？</string>
+    <string name="it_goes_from_your_uploads_for_good">すべてのデバイスのアップロードから完全に削除されます。元に戻せません。</string>
+    <string name="deleted_from_your_uploads">アップロードから削除しました</string>
+    <string name="couldn_t_delete_it_s">削除できませんでした: %1$s</string>
+    <string name="uploads_couldn_t_find_it">YouTube Music に表示されなくなっています</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">スマートプレイリスト</string>
+    <string name="tour_183_smart_body">決めたルールで自動的に曲が入り、ライブラリに合わせて更新されるプレイリスト。</string>
+    <string name="tour_183_smart_point_1">高く評価・再生・ダウンロード・タグ付けした曲でルールを設定</string>
+    <string name="tour_183_smart_point_2">テンポ、キー、エネルギーはスマホで計測</string>
+    <string name="tour_183_smart_point_3">いつでも普通のプレイリストとしてコピーを保存</string>
+    <string name="tour_183_tags_title">タグ</string>
+    <string name="tour_183_tags_body">どの曲のメニューからでも付けられる自分だけのラベル。</string>
+    <string name="tour_183_tags_point_1">タグごとにライブラリに専用ページ</string>
+    <string name="tour_183_tags_point_2">スマートプレイリストで使える</string>
+    <string name="tour_183_tags_point_3">たくさんの曲にまとめてタグ付け</string>
+    <string name="tour_183_select_title">まとめて選択</string>
+    <string name="tour_183_select_body">リストの曲を長押ししてほかの曲も選び、まとめて操作できます。</string>
+    <string name="tour_183_select_point_1">プレイリストやキューに追加、タグ付け、高く評価、ダウンロード</string>
+    <string name="tour_183_select_point_2">確認してからプレイリストから削除</string>
+    <string name="tour_183_search_title">ライブラリを検索</string>
+    <string name="tour_183_search_body">入力するそばから見つかる、フィルター付きの検索。</string>
+    <string name="tour_183_search_point_1">曲、プレイリスト、タグ、アーティスト、アルバム</string>
+    <string name="tour_183_search_point_2">高く評価した曲、ダウンロード済み、このスマホ内だけに絞り込み</string>
+    <string name="tour_183_search_point_3">日本語・韓国語・ロシア語・ギリシャ語のタイトルもローマ字で見つかる</string>
+    <string name="tour_183_also_file">スマホのファイルを曲の別バージョンとして</string>
+    <string name="tour_183_also_duplicates">プレイリスト内の重複した曲を見つける</string>
+    <string name="tour_183_also_songs_from">選んだプレイリストからライブラリの曲を表示</string>
+    <string name="tour_183_also_lock">ロック画面にリピートと次の曲</string>
+    <string name="tour_183_also_uploads">アップロードでアップロードと削除</string>
+    <string name="show_furigana">ふりがなを表示</string>
+    <string name="hiragana_readings_above_kanji">日本語の歌詞の漢字の上にひらがなの読みを表示します</string>
+    <string name="furigana_uses_the_japanese_reading_data">日本語の読みデータを使用します（下で一度だけダウンロード）。</string>
 </resources>

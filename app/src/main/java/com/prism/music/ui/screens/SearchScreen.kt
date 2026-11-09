@@ -236,11 +236,16 @@ fun SearchScreen(bottomPadding: Dp) {
     val inLibrary by androidx.compose.runtime.produceState(emptyList<BrowseItem>(), live, onPhone) {
         value = if (live.isBlank() || onPhone) emptyList() else kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
             val words = phoneNorm(live).split(' ').filter { it.isNotBlank() }
-            fun has(vararg parts: String) = phoneNorm(parts.joinToString(" ")).let { hay -> words.isNotEmpty() && words.all { it in hay } }
+            // Titles in other scripts by their Latin spelling too (1.8.3, #363), once spelled (in the background).
+            val spelled = c.titleSpellings.known.value
+            c.titleSpellings.want(c.library.likedShown.value.map { it.title })
+            fun has(vararg parts: String) = phoneNorm(parts.joinToString(" ") { p -> spelled[p]?.let { "$p $it" } ?: p }).let { hay -> words.isNotEmpty() && words.all { it in hay } }
             val songs = c.library.likedShown.value.filter { has(it.title, it.artistText) }.take(3).map { SongItem(it) }
             val lists = (c.prismLibrary.lists.value.map { it.item() } + c.library.playlists.value + c.library.albums.value + c.library.artists.value)
                 .filter { has(it.title) }.distinctBy { it.id }.take(4)
-            songs + lists
+            // The listener's tags (1.8.3), opening their songs.
+            val tags = c.db.tags().summaries().filter { has(it.tag) }.take(3).map { tagItem(it) }
+            songs + tags + lists
         }
     }
     // Your music files and downloads that match, a few of them in Top results (all of them under "On this phone").
@@ -362,6 +367,9 @@ fun SearchScreen(bottomPadding: Dp) {
             is Load.Err -> ErrorState(r.message)
             is Load.Ok -> Box(Modifier.fillMaxSize()) {
                 val resultsState = androidx.compose.foundation.lazy.rememberLazyListState()
+                // Select many (1.8.3): the songs among the results.
+                val resultSongs = remember(r.value) { r.value.filterIsInstance<SongItem>().map { it.song }.distinctBy { it.id } }
+                com.prism.music.ui.components.SelectableSongs(resultSongs) {
                 LazyColumn(state = resultsState, contentPadding = PaddingValues(top = 4.dp, bottom = bottomPadding + 16.dp)) {
                     items(r.value.distinctBy { it.id + it.title }, key = { it.id + it.title }) { item -> ResultRow(item) { open(item) } }
                     if (continuation != null) item {
@@ -374,6 +382,7 @@ fun SearchScreen(bottomPadding: Dp) {
                         }
                         LoadingState()
                     }
+                }
                 }
                 // A long list of results (#376), which only grows as it's scrolled.
                 com.prism.music.ui.components.FastScroller(
@@ -415,6 +424,7 @@ private fun PhoneResults(query: String, bottomPadding: Dp, onPlay: () -> Unit) {
     }
     Box(Modifier.fillMaxSize()) {
         val resultsState = androidx.compose.foundation.lazy.rememberLazyListState()
+        com.prism.music.ui.components.SelectableSongs(files + downloads) {
         LazyColumn(state = resultsState, contentPadding = PaddingValues(top = 4.dp, bottom = bottomPadding + 16.dp)) {
             listOf(tr(R.string.your_music_files) to files, tr(R.string.downloads) to downloads).forEachIndexed { g, (title, songs) ->
                 if (songs.isEmpty()) return@forEachIndexed
@@ -428,6 +438,7 @@ private fun PhoneResults(query: String, bottomPadding: Dp, onPlay: () -> Unit) {
                     }
                 }
             }
+        }
         }
         com.prism.music.ui.components.FastScroller(
             resultsState, Modifier.align(Alignment.CenterEnd).padding(bottom = bottomPadding),
@@ -476,12 +487,7 @@ internal fun phoneMatches(
 }
 
 /** Lower case, without accents or punctuation, so "Beyonce" finds "Beyoncé" and "ac dc" finds "AC/DC". */
-internal fun phoneNorm(s: String): String = java.text.Normalizer.normalize(s.lowercase(), java.text.Normalizer.Form.NFD)
-    .replace(MARKS, "").replace(NOT_WORDS, " ").trim()
-
-private val MARKS = Regex("\\p{Mn}+")
-// Marks that stay (Hindi's and Bengali's vowel signs) are part of the word, not a gap in it.
-private val NOT_WORDS = Regex("[^\\p{L}\\p{M}\\p{N}]+")
+internal fun phoneNorm(s: String): String = com.prism.music.data.LibrarySearch.norm(s)
 
 /** The top card's play button: plays the song, the album or playlist from the start, or shuffles the artist. */
 private suspend fun playTop(c: com.prism.music.AppContainer, item: BrowseItem) {
@@ -526,13 +532,19 @@ private fun TopResults(
         item("lyr-h") { SectionHeader(tr(R.string.from_the_lyrics)) }
         items(hits, key = { "lyr:" + it.song.id }) { h -> LyricHitRow(h) { onSongs(hitSongs, hitSongs.indexOf(h.song)) } }
     }
+    // Select many (1.8.3): every song row shown here is what "All" picks.
+    val shownSongs = (hitSongs + inLibrary.filterIsInstance<SongItem>().map { it.song } + onPhoneHits +
+        r.sections.filter { it.first == SearchFilter.SONGS }.flatMap { (_, items) -> items.filterIsInstance<SongItem>().map { it.song }.distinctBy { it.id }.take(4) })
+        .distinctBy { it.id }
+    com.prism.music.ui.components.SelectableSongs(shownSongs) {
     LazyColumn(contentPadding = PaddingValues(top = 4.dp, bottom = bottomPadding + 16.dp)) {
         if (lyricsFirst) fromTheLyrics()
         r.top?.let { t -> item("top") { TopCard(t, { open(t) }, { onPlay(t) }) } }
         if (!lyricsFirst) fromTheLyrics()
         // Already yours (1.7.6): what in your library matches, before the rest.
         if (inLibrary.isNotEmpty()) {
-            item("lib-h") { SectionHeader(tr(R.string.in_your_library)) }
+            // All of it, with filters (1.8.3).
+            item("lib-h") { val nav = com.prism.music.ui.LocalNavigator.current; SectionHeader(tr(R.string.in_your_library), onMore = { nav.go(com.prism.music.ui.Routes.librarySearch(query)) }) }
             items(inLibrary, key = { "lib:" + it.id }) { item -> ResultRow(item) { open(item) } }
         }
         if (onPhoneHits.isNotEmpty()) {
@@ -553,6 +565,7 @@ private fun TopResults(
                 }
             }
         }
+    }
     }
 }
 

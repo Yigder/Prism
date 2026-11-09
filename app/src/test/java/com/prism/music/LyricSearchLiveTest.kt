@@ -9,8 +9,10 @@ import okhttp3.OkHttpClient
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /** Search by a line of the lyrics (1.7.6), live: Genius's lyrics index, then the song on YouTube Music. */
+@Category(LiveNetwork::class)
 class LyricSearchLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
     private var settings = AppSettings()

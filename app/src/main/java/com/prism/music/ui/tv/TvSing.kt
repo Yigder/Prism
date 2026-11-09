@@ -153,6 +153,7 @@ fun TvSingPage(nav: TvNav) {
     val clock = androidx.compose.runtime.key(jumps) { rememberLyricClock(now.playing) }
     val accent = rememberTvAccent(now.art)
     val lines = state.lines
+    val furigana = com.prism.music.ui.player.rememberFurigana(state)
     val current by remember(lines) { derivedStateOf { CarLyricsCard.lineAt(lines, clock.value).coerceAtLeast(0) } }
     val progress by c.sing.progress.collectAsState()
     val problem by c.sing.problem.collectAsState()
@@ -166,7 +167,7 @@ fun TvSingPage(nav: TvNav) {
     val scheme = MaterialTheme.colorScheme
     TvLyricsPlace(
         now, lines, current, clock, state.loading, state.unavailable, state.source?.label, accent, onPlayPause = { c.player.togglePlay() },
-        status = status,
+        furigana = furigana, status = status,
         buttons = {
             // What Sing has for the song, honestly: the voice being taken out, the quick way standing in, or out.
             disk.status?.let { TvChip(it.words(), PrismIcons.Mic, scheme.primary, scheme.onPrimary) }

@@ -30,6 +30,13 @@ import kotlinx.coroutines.withContext
 
 data class QueueEntry(val index: Int, val song: Song, val uid: String)
 
+/** Repeat's next state, the player's and the lock screen's (1.8.3, D47) alike: off → all → one → off. */
+fun nextRepeatMode(mode: Int): Int = when (mode) {
+    Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
+    Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
+    else -> Player.REPEAT_MODE_OFF
+}
+
 /** A long list's later pages join the queue this many songs at a time (#356). */
 private const val FILL_BATCH = 400
 /** With this little of the song left, the song after it stays where it is while a list fills in (#356). */
@@ -334,8 +341,14 @@ class PlayerConnection(private val context: Context, private val c: AppContainer
         val first = if (shuffle) songs.indices.random() else startIndex.coerceIn(0, songs.lastIndex)
         val tapped = songs[first]
         val everywhere = songsEverywhere()
+        // #383: a playlist's videos, as YouTube pairs them with their songs (one request), for when each comes up.
+        val pairsFrom = playlistToPair(everywhere, source, c.settings.current.isLoggedIn)
         // Live streams play as they are: they have no "song version" to swap in.
-        if ((shuffle && !everywhere) || !tapped.isVideo || tapped.isLive || tapped.isEpisode) { startQueue(songs, first, source, shuffle, null, rest = rest); return }
+        if ((shuffle && !everywhere) || !tapped.isVideo || tapped.isLive || tapped.isEpisode) {
+            if (pairsFrom != null) scope.launch { pairPlaylist(pairsFrom, tapped.id, source.title) }
+            startQueue(songs, first, source, shuffle, null, rest = rest)
+            return
+        }
         // With the Song / Video switch off the player is audio only (#48): a music video plays as its song, or as
         // the video's sound when it has no song, never with its picture (there'd be no switch to turn it off).
         // "Songs, not videos" everywhere (#80) plays it as its song too, and so does a shuffled start.
@@ -345,7 +358,10 @@ class PlayerConnection(private val context: Context, private val c: AppContainer
         // (the Song button then plays the track itself). With no song to match, the video plays as it is.
         if (!audioOnly) _showPlayer.tryEmit(Unit)
         scope.launch {
-            val song = songFor(tapped, 4_000)
+            // The playlist's own pairing first (a playlist from Home: Prism's title search missed half of #383's).
+            val started = android.os.SystemClock.elapsedRealtime()
+            if (pairsFrom != null) pairPlaylist(pairsFrom, tapped.id, source.title)
+            val song = songFor(tapped, (4_000 - (android.os.SystemClock.elapsedRealtime() - started)).coerceAtLeast(500))
             if (token != playToken) return@launch
             val list = if (song == null) songs else songs.toMutableList().also { it[first] = song }
             startQueue(list, first, source, shuffle, tapped.id.takeUnless { audioOnly }, rest = rest)
@@ -433,6 +449,25 @@ class PlayerConnection(private val context: Context, private val c: AppContainer
 
     /** Settings → Playback → "Songs, not videos" → Everywhere (#80). */
     fun songsEverywhere(): Boolean = c.settings.current.let { it.radioSongsOnly && it.songsEverywhere }
+
+    /**
+     * #383 (1.8.3): the playlist's watch queue, asked once, with YouTube's own song for each of its music videos: kept
+     * with the songs found this session, so each video plays as its song when it comes up (signed out YouTube pairs
+     * nothing there, and the title search alone missed many: Telugu film songs whose videos are a label's uploads).
+     */
+    private suspend fun pairPlaylist(playlistId: String, startId: String, title: String) {
+        val pairs = kotlinx.coroutines.withTimeoutOrNull(2_500) {
+            runCatching { withContext(Dispatchers.IO) { c.ytm.next(startId, playlistId).videoSongs() } }.getOrNull()
+        } ?: return
+        pairs.forEach { (video, song) -> videoSongs.putIfAbsent(video, song) }
+        AudioDiagnostics.log("queue", "\"$title\": YouTube pairs ${pairs.size} of its videos with their songs")
+    }
+
+    companion object {
+        /** The playlist whose pairing is asked for ([pairPlaylist]): Everywhere, signed in, a playlist queue. */
+        internal fun playlistToPair(everywhere: Boolean, source: QueueSource, signedIn: Boolean): String? =
+            source.originId?.removePrefix("VL")?.takeIf { everywhere && signedIn && source.kind == QueueKind.PLAYLIST && it.isNotBlank() }
+    }
 
     /**
      * The song a music video is of ([YouTubeMusic.songForVideo]), remembered for the session; the video becomes the
@@ -891,13 +926,7 @@ class PlayerConnection(private val context: Context, private val c: AppContainer
         val cur = p.currentMediaItemIndex.coerceIn(0, n - 1)
         p.setShuffleOrder(HistoryShuffleOrder.shuffled(n, cur) { p.currentMediaItemIndex })
     }
-    fun cycleRepeat() = withPlayer {
-        it.repeatMode = when (it.repeatMode) {
-            Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
-            Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
-            else -> Player.REPEAT_MODE_OFF
-        }
-    }
+    fun cycleRepeat() = withPlayer { it.repeatMode = nextRepeatMode(it.repeatMode) }
 
     private val _videoLoading = MutableStateFlow(false)
     /** True from tapping the video button until its first frame shows. */
@@ -993,9 +1022,29 @@ class PlayerConnection(private val context: Context, private val c: AppContainer
         }
     }
 
-    val position: Long get() = player?.currentPosition ?: 0
-    val duration: Long get() = player?.duration?.takeIf { it > 0 } ?: ((_current.value?.durationSec ?: 0) * 1000L)
-    val bufferedPosition: Long get() = player?.bufferedPosition ?: 0
+    // The player may only be asked on its own thread (main). Asked from anywhere else (Compose's test clock can run a frame
+    // on a worker, which made QuickPicksPlayingTest fail now and then), these give the last value read on that thread.
+    @Volatile private var lastPosition = 0L
+    @Volatile private var lastDuration = 0L
+    @Volatile private var lastBuffered = 0L
+
+    val position: Long get() {
+        val p = player ?: return 0
+        return if (android.os.Looper.myLooper() == p.applicationLooper) p.currentPosition.also { lastPosition = it } else lastPosition
+    }
+    val duration: Long get() {
+        val p = player
+        val d = when {
+            p == null -> 0L
+            android.os.Looper.myLooper() == p.applicationLooper -> p.duration.also { lastDuration = it }
+            else -> lastDuration
+        }
+        return d.takeIf { it > 0 } ?: ((_current.value?.durationSec ?: 0) * 1000L)
+    }
+    val bufferedPosition: Long get() {
+        val p = player ?: return 0
+        return if (android.os.Looper.myLooper() == p.applicationLooper) p.bufferedPosition.also { lastBuffered = it } else lastBuffered
+    }
 
     // ------------------------------------------------------------ State mirroring
 

@@ -16,6 +16,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okio.source
 
 /**
  * The music the listener uploaded to YouTube Music, for Library → Uploads (#332, #101). Signed in only. Anything YouTube
@@ -40,6 +42,73 @@ class Uploads(private val c: AppContainer) {
 
     val lists = MutableStateFlow(Lists())
     val state = MutableStateFlow<State>(State.Idle)
+
+    /** Each listed song's id to delete it by (1.8.3, D49), as its row gave it. */
+    private val entities = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    /** The file being uploaded (its name), or null. */
+    val uploading = MutableStateFlow<String?>(null)
+
+    /**
+     * Deletes [song] from the account's uploads for good (1.8.3, D49), only on the listener's confirmed tap. Its delete
+     * id comes from the list; if the list was read from what was kept, it's asked afresh first.
+     */
+    suspend fun delete(song: Song): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val id = entities[song.id] ?: run { load(force = true); entities[song.id] }
+                ?: throw java.io.IOException(com.prism.music.tr(com.prism.music.R.string.uploads_couldn_t_find_it))
+            c.ytm.deleteUpload(id)
+            entities.remove(song.id)
+            val now = lists.value.let { it.copy(songs = it.songs.filterNot { s -> s.id == song.id }) }
+            lists.value = now
+            c.offline.saveUploads(now.songs, now.albums, now.artists)
+            log("deleted a song")
+            Unit
+        }.onFailure { if (it is CancellationException) throw it; log("delete failed: ${it.javaClass.simpleName}: ${it.message}") }
+    }
+
+    /**
+     * Uploads a file from the phone to the account (1.8.3, D49), only on the listener's tap. YouTube Music takes it in the
+     * background: it's listed after a few minutes, so the list is looked at again then.
+     */
+    suspend fun upload(uri: android.net.Uri): Result<String> = withContext(Dispatchers.IO) {
+        val resolver = c.app.contentResolver
+        val (name, size) = resolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME, android.provider.OpenableColumns.SIZE), null, null, null)?.use { cur ->
+            if (cur.moveToFirst()) (cur.getString(0) ?: "song") to (if (cur.isNull(1)) -1L else cur.getLong(1)) else null
+        } ?: ("song" to -1L)
+        // Cleared however it ends, a cancel too (rethrown below: the line and the button would stay "uploading" otherwise).
+        try { runCatching {
+            uploadable(name, size)?.let { why -> throw java.io.IOException(why) }
+            uploading.value = name
+            val type = "application/x-www-form-urlencoded;charset=utf-8".toMediaType()
+            val body = object : okhttp3.RequestBody() {
+                override fun contentType() = type
+                override fun contentLength() = size
+                override fun writeTo(sink: okio.BufferedSink) {
+                    (resolver.openInputStream(uri) ?: throw java.io.IOException("can't read the file")).use { sink.writeAll(it.source()) }
+                }
+            }
+            c.ytm.uploadSong(name, size, body)
+            log("uploaded a ${name.substringAfterLast('.', "").lowercase()} file of ${size / 1_048_576} MB")
+            name
+        }.onFailure { if (it is CancellationException) throw it; log("upload failed: ${it.javaClass.simpleName}: ${it.message}") }
+        } finally { uploading.value = null }
+    }
+
+    companion object {
+        /** What YouTube Music takes (ytmusicapi's list) and how big: 300 MB, less a byte. */
+        val UPLOAD_TYPES = setOf("mp3", "m4a", "wma", "flac", "ogg")
+        const val UPLOAD_MAX_BYTES = 314_572_800L
+        /** What the file picker offers. */
+        val PICK_TYPES = arrayOf("audio/*")
+
+        /** Null when YouTube Music takes a file of this name and size; else why not, in the listener's words. */
+        fun uploadable(name: String, size: Long): String? = when {
+            name.substringAfterLast('.', "").lowercase() !in UPLOAD_TYPES || size !in 1 until UPLOAD_MAX_BYTES ->
+                com.prism.music.tr(com.prism.music.R.string.youtube_music_takes_mp3_m4a)
+            else -> null
+        }
+    }
     private val loading = Mutex()
     private var listedFor: String? = null
 
@@ -56,7 +125,7 @@ class Uploads(private val c: AppContainer) {
         val account = account()
         has.value = prefs.getBoolean("has:$account", false)
         val now = System.currentTimeMillis()
-        if (!force && now - prefs.getLong("checked:$account", 0) < CHECK_EVERY_MS) return@withContext
+        if (!force && now - prefs.getLong("checked:$account", 0) < Pages.CHECK_EVERY_MS) return@withContext
         if (!c.network.isOnline()) return@withContext
         val page = try {
             c.ytm.uploadedSongsPage()
@@ -117,12 +186,13 @@ class Uploads(private val c: AppContainer) {
                     return@coroutineScope fallback(e.friendlyMessage())
                 }
                 noted("songs", page.rows, page.items.size)
+                entities.putAll(page.entities)
                 val songs = page.items.toMutableList()
                 lists.value = Lists(songs.toList(), kept?.albums.orEmpty(), kept?.artists.orEmpty())
                 state.value = State.Ready(true)
                 var pages = 1
                 var stopped = false
-                while (page.next != null && songs.size < OfflineLibrary.MAX_UPLOADS && pages++ < MAX_PAGES) {
+                while (page.next != null && songs.size < OfflineLibrary.MAX_UPLOADS && pages++ < Pages.MAX_PAGES) {
                     page = try {
                         c.ytm.uploadedSongsPage(page.next)
                     } catch (e: Exception) {
@@ -132,6 +202,7 @@ class Uploads(private val c: AppContainer) {
                         break
                     }
                     songs += page.items
+                    entities.putAll(page.entities)
                     lists.value = lists.value.copy(songs = songs.distinctBy { it.id })
                 }
                 val all = songs.distinctBy { it.id }
@@ -162,7 +233,7 @@ class Uploads(private val c: AppContainer) {
         else -> rows.items.ifEmpty(fromSongs)
     }
 
-    private companion object {
+    private object Pages {
         const val CHECK_EVERY_MS = 6 * 3_600_000L
         /** 25 songs a page, as YouTube sends them. */
         const val MAX_PAGES = 200

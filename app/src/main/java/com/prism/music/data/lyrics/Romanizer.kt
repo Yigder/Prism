@@ -14,6 +14,7 @@ import com.prism.music.data.lyrics.roman.JapaneseKanji
 import com.prism.music.data.lyrics.roman.Kana
 import com.prism.music.data.lyrics.roman.Script
 import com.prism.music.data.lyrics.roman.plainLatin
+import com.prism.music.data.lyrics.RubySpan
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -64,6 +65,21 @@ class Romanizer(
         songPrefs?.edit()?.apply { if (on == null) remove(songId) else putBoolean(songId, on) }?.apply()
         _overrides.value = if (on == null) _overrides.value - songId else _overrides.value + (songId to on)
     }
+
+    /**
+     * A title in Latin letters, for finding it by typing (1.8.3, #363: "tori no uta" finds とりのうた): the phone's own
+     * engines only (kana, Hangul, Cyrillic, Greek; kanji only once the Japanese dictionary is downloaded), never the
+     * network. Null when it needs none, or no engine here can spell all of it.
+     */
+    suspend fun spellTitle(text: String): String? = withContext(Dispatchers.Default) {
+        val scripts = Script.foreignIn(text)
+        if (scripts.isEmpty()) return@withContext null
+        val japanese = Script.KANA in scripts || (Script.HAN in scripts && japaneseReady)
+        runCatching { localSpelling(LyricLine(0, text), scripts, japanese) }.getOrNull()?.first?.takeIf { it.isNotBlank() && it != text }
+    }
+
+    /** Whether kanji can be read on the phone (the Japanese dictionary is downloaded). */
+    val japaneseReady: Boolean get() = japaneseForTests != null || models.ready(ModelStore.Model.JAPANESE)
 
     @Serializable
     private data class Stored(val t: String, val w: List<String>? = null, val b: String? = null, val bw: List<String>? = null)
@@ -169,6 +185,26 @@ class Romanizer(
             }
             result
         }
+
+    private val rubyMemory = object : LinkedHashMap<String, List<RubySpan>>(64, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, List<RubySpan>>?) = size > 128
+    }
+
+    /**
+     * Each line's kanji with the hiragana above it ([RubySpan]), line for line; null while the Japanese reading data
+     * isn't on the phone. Lines that need none come back empty.
+     */
+    suspend fun furigana(lines: List<LyricLine>): List<List<RubySpan>>? {
+        if (lines.none { hasKanji(it.text) }) return emptyList()
+        val reader = japaneseReader() ?: return null
+        return withContext(Dispatchers.Default) {
+            lines.map { line ->
+                synchronized(rubyMemory) { rubyMemory[line.text] } ?: reader.furigana(JapaneseKanji.fromChinese(line.text)).also { spans ->
+                    synchronized(rubyMemory) { rubyMemory[line.text] = spans }
+                }
+            }
+        }
+    }
 
     /**
      * The line spelled out on the phone, if every script it needs has an engine here: its text, and each word's
@@ -303,7 +339,9 @@ class Romanizer(
         /** Bumped when an engine changes, so songs romanized the old way are romanized again. */
         // 3 (1.7.9.1, #256): Japanese songs spelled by Android's transliterator as Chinese are spelled again.
         // 4 (1.8.2.1, #370): Japanese songs with kanji read as Chinese are spelled again.
-        private const val VERSION = 4
+        // 5: Arabic numbers are read as Japanese numerals, so counters and dates come out right (2人 is ふたり, 4月 is
+        // しがつ): those songs are spelled again.
+        private const val VERSION = 5
         private const val RELEASE_AFTER_MS = 3 * 60_000L
         /** Line-by-line requests are only made for this many lines (a long song's worth). */
         private const val MAX_SINGLE = 80

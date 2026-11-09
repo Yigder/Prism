@@ -14,8 +14,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /** Home's Quick picks in another language (issue #11: Prism showed recent plays instead of YouTube's picks). */
+@Category(LiveNetwork::class)
 class QuickPicksLiveTest {
     private val before = Locale.getDefault()
 

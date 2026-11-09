@@ -150,7 +150,11 @@ class YouTubeMusic(
         return all.distinctBy { it.title } to raw
     }
 
-    suspend fun moodsAndGenres(): List<Shelf> = Parser.shelves(browse("FEmusic_moods_and_genres"))
+    /** D40 (1.8.3): kept for a day when the app gives a [moodsCache] (Home, Search and the Moods page all ask). */
+    var moodsCache: com.prism.music.data.MoodsCache? = null
+
+    suspend fun moodsAndGenres(): List<Shelf> = moodsCache?.get(api.pageLanguage, { browse("FEmusic_moods_and_genres") }, Parser::shelves)
+        ?: Parser.shelves(browse("FEmusic_moods_and_genres"))
 
     /**
      * Explore's new releases, moods and genres, and trending. Asked without the account: it's the same public page, and
@@ -773,7 +777,7 @@ class YouTubeMusic(
         val code = api.ping("$base${sep}ver=2&c=WEB_REMIX&cver=${api.clientVersion}&cpn=$cpn")
         android.util.Log.i("PrismHistory", "play sent to YouTube Music: HTTP $code")
         // #377: a 204 taken for a request that isn't the account's would still not be in its history; so it says both.
-        com.prism.music.playback.AudioDiagnostics.log("history", "$songId: sent, YouTube answered ${code?.let { "HTTP $it" } ?: "nothing (no connection?)"}; ${extras.seen ?: "not said if signed in"}")
+        com.prism.music.playback.AudioDiagnostics.log("history", "$songId: sent${if (api.brandChannel) " for the brand channel" else ""}, YouTube answered ${code?.let { "HTTP $it" } ?: "nothing (no connection?)"}; ${extras.seen ?: "not said if signed in"}")
         return code != null && code in 200..299
     }
 
@@ -866,6 +870,20 @@ class YouTubeMusic(
     /** Every row of the account's uploaded artists. [Parser.UploadRows.next]: a page didn't come. */
     suspend fun uploadedArtists(maxPages: Int = 40): Parser.UploadRows<ArtistItem> =
         allUploadPages(maxPages, browse("FEmusic_library_privately_owned_artists"), Parser::uploadArtistRows)
+
+    /**
+     * Deletes an upload from the account for good (1.8.3, D49), as ytmusicapi's delete_upload_entity: a song's entity id
+     * ([Parser.UploadRows.entities]) or an uploaded album's page id. Throws when YouTube refuses.
+     */
+    suspend fun deleteUpload(entityId: String) {
+        val id = entityId.removePrefix("FEmusic_library_privately_owned_release_detail")
+        val res = api.post("music/delete_privately_owned_entity", buildJsonObject { put("entityId", id) })
+        res["error"]?.let { e -> throw InnerTubeException(e.str("message") ?: "YouTube Music didn't delete it") }
+    }
+
+    /** Uploads a music file to the account (1.8.3, D49): see [InnerTube.uploadSong]. */
+    suspend fun uploadSong(fileName: String, size: Long, body: okhttp3.RequestBody) =
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { api.uploadSong(fileName, size, body) }
 
     private suspend fun <T : com.prism.music.data.model.BrowseItem> allUploadPages(maxPages: Int, first: JsonObject, read: (JsonElement) -> Parser.UploadRows<T>): Parser.UploadRows<T> {
         var page = read(first)

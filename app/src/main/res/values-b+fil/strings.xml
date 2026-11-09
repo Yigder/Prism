@@ -4874,4 +4874,162 @@
     <string name="speed_dial_your_plays_first_info">Ang ipinapadala ng YouTube sa Prism ay ang mga tile ng website nito, na hindi katulad ng nasa app nito at hindi laging sumusunod sa pinapatugtog mo. Kapag naka-on, mauuna ang pinakamadalas mong pinatugtog sa teleponong ito sa nakaraang tatlong buwan, at pupunuin ng sa YouTube ang natitira.</string>
     <string name="youtube_no_longer_takes_this_sign_in">Hindi na tinatanggap ng YouTube ang sign-in na ito. Mag-sign out at mag-sign in ulit.</string>
     <string name="youtube_isnt_sending_256_kbps">Hindi nagpapadala ang YouTube ng 256 kbps sa account na ito ngayon, kaya sa karaniwang kalidad tumutugtog ang mga kanta</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">Payagan ito sa lock screen</string>
+    <string name="lock_screen_maker_xiaomi_detail">Binubuksan ang mga pahintulot ng Prism: i-on ang “Show on Lock screen” at “Open new windows while running in the background”</string>
+    <string name="lock_screen_maker_vivo_detail">Binubuksan ang mga pahintulot ng Prism: i-on ang “Display on lock screen” at “Background pop-ups”</string>
+    <string name="lock_screen_maker_info">Nagdaragdag ang gumawa ng telepono mo ng mga pahintulot na ito sa sariling pahintulot ng Android, at hindi masasabi ng Android sa Prism kung naka-on ang mga ito. Kung wala ang mga ito, maaaring hindi lumabas ang player sa lock screen.</string>
+    <string name="lock_screen_refused">Noong huli, hindi pinayagan ng telepono mo na lumabas ang player. Tingnan ang mga pahintulot sa itaas.</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">I-like</string>
+    <string name="unlike">I-unlike</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="one">Alisin ang %d download sa teleponong ito?</item>
+        <item quantity="other">Alisin ang %d download sa teleponong ito?</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="one">Alisin ang %1$d kanta sa “%2$s” sa YouTube Music?</item>
+        <item quantity="other">Alisin ang %1$d kanta sa “%2$s” sa YouTube Music?</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">Mga tag</string>
+    <string name="add_a_tag">Magdagdag ng tag</string>
+    <string name="new_tag">Bagong tag</string>
+    <string name="tags_are_your_own_labels">Sarili mong mga label sa mga kanta, gaya ng “gym” o “maulang araw”. Makikita sila sa Library → Mga tag.</string>
+    <string name="your_tag">Ang tag mo sa phone na ito</string>
+    <string name="remove_this_tag">Alisin ang tag na ito</string>
+    <string name="rename_tag">Palitan ang pangalan ng tag</string>
+    <string name="delete_tag">Burahin ang tag</string>
+    <string name="delete_the_tag_its_songs_stay">Burahin ang tag na “%s”? Mananatili ang mga kanta nito kung nasaan sila.</string>
+    <string name="tag_songs_from_any_song_s">Mag-tag ng kanta mula sa menu ng kahit anong kanta (⋯ o pindot nang matagal) → Magdagdag ng tag.</string>
+    <string name="tag_n_songs">Tag · %s</string>
+    <plurals name="n_tags">
+        <item quantity="one">%d tag</item>
+        <item quantity="other">%d tag</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">Smart playlist</string>
+    <string name="smart_playlist_n">Smart playlist · %s</string>
+    <string name="smart_playlist_updates_itself">Smart playlist · kusang nag-a-update</string>
+    <string name="new_smart_playlist">Bagong smart playlist</string>
+    <string name="edit_rules">I-edit ang mga patakaran</string>
+    <string name="save_a_copy_as_a_playlist">I-save ang kopya bilang playlist</string>
+    <string name="saved_as_a_playlist">Na-save ang “%s” bilang playlist</string>
+    <string name="no_song_meets_these_rules">Wala pang kantang tugma sa mga patakarang ito. Palitan sila sa ⋯ menu → I-edit ang mga patakaran.</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="one">%d kanta ang hindi pa nasusukat</item>
+        <item quantity="other">%d kanta ang hindi pa nasusukat</item>
+    </plurals>
+    <string name="measuring_n_of_n">Sinusukat ang %1$d sa %2$d…</string>
+    <string name="measure_now">Sukatin ngayon</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">Sinusukat ang mga kanta sa phone na ito. Sa Wi-Fi, pati ang iba.</string>
+    <string name="smart_fast_and_liked">Mabilis at gusto</string>
+    <string name="smart_not_played_in_a_while">Matagal nang hindi pinapatugtog</string>
+    <string name="smart_goes_with_what_s_playing">Bagay sa tumutugtog</string>
+    <string name="the_song_playing_isn_t_measured_yet">Hindi pa nasusukat ang tumutugtog na kanta.</string>
+    <string name="match_all_rules">Tugma sa lahat ng patakaran</string>
+    <string name="match_any_rule">Tugma sa alinmang patakaran</string>
+    <string name="add_a_rule">Magdagdag ng patakaran</string>
+    <string name="add_a_rule_to_begin">Magdagdag ng patakaran para magsimula.</string>
+    <string name="finds_n">Nakakita ng %s</string>
+    <string name="up_to">Hanggang</string>
+    <string name="sort_most_played">Pinakamadalas patugtugin</string>
+    <string name="sort_not_played_lately">Hindi napatugtog kamakailan</string>
+    <string name="sort_random">Random</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">Key na bagay sa</string>
+    <string name="rule_energy">Enerhiya</string>
+    <string name="rule_loudness">Lakas (LUFS)</string>
+    <string name="rule_on_phone">File sa phone na ito</string>
+    <string name="rule_tag">Tag</string>
+    <string name="rule_times_played">Ilang beses pinatugtog</string>
+    <string name="rule_last_played">Huling pinatugtog</string>
+    <string name="rule_added">Idinagdag sa library mo</string>
+    <string name="rule_never_played">Hindi pa napatugtog</string>
+    <string name="rule_is">Oo</string>
+    <string name="rule_isn_t">Hindi</string>
+    <string name="rule_from">Mula</string>
+    <string name="rule_to">Hanggang</string>
+    <string name="rule_at_least">Hindi bababa sa</string>
+    <string name="rule_at_most">Hindi lalampas sa</string>
+    <string name="rule_within">Sa nakaraang</string>
+    <string name="rule_not_within">Hindi sa nakaraang</string>
+    <string name="rule_days">araw</string>
+    <string name="genre_example">Pop, hip-hop, rock…</string>
+    <string name="your_listening">Ang pinapakinggan mo</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">Mga kanta mula sa</string>
+    <string name="your_likes_stay_as_they_are">Ang ipinapakita lang ng tab na ito ang nagbabago. Hindi nagbabago ang mga like mo.</string>
+    <string name="search_these_songs">Maghanap sa mga kantang ito</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">Maghanap sa library mo</string>
+    <string name="nothing_in_your_library_matches">Walang tugma sa library mo</string>
+    <string name="try_fewer_words_or_another_filter">Subukan ang mas kaunting salita o ibang filter.</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">Hanapin ang mga doble</string>
+    <string name="no_song_is_here_twice">Walang kantang dalawang beses dito</string>
+    <string name="extra_copy">Sobrang kopya</string>
+    <string name="keeping_s">Mananatili ang “%s”</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="one">%d kanta ang higit sa isang beses dito</item>
+        <item quantity="other">%d kanta ang higit sa isang beses dito</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="one">Alisin ang %d sobrang kopya</item>
+        <item quantity="other">Alisin ang %d sobrang kopya</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="one">Aalisin nito ang %d kanta sa playlist na ito.</item>
+        <item quantity="other">Aalisin nito ang %d kanta sa playlist na ito.</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="one">Aalisin din nito ang %d kanta sa playlist sa YouTube Music.</item>
+        <item quantity="other">Aalisin din nito ang %d kanta sa playlist sa YouTube Music.</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">Iyong file</string>
+    <string name="choose_a_file_on_this_phone">Pumili ng file sa phone na ito</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">Isang tile</string>
+    <string name="pin_to_home_as_one_tile">I-pin sa Home bilang isang tile</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">Mag-upload ng kanta</string>
+    <string name="uploading_s">Ina-upload ang %1$s…</string>
+    <string name="uploaded_s_it_shows_up_here">Na-upload na ang %1$s. Lalabas ito rito kapag handa na ito sa YouTube Music, kadalasan sa loob ng ilang minuto.</string>
+    <string name="couldn_t_upload_it_s">Hindi ma-upload: %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">Tumatanggap ang YouTube Music ng MP3, M4A, WMA, FLAC at Ogg na file na hanggang 300 MB.</string>
+    <string name="delete_from_your_uploads">Burahin sa mga upload mo</string>
+    <string name="delete_s_from_youtube_music">Burahin ang \"%1$s\" sa YouTube Music?</string>
+    <string name="it_goes_from_your_uploads_for_good">Mawawala ito sa mga upload mo sa lahat ng device, nang tuluyan. Hindi na ito maibabalik.</string>
+    <string name="deleted_from_your_uploads">Nabura sa mga upload mo</string>
+    <string name="couldn_t_delete_it_s">Hindi mabura: %1$s</string>
+    <string name="uploads_couldn_t_find_it">Hindi na ito nakalista sa YouTube Music</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">Mga smart playlist</string>
+    <string name="tour_183_smart_body">Mga playlist na kusang napupuno ayon sa mga rule mo at sumasabay sa library mo.</string>
+    <string name="tour_183_smart_point_1">Mga rule ayon sa gusto mo, pinapatugtog, dina-download o tina-tag</string>
+    <string name="tour_183_smart_point_2">Tempo, key at energy, sinusukat sa phone mo</string>
+    <string name="tour_183_smart_point_3">Mag-save ng kopya bilang karaniwang playlist anumang oras</string>
+    <string name="tour_183_tags_title">Mga tag</string>
+    <string name="tour_183_tags_body">Sarili mong mga label sa mga kanta, mula sa menu ng anumang kanta.</string>
+    <string name="tour_183_tags_point_1">May sariling page sa Library ang bawat tag</string>
+    <string name="tour_183_tags_point_2">Gamitin ang mga ito sa smart playlist</string>
+    <string name="tour_183_tags_point_3">Mag-tag ng maraming kanta nang sabay</string>
+    <string name="tour_183_select_title">Pumili ng marami</string>
+    <string name="tour_183_select_body">Pindutin nang matagal ang kanta sa listahan para pumili pa, saka gawin sa lahat nang sabay.</string>
+    <string name="tour_183_select_point_1">Idagdag sa playlist o queue, i-tag, i-like o i-download</string>
+    <string name="tour_183_select_point_2">Alisin sa playlist, may kumpirmasyon muna</string>
+    <string name="tour_183_search_title">Maghanap sa library mo</string>
+    <string name="tour_183_search_body">Lahat ng meron ka, nahahanap habang nagta-type, may mga filter.</string>
+    <string name="tour_183_search_point_1">Mga kanta, playlist, tag, artist at album</string>
+    <string name="tour_183_search_point_2">Ang mga na-like, na-download o nasa phone na ito lang</string>
+    <string name="tour_183_search_point_3">Mahahanap ang mga pamagat na Japanese, Korean, Russian at Greek sa letrang Latin</string>
+    <string name="tour_183_also_file">Isang file sa phone bilang bersyon ng kanta</string>
+    <string name="tour_183_also_duplicates">Hanapin ang mga kantang dalawang beses sa isang playlist</string>
+    <string name="tour_183_also_songs_from">Mga kanta sa Library mula sa mga playlist na pinili mo</string>
+    <string name="tour_183_also_lock">Ulitin at Susunod sa lock screen</string>
+    <string name="tour_183_also_uploads">Mag-upload at magbura sa Mga Upload</string>
+    <string name="show_furigana">Ipakita ang furigana</string>
+    <string name="hiragana_readings_above_kanji">Mga pagbasang hiragana sa itaas ng kanji sa mga lirikong Hapon</string>
+    <string name="furigana_uses_the_japanese_reading_data">Gumagamit ng data ng pagbasa ng Hapon (isang beses lang ida-download sa ibaba).</string>
 </resources>

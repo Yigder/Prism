@@ -13,7 +13,9 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -31,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import com.prism.music.data.lyrics.LyricLine
 import com.prism.music.data.lyrics.LyricWord
+import com.prism.music.data.lyrics.RubySpan
 import com.prism.music.data.prefs.AppSettings
 import com.prism.music.data.prefs.LyricsBackground
 import com.prism.music.data.prefs.LyricsColor
@@ -262,24 +265,30 @@ fun SungLine(
     onCard: Boolean = false,
     strip: Boolean = false,
     dimAlpha: Float = 0.38f,
+    /** The kanji's hiragana readings, drawn above the line. */
+    ruby: List<RubySpan>? = null,
 ) {
-    val st = style.copy(shadow = look.shadow ?: style.shadow)
+    var layout by remember(line) { mutableStateOf<androidx.compose.ui.text.TextLayoutResult?>(null) }
+    val st = (if (!ruby.isNullOrEmpty()) style.withRubyRoom() else style).copy(shadow = look.shadow ?: style.shadow)
     val timed = if (look.timesWords) remember(line) { line.withWords() } else line
     val plan = look.sungPlan(timed.isWordSynced, onCard, strip, axis != null, dimAlpha)
     val set = if (plan.weight != null) st.copy(fontWeight = FontWeight(plan.weight)) else st
     val drawn = @Composable { m: Modifier ->
         when (plan.kind) {
-            SungKind.PLAIN -> PlainSung(line, set, look, m, maxLines)
-            SungKind.GROW -> WeightSweptLine(timed, clock, st, axis!!, m, look.weight, look.sungWeight, look.sung)
-            SungKind.SWEEP -> SweptLine(timed, clock, set, m, maxLines, litBrush = look.sung, dimColor = plan.dim)
-            SungKind.TYPEWRITER -> TypewriterLine(timed, clock, set, look, m, maxLines)
+            SungKind.PLAIN -> PlainSung(line, set, look, m, maxLines) { layout = it }
+            SungKind.GROW -> WeightSweptLine(timed, clock, st, axis!!, m, look.weight, look.sungWeight, look.sung) { layout = it }
+            SungKind.SWEEP -> SweptLine(timed, clock, set, m, maxLines, litBrush = look.sung, dimColor = plan.dim) { layout = it }
+            SungKind.TYPEWRITER -> TypewriterLine(timed, clock, set, look, m, maxLines) { layout = it }
         }
+    }
+    val withRuby = @Composable { m: Modifier ->
+        RubyOverlay(ruby, st, layout, m, if (onCard) look.sungSolid else Color.White.copy(alpha = 0.9f)) { inner -> drawn(inner) }
     }
     // The glow is a blurred copy of the sung words behind them (a text shadow is cut off at the line's edges). The copy is
     // the letters thickened by an outline and only lightly blurred, so the light hugs each letter's shape instead of
     // clouding the space round the words (a 10 dp blur did that before 1.7.5's release). Below Android 12 there's no blur,
     // so no glow copy.
-    if (!plan.halo || android.os.Build.VERSION.SDK_INT < 31) { drawn(modifier); return }
+    if (!plan.halo || android.os.Build.VERSION.SDK_INT < 31) { withRuby(modifier); return }
     val glowFill = SolidColor(look.sungSolid.copy(alpha = 0.85f))
     val bright = if (plan.kind == SungKind.GROW) st.copy(fontWeight = FontWeight(look.sungWeight)) else set
     val density = androidx.compose.ui.platform.LocalDensity.current
@@ -295,29 +304,44 @@ fun SungLine(
         val soft = Modifier.matchParentSize().blur(GLOW_BLUR, androidx.compose.ui.draw.BlurredEdgeTreatment.Unbounded)
         if (!timed.isWordSynced || plan.kind == SungKind.PLAIN) Text(timed.text, soft, style = glowStyle, maxLines = maxLines, overflow = TextOverflow.Ellipsis)
         else SweptLine(timed, clock, glowStyle, soft, maxLines, litBrush = glowFill, dimColor = Color.Transparent)
-        drawn(Modifier)
+        withRuby(Modifier)
     }
 }
 
 /** A line not being sung, in the look's color and weight at [alpha]. */
 @Composable
-fun RestingLine(line: LyricLine, style: TextStyle, look: LyricsLook, alpha: Float, modifier: Modifier = Modifier, maxLines: Int = Int.MAX_VALUE) {
-    Text(
-        line.text, modifier, color = look.others.copy(alpha = alpha), maxLines = maxLines, overflow = TextOverflow.Ellipsis,
-        style = style.copy(fontWeight = FontWeight(look.weight), shadow = look.shadow ?: style.shadow),
-    )
+fun RestingLine(
+    line: LyricLine, style: TextStyle, look: LyricsLook, alpha: Float, modifier: Modifier = Modifier, maxLines: Int = Int.MAX_VALUE,
+    /** The kanji's hiragana readings, drawn above the line. */
+    ruby: List<RubySpan>? = null,
+) {
+    var layout by remember(line) { mutableStateOf<androidx.compose.ui.text.TextLayoutResult?>(null) }
+    val st = if (!ruby.isNullOrEmpty()) style.withRubyRoom() else style
+    RubyOverlay(ruby, st, layout, modifier, look.others.copy(alpha = alpha)) { m ->
+        Text(
+            line.text, m, color = look.others.copy(alpha = alpha), maxLines = maxLines, overflow = TextOverflow.Ellipsis,
+            style = st.copy(fontWeight = FontWeight(look.weight), shadow = look.shadow ?: style.shadow),
+            onTextLayout = { layout = it },
+        )
+    }
 }
 
 /** The sung line all at once, in the sung color. */
 @Composable
-private fun PlainSung(line: LyricLine, style: TextStyle, look: LyricsLook, modifier: Modifier, maxLines: Int) {
-    if (look.sung != null) Text(line.text, modifier, style = style.copy(brush = look.sung), maxLines = maxLines, overflow = TextOverflow.Ellipsis)
-    else Text(line.text, modifier, style = style, color = Color.White, maxLines = maxLines, overflow = TextOverflow.Ellipsis)
+private fun PlainSung(
+    line: LyricLine, style: TextStyle, look: LyricsLook, modifier: Modifier, maxLines: Int,
+    onLayout: ((androidx.compose.ui.text.TextLayoutResult) -> Unit)? = null,
+) {
+    if (look.sung != null) Text(line.text, modifier, style = style.copy(brush = look.sung), maxLines = maxLines, overflow = TextOverflow.Ellipsis, onTextLayout = { onLayout?.invoke(it) })
+    else Text(line.text, modifier, style = style, color = Color.White, maxLines = maxLines, overflow = TextOverflow.Ellipsis, onTextLayout = { onLayout?.invoke(it) })
 }
 
 /** Typewriter: each word appears as it's sung (quickly fading in), the rest of the line not there yet. */
 @Composable
-private fun TypewriterLine(line: LyricLine, clock: State<Long>, style: TextStyle, look: LyricsLook, modifier: Modifier, maxLines: Int) {
+private fun TypewriterLine(
+    line: LyricLine, clock: State<Long>, style: TextStyle, look: LyricsLook, modifier: Modifier, maxLines: Int,
+    onLayout: ((androidx.compose.ui.text.TextLayoutResult) -> Unit)? = null,
+) {
     // Each word's visibility in tenths, recomposing only when one changes.
     val shown by remember(line) {
         derivedStateOf {
@@ -333,7 +357,7 @@ private fun TypewriterLine(line: LyricLine, clock: State<Long>, style: TextStyle
             pop()
         }
     }
-    Box(modifier) { Text(text, style = style, maxLines = maxLines, overflow = TextOverflow.Ellipsis) }
+    Box(modifier) { Text(text, style = style, maxLines = maxLines, overflow = TextOverflow.Ellipsis, onTextLayout = { onLayout?.invoke(it) }) }
 }
 
 private const val TYPE_IN_MS = 140f

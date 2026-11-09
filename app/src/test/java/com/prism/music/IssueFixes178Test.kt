@@ -70,6 +70,7 @@ class IssueFixes178Test {
     }
 
     /** Live: the main endpoint made to refuse, the real second one answers line by line (made-up text). */
+    @org.junit.experimental.categories.Category(LiveNetwork::class)
     @Test fun theSecondEndpointTranslatesLive() = runBlocking {
         val refuseMain = Interceptor { chain ->
             val req = chain.request()

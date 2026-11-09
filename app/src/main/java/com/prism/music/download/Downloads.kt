@@ -54,6 +54,17 @@ data class DownloadInfo(val song: Song?, val state: Int, val percent: Float, val
  */
 fun Map<String, DownloadInfo>.forRow(id: String, standIns: Map<String, String>): DownloadInfo? = this[id] ?: standIns[id]?.let { this[it] }
 
+/**
+ * A song row's downloaded mark (#385, 1.8.3): downloaded under its id or its song's (#315), or it plays from a file on
+ * the phone. Playing matches a file by the song (title, artist, length), while the mark went by id only, so another
+ * playlist's id for the same song played the FLAC with no mark. [fromPhone] is asked only while lossless sync has
+ * files at all.
+ */
+fun rowDownloaded(song: Song, downloads: Map<String, DownloadInfo>, standIns: Map<String, String>, fromPhone: (Song) -> Boolean): Boolean {
+    if (downloads.forRow(song.id, standIns)?.state == Download.STATE_COMPLETED) return true
+    return !song.isLocal && !song.isVideo && downloads.values.any { it.lossless } && fromPhone(song)
+}
+
 /** A song's music video saved for offline: its picture, plus the video's own audio when that isn't the song's. */
 data class VideoDownload(val videoId: String, val state: Int, val percent: Float, val bytes: Long)
 
@@ -68,6 +79,14 @@ private const val VIDEO_AUDIO = "vaud:"
 private const val AUTO_RETRY_GAP_MS = 6 * 60 * 60_000L
 private fun isVideoPart(id: String) = id.startsWith(VIDEO_PICTURE) || id.startsWith(VIDEO_AUDIO)
 private fun partSongId(id: String) = id.substringAfter(':')
+
+/**
+ * Whether a music video downloads as its song (#186). #390 (1.8.3): only when it would also play as its song ("Songs, not
+ * videos: Everywhere"); with "Radios" a video picked from search plays with its own sound, so it downloads that way too,
+ * not as the album track.
+ */
+internal fun downloadsAsSong(song: Song, s: com.prism.music.data.prefs.AppSettings): Boolean =
+    song.isVideo && !song.isUpload && !song.isLive && !song.isEpisode && s.radioSongsOnly && s.songsEverywhere
 
 @OptIn(UnstableApi::class)
 class DownloadRepository(private val context: Context, private val c: AppContainer, scope: CoroutineScope) {
@@ -505,6 +524,12 @@ class DownloadRepository(private val context: Context, private val c: AppContain
 
     fun isDownloaded(id: String) = _downloads.value[id]?.state == Download.STATE_COMPLETED
 
+    /** #385: this song plays from a file on the phone, by the same matcher and settings playback uses. */
+    fun playsFromPhone(song: Song): Boolean {
+        val kinds = com.prism.music.data.local.OwnFiles.kinds(c.settings.current)
+        return kinds.any && c.localLossless.match(song, lossless = kinds.lossless, lossy = kinds.lossy, note = false) != null
+    }
+
     /** True when this song is only here as a lossless file on the phone (not downloaded by Prism). */
     fun isLosslessOnly(id: String) = id in _lossless.value && id !in _media.value
 
@@ -516,9 +541,9 @@ class DownloadRepository(private val context: Context, private val c: AppContain
         if (c.losslessSync.unhide(song.id)) return
         // (A music video already downloaded as its song counts as downloaded.)
         if (_downloads.value[keptAs(song.id)]?.state.let { it == Download.STATE_COMPLETED || it == Download.STATE_DOWNLOADING || it == Download.STATE_QUEUED }) return
-        // A music video comes down as its song (#186), with "Songs, not videos" on: the audio, without the video's intro
-        // and outro. When there's no song for it, the video's own sound, as before.
-        if (!asIs && song.isVideo && !song.isUpload && !song.isLive && !song.isEpisode && c.settings.current.radioSongsOnly) {
+        // A music video comes down as its song (#186) when it would play as its song: the audio, without the video's
+        // intro and outro. When there's no song for it, the video's own sound, as before.
+        if (!asIs && downloadsAsSong(song, c.settings.current)) {
             c.scope.launch {
                 val audio = c.player.songFor(song)
                 if (audio != null) {
@@ -776,7 +801,7 @@ private const val PREMIUM_KBPS = 200
 private const val STALL_STOP = 7
 
 /** Sizes offered for Smart Downloads' space (its picks and the songs you've streamed), in GB. */
-val SMART_DOWNLOAD_SIZES = listOf(1f, 2f, 3f, 5f, 7.5f, 10f, 15f, 20f, 30f, 50f)
+val SMART_DOWNLOAD_SIZES = listOf(0.25f, 0.5f, 1f, 2f, 3f, 5f, 7.5f, 10f, 15f, 20f, 30f, 50f)
 
 fun formatGb(gb: Float): String = when {
     gb < 1f -> "${(gb * 1024).roundToInt()} MB"

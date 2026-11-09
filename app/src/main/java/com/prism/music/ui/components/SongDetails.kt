@@ -42,7 +42,7 @@ fun SongDetailsSheet(song: Song, onDismiss: () -> Unit) {
     val c = LocalContainer.current
     // As a picked version plays (#328): that recording's numbers, under that recording's name.
     val shown = com.prism.music.data.SongVersions.shownOf(song)
-    val id = c.versions.of(song.id) ?: song.id
+    val id = c.versions.streamedOf(song.id) ?: song.id
     PrismSheet(onDismiss) { _ ->
         // Asked from inside the sheet, whose content composes apart from this page: an answer can't arrive before what
         // shows it is watching for it (under test one did, and the spinner stayed).

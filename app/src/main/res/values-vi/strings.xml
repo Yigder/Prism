@@ -4810,4 +4810,154 @@
     <string name="speed_dial_your_plays_first_info">YouTube gửi cho Prism các ô của trang web, không phải các ô trong ứng dụng và không phải lúc nào cũng theo những gì bạn phát. Khi bật, những gì bạn phát nhiều nhất trên điện thoại này trong ba tháng qua sẽ xuất hiện trước, các ô của YouTube lấp phần còn lại.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube không còn chấp nhận lần đăng nhập này. Hãy đăng xuất rồi đăng nhập lại.</string>
     <string name="youtube_isnt_sending_256_kbps">Hiện YouTube không gửi 256 kbps cho tài khoản này, nên bài hát phát ở chất lượng thông thường</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">Cho phép trên màn hình khóa</string>
+    <string name="lock_screen_maker_xiaomi_detail">Mở quyền của Prism: bật “Hiển thị trên màn hình khóa” và “Mở cửa sổ mới khi chạy trong nền”</string>
+    <string name="lock_screen_maker_vivo_detail">Mở quyền của Prism: bật “Hiển thị trên màn hình khóa” và “Cửa sổ bật lên trong nền”</string>
+    <string name="lock_screen_maker_info">Nhà sản xuất điện thoại của bạn thêm các quyền này vào quyền của Android, và Android không thể cho Prism biết chúng có đang bật hay không. Không có chúng, trình phát có thể không hiện trên màn hình khóa.</string>
+    <string name="lock_screen_refused">Lần trước, điện thoại của bạn không cho trình phát hiện lên. Hãy kiểm tra các quyền ở trên.</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">Thích</string>
+    <string name="unlike">Bỏ thích</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="other">Xóa %d bản tải xuống khỏi điện thoại này?</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="other">Xóa %1$d bài hát khỏi “%2$s” trên YouTube Music?</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">Thẻ</string>
+    <string name="add_a_tag">Thêm thẻ</string>
+    <string name="new_tag">Thẻ mới</string>
+    <string name="tags_are_your_own_labels">Nhãn riêng của bạn cho bài hát, như “tập gym” hay “ngày mưa”. Xem trong Thư viện → Thẻ.</string>
+    <string name="your_tag">Thẻ của bạn trên điện thoại này</string>
+    <string name="remove_this_tag">Bỏ thẻ này</string>
+    <string name="rename_tag">Đổi tên thẻ</string>
+    <string name="delete_tag">Xóa thẻ</string>
+    <string name="delete_the_tag_its_songs_stay">Xóa thẻ “%s”? Các bài hát của thẻ vẫn ở nguyên chỗ cũ.</string>
+    <string name="tag_songs_from_any_song_s">Gắn thẻ bài hát từ trình đơn của bất kỳ bài nào (⋯ hoặc nhấn giữ) → Thêm thẻ.</string>
+    <string name="tag_n_songs">Thẻ · %s</string>
+    <plurals name="n_tags">
+        <item quantity="other">%d thẻ</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">Danh sách phát thông minh</string>
+    <string name="smart_playlist_n">Danh sách phát thông minh · %s</string>
+    <string name="smart_playlist_updates_itself">Danh sách phát thông minh · tự cập nhật</string>
+    <string name="new_smart_playlist">Danh sách phát thông minh mới</string>
+    <string name="edit_rules">Sửa quy tắc</string>
+    <string name="save_a_copy_as_a_playlist">Lưu bản sao thành danh sách phát</string>
+    <string name="saved_as_a_playlist">Đã lưu “%s” thành danh sách phát</string>
+    <string name="no_song_meets_these_rules">Chưa có bài nào khớp các quy tắc này. Đổi chúng trong trình đơn ⋯ → Sửa quy tắc.</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="other">%d bài chưa được đo</item>
+    </plurals>
+    <string name="measuring_n_of_n">Đang đo %1$d / %2$d…</string>
+    <string name="measure_now">Đo ngay</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">Đang đo các bài trên điện thoại này. Khi có Wi-Fi, các bài khác cũng được đo.</string>
+    <string name="smart_fast_and_liked">Nhanh và đã thích</string>
+    <string name="smart_not_played_in_a_while">Lâu rồi chưa nghe</string>
+    <string name="smart_goes_with_what_s_playing">Hợp với bài đang phát</string>
+    <string name="the_song_playing_isn_t_measured_yet">Bài đang phát chưa được đo.</string>
+    <string name="match_all_rules">Khớp mọi quy tắc</string>
+    <string name="match_any_rule">Khớp một quy tắc bất kỳ</string>
+    <string name="add_a_rule">Thêm quy tắc</string>
+    <string name="add_a_rule_to_begin">Thêm một quy tắc để bắt đầu.</string>
+    <string name="finds_n">Tìm thấy %s</string>
+    <string name="up_to">Tối đa</string>
+    <string name="sort_most_played">Nghe nhiều nhất</string>
+    <string name="sort_not_played_lately">Gần đây chưa nghe</string>
+    <string name="sort_random">Ngẫu nhiên</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">Giọng hợp với</string>
+    <string name="rule_energy">Năng lượng</string>
+    <string name="rule_loudness">Độ lớn (LUFS)</string>
+    <string name="rule_on_phone">Tệp trên điện thoại này</string>
+    <string name="rule_tag">Thẻ</string>
+    <string name="rule_times_played">Số lần nghe</string>
+    <string name="rule_last_played">Lần nghe cuối</string>
+    <string name="rule_added">Thêm vào thư viện</string>
+    <string name="rule_never_played">Chưa từng nghe</string>
+    <string name="rule_is">Có</string>
+    <string name="rule_isn_t">Không</string>
+    <string name="rule_from">Từ</string>
+    <string name="rule_to">Đến</string>
+    <string name="rule_at_least">Ít nhất</string>
+    <string name="rule_at_most">Nhiều nhất</string>
+    <string name="rule_within">Trong</string>
+    <string name="rule_not_within">Không trong</string>
+    <string name="rule_days">ngày qua</string>
+    <string name="genre_example">Pop, hip-hop, rock…</string>
+    <string name="your_listening">Bạn nghe gì</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">Bài hát từ</string>
+    <string name="your_likes_stay_as_they_are">Chỉ những gì thẻ này hiển thị thay đổi. Lượt thích của bạn vẫn giữ nguyên.</string>
+    <string name="search_these_songs">Tìm trong các bài này</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">Tìm trong thư viện</string>
+    <string name="nothing_in_your_library_matches">Không có gì trong thư viện khớp</string>
+    <string name="try_fewer_words_or_another_filter">Thử ít từ hơn hoặc bộ lọc khác.</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">Tìm bài trùng</string>
+    <string name="no_song_is_here_twice">Không có bài nào lặp lại</string>
+    <string name="extra_copy">Bản thừa</string>
+    <string name="keeping_s">Giữ lại “%s”</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="other">%d bài xuất hiện hơn một lần</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="other">Xóa %d bản thừa</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="other">Thao tác này đưa %d bài ra khỏi danh sách phát.</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="other">Thao tác này cũng đưa %d bài ra khỏi danh sách phát trên YouTube Music.</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">Tệp của bạn</string>
+    <string name="choose_a_file_on_this_phone">Chọn một tệp trên điện thoại này</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">Một ô</string>
+    <string name="pin_to_home_as_one_tile">Ghim vào Trang chủ dưới dạng một ô</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">Tải lên bài hát</string>
+    <string name="uploading_s">Đang tải lên %1$s…</string>
+    <string name="uploaded_s_it_shows_up_here">Đã tải lên %1$s. Bài sẽ hiện ở đây khi YouTube Music chuẩn bị xong, thường trong vài phút.</string>
+    <string name="couldn_t_upload_it_s">Không tải lên được: %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">YouTube Music nhận tệp MP3, M4A, WMA, FLAC và Ogg tối đa 300 MB.</string>
+    <string name="delete_from_your_uploads">Xóa khỏi nội dung bạn tải lên</string>
+    <string name="delete_s_from_youtube_music">Xóa \"%1$s\" khỏi YouTube Music?</string>
+    <string name="it_goes_from_your_uploads_for_good">Bài sẽ bị xóa vĩnh viễn khỏi nội dung bạn tải lên trên mọi thiết bị. Không thể hoàn tác.</string>
+    <string name="deleted_from_your_uploads">Đã xóa khỏi nội dung bạn tải lên</string>
+    <string name="couldn_t_delete_it_s">Không xóa được: %1$s</string>
+    <string name="uploads_couldn_t_find_it">YouTube Music không còn liệt kê bài này</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">Danh sách phát thông minh</string>
+    <string name="tour_183_smart_body">Danh sách tự điền theo quy tắc bạn đặt và luôn theo kịp thư viện của bạn.</string>
+    <string name="tour_183_smart_point_1">Quy tắc theo bài bạn thích, nghe, tải xuống hoặc gắn thẻ</string>
+    <string name="tour_183_smart_point_2">Nhịp độ, giọng và năng lượng, đo ngay trên điện thoại</string>
+    <string name="tour_183_smart_point_3">Lưu bản sao thành danh sách thường bất cứ lúc nào</string>
+    <string name="tour_183_tags_title">Thẻ</string>
+    <string name="tour_183_tags_body">Nhãn của riêng bạn cho bài hát, từ menu của bất kỳ bài nào.</string>
+    <string name="tour_183_tags_point_1">Mỗi thẻ có trang riêng trong Thư viện</string>
+    <string name="tour_183_tags_point_2">Dùng chúng trong danh sách thông minh</string>
+    <string name="tour_183_tags_point_3">Gắn thẻ nhiều bài cùng lúc</string>
+    <string name="tour_183_select_title">Chọn nhiều</string>
+    <string name="tour_183_select_body">Nhấn giữ một bài trong danh sách để chọn thêm, rồi làm cho tất cả cùng lúc.</string>
+    <string name="tour_183_select_point_1">Thêm vào danh sách hoặc hàng đợi, gắn thẻ, thích hoặc tải xuống</string>
+    <string name="tour_183_select_point_2">Bỏ khỏi danh sách, có hỏi lại trước</string>
+    <string name="tour_183_search_title">Tìm trong thư viện</string>
+    <string name="tour_183_search_body">Mọi thứ bạn có, hiện ra khi bạn gõ, có bộ lọc.</string>
+    <string name="tour_183_search_point_1">Bài hát, danh sách, thẻ, nghệ sĩ và album</string>
+    <string name="tour_183_search_point_2">Chỉ bài đã thích, đã tải hoặc có trên điện thoại này</string>
+    <string name="tour_183_search_point_3">Tìm được tên tiếng Nhật, Hàn, Nga và Hy Lạp bằng chữ Latinh</string>
+    <string name="tour_183_also_file">Một tệp trên điện thoại làm phiên bản của bài hát</string>
+    <string name="tour_183_also_duplicates">Tìm bài xuất hiện hai lần trong danh sách</string>
+    <string name="tour_183_also_songs_from">Bài hát trong Thư viện từ các danh sách bạn chọn</string>
+    <string name="tour_183_also_lock">Lặp lại và Tiếp theo trên màn hình khóa</string>
+    <string name="tour_183_also_uploads">Tải lên và xóa trong Nội dung tải lên</string>
+    <string name="show_furigana">Hiện furigana</string>
+    <string name="hiragana_readings_above_kanji">Cách đọc hiragana phía trên kanji trong lời bài hát tiếng Nhật</string>
+    <string name="furigana_uses_the_japanese_reading_data">Dùng dữ liệu đọc tiếng Nhật (tải một lần bên dưới).</string>
 </resources>

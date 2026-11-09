@@ -33,6 +33,8 @@ import com.prism.music.playback.QueueState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -86,6 +88,27 @@ class PrismApp : Application(), coil3.SingletonImageLoader.Factory {
         // Menus' labels and other text read once would stay in the old language (seen after a change in the phone's
         // Settings → Apps → Prism → Language): Prism starts again in the new one, as its own Language page does.
         if (AppLanguage.changed(this, language, newConfig)) AppLanguage.restart(this)
+    }
+
+    /**
+     * Never called on a phone (Android just ends the process); Robolectric calls it after each test. The app's work stops
+     * and its database closes then: the library's lists kept reading a database Robolectric had already let go of, and
+     * the test JVM crashed in SQLite's native code (2026-11-07, two full runs in a row).
+     */
+    override fun onTerminate() {
+        if (::container.isInitialized) {
+            // Cancelled and waited for (briefly): a read already inside SQLite finishes before the database closes. Work
+            // waiting for the main thread can't finish while this holds it, hence the short wait (2 s made the unit tests
+            // four times as long).
+            runCatching {
+                kotlinx.coroutines.runBlocking {
+                    kotlinx.coroutines.withTimeoutOrNull(300) { container.scope.coroutineContext[kotlinx.coroutines.Job]?.cancelAndJoin() }
+                }
+            }
+            container.scope.cancel()
+            runCatching { container.db.close() }
+        }
+        super.onTerminate()
     }
 
     override fun onCreate() {
@@ -308,11 +331,11 @@ class AppContainer(val app: Application) {
         innerTube,
         songsEverywhere = { settings.current.let { it.radioSongsOnly && it.songsEverywhere } },
         onPairs = { queue.counterparts.putAll(it) },
-    )
+    ).apply { moodsCache = com.prism.music.data.MoodsCache(app.filesDir) }
     val db = PrismDatabase.build(app)
     /** Versions of songs the listener picked to hear instead (1.7.9, "Play a different version"). */
     val versions = com.prism.music.data.SongVersions(app.getSharedPreferences("song_versions", android.content.Context.MODE_PRIVATE))
-    val streams by lazy { StreamResolver(app, http, settings, innerTube).apply { versionOf = versions::of } }
+    val streams by lazy { StreamResolver(app, http, settings, innerTube).apply { versionOf = versions::streamedOf } }
     val translator = com.prism.music.data.lyrics.LyricsTranslator(http, File(app.filesDir, "translations"))
     /** Artist pages' Wikipedia bios (1.8.2), kept with the artist pages. Asks nothing unless that switch is on. */
     val artistBios by lazy {
@@ -356,8 +379,10 @@ class AppContainer(val app: Application) {
         // Phones with few cores (or little memory, or Performance mode on): scans make way while the listener scrolls (#343).
         val slow = com.prism.music.playback.MixTempo.isSlowPhone(Runtime.getRuntime().availableProcessors(), com.prism.music.data.DevicePower.mayBeSlow(app), false)
         com.prism.music.playback.MixTempo.slowPhone = { slow || settings.current.performanceMode }
-        com.prism.music.playback.MixTempo(app, streamHttp, streams, ::audioOnPhone, { yieldToPlaying(null) }, { player.isPlaying.value }, waves)
+        com.prism.music.playback.MixTempo(app, streamHttp, streams, ::audioOnPhone, { yieldToPlaying(null) }, { player.isPlaying.value }, waves, traits)
     }
+    /** What's measured of songs (tempo, key, loudness, energy), in one table that smart playlists filter on (1.8.3). */
+    val traits by lazy { com.prism.music.data.TraitsStore(db.traits(), scope) }
     /** Songs' loudness outlines, for the waveform progress bar (made by the song scan). */
     val waves by lazy { com.prism.music.data.SongWaves(app) }
 
@@ -367,6 +392,8 @@ class AppContainer(val app: Application) {
      */
     internal fun audioOnPhone(id: String, scratch: File): android.net.Uri? {
         if (id.startsWith(com.prism.music.data.model.Song.LOCAL_PREFIX)) return localMusic.uriFor(id)
+        // A file on the phone picked to play in its place is its sound too.
+        versions.fileOf(id)?.let(localMusic::uriFor)?.let { return it }
         for ((cache, key) in listOf(downloadCache to id, playerCache to songCacheKey(id))) {
             if (!cache.fullyCached(key, 0, C.LENGTH_UNSET.toLong())) continue
             val ok = runCatching {
@@ -410,6 +437,7 @@ class AppContainer(val app: Application) {
         com.prism.music.download.SmartCacheEvictor(
             maxBytes = { (settings.current.offlineGb * 1_073_741_824.0).toLong() - smartPickBytes },
             favoured = { id -> runCatching { id in library.likedIds.value }.getOrDefault(false) },
+            totalBytes = { (settings.current.offlineGb * 1_073_741_824.0).toLong() },
         )
     }
     val playerCache: SimpleCache by lazy {
@@ -454,6 +482,40 @@ class AppContainer(val app: Application) {
     val taste = com.prism.music.data.TasteRepository(this)
     /** Playlists and saved albums kept on the phone (no account needed). */
     val prismLibrary = com.prism.music.data.PrismLibrary(java.io.File(app.filesDir, "library"))
+    /** The listener's own tags on songs (1.8.3). */
+    val tags by lazy { com.prism.music.data.TagStore(db, scope, java.io.File(app.filesDir, "library")) }
+    /** Smart playlists' songs (1.8.3): asked for when one opens, never at start. */
+    val smart by lazy {
+        com.prism.music.data.SmartPlaylists(db, { downloads.completedSongs() }, { localMusic.tracks.value.map { it.song } }, { meta.cachedGenres(it) })
+    }
+    /**
+     * Whole playlists for Library → Songs' "From" (1.8.3, #382): Prism's own from the phone, YouTube's page after page
+     * (the copy kept on the phone without a network).
+     */
+    val playlistSongs by lazy {
+        com.prism.music.data.PlaylistSongs { id ->
+            prismLibrary.list(id)?.songs ?: run {
+                val page = try { ytm.playlist(id) } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) {
+                    offline.page(id) ?: offline.page("VL$id") ?: throw e
+                }
+                val songs = page.songs.toMutableList()
+                var token = page.continuation
+                while (token != null && songs.size < com.prism.music.data.PlaylistSongs.MAX) {
+                    val chunk = runCatching { ytm.playlistPage(token!!) }.getOrNull() ?: break
+                    if (chunk.songs.isEmpty()) break
+                    songs += chunk.songs
+                    token = chunk.next
+                }
+                songs.distinctBy { it.id }
+            }
+        }
+    }
+    /** "Measure now" on a smart playlist: the songs its Sound rules can't see yet, scanned one by one (Wi-Fi for streams). */
+    val smartMeasure by lazy {
+        com.prism.music.data.SmartMeasure(scope, { id, network -> mixTempo.measure(id, network = network, key = true) }) {
+            app.getSystemService(android.net.ConnectivityManager::class.java)?.isActiveNetworkMetered == false
+        }
+    }
     /** The listener's Prism Account: a name and picture kept on this phone ([com.prism.music.data.PrismAccount]). */
     val account by lazy { com.prism.music.data.PrismAccount(this) }
 
@@ -469,6 +531,10 @@ class AppContainer(val app: Application) {
     val romanizer = com.prism.music.data.lyrics.Romanizer(
         http, db.romanized(), models, scope, app.getSharedPreferences("romanize_songs", android.content.Context.MODE_PRIVATE),
     )
+    /** Titles in other scripts in Latin letters, for searching the library (1.8.3, #363); spelled when a search wants them. */
+    val titleSpellings by lazy {
+        com.prism.music.data.TitleSpellings(db.romanized(), scope, { romanizer.japaneseReady }) { romanizer.spellTitle(it) }
+    }
     /** Songs' best parts, from YouTube's "Most replayed" curves (and the chorus in the lyrics). */
     val bestParts = com.prism.music.data.BestParts(this)
 
@@ -495,6 +561,20 @@ class AppContainer(val app: Application) {
                 .filter { !it.isLocal && !it.isEpisode }.distinctBy { it.id }.groupBy { it.primaryArtist }
             (played + mine.keys).filter { it.isNotBlank() }.distinct().forEach { meta.refineLater(it, mine[it].orEmpty()) }
             migrations.edit().putBoolean("genres_itunes_1", true).apply()
+        }
+        // 1.8.3: what earlier versions measured (in the scans' prefs) goes into the song_traits table, for the songs it has
+        // no row for. Again after a restore that brought one without the other; nothing to do otherwise (a count).
+        scope.launch(Dispatchers.IO) {
+            kotlinx.coroutines.delay(25_000)
+            runCatching {
+                val m = mixTempo
+                val copied = traits.copyMissing(m.measuredIds(), m::traitsFromPrefs)
+                if (copied > 0) android.util.Log.i("PrismTraits", "copied $copied songs' measurements into song_traits")
+            }
+        }
+        // 1.8.3: a restored backup's tags, read in once (a file check otherwise).
+        scope.launch(Dispatchers.IO) {
+            if (java.io.File(app.filesDir, "library/" + com.prism.music.data.TagStore.PENDING).isFile) tags.readPending()
         }
         // GitHub #182: bringing the library over had starred every library song's artist; those come off once, unless the
         // account follows them. Retried on a later launch when the account's follows couldn't be asked for.
@@ -600,7 +680,10 @@ class AppContainer(val app: Application) {
     val together by lazy { com.prism.music.playback.together.Together(app, this) }
 
     /** Prism Connect: speakers and TVs on the network (UPnP / DLNA). */
-    val cast by lazy { com.prism.music.connect.Cast(app, this) }
+    private val castHolder = lazy { com.prism.music.connect.Cast(app, this) }
+    val cast by castHolder
+    /** Casting right now; asking doesn't set up Prism Connect's casting (the notification asks at every update). */
+    val castingNow: Boolean get() = castHolder.isInitialized() && cast.casting
     private val webRemoteMade = lazy { com.prism.music.connect.WebRemote(app, this) }
     /** Prism Connect: Prism played from a browser on the same Wi-Fi (Settings → Prism Connect). */
     val webRemote by webRemoteMade
@@ -650,7 +733,8 @@ class AppContainer(val app: Application) {
 
     /** Whether a song plays without the network: a file on the phone, a finished download, or a song cached whole. */
     fun availableOffline(id: String): Boolean =
-        id.startsWith(com.prism.music.data.model.Song.LOCAL_PREFIX) || downloads.isDownloaded(id) ||
+        id.startsWith(com.prism.music.data.model.Song.LOCAL_PREFIX) || versions.fileOf(id) != null ||
+            downloads.isDownloaded(id) ||
             runCatching { playerCache.fullyCached(songCacheKey(id), 0, C.LENGTH_UNSET.toLong()) }.getOrDefault(false)
 
     private fun Cache.fullyCached(key: String, position: Long, length: Long): Boolean {
@@ -672,7 +756,7 @@ class AppContainer(val app: Application) {
      * still saving the one it had been playing: what it saved after went in under the song, and back on its own
      * recording the song couldn't be read and stopped playing (1.7.9's check, "Woke Up Older").
      */
-    fun songCacheKey(id: String): String = versions.of(id) ?: id
+    fun songCacheKey(id: String): String = versions.streamedOf(id) ?: id
 
     /**
      * Plays [pick] in [song]'s place from now on (null: its own sound again). The version's measurements go, and a
@@ -691,7 +775,8 @@ class AppContainer(val app: Application) {
                 kotlinx.coroutines.withContext(Dispatchers.IO) {
                     mixTempo.forget(song.id)
                     waves.forget(song.id)
-                    downloads.redownload(song.id, unfinished = true)
+                    // A file on the phone (1.8.3) is there already: a download stays the song's own.
+                    if (pick?.id?.startsWith(com.prism.music.data.model.Song.LOCAL_PREFIX) != true) downloads.redownload(song.id, unfinished = true)
                 }
             }
         }
@@ -844,6 +929,7 @@ class AppContainer(val app: Application) {
         writer: ((androidx.media3.datasource.cache.CacheWriter) -> Unit)? = null,
     ) {
         if (id.startsWith(com.prism.music.data.model.Song.LOCAL_PREFIX)) return // a file on the phone is ready already
+        if (versions.fileOf(id) != null) return // and so is one picked to play in the song's place
         if (id.startsWith(com.prism.music.data.model.Song.RSS_PREFIX)) return // an hour of a feed's audio isn't fetched on the chance
         if (downloadCache.fullyCached(id, 0, C.LENGTH_UNSET.toLong())) return
         yieldToPlaying(if (forSing) null else id)

@@ -124,6 +124,42 @@ class MigrationTest {
         db.close()
     }
 
+    /** v10 (1.8.3): what's measured of songs gets its own table, empty until the copy from the prefs fills it. */
+    @Test
+    fun v10AddsSongTraits() {
+        val context = RuntimeEnvironment.getApplication()
+        val name = "migrate-v10-traits.db"
+        context.deleteDatabase(name)
+        createAt(context.getDatabasePath(name), 9)
+        val db = Room.databaseBuilder(context, PrismDatabase::class.java, name)
+            .addMigrations(*PrismDatabase.MIGRATIONS).allowMainThreadQueries().build()
+        runBlocking {
+            assertEquals(0, db.traits().count())
+            db.traits().put(com.prism.music.data.db.SongTraitsEntity("song1", 120.0, true, null, "8A", -9f, 0.6f, whole = true, measuredAt = 1L))
+            assertEquals(120.0, db.traits().get("song1")!!.bpm!!, 1e-9)
+            assertEquals("history kept", 2, db.plays().count(0, Long.MAX_VALUE))
+        }
+        db.close()
+    }
+
+    /** v11 (1.8.3): the listener's tags on songs, a table of their own. */
+    @Test
+    fun v11AddsSongTags() {
+        val context = RuntimeEnvironment.getApplication()
+        val name = "migrate-v11-tags.db"
+        context.deleteDatabase(name)
+        createAt(context.getDatabasePath(name), 10)
+        val db = Room.databaseBuilder(context, PrismDatabase::class.java, name)
+            .addMigrations(*PrismDatabase.MIGRATIONS).allowMainThreadQueries().build()
+        runBlocking {
+            assertEquals(emptyList<String>(), db.tags().names())
+            db.tags().add(listOf(com.prism.music.data.db.SongTagEntity("gym", "song1", 1L)))
+            assertEquals(listOf("gym"), db.tags().names())
+            assertEquals("history kept", 2, db.plays().count(0, Long.MAX_VALUE))
+        }
+        db.close()
+    }
+
     @Test
     fun currentSchemaIsExported() {
         // A version bump without its exported schema would leave the next migration untestable.
@@ -144,6 +180,11 @@ class MigrationTest {
             val table = e.str("tableName")
             db.execSQL(e.str("createSql").replace("\${TABLE_NAME}", table))
             e["indices"]?.jsonArray?.forEach { db.execSQL(it.jsonObject.str("createSql").replace("\${TABLE_NAME}", table)) }
+        }
+        // Views too (v9's counted_plays): a database from 9 on has them, and Room checks them after a migration.
+        schema["views"]?.jsonArray?.forEach { v ->
+            val view = v.jsonObject
+            db.execSQL(view.str("createSql").replace("\${VIEW_NAME}", view.str("viewName")))
         }
         schema["setupQueries"]!!.jsonArray.forEach { db.execSQL(it.jsonPrimitive.content) }
         db.version = schema["version"]!!.jsonPrimitive.int

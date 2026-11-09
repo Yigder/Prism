@@ -2,6 +2,7 @@ package com.prism.music.ui.screens
 
 import com.prism.music.R
 import com.prism.music.tr
+import androidx.compose.ui.platform.testTag
 import com.prism.music.data.model.quickPicks
 import com.prism.music.ui.theme.PrismIcons
 import androidx.compose.foundation.background
@@ -258,7 +259,7 @@ private fun SectionRow(
             Text(cfg.titled(), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
                 listOfNotNull(
-                    if (cfg.visible) cfg.style.label else tr(R.string.hidden),
+                    if (!cfg.visible) tr(R.string.hidden) else if (cfg.tile) tr(R.string.one_tile) else cfg.style.label,
                     cfg.title.takeIf { cfg.name != null }?.let { tr(R.string.was, it) },
                     tr(R.string.pinned).takeIf { cfg.key.startsWith(HomeSections.PIN_PREFIX) },
                 ).joinToString(" · "),
@@ -271,11 +272,18 @@ private fun SectionRow(
             DropdownMenu(menu, { menu = false }) {
                 SectionStyle.entries.forEach { st ->
                     DropdownMenuItem(
-                        { Text(st.label) }, { onChange(cfg.copy(style = st, visible = true)); menu = false },
+                        { Text(st.label) }, { onChange(cfg.copy(style = st, visible = true, tile = false)); menu = false },
                         leadingIcon = { Icon(st.icon(), null) },
-                        trailingIcon = { if (st == cfg.style) Icon(PrismIcons.Check, null) },
+                        trailingIcon = { if (st == cfg.style && !cfg.tile) Icon(PrismIcons.Check, null) },
                     )
                 }
+                // A pinned album or playlist as one tile (1.8.3, D48).
+                if (OwnSections.canTile(cfg.key)) DropdownMenuItem(
+                    { Text(tr(R.string.one_tile)) }, { onChange(cfg.copy(tile = true, visible = true)); menu = false },
+                    leadingIcon = { Icon(PrismIcons.Album, null) },
+                    trailingIcon = { if (cfg.tile) Icon(PrismIcons.Check, null) },
+                    modifier = Modifier.testTag("oneTile"),
+                )
                 HorizontalDivider()
                 DropdownMenuItem({ Text(tr(R.string.rename)) }, { renaming = true; menu = false }, leadingIcon = { Icon(PrismIcons.Edit, null) })
                 if (canUp) DropdownMenuItem({ Text(tr(R.string.move_up)) }, { onMove(-1); menu = false }, leadingIcon = { Icon(PrismIcons.ChevronUp, null) })

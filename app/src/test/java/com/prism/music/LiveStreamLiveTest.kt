@@ -13,11 +13,13 @@ import org.schabi.newpipe.extractor.localization.Localization
 import org.schabi.newpipe.extractor.stream.StreamInfo
 import org.schabi.newpipe.extractor.stream.StreamType
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /**
  * Live streams ("Listen together" stations, 24/7 radios) play from their HLS manifest: the manifest,
  * a variant playlist and a segment must all load as plain GETs. Live against YouTube.
  */
+@Category(LiveNetwork::class)
 class LiveStreamLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
 

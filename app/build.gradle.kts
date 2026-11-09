@@ -25,8 +25,8 @@ android {
         applicationId = "com.prism.music"
         minSdk = 26
         targetSdk = 36
-        versionCode = 58
-        versionName = "1.8.2.1"
+        versionCode = 59
+        versionName = "1.8.3"
         vectorDrawables { useSupportLibrary = true }
         // The name under the launcher icon; a side-by-side build (below) is called "Prism Dev" so it can't be mistaken for Prism.
         manifestPlaceholders["appLabel"] = "@string/app_name"
@@ -702,6 +702,23 @@ androidComponents {
 }
 
 tasks.withType<Test>().configureEach {
+    // Conscrypt (the phone's TLS, made the JVM's default by Robolectric) reads InetAddress's internals for its handshake.
+    jvmArgs("--add-opens=java.base/java.net=ALL-UNNAMED")
+    // Unit tests that reach real services are @Category(LiveNetwork::class) (app/src/test/.../LiveNetwork.kt): left out
+    // of normal runs; -Plive runs everything, -PliveOnly only them. -PnoNetwork sends the test JVM's HTTP(S) through a
+    // dead proxy, which shows any test that reaches the network without the mark.
+    useJUnit {
+        when {
+            project.hasProperty("liveOnly") -> includeCategories("com.prism.music.LiveNetwork")
+            !project.hasProperty("live") -> excludeCategories("com.prism.music.LiveNetwork")
+        }
+    }
+    if (project.hasProperty("noNetwork")) {
+        listOf("http", "https").forEach {
+            systemProperty("$it.proxyHost", "127.0.0.1")
+            systemProperty("$it.proxyPort", "9")
+        }
+    }
     testLogging {
         showStandardStreams = true
         events("passed", "failed")

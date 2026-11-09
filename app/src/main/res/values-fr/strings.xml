@@ -4938,4 +4938,170 @@
     <string name="speed_dial_your_plays_first_info">YouTube envoie à Prism les tuiles de son site, qui ne sont pas celles de son appli et ne suivent pas toujours ce que vous écoutez. Si c\'est activé, ce que vous avez le plus écouté sur ce téléphone ces trois derniers mois passe en premier, et celles de YouTube complètent le reste.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube n\'accepte plus cette connexion. Déconnectez-vous puis reconnectez-vous.</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube n\'envoie pas de 256 kbit/s à ce compte pour le moment : les titres sont lus en qualité habituelle</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">L\'autoriser sur l\'écran de verrouillage</string>
+    <string name="lock_screen_maker_xiaomi_detail">Ouvre les autorisations de Prism : activez « Afficher sur l\'écran de verrouillage » et « Ouvrir de nouvelles fenêtres en arrière-plan »</string>
+    <string name="lock_screen_maker_vivo_detail">Ouvre les autorisations de Prism : activez « Afficher sur l\'écran de verrouillage » et « Fenêtres contextuelles en arrière-plan »</string>
+    <string name="lock_screen_maker_info">Le fabricant de votre téléphone ajoute ces autorisations à celles d\'Android, et Android ne peut pas dire à Prism si elles sont activées. Sans elles, le lecteur risque de ne pas apparaître sur l\'écran de verrouillage.</string>
+    <string name="lock_screen_refused">La dernière fois, votre téléphone n\'a pas laissé le lecteur apparaître. Vérifiez les autorisations ci-dessus.</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">J\'aime</string>
+    <string name="unlike">Je n\'aime plus</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="one">Retirer %d téléchargement de ce téléphone ?</item>
+        <item quantity="many">Retirer %d téléchargements de ce téléphone ?</item>
+        <item quantity="other">Retirer %d téléchargements de ce téléphone ?</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="one">Retirer %1$d titre de « %2$s » sur YouTube Music ?</item>
+        <item quantity="many">Retirer %1$d titres de « %2$s » sur YouTube Music ?</item>
+        <item quantity="other">Retirer %1$d titres de « %2$s » sur YouTube Music ?</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">Tags</string>
+    <string name="add_a_tag">Ajouter un tag</string>
+    <string name="new_tag">Nouveau tag</string>
+    <string name="tags_are_your_own_labels">Vos propres étiquettes pour vos titres, comme « sport » ou « jour de pluie ». Retrouvez-les dans Bibliothèque → Tags.</string>
+    <string name="your_tag">Votre tag sur ce téléphone</string>
+    <string name="remove_this_tag">Retirer ce tag</string>
+    <string name="rename_tag">Renommer le tag</string>
+    <string name="delete_tag">Supprimer le tag</string>
+    <string name="delete_the_tag_its_songs_stay">Supprimer le tag « %s » ? Ses titres restent là où ils sont.</string>
+    <string name="tag_songs_from_any_song_s">Taguez des titres depuis le menu de n’importe quel titre (⋯ ou appui long) → Ajouter un tag.</string>
+    <string name="tag_n_songs">Tag · %s</string>
+    <plurals name="n_tags">
+        <item quantity="one">%d tag</item>
+        <item quantity="many">%d tags</item>
+        <item quantity="other">%d tags</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">Playlist intelligente</string>
+    <string name="smart_playlist_n">Playlist intelligente · %s</string>
+    <string name="smart_playlist_updates_itself">Playlist intelligente · se tient à jour toute seule</string>
+    <string name="new_smart_playlist">Nouvelle playlist intelligente</string>
+    <string name="edit_rules">Modifier les règles</string>
+    <string name="save_a_copy_as_a_playlist">Enregistrer une copie comme playlist</string>
+    <string name="saved_as_a_playlist">« %s » enregistrée comme playlist</string>
+    <string name="no_song_meets_these_rules">Aucun titre ne remplit encore ces règles. Modifiez-les depuis le menu ⋯ → Modifier les règles.</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="one">%d titre n’est pas encore mesuré</item>
+        <item quantity="many">%d titres ne sont pas encore mesurés</item>
+        <item quantity="other">%d titres ne sont pas encore mesurés</item>
+    </plurals>
+    <string name="measuring_n_of_n">Mesure %1$d sur %2$d…</string>
+    <string name="measure_now">Mesurer maintenant</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">Les titres de ce téléphone sont mesurés. En Wi-Fi, les autres aussi.</string>
+    <string name="smart_fast_and_liked">Rapides et aimés</string>
+    <string name="smart_not_played_in_a_while">Pas écoutés depuis un moment</string>
+    <string name="smart_goes_with_what_s_playing">Va avec le titre en cours</string>
+    <string name="the_song_playing_isn_t_measured_yet">Le titre en cours n’est pas encore mesuré.</string>
+    <string name="match_all_rules">Remplit toutes les règles</string>
+    <string name="match_any_rule">Remplit une des règles</string>
+    <string name="add_a_rule">Ajouter une règle</string>
+    <string name="add_a_rule_to_begin">Ajoutez une règle pour commencer.</string>
+    <string name="finds_n">Trouve %s</string>
+    <string name="up_to">Jusqu’à</string>
+    <string name="sort_most_played">Les plus écoutés</string>
+    <string name="sort_not_played_lately">Pas écoutés récemment</string>
+    <string name="sort_random">Au hasard</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">Tonalité qui va avec</string>
+    <string name="rule_energy">Énergie</string>
+    <string name="rule_loudness">Volume (LUFS)</string>
+    <string name="rule_on_phone">Un fichier de ce téléphone</string>
+    <string name="rule_tag">Tag</string>
+    <string name="rule_times_played">Nombre d’écoutes</string>
+    <string name="rule_last_played">Dernière écoute</string>
+    <string name="rule_added">Ajouté à votre bibliothèque</string>
+    <string name="rule_never_played">Jamais écouté</string>
+    <string name="rule_is">Est</string>
+    <string name="rule_isn_t">N’est pas</string>
+    <string name="rule_from">De</string>
+    <string name="rule_to">À</string>
+    <string name="rule_at_least">Au moins</string>
+    <string name="rule_at_most">Au plus</string>
+    <string name="rule_within">Ces derniers</string>
+    <string name="rule_not_within">Pas ces derniers</string>
+    <string name="rule_days">jours</string>
+    <string name="genre_example">Pop, hip-hop, rock…</string>
+    <string name="your_listening">Vos écoutes</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">Titres de</string>
+    <string name="your_likes_stay_as_they_are">Seul ce qu’affiche cet onglet change. Vos titres aimés restent tels quels.</string>
+    <string name="search_these_songs">Rechercher dans ces titres</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">Rechercher dans votre bibliothèque</string>
+    <string name="nothing_in_your_library_matches">Rien dans votre bibliothèque ne correspond</string>
+    <string name="try_fewer_words_or_another_filter">Essayez avec moins de mots ou un autre filtre.</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">Trouver les doublons</string>
+    <string name="no_song_is_here_twice">Aucun titre n’est là deux fois</string>
+    <string name="extra_copy">Doublon</string>
+    <string name="keeping_s">On garde « %s »</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="one">%d titre est là plusieurs fois</item>
+        <item quantity="many">%d titres sont là plusieurs fois</item>
+        <item quantity="other">%d titres sont là plusieurs fois</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="one">Retirer %d doublon</item>
+        <item quantity="many">Retirer %d doublons</item>
+        <item quantity="other">Retirer %d doublons</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="one">Cela retire %d titre de cette playlist.</item>
+        <item quantity="many">Cela retire %d titres de cette playlist.</item>
+        <item quantity="other">Cela retire %d titres de cette playlist.</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="one">Cela retire %d titre de la playlist sur YouTube Music aussi.</item>
+        <item quantity="many">Cela retire %d titres de la playlist sur YouTube Music aussi.</item>
+        <item quantity="other">Cela retire %d titres de la playlist sur YouTube Music aussi.</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">Votre fichier</string>
+    <string name="choose_a_file_on_this_phone">Choisir un fichier de ce téléphone</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">Une vignette</string>
+    <string name="pin_to_home_as_one_tile">Épingler à l\'accueil en une vignette</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">Importer un titre</string>
+    <string name="uploading_s">Importation de %1$s…</string>
+    <string name="uploaded_s_it_shows_up_here">%1$s est importé. Il apparaîtra ici dès que YouTube Music l\'aura préparé, en général en quelques minutes.</string>
+    <string name="couldn_t_upload_it_s">Impossible de l\'importer : %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">YouTube Music accepte les fichiers MP3, M4A, WMA, FLAC et Ogg jusqu\'à 300 Mo.</string>
+    <string name="delete_from_your_uploads">Supprimer de vos importations</string>
+    <string name="delete_s_from_youtube_music">Supprimer « %1$s » de YouTube Music ?</string>
+    <string name="it_goes_from_your_uploads_for_good">Il disparaît de vos importations sur tous vos appareils, définitivement. C\'est irréversible.</string>
+    <string name="deleted_from_your_uploads">Supprimé de vos importations</string>
+    <string name="couldn_t_delete_it_s">Impossible de le supprimer : %1$s</string>
+    <string name="uploads_couldn_t_find_it">YouTube Music ne le liste plus</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">Playlists intelligentes</string>
+    <string name="tour_183_smart_body">Des playlists qui se remplissent selon vos règles et suivent votre bibliothèque.</string>
+    <string name="tour_183_smart_point_1">Des règles sur ce que vous aimez, écoutez, téléchargez ou taguez</string>
+    <string name="tour_183_smart_point_2">Tempo, tonalité et énergie, mesurés sur votre téléphone</string>
+    <string name="tour_183_smart_point_3">Enregistrez une copie en playlist classique à tout moment</string>
+    <string name="tour_183_tags_title">Tags</string>
+    <string name="tour_183_tags_body">Vos propres étiquettes sur les titres, depuis le menu de n\'importe quel titre.</string>
+    <string name="tour_183_tags_point_1">Chaque tag a sa propre page dans la Bibliothèque</string>
+    <string name="tour_183_tags_point_2">Utilisez-les dans les playlists intelligentes</string>
+    <string name="tour_183_tags_point_3">Taguez plusieurs titres à la fois</string>
+    <string name="tour_183_select_title">Sélection multiple</string>
+    <string name="tour_183_select_body">Maintenez un titre dans une liste pour en choisir d\'autres, puis agissez sur tous à la fois.</string>
+    <string name="tour_183_select_point_1">Ajouter à une playlist ou à la file, taguer, aimer ou télécharger</string>
+    <string name="tour_183_select_point_2">Les retirer d\'une playlist, après confirmation</string>
+    <string name="tour_183_search_title">Chercher dans votre bibliothèque</string>
+    <string name="tour_183_search_body">Tout ce que vous avez, trouvé pendant la saisie, avec des filtres.</string>
+    <string name="tour_183_search_point_1">Titres, playlists, tags, artistes et albums</string>
+    <string name="tour_183_search_point_2">Seulement aimés, téléchargés ou sur ce téléphone</string>
+    <string name="tour_183_search_point_3">Titres japonais, coréens, russes et grecs trouvés en lettres latines</string>
+    <string name="tour_183_also_file">Un fichier de votre téléphone comme version d\'un titre</string>
+    <string name="tour_183_also_duplicates">Trouver les titres présents deux fois dans une playlist</string>
+    <string name="tour_183_also_songs_from">Les titres de la Bibliothèque depuis les playlists choisies</string>
+    <string name="tour_183_also_lock">Répéter et À suivre sur l\'écran de verrouillage</string>
+    <string name="tour_183_also_uploads">Importer et supprimer dans Importations</string>
+    <string name="show_furigana">Afficher le furigana</string>
+    <string name="hiragana_readings_above_kanji">Lectures en hiragana au-dessus des kanji dans les paroles japonaises</string>
+    <string name="furigana_uses_the_japanese_reading_data">Utilise les données de lecture japonaises (téléchargées une fois ci-dessous).</string>
 </resources>

@@ -38,6 +38,11 @@ object Kana {
         for (c in s) append(if (c.code in 0x3041..0x3096) (c.code + 0x60).toChar() else c)
     }
 
+    /** Katakana to hiragana (readings come from Kuromoji in katakana). */
+    fun toHiragana(s: String): String = buildString {
+        for (c in s) append(if (c.code in 0x30A1..0x30F6) (c.code - 0x60).toChar() else c)
+    }
+
     fun isKana(c: Char) = c.code in 0x3041..0x30FF
 
     /**

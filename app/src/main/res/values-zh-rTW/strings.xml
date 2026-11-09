@@ -4810,4 +4810,154 @@
     <string name="speed_dial_your_plays_first_info">YouTube 傳給 Prism 的是其網站上的方塊，與其應用程式中的不同，也不一定會跟著你的聆聽內容。開啟後，最近三個月你在這支手機上聽得最多的內容會排在前面，其餘由 YouTube 的方塊補上。</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube 不再接受這個登入。請登出後重新登入。</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube 目前沒有傳送 256 kbps 給這個帳戶，因此歌曲會以一般音質播放</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">允許在鎖定畫面上顯示</string>
+    <string name="lock_screen_maker_xiaomi_detail">開啟 Prism 的權限：開啟「在鎖定畫面上顯示」和「在背景執行時開啟新視窗」</string>
+    <string name="lock_screen_maker_vivo_detail">開啟 Prism 的權限：開啟「在鎖定畫面上顯示」和「背景彈出視窗」</string>
+    <string name="lock_screen_maker_info">手機製造商在 Android 本身的權限之外加了這些權限，Android 無法告訴 Prism 它們是否已開啟。沒有開啟的話，播放器可能不會出現在鎖定畫面上。</string>
+    <string name="lock_screen_refused">上次手機沒有讓播放器顯示出來。請檢查上面的權限。</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">喜歡</string>
+    <string name="unlike">取消喜歡</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="other">要從這支手機移除 %d 個下載項目嗎？</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="other">要從 YouTube Music 上的「%2$s」移除 %1$d 首歌曲嗎？</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">標籤</string>
+    <string name="add_a_tag">新增標籤</string>
+    <string name="new_tag">新標籤</string>
+    <string name="tags_are_your_own_labels">你替歌曲取的標籤，例如「健身」或「下雨天」。可在音樂庫 → 標籤找到。</string>
+    <string name="your_tag">你在這支手機上的標籤</string>
+    <string name="remove_this_tag">移除這個標籤</string>
+    <string name="rename_tag">重新命名標籤</string>
+    <string name="delete_tag">刪除標籤</string>
+    <string name="delete_the_tag_its_songs_stay">要刪除標籤「%s」嗎？其中的歌曲會留在原處。</string>
+    <string name="tag_songs_from_any_song_s">從任何歌曲的選單（⋯ 或長按）→ 新增標籤，即可替歌曲加上標籤。</string>
+    <string name="tag_n_songs">標籤 · %s</string>
+    <plurals name="n_tags">
+        <item quantity="other">%d 個標籤</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">智慧播放清單</string>
+    <string name="smart_playlist_n">智慧播放清單 · %s</string>
+    <string name="smart_playlist_updates_itself">智慧播放清單 · 自動保持最新</string>
+    <string name="new_smart_playlist">新增智慧播放清單</string>
+    <string name="edit_rules">編輯規則</string>
+    <string name="save_a_copy_as_a_playlist">另存為一般播放清單</string>
+    <string name="saved_as_a_playlist">已將「%s」存為播放清單</string>
+    <string name="no_song_meets_these_rules">目前還沒有歌曲符合這些規則。可在 ⋯ 選單 → 編輯規則中修改。</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="other">%d 首歌曲尚未測量</item>
+    </plurals>
+    <string name="measuring_n_of_n">正在測量第 %1$d 首，共 %2$d 首…</string>
+    <string name="measure_now">立即測量</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">正在測量這支手機上的歌曲。連上 Wi-Fi 時也會測量其他歌曲。</string>
+    <string name="smart_fast_and_liked">快節奏且已按讚</string>
+    <string name="smart_not_played_in_a_while">一陣子沒聽</string>
+    <string name="smart_goes_with_what_s_playing">與正在播放的相配</string>
+    <string name="the_song_playing_isn_t_measured_yet">正在播放的歌曲尚未測量。</string>
+    <string name="match_all_rules">符合所有規則</string>
+    <string name="match_any_rule">符合任一規則</string>
+    <string name="add_a_rule">新增規則</string>
+    <string name="add_a_rule_to_begin">新增一條規則開始。</string>
+    <string name="finds_n">找到 %s</string>
+    <string name="up_to">最多</string>
+    <string name="sort_most_played">播放最多</string>
+    <string name="sort_not_played_lately">最近沒聽</string>
+    <string name="sort_random">隨機</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">相配的調</string>
+    <string name="rule_energy">能量</string>
+    <string name="rule_loudness">響度（LUFS）</string>
+    <string name="rule_on_phone">這支手機上的檔案</string>
+    <string name="rule_tag">標籤</string>
+    <string name="rule_times_played">播放次數</string>
+    <string name="rule_last_played">上次播放</string>
+    <string name="rule_added">加入音樂庫</string>
+    <string name="rule_never_played">從未播放</string>
+    <string name="rule_is">是</string>
+    <string name="rule_isn_t">不是</string>
+    <string name="rule_from">從</string>
+    <string name="rule_to">到</string>
+    <string name="rule_at_least">至少</string>
+    <string name="rule_at_most">至多</string>
+    <string name="rule_within">最近</string>
+    <string name="rule_not_within">不在最近</string>
+    <string name="rule_days">天內</string>
+    <string name="genre_example">流行、嘻哈、搖滾…</string>
+    <string name="your_listening">你的收聽</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">歌曲來源</string>
+    <string name="your_likes_stay_as_they_are">只會改變此分頁顯示的內容，你的喜歡維持不變。</string>
+    <string name="search_these_songs">在這些歌曲中搜尋</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">搜尋你的音樂庫</string>
+    <string name="nothing_in_your_library_matches">你的音樂庫中沒有相符的內容</string>
+    <string name="try_fewer_words_or_another_filter">試試少一些字詞或換個篩選條件。</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">尋找重複</string>
+    <string name="no_song_is_here_twice">沒有重複的歌曲</string>
+    <string name="extra_copy">多餘副本</string>
+    <string name="keeping_s">保留「%s」</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="other">%d 首歌曲出現不只一次</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="other">移除 %d 個多餘副本</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="other">這會從此播放清單移除 %d 首歌曲。</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="other">這也會從 YouTube Music 上的播放清單移除 %d 首歌曲。</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">你的檔案</string>
+    <string name="choose_a_file_on_this_phone">選擇這支手機上的檔案</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">單一卡片</string>
+    <string name="pin_to_home_as_one_tile">以單一卡片釘選到首頁</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">上傳歌曲</string>
+    <string name="uploading_s">正在上傳 %1$s…</string>
+    <string name="uploaded_s_it_shows_up_here">已上傳 %1$s。YouTube Music 處理完成後就會顯示在這裡，通常只需幾分鐘。</string>
+    <string name="couldn_t_upload_it_s">無法上傳：%1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">YouTube Music 接受 300 MB 以內的 MP3、M4A、WMA、FLAC 和 Ogg 檔案。</string>
+    <string name="delete_from_your_uploads">從你的上傳內容中刪除</string>
+    <string name="delete_s_from_youtube_music">要從 YouTube Music 刪除「%1$s」嗎？</string>
+    <string name="it_goes_from_your_uploads_for_good">它會從你所有裝置上的上傳內容中永久刪除，無法復原。</string>
+    <string name="deleted_from_your_uploads">已從你的上傳內容中刪除</string>
+    <string name="couldn_t_delete_it_s">無法刪除：%1$s</string>
+    <string name="uploads_couldn_t_find_it">YouTube Music 已不再列出它</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">智慧播放清單</string>
+    <string name="tour_183_smart_body">依你設定的規則自動加入歌曲，並隨著你的音樂庫更新。</string>
+    <string name="tour_183_smart_point_1">依你喜歡、播放、下載或加標籤的歌曲設定規則</string>
+    <string name="tour_183_smart_point_2">速度、調性和能量，在手機上測量</string>
+    <string name="tour_183_smart_point_3">隨時另存為一般播放清單</string>
+    <string name="tour_183_tags_title">標籤</string>
+    <string name="tour_183_tags_body">為歌曲加上你自己的標籤，從任何歌曲的選單。</string>
+    <string name="tour_183_tags_point_1">每個標籤在音樂庫都有自己的頁面</string>
+    <string name="tour_183_tags_point_2">可用在智慧播放清單</string>
+    <string name="tour_183_tags_point_3">一次為多首歌曲加標籤</string>
+    <string name="tour_183_select_title">多選</string>
+    <string name="tour_183_select_body">在清單中長按一首歌，再選更多，然後一起處理。</string>
+    <string name="tour_183_select_point_1">加入播放清單或佇列、加標籤、喜歡或下載</string>
+    <string name="tour_183_select_point_2">確認後從播放清單移除</string>
+    <string name="tour_183_search_title">搜尋你的音樂庫</string>
+    <string name="tour_183_search_body">你擁有的一切，邊打字邊找到，還能篩選。</string>
+    <string name="tour_183_search_point_1">歌曲、播放清單、標籤、藝人和專輯</string>
+    <string name="tour_183_search_point_2">只看喜歡的、已下載的或這支手機上的</string>
+    <string name="tour_183_search_point_3">日文、韓文、俄文和希臘文標題也能用拉丁字母找到</string>
+    <string name="tour_183_also_file">把手機上的檔案當作歌曲的一個版本</string>
+    <string name="tour_183_also_duplicates">找出播放清單裡重複的歌曲</string>
+    <string name="tour_183_also_songs_from">音樂庫的歌曲來自你選擇的播放清單</string>
+    <string name="tour_183_also_lock">鎖定畫面上的重複播放和接著播放</string>
+    <string name="tour_183_also_uploads">在上傳內容中上傳和刪除</string>
+    <string name="show_furigana">顯示振假名</string>
+    <string name="hiragana_readings_above_kanji">在日文歌詞的漢字上方顯示平假名讀音</string>
+    <string name="furigana_uses_the_japanese_reading_data">使用日文讀音資料（在下方下載一次）。</string>
 </resources>

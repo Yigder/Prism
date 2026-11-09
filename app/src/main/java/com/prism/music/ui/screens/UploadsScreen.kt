@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -166,11 +167,48 @@ fun UploadsScreen(bottomPadding: Dp) {
         }
     }
 
+    // 1.8.3 (D49, Reddit): upload a file from the phone, and delete an upload (with a confirm). Both write to the
+    // account, and only on a tap.
+    val uploading by c.uploads.uploading.collectAsState()
+    val pickFile = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
+        // In the app's scope: leaving the page doesn't cut an upload off halfway, and its result is still said.
+        val app = context.applicationContext
+        if (uri != null) c.scope.launch(kotlinx.coroutines.Dispatchers.Main) {
+            c.uploads.upload(uri)
+                .onSuccess { name -> Toast.makeText(app, tr(R.string.uploaded_s_it_shows_up_here, name), Toast.LENGTH_LONG).show() }
+                .onFailure { e -> Toast.makeText(app, tr(R.string.couldn_t_upload_it_s, e.message ?: e.javaClass.simpleName), Toast.LENGTH_LONG).show() }
+        }
+    }
+    var deleting by remember { mutableStateOf<Song?>(null) }
+    deleting?.let { s ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { deleting = null },
+            title = { Text(tr(R.string.delete_s_from_youtube_music, s.title)) },
+            text = { Text(tr(R.string.it_goes_from_your_uploads_for_good)) },
+            confirmButton = {
+                com.prism.music.ui.components.PrismTextButton(onClick = {
+                    deleting = null
+                    val app = context.applicationContext
+                    c.scope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                        c.uploads.delete(s)
+                            .onSuccess { Toast.makeText(app, tr(R.string.deleted_from_your_uploads), Toast.LENGTH_SHORT).show() }
+                            .onFailure { e -> Toast.makeText(app, tr(R.string.couldn_t_delete_it_s, e.message ?: e.javaClass.simpleName), Toast.LENGTH_LONG).show() }
+                    }
+                }, modifier = Modifier.testTag("confirmDeleteUpload")) { Text(tr(R.string.delete), color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { com.prism.music.ui.components.PrismTextButton(onClick = { deleting = null }) { Text(tr(R.string.cancel)) } },
+        )
+    }
+
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().statusBarsPadding().height(60.dp).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             RoundAction(PrismIcons.ArrowBack, tr(R.string.back)) { nav.back() }
             Spacer(Modifier.weight(1f))
             if (settings.isLoggedIn) {
+                RoundAction(PrismIcons.Upload, tr(R.string.upload_a_song), Modifier.testTag("uploadSong")) {
+                    if (uploading == null) pickFile.launch(Uploads.PICK_TYPES)
+                }
+                Spacer(Modifier.width(8.dp))
                 RoundAction(PrismIcons.Sync, tr(R.string.refresh_uploads)) { scope.launch { c.uploads.load(force = true) } }
                 if (lists.songs.isNotEmpty()) {
                     Spacer(Modifier.width(8.dp))
@@ -186,6 +224,13 @@ fun UploadsScreen(bottomPadding: Dp) {
                 listOf(songCount(lists.songs.size), trp(R.plurals.n_albums, lists.albums.size)).joinToString(" · "),
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
+            uploading?.let { name ->
+                Row(Modifier.padding(top = 6.dp).testTag("uploadingLine"), verticalAlignment = Alignment.CenterVertically) {
+                    com.prism.music.ui.components.PrismSpinner(Modifier.size(14.dp), stroke = 1.5.dp)
+                    Spacer(Modifier.width(8.dp))
+                    Text(tr(R.string.uploading_s, name), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
         }
         val empty = lists.songs.isEmpty() && lists.albums.isEmpty() && lists.artists.isEmpty()
         when {
@@ -205,7 +250,10 @@ fun UploadsScreen(bottomPadding: Dp) {
                             if (songs.isEmpty()) item { NoUploadMatches(query) }
                             itemsIndexed(songs, key = { i, s -> "u" + s.id + ":" + i }) { _, s ->
                                 SwipeToQueue(s) {
-                                    SongRow(s, if (ready != null && s.id !in ready) Modifier.alpha(0.4f) else Modifier) {
+                                    SongRow(
+                                        s, if (ready != null && s.id !in ready) Modifier.alpha(0.4f) else Modifier,
+                                        extraActions = listOf(com.prism.music.ui.components.SheetItem(PrismIcons.Delete, tr(R.string.delete_from_your_uploads), danger = true) { deleting = s }),
+                                    ) {
                                         if (ready != null && s.id !in ready) Toast.makeText(context, tr(R.string.you_re_offline_and_this_song), Toast.LENGTH_SHORT).show()
                                         else playable(songs).let { q -> c.player.playQueue(q, q.indexOfFirst { it.id == s.id }.coerceAtLeast(0), source) }
                                     }

@@ -62,6 +62,7 @@ import com.prism.music.ui.components.rememberFrost
 import com.prism.music.ui.components.tickWhileShown
 import com.prism.music.ui.player.currentOutput
 import com.prism.music.ui.player.outputLabel
+import com.prism.music.ui.player.rememberFurigana
 import com.prism.music.ui.player.rememberLyricClock
 import com.prism.music.ui.player.rememberLyricsLook
 import com.prism.music.ui.player.rememberLyricsState
@@ -132,7 +133,7 @@ class LockScreenActivity : ComponentActivity() {
         enableEdgeToEdge(statusBarStyle = darkBars, navigationBarStyle = darkBars)
         super.onCreate(savedInstanceState)
         live = this
-        if (!intent.getBooleanExtra(LockScreenGate.FROM_NOTIFICATION, false)) LockScreenGate.directStartWorked()
+        if (!intent.getBooleanExtra(LockScreenGate.FROM_NOTIFICATION, false)) LockScreenGate.directStartWorked(this)
         // The manifest's showWhenLocked starts at Android 8.1; Android 8.0 only has the window flag.
         @Suppress("DEPRECATION")
         if (android.os.Build.VERSION.SDK_INT < 27) window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED)
@@ -262,6 +263,13 @@ private fun LockScreenHost(settings: AppSettings, close: () -> Unit, unlock: (((
     val (time, date) = rememberClockText()
     val output = lockOutput(settings)
     val lyrics = if (layout == com.prism.music.data.prefs.LockLayout.LYRICS) rememberLockLyrics(current, art) else null
+    // 1.8.3 (D47): read only when switched on, so the queue isn't watched otherwise.
+    val repeat = if (settings.behavior.lockScreenRepeat) pc.repeatMode.collectAsState().value else null
+    val upNext = if (settings.behavior.lockScreenUpNext && !hide) {
+        val queue by pc.queue.collectAsState()
+        val order by pc.upNext.collectAsState()
+        remember(queue, order) { LockScreenRules.upNextLines(queue, order, hideSong = false) }
+    } else emptyList()
     val content = LockScreenContent(
         title = if (hide) tr(R.string.lock_screen_hidden_title) else current.title,
         artist = if (hide) "" else current.artistText,
@@ -282,6 +290,8 @@ private fun LockScreenHost(settings: AppSettings, close: () -> Unit, unlock: (((
         time = time,
         date = date,
         lyrics = lyrics,
+        repeat = repeat,
+        upNext = upNext,
     )
     val actions = remember(current.id, duration) {
         LockScreenActions(
@@ -293,6 +303,7 @@ private fun LockScreenHost(settings: AppSettings, close: () -> Unit, unlock: (((
             onSeek = { f -> pc.seekTo((f * pc.duration).toLong()) },
             onVolume = { v -> volume.drag(v) },
             onVolumeDone = { volume.release() },
+            onRepeat = { pc.cycleRepeat() },
         )
     }
     SwipeToUnlock(onUnlock = { unlock(null) }) { LockScreenLayout(layout, content, actions) }
@@ -415,6 +426,7 @@ private fun rememberLockLyrics(song: Song, art: String?): (@Composable (Modifier
     val state = rememberLyricsState(song)
     val look = rememberLyricsLook(s, art).withoutCard(s.lyricsOthersAlpha)
     val lines = remember(state.lines, look.uppercase) { state.lines.map(look::shown) }
+    val furigana = rememberFurigana(state)
     if (lines.none { it.timeMs >= 0 }) return null
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val axis = lockLyricsAxis(s)
@@ -427,7 +439,7 @@ private fun rememberLockLyrics(song: Song, art: String?): (@Composable (Modifier
         onDispose { lifecycle.removeObserver(watch) }
     }
     val clock = rememberLyricClock(active = started && playing)
-    return { modifier -> LockLyricLines(lines, clock, look, axis, modifier) }
+    return { modifier -> LockLyricLines(lines, clock, look, axis, modifier, furigana) }
 }
 
 /** The lyrics' typeface on its weight axis (as immersive mode): null for System and imported fonts. */

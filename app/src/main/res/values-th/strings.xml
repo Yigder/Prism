@@ -4810,4 +4810,154 @@
     <string name="speed_dial_your_plays_first_info">YouTube ส่งช่องจากเว็บไซต์มาให้ Prism ซึ่งไม่ใช่ช่องในแอปและไม่ได้ตามสิ่งที่คุณเล่นเสมอไป เมื่อเปิดไว้ สิ่งที่คุณเล่นมากที่สุดในโทรศัพท์เครื่องนี้ในสามเดือนที่ผ่านมาจะมาก่อน แล้วช่องของ YouTube จะเติมส่วนที่เหลือ</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube ไม่รับการลงชื่อเข้าใช้นี้อีกต่อไป โปรดออกจากระบบแล้วลงชื่อเข้าใช้อีกครั้ง</string>
     <string name="youtube_isnt_sending_256_kbps">ขณะนี้ YouTube ไม่ได้ส่ง 256 kbps ให้บัญชีนี้ เพลงจึงเล่นในคุณภาพปกติ</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">อนุญาตบนหน้าจอล็อก</string>
+    <string name="lock_screen_maker_xiaomi_detail">เปิดสิทธิ์ของ Prism: เปิด “แสดงบนหน้าจอล็อก” และ “เปิดหน้าต่างใหม่ขณะทำงานในเบื้องหลัง”</string>
+    <string name="lock_screen_maker_vivo_detail">เปิดสิทธิ์ของ Prism: เปิด “แสดงบนหน้าจอล็อก” และ “ป๊อปอัปในเบื้องหลัง”</string>
+    <string name="lock_screen_maker_info">ผู้ผลิตโทรศัพท์ของคุณเพิ่มสิทธิ์เหล่านี้นอกเหนือจากสิทธิ์ของ Android และ Android บอก Prism ไม่ได้ว่าเปิดอยู่หรือไม่ หากไม่เปิด เพลเยอร์อาจไม่ขึ้นบนหน้าจอล็อก</string>
+    <string name="lock_screen_refused">ครั้งที่แล้ว โทรศัพท์ของคุณไม่ให้เพลเยอร์ขึ้นมา ตรวจสอบสิทธิ์ด้านบน</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">ถูกใจ</string>
+    <string name="unlike">เลิกถูกใจ</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="other">ลบการดาวน์โหลด %d รายการออกจากโทรศัพท์นี้ไหม</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="other">ลบ %1$d เพลงออกจาก “%2$s” ใน YouTube Music ไหม</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">แท็ก</string>
+    <string name="add_a_tag">เพิ่มแท็ก</string>
+    <string name="new_tag">แท็กใหม่</string>
+    <string name="tags_are_your_own_labels">ป้ายกำกับเพลงของคุณเอง เช่น “ยิม” หรือ “วันฝนตก” ดูได้ที่ คลังเพลง → แท็ก</string>
+    <string name="your_tag">แท็กของคุณในโทรศัพท์เครื่องนี้</string>
+    <string name="remove_this_tag">เอาแท็กนี้ออก</string>
+    <string name="rename_tag">เปลี่ยนชื่อแท็ก</string>
+    <string name="delete_tag">ลบแท็ก</string>
+    <string name="delete_the_tag_its_songs_stay">ลบแท็ก “%s” ไหม เพลงในแท็กจะยังอยู่ที่เดิม</string>
+    <string name="tag_songs_from_any_song_s">ติดแท็กเพลงได้จากเมนูของเพลงใดก็ได้ (⋯ หรือกดค้าง) → เพิ่มแท็ก</string>
+    <string name="tag_n_songs">แท็ก · %s</string>
+    <plurals name="n_tags">
+        <item quantity="other">%d แท็ก</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">เพลย์ลิสต์อัจฉริยะ</string>
+    <string name="smart_playlist_n">เพลย์ลิสต์อัจฉริยะ · %s</string>
+    <string name="smart_playlist_updates_itself">เพลย์ลิสต์อัจฉริยะ · อัปเดตตัวเอง</string>
+    <string name="new_smart_playlist">เพลย์ลิสต์อัจฉริยะใหม่</string>
+    <string name="edit_rules">แก้ไขกฎ</string>
+    <string name="save_a_copy_as_a_playlist">บันทึกสำเนาเป็นเพลย์ลิสต์</string>
+    <string name="saved_as_a_playlist">บันทึก “%s” เป็นเพลย์ลิสต์แล้ว</string>
+    <string name="no_song_meets_these_rules">ยังไม่มีเพลงที่ตรงกับกฎเหล่านี้ เปลี่ยนได้ที่เมนู ⋯ → แก้ไขกฎ</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="other">ยังไม่ได้วัด %d เพลง</item>
+    </plurals>
+    <string name="measuring_n_of_n">กำลังวัด %1$d จาก %2$d…</string>
+    <string name="measure_now">วัดเลย</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">กำลังวัดเพลงในโทรศัพท์นี้ เมื่อใช้ Wi-Fi จะวัดเพลงอื่นด้วย</string>
+    <string name="smart_fast_and_liked">เร็วและถูกใจ</string>
+    <string name="smart_not_played_in_a_while">ไม่ได้ฟังมานาน</string>
+    <string name="smart_goes_with_what_s_playing">เข้ากับเพลงที่เล่นอยู่</string>
+    <string name="the_song_playing_isn_t_measured_yet">เพลงที่เล่นอยู่ยังไม่ได้วัด</string>
+    <string name="match_all_rules">ตรงทุกกฎ</string>
+    <string name="match_any_rule">ตรงกฎใดก็ได้</string>
+    <string name="add_a_rule">เพิ่มกฎ</string>
+    <string name="add_a_rule_to_begin">เพิ่มกฎเพื่อเริ่มต้น</string>
+    <string name="finds_n">พบ %s</string>
+    <string name="up_to">สูงสุด</string>
+    <string name="sort_most_played">เล่นมากที่สุด</string>
+    <string name="sort_not_played_lately">ไม่ได้เล่นช่วงนี้</string>
+    <string name="sort_random">สุ่ม</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">คีย์ที่เข้ากับ</string>
+    <string name="rule_energy">พลัง</string>
+    <string name="rule_loudness">ความดัง (LUFS)</string>
+    <string name="rule_on_phone">ไฟล์ในโทรศัพท์นี้</string>
+    <string name="rule_tag">แท็ก</string>
+    <string name="rule_times_played">จำนวนครั้งที่เล่น</string>
+    <string name="rule_last_played">เล่นล่าสุด</string>
+    <string name="rule_added">เพิ่มในคลังเพลง</string>
+    <string name="rule_never_played">ไม่เคยเล่น</string>
+    <string name="rule_is">ใช่</string>
+    <string name="rule_isn_t">ไม่ใช่</string>
+    <string name="rule_from">ตั้งแต่</string>
+    <string name="rule_to">ถึง</string>
+    <string name="rule_at_least">อย่างน้อย</string>
+    <string name="rule_at_most">ไม่เกิน</string>
+    <string name="rule_within">ใน</string>
+    <string name="rule_not_within">ไม่ใช่ใน</string>
+    <string name="rule_days">วันที่ผ่านมา</string>
+    <string name="genre_example">ป๊อป ฮิปฮอป ร็อก…</string>
+    <string name="your_listening">การฟังของคุณ</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">เพลงจาก</string>
+    <string name="your_likes_stay_as_they_are">เปลี่ยนแค่สิ่งที่แท็บนี้แสดง เพลงที่คุณถูกใจยังคงเหมือนเดิม</string>
+    <string name="search_these_songs">ค้นหาในเพลงเหล่านี้</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">ค้นหาในคลังเพลงของคุณ</string>
+    <string name="nothing_in_your_library_matches">ไม่มีอะไรในคลังเพลงที่ตรงกัน</string>
+    <string name="try_fewer_words_or_another_filter">ลองใช้คำน้อยลงหรือตัวกรองอื่น</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">หาเพลงซ้ำ</string>
+    <string name="no_song_is_here_twice">ไม่มีเพลงที่ซ้ำกัน</string>
+    <string name="extra_copy">สำเนาเกิน</string>
+    <string name="keeping_s">เก็บ “%s” ไว้</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="other">มี %d เพลงที่อยู่ที่นี่มากกว่าหนึ่งครั้ง</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="other">ลบสำเนาเกิน %d รายการ</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="other">จะนำ %d เพลงออกจากเพลย์ลิสต์นี้</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="other">จะนำ %d เพลงออกจากเพลย์ลิสต์ใน YouTube Music ด้วย</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">ไฟล์ของคุณ</string>
+    <string name="choose_a_file_on_this_phone">เลือกไฟล์ในโทรศัพท์นี้</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">ไทล์เดียว</string>
+    <string name="pin_to_home_as_one_tile">ปักหมุดที่หน้าแรกเป็นไทล์เดียว</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">อัปโหลดเพลง</string>
+    <string name="uploading_s">กำลังอัปโหลด %1$s…</string>
+    <string name="uploaded_s_it_shows_up_here">อัปโหลด %1$s แล้ว จะแสดงที่นี่เมื่อ YouTube Music เตรียมเสร็จ ปกติภายในไม่กี่นาที</string>
+    <string name="couldn_t_upload_it_s">อัปโหลดไม่ได้: %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">YouTube Music รับไฟล์ MP3, M4A, WMA, FLAC และ Ogg ขนาดไม่เกิน 300 MB</string>
+    <string name="delete_from_your_uploads">ลบออกจากรายการที่อัปโหลด</string>
+    <string name="delete_s_from_youtube_music">ลบ \"%1$s\" ออกจาก YouTube Music ไหม</string>
+    <string name="it_goes_from_your_uploads_for_good">เพลงจะหายไปจากรายการที่อัปโหลดในทุกอุปกรณ์อย่างถาวร ย้อนกลับไม่ได้</string>
+    <string name="deleted_from_your_uploads">ลบออกจากรายการที่อัปโหลดแล้ว</string>
+    <string name="couldn_t_delete_it_s">ลบไม่ได้: %1$s</string>
+    <string name="uploads_couldn_t_find_it">YouTube Music ไม่แสดงเพลงนี้แล้ว</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">เพลย์ลิสต์อัจฉริยะ</string>
+    <string name="tour_183_smart_body">เพลย์ลิสต์ที่เติมเพลงเองตามกฎที่คุณตั้ง และอัปเดตตามคลังเพลงของคุณ</string>
+    <string name="tour_183_smart_point_1">กฎจากเพลงที่คุณถูกใจ ฟัง ดาวน์โหลด หรือติดแท็ก</string>
+    <string name="tour_183_smart_point_2">จังหวะ คีย์ และพลังงาน วัดบนโทรศัพท์ของคุณ</string>
+    <string name="tour_183_smart_point_3">บันทึกสำเนาเป็นเพลย์ลิสต์ธรรมดาได้ทุกเมื่อ</string>
+    <string name="tour_183_tags_title">แท็ก</string>
+    <string name="tour_183_tags_body">ป้ายของคุณเองบนเพลง จากเมนูของเพลงใดก็ได้</string>
+    <string name="tour_183_tags_point_1">แต่ละแท็กมีหน้าของตัวเองในคลังเพลง</string>
+    <string name="tour_183_tags_point_2">ใช้ในเพลย์ลิสต์อัจฉริยะ</string>
+    <string name="tour_183_tags_point_3">ติดแท็กหลายเพลงพร้อมกัน</string>
+    <string name="tour_183_select_title">เลือกหลายรายการ</string>
+    <string name="tour_183_select_body">กดค้างที่เพลงในรายการเพื่อเลือกเพิ่ม แล้วทำกับทั้งหมดพร้อมกัน</string>
+    <string name="tour_183_select_point_1">เพิ่มลงเพลย์ลิสต์หรือคิว ติดแท็ก ถูกใจ หรือดาวน์โหลด</string>
+    <string name="tour_183_select_point_2">นำออกจากเพลย์ลิสต์ โดยถามก่อน</string>
+    <string name="tour_183_search_title">ค้นหาในคลังเพลง</string>
+    <string name="tour_183_search_body">ทุกอย่างที่คุณมี เจอขณะพิมพ์ พร้อมตัวกรอง</string>
+    <string name="tour_183_search_point_1">เพลง เพลย์ลิสต์ แท็ก ศิลปิน และอัลบั้ม</string>
+    <string name="tour_183_search_point_2">เฉพาะที่ถูกใจ ดาวน์โหลดแล้ว หรืออยู่ในโทรศัพท์นี้</string>
+    <string name="tour_183_search_point_3">ชื่อเพลงญี่ปุ่น เกาหลี รัสเซีย และกรีก ค้นด้วยอักษรละตินได้</string>
+    <string name="tour_183_also_file">ไฟล์ในโทรศัพท์เป็นเวอร์ชันของเพลง</string>
+    <string name="tour_183_also_duplicates">หาเพลงที่อยู่ในเพลย์ลิสต์ซ้ำสองครั้ง</string>
+    <string name="tour_183_also_songs_from">เพลงในคลังเพลงจากเพลย์ลิสต์ที่คุณเลือก</string>
+    <string name="tour_183_also_lock">เล่นซ้ำและถัดไปบนหน้าจอล็อก</string>
+    <string name="tour_183_also_uploads">อัปโหลดและลบในรายการที่อัปโหลด</string>
+    <string name="show_furigana">แสดงฟุริงานะ</string>
+    <string name="hiragana_readings_above_kanji">คำอ่านฮิรางานะเหนือคันจิในเนื้อเพลงญี่ปุ่น</string>
+    <string name="furigana_uses_the_japanese_reading_data">ใช้ข้อมูลการอ่านภาษาญี่ปุ่น (ดาวน์โหลดครั้งเดียวด้านล่าง)</string>
 </resources>

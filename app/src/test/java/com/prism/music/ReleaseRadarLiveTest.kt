@@ -10,8 +10,10 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.experimental.categories.Category
 
 /** Live (YouTube Music + Deezer): an artist's releases are found, and most recent ones get their exact date. */
+@Category(LiveNetwork::class)
 class ReleaseRadarLiveTest {
     private var settings = AppSettings()
     private val http = OkHttpClient()

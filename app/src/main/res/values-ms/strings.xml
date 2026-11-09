@@ -4810,4 +4810,154 @@
     <string name="speed_dial_your_plays_first_info">YouTube menghantar petak laman webnya kepada Prism, yang bukan petak dalam aplikasinya dan tidak selalu mengikut apa yang anda mainkan. Jika dihidupkan, apa yang paling kerap anda mainkan pada telefon ini dalam tiga bulan lalu muncul dahulu, dan petak YouTube mengisi selebihnya.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube tidak lagi menerima log masuk ini. Log keluar dan log masuk semula.</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube tidak menghantar 256 kbps kepada akaun ini buat masa ini, jadi lagu dimainkan pada kualiti biasa</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">Benarkan pada skrin kunci</string>
+    <string name="lock_screen_maker_xiaomi_detail">Membuka kebenaran Prism: hidupkan “Tunjukkan pada skrin kunci” dan “Buka tetingkap baharu semasa berjalan di latar belakang”</string>
+    <string name="lock_screen_maker_vivo_detail">Membuka kebenaran Prism: hidupkan “Tunjukkan pada skrin kunci” dan “Pop timbul latar belakang”</string>
+    <string name="lock_screen_maker_info">Pengeluar telefon anda menambah kebenaran ini pada kebenaran Android sendiri, dan Android tidak dapat memberitahu Prism sama ada ia dihidupkan. Tanpanya, pemain mungkin tidak muncul pada skrin kunci.</string>
+    <string name="lock_screen_refused">Kali terakhir, telefon anda tidak membenarkan pemain muncul. Semak kebenaran di atas.</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">Suka</string>
+    <string name="unlike">Batal suka</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="other">Alih keluar %d muat turun daripada telefon ini?</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="other">Alih keluar %1$d lagu daripada “%2$s” di YouTube Music?</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">Tag</string>
+    <string name="add_a_tag">Tambah tag</string>
+    <string name="new_tag">Tag baharu</string>
+    <string name="tags_are_your_own_labels">Label anda sendiri untuk lagu, seperti “gim” atau “hari hujan”. Cari di Pustaka → Tag.</string>
+    <string name="your_tag">Tag anda pada telefon ini</string>
+    <string name="remove_this_tag">Buang tag ini</string>
+    <string name="rename_tag">Namakan semula tag</string>
+    <string name="delete_tag">Padam tag</string>
+    <string name="delete_the_tag_its_songs_stay">Padam tag “%s”? Lagu-lagunya kekal di tempatnya.</string>
+    <string name="tag_songs_from_any_song_s">Tag lagu daripada menu mana-mana lagu (⋯ atau tekan lama) → Tambah tag.</string>
+    <string name="tag_n_songs">Tag · %s</string>
+    <plurals name="n_tags">
+        <item quantity="other">%d tag</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">Senarai main pintar</string>
+    <string name="smart_playlist_n">Senarai main pintar · %s</string>
+    <string name="smart_playlist_updates_itself">Senarai main pintar · kemas kini sendiri</string>
+    <string name="new_smart_playlist">Senarai main pintar baharu</string>
+    <string name="edit_rules">Edit peraturan</string>
+    <string name="save_a_copy_as_a_playlist">Simpan salinan sebagai senarai main</string>
+    <string name="saved_as_a_playlist">“%s” disimpan sebagai senarai main</string>
+    <string name="no_song_meets_these_rules">Belum ada lagu yang memenuhi peraturan ini. Tukar melalui menu ⋯ → Edit peraturan.</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="other">%d lagu belum diukur</item>
+    </plurals>
+    <string name="measuring_n_of_n">Mengukur %1$d daripada %2$d…</string>
+    <string name="measure_now">Ukur sekarang</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">Lagu pada telefon ini sedang diukur. Melalui Wi-Fi, yang lain juga.</string>
+    <string name="smart_fast_and_liked">Laju dan disukai</string>
+    <string name="smart_not_played_in_a_while">Lama tidak dimainkan</string>
+    <string name="smart_goes_with_what_s_playing">Sepadan dengan yang dimainkan</string>
+    <string name="the_song_playing_isn_t_measured_yet">Lagu yang dimainkan belum diukur.</string>
+    <string name="match_all_rules">Memenuhi semua peraturan</string>
+    <string name="match_any_rule">Memenuhi mana-mana peraturan</string>
+    <string name="add_a_rule">Tambah peraturan</string>
+    <string name="add_a_rule_to_begin">Tambah peraturan untuk bermula.</string>
+    <string name="finds_n">Menemui %s</string>
+    <string name="up_to">Sehingga</string>
+    <string name="sort_most_played">Paling kerap dimainkan</string>
+    <string name="sort_not_played_lately">Tidak dimainkan kebelakangan ini</string>
+    <string name="sort_random">Rawak</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">Kunci yang sepadan dengan</string>
+    <string name="rule_energy">Tenaga</string>
+    <string name="rule_loudness">Kenyaringan (LUFS)</string>
+    <string name="rule_on_phone">Fail pada telefon ini</string>
+    <string name="rule_tag">Tag</string>
+    <string name="rule_times_played">Kali dimainkan</string>
+    <string name="rule_last_played">Terakhir dimainkan</string>
+    <string name="rule_added">Ditambah ke pustaka anda</string>
+    <string name="rule_never_played">Tidak pernah dimainkan</string>
+    <string name="rule_is">Ya</string>
+    <string name="rule_isn_t">Bukan</string>
+    <string name="rule_from">Dari</string>
+    <string name="rule_to">Hingga</string>
+    <string name="rule_at_least">Sekurang-kurangnya</string>
+    <string name="rule_at_most">Paling banyak</string>
+    <string name="rule_within">Dalam</string>
+    <string name="rule_not_within">Bukan dalam</string>
+    <string name="rule_days">hari terakhir</string>
+    <string name="genre_example">Pop, hip-hop, rock…</string>
+    <string name="your_listening">Pendengaran anda</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">Lagu daripada</string>
+    <string name="your_likes_stay_as_they_are">Hanya paparan tab ini yang berubah. Suka anda kekal seperti biasa.</string>
+    <string name="search_these_songs">Cari dalam lagu-lagu ini</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">Cari dalam pustaka anda</string>
+    <string name="nothing_in_your_library_matches">Tiada yang sepadan dalam pustaka anda</string>
+    <string name="try_fewer_words_or_another_filter">Cuba kurangkan perkataan atau penapis lain.</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">Cari pendua</string>
+    <string name="no_song_is_here_twice">Tiada lagu yang ada dua kali</string>
+    <string name="extra_copy">Salinan lebihan</string>
+    <string name="keeping_s">“%s” kekal</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="other">%d lagu ada di sini lebih daripada sekali</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="other">Alih keluar %d salinan lebihan</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="other">Ini mengeluarkan %d lagu daripada senarai main ini.</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="other">Ini mengeluarkan %d lagu daripada senarai main di YouTube Music juga.</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">Fail anda</string>
+    <string name="choose_a_file_on_this_phone">Pilih fail pada telefon ini</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">Satu jubin</string>
+    <string name="pin_to_home_as_one_tile">Semat ke Laman Utama sebagai satu jubin</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">Muat naik lagu</string>
+    <string name="uploading_s">Memuat naik %1$s…</string>
+    <string name="uploaded_s_it_shows_up_here">%1$s telah dimuat naik. Ia muncul di sini setelah YouTube Music menyediakannya, biasanya dalam beberapa minit.</string>
+    <string name="couldn_t_upload_it_s">Tidak dapat memuat naik: %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">YouTube Music menerima fail MP3, M4A, WMA, FLAC dan Ogg sehingga 300 MB.</string>
+    <string name="delete_from_your_uploads">Padam daripada muat naik anda</string>
+    <string name="delete_s_from_youtube_music">Padam \"%1$s\" daripada YouTube Music?</string>
+    <string name="it_goes_from_your_uploads_for_good">Ia hilang daripada muat naik anda di semua peranti, selama-lamanya. Tidak boleh dibuat asal.</string>
+    <string name="deleted_from_your_uploads">Dipadam daripada muat naik anda</string>
+    <string name="couldn_t_delete_it_s">Tidak dapat memadam: %1$s</string>
+    <string name="uploads_couldn_t_find_it">YouTube Music tidak lagi menyenaraikannya</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">Senarai main pintar</string>
+    <string name="tour_183_smart_body">Senarai main yang terisi sendiri mengikut peraturan anda dan seiring dengan pustaka anda.</string>
+    <string name="tour_183_smart_point_1">Peraturan tentang apa yang anda suka, main, muat turun atau tag</string>
+    <string name="tour_183_smart_point_2">Tempo, kunci dan tenaga, diukur pada telefon anda</string>
+    <string name="tour_183_smart_point_3">Simpan salinan sebagai senarai main biasa bila-bila masa</string>
+    <string name="tour_183_tags_title">Tag</string>
+    <string name="tour_183_tags_body">Label anda sendiri pada lagu, daripada menu mana-mana lagu.</string>
+    <string name="tour_183_tags_point_1">Setiap tag ada halaman sendiri dalam Pustaka</string>
+    <string name="tour_183_tags_point_2">Gunakannya dalam senarai main pintar</string>
+    <string name="tour_183_tags_point_3">Tag banyak lagu sekali gus</string>
+    <string name="tour_183_select_title">Pilih banyak</string>
+    <string name="tour_183_select_body">Tekan lama lagu dalam senarai untuk memilih lagi, kemudian buat semuanya sekali gus.</string>
+    <string name="tour_183_select_point_1">Tambah ke senarai main atau baris gilir, tag, suka atau muat turun</string>
+    <string name="tour_183_select_point_2">Keluarkan daripada senarai main, dengan pengesahan</string>
+    <string name="tour_183_search_title">Cari dalam pustaka anda</string>
+    <string name="tour_183_search_body">Semua yang anda ada, ditemui semasa menaip, dengan penapis.</string>
+    <string name="tour_183_search_point_1">Lagu, senarai main, tag, artis dan album</string>
+    <string name="tour_183_search_point_2">Hanya yang disukai, dimuat turun atau pada telefon ini</string>
+    <string name="tour_183_search_point_3">Tajuk Jepun, Korea, Rusia dan Greek ditemui dalam huruf Latin</string>
+    <string name="tour_183_also_file">Fail pada telefon sebagai versi lagu</string>
+    <string name="tour_183_also_duplicates">Cari lagu yang ada dua kali dalam senarai main</string>
+    <string name="tour_183_also_songs_from">Lagu Pustaka daripada senarai main yang anda pilih</string>
+    <string name="tour_183_also_lock">Ulang dan Seterusnya pada skrin kunci</string>
+    <string name="tour_183_also_uploads">Muat naik dan padam dalam Muat naik</string>
+    <string name="show_furigana">Tunjukkan furigana</string>
+    <string name="hiragana_readings_above_kanji">Bacaan hiragana di atas kanji dalam lirik Jepun</string>
+    <string name="furigana_uses_the_japanese_reading_data">Menggunakan data bacaan Jepun (dimuat turun sekali di bawah).</string>
 </resources>

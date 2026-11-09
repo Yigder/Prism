@@ -7,6 +7,7 @@ import com.prism.music.playback.toSong
 import com.prism.music.data.model.AlbumRef
 import com.prism.music.data.model.ArtistRef
 import com.prism.music.data.model.Song
+import com.prism.music.ui.screens.phoneMatches
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -60,12 +61,51 @@ class SongVersionsTest {
         val v = SongVersions(prefs)
         v.set("a", SongVersions.Pick("c", "The Band · Roads (Deluxe) · 3:20"))
         assertEquals("c", SongVersions(prefs).of("a"))
+        assertEquals("c", SongVersions(prefs).streamedOf("a"))
+        assertNull(SongVersions(prefs).fileOf("a"))
         assertEquals("The Band · Roads (Deluxe) · 3:20", SongVersions(prefs).picks.value["a"]?.label)
         v.set("a", null)
         assertNull(SongVersions(prefs).of("a"))
         // Picking the song itself is no pick.
         v.set("a", SongVersions.Pick("a", ""))
         assertNull(v.of("a"))
+    }
+
+    /** A file on the phone picked as the song's version is kept across restarts and shows as that file. */
+    @Test
+    fun aLocalFileCanBePickedAsItsVersion() {
+        val prefs = RuntimeEnvironment.getApplication().getSharedPreferences("song_versions_test", 0)
+        prefs.edit().clear().commit()
+        val v = SongVersions(prefs)
+        val mine = song("a", "Night Drive", "The Band", album = "Roads")
+        val local = Song("local:42", "Night Drive (Live)", listOf(ArtistRef("The Band")), AlbumRef("Roads Live"), 240)
+        try {
+            v.set("a", SongVersions.Pick(local.id, "The Band · Roads Live · 4:00", local))
+            val kept = SongVersions(prefs)
+            // The file itself is the pick, kept across a restart, and isn't a YouTube recording to resolve.
+            assertEquals("local:42", kept.of("a"))
+            assertEquals("local:42", kept.fileOf("a"))
+            assertNull(kept.streamedOf("a"))
+            // The song shows the file's details and keeps its own id.
+            val shown = kept.shown(mine)
+            assertEquals("a", shown.id)
+            assertEquals("Night Drive (Live)", shown.title)
+            assertEquals(local.album, shown.album)
+            assertEquals(240, shown.durationSec)
+        } finally {
+            v.set("a", null)
+        }
+    }
+
+    /** The search box's words find the phone's own files the same way Search does. */
+    @Test
+    fun filesOnThePhoneMatchTheSameWords() {
+        val files = listOf(
+            song("local:1", "Night Drive", "The Band", album = "Roads"),
+            song("local:2", "Night Drive (Live)", "The Band", album = "Roads Live"),
+        )
+        assertEquals(listOf("local:2"), phoneMatches("night drive live", files).map { it.id })
+        assertEquals(listOf("local:1", "local:2"), phoneMatches("night drive band", files).map { it.id })
     }
 
     /** #328: a picked version shows in the song's place (cover, title, artists, album, length); the song stays itself. */

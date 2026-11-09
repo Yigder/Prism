@@ -1,5 +1,6 @@
 package com.prism.music
 
+import com.prism.music.data.lyrics.RubySpan
 import com.prism.music.data.lyrics.roman.Cyrillic
 import com.prism.music.data.lyrics.roman.Greek
 import com.prism.music.data.lyrics.roman.Hangul
@@ -52,6 +53,37 @@ class RomanizeTest {
         // One piece per character: a word's reading on its first character.
         val p = ja.pieces("君の")
         assertEquals(listOf("kimi", " no"), p)
+        // Furigana: hiragana above the kanji, with the okurigana and kana beside it left out.
+        assertEquals(listOf(RubySpan(0, 1, "きみ"), RubySpan(2, 3, "な")), ja.furigana("君の名は"))
+        assertEquals(listOf(RubySpan(0, 1, "た")), ja.furigana("食べる"))
+        assertEquals(listOf(RubySpan(0, 2, "きょう")), ja.furigana("今日"))
+        assertEquals("きみ", Kana.toHiragana("キミ"))
+        assertEquals(emptyList<RubySpan>(), ja.furigana("ひらがなだけ"))
+    }
+
+    @Test
+    fun furiganaUnderstandsCountersNextToDigits() {
+        val ja = com.prism.music.data.lyrics.roman.Japanese.bundled()
+        assertEquals(listOf(RubySpan(1, 2, "ふたり")), ja.furigana("2人"))
+        assertEquals(listOf(RubySpan(1, 2, "ひとり")), ja.furigana("１人"))
+        assertEquals(listOf(RubySpan(1, 2, "ふたり")), ja.furigana("2人で"))
+        assertEquals(listOf(RubySpan(1, 2, "ふたり"), RubySpan(2, 3, "ぐみ")), ja.furigana("2人組"))
+        // Three and more are said にん as the dictionary has them, and the kanji numeral is its own word already.
+        assertEquals(listOf(RubySpan(1, 2, "にん")), ja.furigana("3人"))
+        assertEquals(listOf(RubySpan(2, 3, "にん")), ja.furigana("10人"))
+        assertEquals(listOf(RubySpan(2, 3, "にん")), ja.furigana("11人"))
+        assertEquals(listOf(RubySpan(2, 3, "にん")), ja.furigana("12人"))
+        assertEquals(listOf(RubySpan(2, 3, "にん")), ja.furigana("21人"))
+        assertEquals(listOf(RubySpan(0, 2, "ふたり")), ja.furigana("二人"))
+        // Other counters and dates come out as Japanese says them too.
+        assertEquals(listOf(RubySpan(1, 2, "しがつ")), ja.furigana("4月"))
+        assertEquals(listOf(RubySpan(1, 2, "じ")), ja.furigana("4時"))
+        assertEquals(listOf(RubySpan(2, 3, "にち")), ja.furigana("12日"))
+        // The romaji reading follows too, with the number as it was written.
+        assertEquals("2futari", ja.romanize("2人"))
+        assertEquals("4shigatsu", ja.romanize("4月"))
+        assertEquals("12nin", ja.romanize("12人"))
+        assertEquals("11nin", ja.romanize("11人"))
     }
 
     @Test

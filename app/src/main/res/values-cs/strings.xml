@@ -5002,4 +5002,178 @@
     <string name="speed_dial_your_plays_first_info">YouTube posílá Prismu dlaždice ze svého webu, které nejsou stejné jako v jeho aplikaci a ne vždy odpovídají tomu, co hrajete. Když je to zapnuté, nejdřív se zobrazí to, co jste na tomto telefonu za poslední tři měsíce hráli nejvíc, a zbytek doplní dlaždice YouTube.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube už toto přihlášení nepřijímá. Odhlaste se a znovu se přihlaste.</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube teď tomuto účtu neposílá 256 kb/s, takže skladby hrají v obvyklé kvalitě</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">Povolit na zamykací obrazovce</string>
+    <string name="lock_screen_maker_xiaomi_detail">Otevře oprávnění Prismu: zapněte „Zobrazit na zamykací obrazovce“ a „Otevírat nová okna při běhu na pozadí“</string>
+    <string name="lock_screen_maker_vivo_detail">Otevře oprávnění Prismu: zapněte „Zobrazit na zamykací obrazovce“ a „Vyskakovací okna na pozadí“</string>
+    <string name="lock_screen_maker_info">Výrobce vašeho telefonu přidává tato oprávnění k těm z Androidu a Android nedokáže Prismu říct, zda jsou zapnutá. Bez nich se přehrávač na zamykací obrazovce nemusí objevit.</string>
+    <string name="lock_screen_refused">Minule váš telefon přehrávač nenechal zobrazit. Zkontrolujte oprávnění výše.</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">Líbí se</string>
+    <string name="unlike">Už se nelíbí</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="one">Odstranit %d stažení z tohoto telefonu?</item>
+        <item quantity="few">Odstranit %d stažení z tohoto telefonu?</item>
+        <item quantity="many">Odstranit %d stažení z tohoto telefonu?</item>
+        <item quantity="other">Odstranit %d stažení z tohoto telefonu?</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="one">Odstranit %1$d skladbu z „%2$s“ v YouTube Music?</item>
+        <item quantity="few">Odstranit %1$d skladby z „%2$s“ v YouTube Music?</item>
+        <item quantity="many">Odstranit %1$d skladby z „%2$s“ v YouTube Music?</item>
+        <item quantity="other">Odstranit %1$d skladeb z „%2$s“ v YouTube Music?</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">Štítky</string>
+    <string name="add_a_tag">Přidat štítek</string>
+    <string name="new_tag">Nový štítek</string>
+    <string name="tags_are_your_own_labels">Vlastní štítky pro skladby, třeba „posilovna“ nebo „deštivý den“. Najdeš je v Knihovně → Štítky.</string>
+    <string name="your_tag">Tvůj štítek v tomto telefonu</string>
+    <string name="remove_this_tag">Odebrat tento štítek</string>
+    <string name="rename_tag">Přejmenovat štítek</string>
+    <string name="delete_tag">Smazat štítek</string>
+    <string name="delete_the_tag_its_songs_stay">Smazat štítek „%s“? Jeho skladby zůstanou, kde jsou.</string>
+    <string name="tag_songs_from_any_song_s">Štítky přidáš z nabídky kterékoli skladby (⋯ nebo dlouhé podržení) → Přidat štítek.</string>
+    <string name="tag_n_songs">Štítek · %s</string>
+    <plurals name="n_tags">
+        <item quantity="one">%d štítek</item>
+        <item quantity="few">%d štítky</item>
+        <item quantity="many">%d štítku</item>
+        <item quantity="other">%d štítků</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">Chytrý playlist</string>
+    <string name="smart_playlist_n">Chytrý playlist · %s</string>
+    <string name="smart_playlist_updates_itself">Chytrý playlist · aktualizuje se sám</string>
+    <string name="new_smart_playlist">Nový chytrý playlist</string>
+    <string name="edit_rules">Upravit pravidla</string>
+    <string name="save_a_copy_as_a_playlist">Uložit kopii jako playlist</string>
+    <string name="saved_as_a_playlist">„%s“ uloženo jako playlist</string>
+    <string name="no_song_meets_these_rules">Zatím žádná skladba nesplňuje tato pravidla. Změň je v nabídce ⋯ → Upravit pravidla.</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="one">%d skladba ještě není změřená</item>
+        <item quantity="few">%d skladby ještě nejsou změřené</item>
+        <item quantity="many">%d skladby ještě není změřeno</item>
+        <item quantity="other">%d skladeb ještě není změřeno</item>
+    </plurals>
+    <string name="measuring_n_of_n">Měřím %1$d z %2$d…</string>
+    <string name="measure_now">Změřit teď</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">Měří se skladby v tomto telefonu. Na Wi-Fi i ostatní.</string>
+    <string name="smart_fast_and_liked">Rychlé a oblíbené</string>
+    <string name="smart_not_played_in_a_while">Dlouho nehrané</string>
+    <string name="smart_goes_with_what_s_playing">Ladí s tím, co hraje</string>
+    <string name="the_song_playing_isn_t_measured_yet">Hrající skladba ještě není změřená.</string>
+    <string name="match_all_rules">Splňuje všechna pravidla</string>
+    <string name="match_any_rule">Splňuje některé pravidlo</string>
+    <string name="add_a_rule">Přidat pravidlo</string>
+    <string name="add_a_rule_to_begin">Začni přidáním pravidla.</string>
+    <string name="finds_n">Najde %s</string>
+    <string name="up_to">Až</string>
+    <string name="sort_most_played">Nejhranější</string>
+    <string name="sort_not_played_lately">Poslední dobou nehrané</string>
+    <string name="sort_random">Náhodně</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">Tónina, která ladí s</string>
+    <string name="rule_energy">Energie</string>
+    <string name="rule_loudness">Hlasitost (LUFS)</string>
+    <string name="rule_on_phone">Soubor v tomto telefonu</string>
+    <string name="rule_tag">Štítek</string>
+    <string name="rule_times_played">Kolikrát přehráno</string>
+    <string name="rule_last_played">Naposledy přehráno</string>
+    <string name="rule_added">Přidáno do knihovny</string>
+    <string name="rule_never_played">Nikdy nepřehráno</string>
+    <string name="rule_is">Je</string>
+    <string name="rule_isn_t">Není</string>
+    <string name="rule_from">Od</string>
+    <string name="rule_to">Do</string>
+    <string name="rule_at_least">Aspoň</string>
+    <string name="rule_at_most">Nanejvýš</string>
+    <string name="rule_within">Za posledních</string>
+    <string name="rule_not_within">Ne za posledních</string>
+    <string name="rule_days">dní</string>
+    <string name="genre_example">Pop, hip hop, rock…</string>
+    <string name="your_listening">Tvoje poslouchání</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">Skladby z</string>
+    <string name="your_likes_stay_as_they_are">Mění se jen to, co ukazuje tato karta. Tvoje oblíbené zůstanou, jak jsou.</string>
+    <string name="search_these_songs">Hledat v těchto skladbách</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">Hledat v knihovně</string>
+    <string name="nothing_in_your_library_matches">V tvé knihovně nic neodpovídá</string>
+    <string name="try_fewer_words_or_another_filter">Zkus méně slov nebo jiný filtr.</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">Najít duplicity</string>
+    <string name="no_song_is_here_twice">Žádná skladba tu není dvakrát</string>
+    <string name="extra_copy">Kopie navíc</string>
+    <string name="keeping_s">Zůstává „%s“</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="one">%d skladba je tu víckrát</item>
+        <item quantity="few">%d skladby jsou tu víckrát</item>
+        <item quantity="many">%d skladby je tu víckrát</item>
+        <item quantity="other">%d skladeb je tu víckrát</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="one">Odebrat %d kopii navíc</item>
+        <item quantity="few">Odebrat %d kopie navíc</item>
+        <item quantity="many">Odebrat %d kopie navíc</item>
+        <item quantity="other">Odebrat %d kopií navíc</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="one">Tím z playlistu zmizí %d skladba.</item>
+        <item quantity="few">Tím z playlistu zmizí %d skladby.</item>
+        <item quantity="many">Tím z playlistu zmizí %d skladby.</item>
+        <item quantity="other">Tím z playlistu zmizí %d skladeb.</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="one">Tím z playlistu zmizí %d skladba i na YouTube Music.</item>
+        <item quantity="few">Tím z playlistu zmizí %d skladby i na YouTube Music.</item>
+        <item quantity="many">Tím z playlistu zmizí %d skladby i na YouTube Music.</item>
+        <item quantity="other">Tím z playlistu zmizí %d skladeb i na YouTube Music.</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">Tvůj soubor</string>
+    <string name="choose_a_file_on_this_phone">Vybrat soubor v tomto telefonu</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">Jedna dlaždice</string>
+    <string name="pin_to_home_as_one_tile">Připnout na Domů jako dlaždici</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">Nahrát skladbu</string>
+    <string name="uploading_s">Nahrávání: %1$s…</string>
+    <string name="uploaded_s_it_shows_up_here">%1$s je nahráno. Objeví se tu, až to YouTube Music připraví, obvykle za pár minut.</string>
+    <string name="couldn_t_upload_it_s">Nahrání se nezdařilo: %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">YouTube Music přijímá soubory MP3, M4A, WMA, FLAC a Ogg do 300 MB.</string>
+    <string name="delete_from_your_uploads">Smazat z nahraných</string>
+    <string name="delete_s_from_youtube_music">Smazat „%1$s“ z YouTube Music?</string>
+    <string name="it_goes_from_your_uploads_for_good">Zmizí z nahraných na všech zařízeních, natrvalo. Nelze to vrátit.</string>
+    <string name="deleted_from_your_uploads">Smazáno z nahraných</string>
+    <string name="couldn_t_delete_it_s">Smazání se nezdařilo: %1$s</string>
+    <string name="uploads_couldn_t_find_it">YouTube Music už to neuvádí</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">Chytré playlisty</string>
+    <string name="tour_183_smart_body">Playlisty, které se samy plní podle vašich pravidel a drží krok s knihovnou.</string>
+    <string name="tour_183_smart_point_1">Pravidla podle toho, co se vám líbí, co hrajete, stahujete nebo štítkujete</string>
+    <string name="tour_183_smart_point_2">Tempo, tónina a energie změřené v telefonu</string>
+    <string name="tour_183_smart_point_3">Kdykoli uložte kopii jako běžný playlist</string>
+    <string name="tour_183_tags_title">Štítky</string>
+    <string name="tour_183_tags_body">Vlastní štítky na skladbách, z nabídky kterékoli skladby.</string>
+    <string name="tour_183_tags_point_1">Každý štítek má v Knihovně vlastní stránku</string>
+    <string name="tour_183_tags_point_2">Použijte je v chytrých playlistech</string>
+    <string name="tour_183_tags_point_3">Označte mnoho skladeb najednou</string>
+    <string name="tour_183_select_title">Vybrat více</string>
+    <string name="tour_183_select_body">Podržte skladbu v seznamu, vyberte další a pracujte se všemi najednou.</string>
+    <string name="tour_183_select_point_1">Přidat do playlistu nebo fronty, označit, dát To se mi líbí nebo stáhnout</string>
+    <string name="tour_183_select_point_2">Odebrat z playlistu, s potvrzením</string>
+    <string name="tour_183_search_title">Hledejte ve své knihovně</string>
+    <string name="tour_183_search_body">Vše, co máte, nalezené během psaní, s filtry.</string>
+    <string name="tour_183_search_point_1">Skladby, playlisty, štítky, interpreti a alba</string>
+    <string name="tour_183_search_point_2">Jen oblíbené, stažené nebo v tomto telefonu</string>
+    <string name="tour_183_search_point_3">Japonské, korejské, ruské a řecké názvy nalezené latinkou</string>
+    <string name="tour_183_also_file">Soubor v telefonu jako verze skladby</string>
+    <string name="tour_183_also_duplicates">Najděte skladby, které jsou v playlistu dvakrát</string>
+    <string name="tour_183_also_songs_from">Skladby v Knihovně z vybraných playlistů</string>
+    <string name="tour_183_also_lock">Opakování a Další na zamykací obrazovce</string>
+    <string name="tour_183_also_uploads">Nahrávání a mazání v Nahraných</string>
+    <string name="show_furigana">Zobrazit furiganu</string>
+    <string name="hiragana_readings_above_kanji">Čtení hiragana nad kandži v japonských textech</string>
+    <string name="furigana_uses_the_japanese_reading_data">Používá japonská čtecí data (stáhnou se jednou níže).</string>
 </resources>

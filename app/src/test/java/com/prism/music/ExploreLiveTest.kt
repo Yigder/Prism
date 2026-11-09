@@ -15,11 +15,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /**
  * What Explore and Charts really answer, signed out, as the app asks for them. Nothing here looks at a shelf's title:
  * those change with the language. Signing in isn't possible where this runs; the app asks these pages without the account.
  */
+@Category(LiveNetwork::class)
 class ExploreLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
     private var settings = AppSettings()

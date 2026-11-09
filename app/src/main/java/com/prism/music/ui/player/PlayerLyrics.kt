@@ -442,6 +442,7 @@ fun CurrentLyricStrip(state: LyricsState, isPlaying: Boolean, overScrubber: Bool
     // Romanized "instead": the strip sings the Latin spelling too (same timings).
     val roman = rememberRomanized(state)
     val instead = romanizeMode(state.song.id) == com.prism.music.data.prefs.RomanizeMode.INSTEAD
+    val furigana = rememberFurigana(state)
     // As the lyrics page draws them (1.8.0: always; "Same look everywhere" is gone).
     val settings = LocalAppSettings.current
     val look = rememberLyricsLook(settings, com.prism.music.data.PlaylistCovers.artOf(state.song))
@@ -497,10 +498,14 @@ fun CurrentLyricStrip(state: LyricsState, isPlaying: Boolean, overScrubber: Bool
                     ) { (i, t) ->
                         val line = lines.getOrNull(i)
                         if (line != null && !line.isGap && (line.isWordSynced || !look.plainWhenLineTimed)) {
-                            SungLine(line, clock, stripStyle.copy(shadow = look.shadow), look, null, maxLines = rows, strip = true)
+                            SungLine(
+                                line, clock, stripStyle.copy(shadow = look.shadow), look, null, maxLines = rows, strip = true,
+                                ruby = if (instead) null else furigana?.getOrNull(i),
+                            )
                         } else {
-                            Text(
-                                t, style = stripStyle, color = if (instrumental) Color.White.copy(alpha = 0.5f) else Color.White, maxLines = rows, overflow = TextOverflow.Ellipsis,
+                            TextWithFurigana(
+                                t, if (instead || line == null || line.isGap) null else furigana?.getOrNull(i), stripStyle,
+                                if (instrumental) Color.White.copy(alpha = 0.5f) else Color.White, maxLines = rows,
                             )
                         }
                     }
@@ -580,6 +585,7 @@ fun SweptLine(
     litBrush: Brush? = null,
     dimColor: Color? = null,
     glow: androidx.compose.ui.graphics.Shadow? = null,
+    onLayout: ((TextLayoutResult) -> Unit)? = null,
 ) {
     var layout by remember(line) { mutableStateOf<TextLayoutResult?>(null) }
     val offsets = remember(line) {
@@ -607,7 +613,7 @@ fun SweptLine(
                     val l = layout ?: return@drawWithContent drawContent()
                     drawSweep(l, line, offsets, clock.value, litBrush ?: SolidColor(Color.White), dim, style, glow ?: style.shadow)
                 },
-                style = style, color = dim, maxLines = maxLines, overflow = TextOverflow.Ellipsis, onTextLayout = { layout = it },
+                style = style, color = dim, maxLines = maxLines, overflow = TextOverflow.Ellipsis, onTextLayout = { layout = it; onLayout?.invoke(it) },
             )
         }
         return
@@ -634,7 +640,7 @@ fun SweptLine(
                         }
                     },
             ),
-            style = style, color = dim, maxLines = maxLines, overflow = TextOverflow.Ellipsis, onTextLayout = { layout = it },
+            style = style, color = dim, maxLines = maxLines, overflow = TextOverflow.Ellipsis, onTextLayout = { layout = it; onLayout?.invoke(it) },
         )
         Text(
             line.text, style = style.copy(brush = litBrush, shadow = glow ?: style.shadow), color = if (litBrush != null) Color.Unspecified else Color.White,
@@ -827,6 +833,7 @@ fun WeightSweptLine(
     /** The sung words' fill (null: white). */
     litBrush: Brush? = null,
     dimAlpha: Float = UNSUNG_ALPHA,
+    onLayout: ((TextLayoutResult) -> Unit)? = null,
 ) {
     val measurer = androidx.compose.ui.text.rememberTextMeasurer()
     val steps = ((sungWeight - lightWeight) / WEIGHT_STEP).coerceAtLeast(0)
@@ -865,7 +872,7 @@ fun WeightSweptLine(
             append(w.text.substring(core.length))
         }
     }
-    Text(text, modifier, style = axisStyle)
+    Text(text, modifier, style = axisStyle, onTextLayout = { onLayout?.invoke(it) })
 }
 
 /**
@@ -1068,6 +1075,8 @@ fun LyricsPanel(
     // Lyrics in a script the listener can't read, in Latin letters: under each line, or in its place.
     val roman = rememberRomanized(state)
     val romanInstead = romanizeMode(state.song.id) == com.prism.music.data.prefs.RomanizeMode.INSTEAD
+    // Japanese kanji with their hiragana readings above (Settings → Lyrics & Sing).
+    val furigana = rememberFurigana(state)
 
     if (lines.isEmpty()) {
         Box(modifier.pointerInput(Unit) { detectTapGestures { onRevealControls() } }, contentAlignment = Alignment.Center) {
@@ -1145,6 +1154,8 @@ fun LyricsPanel(
             val romanLine = roman?.getOrNull(index)
             // "Instead": the line is sung in Latin letters (the original's timings kept); in capitals when that's picked.
             val shown = remember(line, romanLine, romanInstead, look.uppercase) { look.shown(if (romanInstead && romanLine != null) romanLine else line) }
+            // The readings belong to the Japanese text, so they stay off when the Latin line is shown in its place.
+            val rubyLine = if (romanInstead) null else furigana?.getOrNull(index)
             // Arabic, Hebrew and the like read right to left: such a line starts at the right (its direction comes from
             // its words; left unset, Compose laid every line out left to right, so Arabic sat on the left).
             val rtl = remember(shown) { isRtl(shown.text) }
@@ -1209,8 +1220,8 @@ fun LyricsPanel(
                 }
                 Column(Modifier.fillMaxWidth()) {
                     if (look.extraAbove) { romanised(false); translationLine(false) }
-                    if (isActive) SungLine(shown, clock, style, look, axisFamily, Modifier.fillMaxWidth(), onCard = onCard)
-                    else RestingLine(shown, style, look, lineAlpha, Modifier.fillMaxWidth())
+                    if (isActive) SungLine(shown, clock, style, look, axisFamily, Modifier.fillMaxWidth(), onCard = onCard, ruby = rubyLine)
+                    else RestingLine(shown, style, look, lineAlpha, Modifier.fillMaxWidth(), ruby = rubyLine)
                     // How far the line has been sung: a thin line of split light under it.
                     if (isActive && synced && !browsing && line.endMs > line.timeMs) LyricProgress(
                         line.timeMs, line.endMs, clock,

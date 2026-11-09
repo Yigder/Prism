@@ -4874,4 +4874,162 @@
     <string name="speed_dial_your_plays_first_info">YouTube, Prism-কে তার ওয়েবসাইটের টাইল পাঠায়, যা তার অ্যাপের টাইল নয় এবং সবসময় আপনার শোনা গান অনুসরণ করে না। চালু থাকলে, গত তিন মাসে এই ফোনে আপনি যা সবচেয়ে বেশি শুনেছেন তা আগে আসে, আর বাকিটা YouTube-এর টাইল দিয়ে ভরে।</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube আর এই সাইন-ইন গ্রহণ করছে না। সাইন আউট করে আবার সাইন ইন করুন।</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube এখন এই অ্যাকাউন্টে 256 kbps পাঠাচ্ছে না, তাই গান সাধারণ মানে বাজছে</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">লক স্ক্রিনে এটি অনুমতি দিন</string>
+    <string name="lock_screen_maker_xiaomi_detail">Prism-এর অনুমতিগুলো খোলে: “লক স্ক্রিনে দেখান” এবং “ব্যাকগ্রাউন্ডে চলার সময় নতুন উইন্ডো খুলুন” চালু করুন</string>
+    <string name="lock_screen_maker_vivo_detail">Prism-এর অনুমতিগুলো খোলে: “লক স্ক্রিনে দেখান” এবং “ব্যাকগ্রাউন্ড পপ-আপ” চালু করুন</string>
+    <string name="lock_screen_maker_info">আপনার ফোনের নির্মাতা Android-এর নিজের অনুমতির সঙ্গে এই অনুমতিগুলো যোগ করে, আর সেগুলো চালু কিনা Android তা Prism-কে জানাতে পারে না। এগুলো ছাড়া প্লেয়ার লক স্ক্রিনে না-ও আসতে পারে।</string>
+    <string name="lock_screen_refused">গতবার আপনার ফোন প্লেয়ারটিকে আসতে দেয়নি। উপরের অনুমতিগুলো দেখে নিন।</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">লাইক</string>
+    <string name="unlike">লাইক সরান</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="one">এই ফোন থেকে %dটি ডাউনলোড সরাবেন?</item>
+        <item quantity="other">এই ফোন থেকে %dটি ডাউনলোড সরাবেন?</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="one">YouTube Music-এ “%2$s” থেকে %1$dটি গান সরাবেন?</item>
+        <item quantity="other">YouTube Music-এ “%2$s” থেকে %1$dটি গান সরাবেন?</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">ট্যাগ</string>
+    <string name="add_a_tag">ট্যাগ যোগ করুন</string>
+    <string name="new_tag">নতুন ট্যাগ</string>
+    <string name="tags_are_your_own_labels">গানের জন্য আপনার নিজের লেবেল, যেমন “জিম” বা “বৃষ্টির দিন”। লাইব্রেরি → ট্যাগ-এ পাবেন।</string>
+    <string name="your_tag">এই ফোনে আপনার ট্যাগ</string>
+    <string name="remove_this_tag">এই ট্যাগ সরান</string>
+    <string name="rename_tag">ট্যাগের নাম বদলান</string>
+    <string name="delete_tag">ট্যাগ মুছুন</string>
+    <string name="delete_the_tag_its_songs_stay">“%s” ট্যাগটি মুছবেন? এর গানগুলো যেখানে আছে সেখানেই থাকবে।</string>
+    <string name="tag_songs_from_any_song_s">যেকোনো গানের মেনু (⋯ বা টিপে ধরে রাখুন) → ট্যাগ যোগ করুন থেকে গানে ট্যাগ দিন।</string>
+    <string name="tag_n_songs">ট্যাগ · %s</string>
+    <plurals name="n_tags">
+        <item quantity="one">%dটি ট্যাগ</item>
+        <item quantity="other">%dটি ট্যাগ</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">স্মার্ট প্লেলিস্ট</string>
+    <string name="smart_playlist_n">স্মার্ট প্লেলিস্ট · %s</string>
+    <string name="smart_playlist_updates_itself">স্মার্ট প্লেলিস্ট · নিজে থেকেই হালনাগাদ থাকে</string>
+    <string name="new_smart_playlist">নতুন স্মার্ট প্লেলিস্ট</string>
+    <string name="edit_rules">নিয়ম বদলান</string>
+    <string name="save_a_copy_as_a_playlist">একটি কপি প্লেলিস্ট হিসেবে সেভ করুন</string>
+    <string name="saved_as_a_playlist">“%s” প্লেলিস্ট হিসেবে সেভ হয়েছে</string>
+    <string name="no_song_meets_these_rules">এখনো কোনো গান এই নিয়মগুলোর সাথে মেলে না। ⋯ মেনু → নিয়ম বদলান থেকে বদলান।</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="one">%dটি গান এখনো মাপা হয়নি</item>
+        <item quantity="other">%dটি গান এখনো মাপা হয়নি</item>
+    </plurals>
+    <string name="measuring_n_of_n">%2$dটির মধ্যে %1$dটি মাপা হচ্ছে…</string>
+    <string name="measure_now">এখনই মাপুন</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">এই ফোনের গানগুলো মাপা হচ্ছে। Wi-Fi-তে বাকিগুলোও।</string>
+    <string name="smart_fast_and_liked">দ্রুত ও পছন্দের</string>
+    <string name="smart_not_played_in_a_while">অনেকদিন বাজানো হয়নি</string>
+    <string name="smart_goes_with_what_s_playing">যা বাজছে তার সাথে মানানসই</string>
+    <string name="the_song_playing_isn_t_measured_yet">যে গানটি বাজছে সেটি এখনো মাপা হয়নি।</string>
+    <string name="match_all_rules">সব নিয়ম মেলে</string>
+    <string name="match_any_rule">যেকোনো নিয়ম মেলে</string>
+    <string name="add_a_rule">নিয়ম যোগ করুন</string>
+    <string name="add_a_rule_to_begin">শুরু করতে একটি নিয়ম যোগ করুন।</string>
+    <string name="finds_n">%s পাওয়া যায়</string>
+    <string name="up_to">সর্বোচ্চ</string>
+    <string name="sort_most_played">সবচেয়ে বেশি বাজানো</string>
+    <string name="sort_not_played_lately">সম্প্রতি বাজানো হয়নি</string>
+    <string name="sort_random">এলোমেলো</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">যে স্কেলের সাথে মানায়</string>
+    <string name="rule_energy">এনার্জি</string>
+    <string name="rule_loudness">লাউডনেস (LUFS)</string>
+    <string name="rule_on_phone">এই ফোনের একটি ফাইল</string>
+    <string name="rule_tag">ট্যাগ</string>
+    <string name="rule_times_played">কতবার বাজানো</string>
+    <string name="rule_last_played">শেষ বাজানো</string>
+    <string name="rule_added">লাইব্রেরিতে যোগ হয়েছে</string>
+    <string name="rule_never_played">কখনো বাজানো হয়নি</string>
+    <string name="rule_is">হ্যাঁ</string>
+    <string name="rule_isn_t">না</string>
+    <string name="rule_from">থেকে</string>
+    <string name="rule_to">পর্যন্ত</string>
+    <string name="rule_at_least">কমপক্ষে</string>
+    <string name="rule_at_most">সর্বোচ্চ</string>
+    <string name="rule_within">গত</string>
+    <string name="rule_not_within">গত … এর মধ্যে নয়</string>
+    <string name="rule_days">দিনে</string>
+    <string name="genre_example">পপ, হিপ-হপ, রক…</string>
+    <string name="your_listening">আপনার শোনা</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">যেখান থেকে গান</string>
+    <string name="your_likes_stay_as_they_are">শুধু এই ট্যাবে যা দেখায় তা বদলায়। আপনার পছন্দগুলো যেমন আছে তেমনই থাকে।</string>
+    <string name="search_these_songs">এই গানগুলোতে খুঁজুন</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">আপনার লাইব্রেরিতে খুঁজুন</string>
+    <string name="nothing_in_your_library_matches">আপনার লাইব্রেরিতে কিছুই মেলেনি</string>
+    <string name="try_fewer_words_or_another_filter">কম শব্দ বা অন্য ফিল্টার দিয়ে চেষ্টা করুন।</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">একই গান খুঁজুন</string>
+    <string name="no_song_is_here_twice">এখানে কোনো গান দুবার নেই</string>
+    <string name="extra_copy">অতিরিক্ত কপি</string>
+    <string name="keeping_s">“%s” থাকছে</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="one">%dটি গান এখানে একাধিকবার আছে</item>
+        <item quantity="other">%dটি গান এখানে একাধিকবার আছে</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="one">%dটি অতিরিক্ত কপি সরান</item>
+        <item quantity="other">%dটি অতিরিক্ত কপি সরান</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="one">এতে এই প্লেলিস্ট থেকে %dটি গান সরে যাবে।</item>
+        <item quantity="other">এতে এই প্লেলিস্ট থেকে %dটি গান সরে যাবে।</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="one">এতে YouTube Music-এও প্লেলিস্ট থেকে %dটি গান সরে যাবে।</item>
+        <item quantity="other">এতে YouTube Music-এও প্লেলিস্ট থেকে %dটি গান সরে যাবে।</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">আপনার ফাইল</string>
+    <string name="choose_a_file_on_this_phone">এই ফোন থেকে একটি ফাইল বাছুন</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">একটি টাইল</string>
+    <string name="pin_to_home_as_one_tile">হোমে একটি টাইল হিসেবে পিন করুন</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">গান আপলোড করুন</string>
+    <string name="uploading_s">%1$s আপলোড হচ্ছে…</string>
+    <string name="uploaded_s_it_shows_up_here">%1$s আপলোড হয়েছে। YouTube Music তৈরি করলেই এখানে দেখাবে, সাধারণত কয়েক মিনিটের মধ্যে।</string>
+    <string name="couldn_t_upload_it_s">আপলোড করা গেল না: %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">YouTube Music ৩০০ MB পর্যন্ত MP3, M4A, WMA, FLAC ও Ogg ফাইল নেয়।</string>
+    <string name="delete_from_your_uploads">আপনার আপলোড থেকে মুছুন</string>
+    <string name="delete_s_from_youtube_music">YouTube Music থেকে “%1$s” মুছবেন?</string>
+    <string name="it_goes_from_your_uploads_for_good">এটি আপনার সব ডিভাইসে আপলোড থেকে চিরতরে মুছে যাবে। ফিরিয়ে আনা যাবে না।</string>
+    <string name="deleted_from_your_uploads">আপনার আপলোড থেকে মোছা হয়েছে</string>
+    <string name="couldn_t_delete_it_s">মোছা গেল না: %1$s</string>
+    <string name="uploads_couldn_t_find_it">YouTube Music আর এটি দেখায় না</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">স্মার্ট প্লেলিস্ট</string>
+    <string name="tour_183_smart_body">আপনার নিয়মে নিজে থেকে ভরে ওঠা প্লেলিস্ট, যা লাইব্রেরির সঙ্গে আপডেট থাকে।</string>
+    <string name="tour_183_smart_point_1">আপনি যা পছন্দ করেন, শোনেন, ডাউনলোড বা ট্যাগ করেন তার ওপর নিয়ম</string>
+    <string name="tour_183_smart_point_2">টেম্পো, স্কেল ও এনার্জি, আপনার ফোনে মাপা</string>
+    <string name="tour_183_smart_point_3">যেকোনো সময় সাধারণ প্লেলিস্ট হিসেবে কপি রাখুন</string>
+    <string name="tour_183_tags_title">ট্যাগ</string>
+    <string name="tour_183_tags_body">গানে আপনার নিজের লেবেল, যেকোনো গানের মেনু থেকে।</string>
+    <string name="tour_183_tags_point_1">প্রতিটি ট্যাগের লাইব্রেরিতে নিজস্ব পাতা আছে</string>
+    <string name="tour_183_tags_point_2">স্মার্ট প্লেলিস্টে এগুলো ব্যবহার করুন</string>
+    <string name="tour_183_tags_point_3">একসঙ্গে অনেক গান ট্যাগ করুন</string>
+    <string name="tour_183_select_title">একাধিক বাছুন</string>
+    <string name="tour_183_select_body">তালিকায় একটি গান চেপে ধরে আরও বাছুন, তারপর সবগুলোর ওপর একসঙ্গে কাজ করুন।</string>
+    <string name="tour_183_select_point_1">প্লেলিস্ট বা সারিতে যোগ, ট্যাগ, পছন্দ বা ডাউনলোড</string>
+    <string name="tour_183_select_point_2">নিশ্চিত করে প্লেলিস্ট থেকে সরান</string>
+    <string name="tour_183_search_title">আপনার লাইব্রেরিতে খুঁজুন</string>
+    <string name="tour_183_search_body">আপনার সবকিছু, টাইপ করতে করতেই পাওয়া যায়, ফিল্টারসহ।</string>
+    <string name="tour_183_search_point_1">গান, প্লেলিস্ট, ট্যাগ, শিল্পী ও অ্যালবাম</string>
+    <string name="tour_183_search_point_2">শুধু পছন্দের, ডাউনলোড করা বা এই ফোনে থাকা</string>
+    <string name="tour_183_search_point_3">জাপানি, কোরিয়ান, রুশ ও গ্রিক শিরোনাম লাতিন অক্ষরেও পাওয়া যায়</string>
+    <string name="tour_183_also_file">ফোনের একটি ফাইল গানের সংস্করণ হিসেবে</string>
+    <string name="tour_183_also_duplicates">প্লেলিস্টে দুবার থাকা গান খুঁজুন</string>
+    <string name="tour_183_also_songs_from">আপনার বাছা প্লেলিস্ট থেকে লাইব্রেরির গান</string>
+    <string name="tour_183_also_lock">লক স্ক্রিনে রিপিট ও এরপর</string>
+    <string name="tour_183_also_uploads">আপলোডে আপলোড ও মুছে ফেলা</string>
+    <string name="show_furigana">ফুরিগানা দেখান</string>
+    <string name="hiragana_readings_above_kanji">জাপানি গানের কথায় কাঞ্জির উপরে হিরাগানা পাঠ</string>
+    <string name="furigana_uses_the_japanese_reading_data">জাপানি পড়ার ডেটা ব্যবহার করে (নিচে একবার ডাউনলোড হয়)।</string>
 </resources>

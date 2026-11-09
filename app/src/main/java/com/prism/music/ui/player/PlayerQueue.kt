@@ -238,9 +238,13 @@ fun InlineQueue(onRevealPlayer: () -> Unit, onHidePlayer: () -> Unit, modifier: 
         Spacer(Modifier.height(4.dp))
         // "Queue headings" off (#197): one continuous list of songs (Autoplay keeps its heading: it holds the switch).
         val headings = settings.view.queueHeadings
+        val dragging = remember { mutableStateOf<com.prism.music.playback.QueueDrag?>(null) }
+        // A dropped song shows where it was dropped until the queue comes back with it moved (or a moment has passed).
+        LaunchedEffect(queue, upNext) { if (dragging.value?.settled == true) dragging.value = null }
+        LaunchedEffect(dragging.value) { if (dragging.value?.settled == true) { kotlinx.coroutines.delay(1_000); dragging.value = null } }
         LazyColumn(state = listState, modifier = Modifier.fillMaxWidth().nestedScroll(controlsOnScroll), contentPadding = PaddingValues(bottom = 24.dp)) {
             if (!headings) item(key = "h-gap") { Spacer(Modifier.height(8.dp)) }
-            val rows = SectionRows(selected, toggle, startSelecting, { menuFor = it }, locked, onDragStart = onHidePlayer, settings.view.queueLengths, settings.view.queueTidy)
+            val rows = SectionRows(selected, toggle, startSelecting, { menuFor = it }, locked, onDragStart = onHidePlayer, settings.view.queueLengths, settings.view.queueTidy, dragging)
             if (played.isNotEmpty()) {
                 if (headings) item(key = "h-played") { Heading(tr(R.string.played), Modifier.padding(top = 12.dp, bottom = 6.dp)) }
                 // #294, #331: "Move songs you've played": handles here too, moving only among themselves.
@@ -300,6 +304,8 @@ private class SectionRows(
     val lengths: Boolean,
     /** #294: no × on the rows. */
     val tidy: Boolean,
+    /** D46 (1.8.3): the song being dragged and how far, shown on screen only until the finger lets go. */
+    val drag: androidx.compose.runtime.MutableState<com.prism.music.playback.QueueDrag?>,
 )
 
 /**
@@ -315,27 +321,41 @@ private fun LazyListScope.queueSection(
     played: Boolean = false,
 ) {
     val selecting = rows.selected != null
-    items(entries, key = { (if (played) "played-" else "") + it.uid }) { entry ->
+    // D46 (1.8.3): while a song is dragged its rows trade places here only; the player moves it once, on letting go.
+    val shown = com.prism.music.playback.QueueDrag.shown(entries, rows.drag.value) { it.uid }
+    items(shown, key = { (if (played) "played-" else "") + it.uid }) { entry ->
         val pc = LocalContainer.current.player
         val rowPx = with(LocalDensity.current) { 56.dp.toPx() }
         var drag by remember { mutableFloatStateOf(0f) }
-        var position by remember(entry.index) { mutableStateOf(entry.index) }
-        // Read at each step of a drag, not as they were when it started (the rows move under the finger).
+        // Read at each step of a drag, not as they were when it started (the section as the player has it, unmoved).
         val section by androidx.compose.runtime.rememberUpdatedState(entries)
         val current by androidx.compose.runtime.rememberUpdatedState(entry)
         val shuffleOn by androidx.compose.runtime.rememberUpdatedState(shuffled)
-        /** Moves the song one place down ([down]) or up; false at the section's end. */
+        /** The drag so far, moved in the player in one go (in the list's order, or shuffled, in the play order). */
+        fun commit() {
+            val d = rows.drag.value?.takeIf { it.uid == current.uid && !it.settled } ?: return
+            val target = com.prism.music.playback.QueueDrag.target(section, d) { it.uid }
+            if (target == null) { rows.drag.value = null; return }
+            // Kept on screen as dropped until the queue comes back moved (InlineQueue lets it go then).
+            rows.drag.value = d.copy(settled = true)
+            if (!shuffleOn) pc.move(current.index, target.index)
+            else pc.moveInPlayOrder(current.index, target.index, after = d.offset > 0)
+        }
+        /** Moves the song one place down ([down]) or up; false where it can't go further. */
         fun step(down: Boolean): Boolean {
-            if (!shuffleOn) {
-                if (!down && position == 0) return false
-                val to = if (down) position + 1 else position - 1
-                if (played && section.none { it.index == to }) return false
-                pc.move(position, to); position = to
-                return true
-            }
-            val at = section.indexOfFirst { it.uid == current.uid }
-            val beside = section.getOrNull(if (down) at + 1 else at - 1) ?: return false
-            pc.moveInPlayOrder(current.index, beside.index, after = down)
+            val mine = rows.drag.value?.takeIf { it.uid == current.uid }
+            // Moved in the player, not yet back in this list: the indices here are old, so nothing moves until it is.
+            if (mine?.settled == true) return false
+            val d = mine ?: com.prism.music.playback.QueueDrag(current.uid, 0)
+            com.prism.music.playback.QueueDrag.step(section, d, down) { it.uid }?.let { rows.drag.value = it; return true }
+            if (shuffleOn || played) return false
+            // At the section's end with a drag so far: that goes into the player first, and the next step goes on from
+            // where the queue then has it (moving `current.index` now would move whichever song took its old place).
+            if (d.offset != 0) { commit(); return false }
+            // From the section's edge: what 1.8.2 did there.
+            val from = current.index
+            if (!down && from == 0) return false
+            pc.move(from, if (down) from + 1 else from - 1)
             return true
         }
         QueueRow(
@@ -356,8 +376,8 @@ private fun LazyListScope.queueSection(
                 detectDragGestures(
                     // The player's controls go while a song is moved, so the list has the room (R11).
                     onDragStart = { rows.onDragStart() },
-                    onDragEnd = { drag = 0f },
-                    onDragCancel = { drag = 0f },
+                    onDragEnd = { drag = 0f; commit() },
+                    onDragCancel = { drag = 0f; commit() },
                 ) { change, amount ->
                     change.consume()
                     drag += amount.y

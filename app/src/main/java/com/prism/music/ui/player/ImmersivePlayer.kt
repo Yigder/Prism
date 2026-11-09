@@ -426,6 +426,7 @@ fun ImmersivePlayer(
 private fun LineAtATime(song: Song, state: LyricsState, translation: com.prism.music.data.lyrics.LyricsTranslator.Translation?, active: Boolean, align: Alignment) {
     val roman = rememberRomanized(state)
     val instead = romanizeMode(song.id) == com.prism.music.data.prefs.RomanizeMode.INSTEAD
+    val furigana = rememberFurigana(state)
     val look = immersiveLook(song)
     val lines = remember(state.lines, roman, instead, look.uppercase) {
         (if (instead && roman != null) state.lines.mapIndexed { i, l -> roman.getOrNull(i) ?: l } else state.lines).map(look::shown)
@@ -473,9 +474,14 @@ private fun LineAtATime(song: Song, state: LyricsState, translation: com.prism.m
                 line == null && i < firstSung -> TitleCard(song)
                 line == null -> Text("♪", style = lineStyle, color = Color.White.copy(alpha = 0.7f))
                 // Prism's line-timed lines stay as they were here (Normal, white); every animation else draws its own.
-                !line.isWordSynced && look.plainWhenLineTimed ->
-                    Text(line.text, style = lineStyle.copy(fontWeight = FontWeight(look.weight + 100)), color = Color.White, maxLines = 4, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
-                else -> SungLine(line, clock, lineStyle, look, axis, Modifier.fillMaxWidth(), maxLines = 4, dimAlpha = 0.45f)
+                !line.isWordSynced && look.plainWhenLineTimed -> TextWithFurigana(
+                    line.text, if (instead) null else furigana?.getOrNull(i), lineStyle.copy(fontWeight = FontWeight(look.weight + 100)),
+                    Color.White, Modifier.fillMaxWidth(), maxLines = 4,
+                )
+                else -> SungLine(
+                    line, clock, lineStyle, look, axis, Modifier.fillMaxWidth(), maxLines = 4, dimAlpha = 0.45f,
+                    ruby = if (instead) null else furigana?.getOrNull(i),
+                )
             }
             // How far through the line the song is: the split light, growing from the middle.
             if (line != null && line.endMs > line.timeMs) LyricProgress(line.timeMs, line.endMs, clock, 0.5f, Modifier.fillMaxWidth().padding(top = 12.dp))
@@ -604,6 +610,7 @@ private fun HoldToLeaveButton(onTap: () -> Unit, onPressing: (Boolean) -> Unit, 
 private fun LyricsOverAll(song: Song, state: LyricsState, translation: com.prism.music.data.lyrics.LyricsTranslator.Translation?, active: Boolean, modifier: Modifier) {
     val roman = rememberRomanized(state)
     val instead = romanizeMode(song.id) == com.prism.music.data.prefs.RomanizeMode.INSTEAD
+    val furigana = rememberFurigana(state)
     val look = immersiveLook(song)
     val lines = remember(state.lines, roman, instead, look.uppercase) {
         (if (instead && roman != null) state.lines.mapIndexed { i, l -> roman.getOrNull(i) ?: l } else state.lines).map(look::shown)
@@ -667,9 +674,15 @@ private fun LyricsOverAll(song: Song, state: LyricsState, translation: com.prism
                         when {
                             line.isGap -> Text("♪", style = style, color = Color.White, modifier = Modifier.fillMaxWidth())
                             current && (line.isWordSynced || !look.plainWhenLineTimed) ->
-                                SungLine(line, clock, style, look, axis, Modifier.fillMaxWidth(), dimAlpha = 0.45f)
+                                SungLine(
+                                    line, clock, style, look, axis, Modifier.fillMaxWidth(), dimAlpha = 0.45f,
+                                    ruby = if (instead) null else furigana?.getOrNull(i),
+                                )
                             // The lines around it are dimmed by the list itself; their color is the look's.
-                            else -> Text(line.text, style = style.copy(shadow = look.shadow ?: style.shadow), color = if (current) Color.White else look.others, modifier = Modifier.fillMaxWidth())
+                            else -> TextWithFurigana(
+                                line.text, if (instead) null else furigana?.getOrNull(i), style.copy(shadow = look.shadow ?: style.shadow),
+                                if (current) Color.White else look.others, Modifier.fillMaxWidth(),
+                            )
                         }
                         if (current && !line.isGap && line.endMs > line.timeMs) LyricProgress(line.timeMs, line.endMs, clock, 0.5f, Modifier.fillMaxWidth().padding(top = 10.dp))
                         if (!instead && !line.isGap) roman?.getOrNull(i)?.let { r ->

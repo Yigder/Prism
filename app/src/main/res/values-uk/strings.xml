@@ -5002,4 +5002,178 @@
     <string name="speed_dial_your_plays_first_info">YouTube надсилає в Prism плитки зі свого сайту. Вони відрізняються від плиток у застосунку й не завжди відповідають тому, що ви слухаєте. Якщо ввімкнено, спершу йде те, що ви найчастіше слухали на цьому телефоні за останні три місяці, а решту заповнюють плитки YouTube.</string>
     <string name="youtube_no_longer_takes_this_sign_in">YouTube більше не приймає цей вхід. Вийдіть з облікового запису й увійдіть знову.</string>
     <string name="youtube_isnt_sending_256_kbps">YouTube зараз не надсилає на цей обліковий запис 256 кбіт/с, тому пісні грають у звичайній якості</string>
+    <!-- 1.8.3 -->
+    <string name="lock_screen_maker_step">Дозволити на екрані блокування</string>
+    <string name="lock_screen_maker_xiaomi_detail">Відкриває дозволи Prism: увімкніть «Показувати на екрані блокування» і «Відкривати нові вікна під час роботи у фоні»</string>
+    <string name="lock_screen_maker_vivo_detail">Відкриває дозволи Prism: увімкніть «Показувати на екрані блокування» і «Спливні вікна у фоні»</string>
+    <string name="lock_screen_maker_info">Виробник телефона додає ці дозволи до дозволів Android, і Android не може повідомити Prism, чи вони ввімкнені. Без них плеєр може не з\'явитися на екрані блокування.</string>
+    <string name="lock_screen_refused">Минулого разу телефон не дав плеєру з\'явитися. Перевірте дозволи вище.</string>
+    <!-- 1.8.3 Select many -->
+    <string name="like">Подобається</string>
+    <string name="unlike">Більше не подобається</string>
+    <plurals name="remove_n_downloads_q">
+        <item quantity="one">Видалити %d завантаження з цього телефона?</item>
+        <item quantity="few">Видалити %d завантаження з цього телефона?</item>
+        <item quantity="many">Видалити %d завантажень з цього телефона?</item>
+        <item quantity="other">Видалити %d завантаження з цього телефона?</item>
+    </plurals>
+    <plurals name="remove_n_from_youtube_playlist_q">
+        <item quantity="one">Видалити %1$d трек із «%2$s» у YouTube Music?</item>
+        <item quantity="few">Видалити %1$d треки із «%2$s» у YouTube Music?</item>
+        <item quantity="many">Видалити %1$d треків із «%2$s» у YouTube Music?</item>
+        <item quantity="other">Видалити %1$d трека із «%2$s» у YouTube Music?</item>
+    </plurals>
+    <!-- 1.8.3 Tags -->
+    <string name="tags">Теги</string>
+    <string name="add_a_tag">Додати тег</string>
+    <string name="new_tag">Новий тег</string>
+    <string name="tags_are_your_own_labels">Твої власні мітки для пісень, як-от «спортзал» чи «дощовий день». Вони в Бібліотеці → Теги.</string>
+    <string name="your_tag">Твій тег на цьому телефоні</string>
+    <string name="remove_this_tag">Прибрати цей тег</string>
+    <string name="rename_tag">Перейменувати тег</string>
+    <string name="delete_tag">Видалити тег</string>
+    <string name="delete_the_tag_its_songs_stay">Видалити тег «%s»? Його пісні залишаться на своїх місцях.</string>
+    <string name="tag_songs_from_any_song_s">Став теги пісням з меню будь-якої пісні (⋯ або довге натискання) → Додати тег.</string>
+    <string name="tag_n_songs">Тег · %s</string>
+    <plurals name="n_tags">
+        <item quantity="one">%d тег</item>
+        <item quantity="few">%d теги</item>
+        <item quantity="many">%d тегів</item>
+        <item quantity="other">%d тега</item>
+    </plurals>
+    <!-- 1.8.3 Smart playlists -->
+    <string name="smart_playlist">Розумний плейлист</string>
+    <string name="smart_playlist_n">Розумний плейлист · %s</string>
+    <string name="smart_playlist_updates_itself">Розумний плейлист · оновлюється сам</string>
+    <string name="new_smart_playlist">Новий розумний плейлист</string>
+    <string name="edit_rules">Змінити правила</string>
+    <string name="save_a_copy_as_a_playlist">Зберегти копію як плейлист</string>
+    <string name="saved_as_a_playlist">«%s» збережено як плейлист</string>
+    <string name="no_song_meets_these_rules">Поки жодна пісня не підходить під ці правила. Зміни їх у меню ⋯ → Змінити правила.</string>
+    <plurals name="n_songs_aren_t_measured_yet">
+        <item quantity="one">%d пісня ще не виміряна</item>
+        <item quantity="few">%d пісні ще не виміряні</item>
+        <item quantity="many">%d пісень ще не виміряні</item>
+        <item quantity="other">%d пісні ще не виміряні</item>
+    </plurals>
+    <string name="measuring_n_of_n">Вимірюю %1$d з %2$d…</string>
+    <string name="measure_now">Виміряти зараз</string>
+    <string name="on_wi_fi_songs_not_on_the_phone_are_measured_too">Вимірюються пісні на цьому телефоні. Через Wi-Fi — і решта.</string>
+    <string name="smart_fast_and_liked">Швидкі й улюблені</string>
+    <string name="smart_not_played_in_a_while">Давно не слухав</string>
+    <string name="smart_goes_with_what_s_playing">Пасує до того, що грає</string>
+    <string name="the_song_playing_isn_t_measured_yet">Пісня, що грає, ще не виміряна.</string>
+    <string name="match_all_rules">Відповідає всім правилам</string>
+    <string name="match_any_rule">Відповідає будь-якому правилу</string>
+    <string name="add_a_rule">Додати правило</string>
+    <string name="add_a_rule_to_begin">Додай правило, щоб почати.</string>
+    <string name="finds_n">Знаходить %s</string>
+    <string name="up_to">До</string>
+    <string name="sort_most_played">Найчастіше слухані</string>
+    <string name="sort_not_played_lately">Давно не грали</string>
+    <string name="sort_random">Випадково</string>
+    <string name="rule_bpm">BPM</string>
+    <string name="rule_goes_with">Тональність, що пасує до</string>
+    <string name="rule_energy">Енергія</string>
+    <string name="rule_loudness">Гучність (LUFS)</string>
+    <string name="rule_on_phone">Файл на цьому телефоні</string>
+    <string name="rule_tag">Тег</string>
+    <string name="rule_times_played">Скільки разів зіграна</string>
+    <string name="rule_last_played">Востаннє зіграна</string>
+    <string name="rule_added">Додана до бібліотеки</string>
+    <string name="rule_never_played">Жодного разу не грала</string>
+    <string name="rule_is">Так</string>
+    <string name="rule_isn_t">Ні</string>
+    <string name="rule_from">Від</string>
+    <string name="rule_to">До</string>
+    <string name="rule_at_least">Не менше</string>
+    <string name="rule_at_most">Не більше</string>
+    <string name="rule_within">За останні</string>
+    <string name="rule_not_within">Не за останні</string>
+    <string name="rule_days">дн.</string>
+    <string name="genre_example">Поп, хіп-хоп, рок…</string>
+    <string name="your_listening">Твоє слухання</string>
+    <!-- 1.8.3 Songs from -->
+    <string name="songs_from">Пісні з</string>
+    <string name="your_likes_stay_as_they_are">Змінюється лише те, що показує ця вкладка. Твої вподобання лишаються як є.</string>
+    <string name="search_these_songs">Шукати в цих піснях</string>
+    <!-- 1.8.3 Search your library -->
+    <string name="search_your_library">Пошук у бібліотеці</string>
+    <string name="nothing_in_your_library_matches">У твоїй бібліотеці нічого не знайдено</string>
+    <string name="try_fewer_words_or_another_filter">Спробуй менше слів або інший фільтр.</string>
+    <!-- 1.8.3 Duplicates -->
+    <string name="find_duplicates">Знайти дублікати</string>
+    <string name="no_song_is_here_twice">Жодна пісня не повторюється</string>
+    <string name="extra_copy">Зайва копія</string>
+    <string name="keeping_s">Лишається «%s»</string>
+    <plurals name="n_songs_are_here_more_than_once">
+        <item quantity="one">%d пісня трапляється більше одного разу</item>
+        <item quantity="few">%d пісні трапляються більше одного разу</item>
+        <item quantity="many">%d пісень трапляються більше одного разу</item>
+        <item quantity="other">%d пісні трапляються більше одного разу</item>
+    </plurals>
+    <plurals name="remove_n_extra_copies">
+        <item quantity="one">Прибрати %d зайву копію</item>
+        <item quantity="few">Прибрати %d зайві копії</item>
+        <item quantity="many">Прибрати %d зайвих копій</item>
+        <item quantity="other">Прибрати %d зайвої копії</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out">
+        <item quantity="one">З плейлиста буде прибрано %d пісню.</item>
+        <item quantity="few">З плейлиста буде прибрано %d пісні.</item>
+        <item quantity="many">З плейлиста буде прибрано %d пісень.</item>
+        <item quantity="other">З плейлиста буде прибрано %d пісні.</item>
+    </plurals>
+    <plurals name="this_takes_n_songs_out_on_youtube">
+        <item quantity="one">%d пісню буде прибрано з плейлиста і в YouTube Music.</item>
+        <item quantity="few">%d пісні буде прибрано з плейлиста і в YouTube Music.</item>
+        <item quantity="many">%d пісень буде прибрано з плейлиста і в YouTube Music.</item>
+        <item quantity="other">%d пісні буде прибрано з плейлиста і в YouTube Music.</item>
+    </plurals>
+    <!-- 1.8.3 Your file as a version -->
+    <string name="your_file">Твій файл</string>
+    <string name="choose_a_file_on_this_phone">Вибрати файл на цьому телефоні</string>
+    <!-- 1.8.3 Pin as one tile -->
+    <string name="one_tile">Одна плитка</string>
+    <string name="pin_to_home_as_one_tile">Закріпити на головній однією плиткою</string>
+    <!-- 1.8.3 Uploads: delete and upload -->
+    <string name="upload_a_song">Завантажити трек</string>
+    <string name="uploading_s">Завантаження: %1$s…</string>
+    <string name="uploaded_s_it_shows_up_here">%1$s завантажено. Він з\'явиться тут, коли YouTube Music його підготує, зазвичай за кілька хвилин.</string>
+    <string name="couldn_t_upload_it_s">Не вдалося завантажити: %1$s</string>
+    <string name="youtube_music_takes_mp3_m4a">YouTube Music приймає файли MP3, M4A, WMA, FLAC і Ogg розміром до 300 МБ.</string>
+    <string name="delete_from_your_uploads">Видалити із завантажень</string>
+    <string name="delete_s_from_youtube_music">Видалити «%1$s» з YouTube Music?</string>
+    <string name="it_goes_from_your_uploads_for_good">Він зникне із завантажень на всіх пристроях назавжди. Скасувати це не можна.</string>
+    <string name="deleted_from_your_uploads">Видалено із завантажень</string>
+    <string name="couldn_t_delete_it_s">Не вдалося видалити: %1$s</string>
+    <string name="uploads_couldn_t_find_it">YouTube Music його більше не показує</string>
+    <!-- 1.8.3 Tour -->
+    <string name="tour_183_smart_title">Розумні плейлисти</string>
+    <string name="tour_183_smart_body">Плейлисти, що самі наповнюються за вашими правилами й встигають за медіатекою.</string>
+    <string name="tour_183_smart_point_1">Правила за тим, що ви вподобуєте, слухаєте, завантажуєте чи позначаєте</string>
+    <string name="tour_183_smart_point_2">Темп, тональність і енергія, виміряні на телефоні</string>
+    <string name="tour_183_smart_point_3">Будь-коли збережіть копію як звичайний плейлист</string>
+    <string name="tour_183_tags_title">Мітки</string>
+    <string name="tour_183_tags_body">Ваші власні мітки на треках, з меню будь-якого треку.</string>
+    <string name="tour_183_tags_point_1">Кожна мітка має власну сторінку в Медіатеці</string>
+    <string name="tour_183_tags_point_2">Використовуйте їх у розумних плейлистах</string>
+    <string name="tour_183_tags_point_3">Позначайте багато треків одразу</string>
+    <string name="tour_183_select_title">Вибрати кілька</string>
+    <string name="tour_183_select_body">Утримуйте трек у списку, виберіть ще й дійте з усіма одразу.</string>
+    <string name="tour_183_select_point_1">Додати до плейлиста чи черги, позначити, вподобати або завантажити</string>
+    <string name="tour_183_select_point_2">Прибрати з плейлиста, з підтвердженням</string>
+    <string name="tour_183_search_title">Пошук у медіатеці</string>
+    <string name="tour_183_search_body">Усе, що у вас є, знаходиться під час введення, з фільтрами.</string>
+    <string name="tour_183_search_point_1">Треки, плейлисти, мітки, виконавці й альбоми</string>
+    <string name="tour_183_search_point_2">Лише вподобані, завантажені або на цьому телефоні</string>
+    <string name="tour_183_search_point_3">Японські, корейські, російські та грецькі назви знаходяться й латиницею</string>
+    <string name="tour_183_also_file">Файл на телефоні як версія треку</string>
+    <string name="tour_183_also_duplicates">Знайдіть треки, які є в плейлисті двічі</string>
+    <string name="tour_183_also_songs_from">Треки Медіатеки з вибраних плейлистів</string>
+    <string name="tour_183_also_lock">Повтор і «Далі» на екрані блокування</string>
+    <string name="tour_183_also_uploads">Завантаження й видалення в Завантаженнях</string>
+    <string name="show_furigana">Показувати фуріґану</string>
+    <string name="hiragana_readings_above_kanji">Читання хіраґаною над кандзі в японських текстах</string>
+    <string name="furigana_uses_the_japanese_reading_data">Використовує японські дані читання (завантажуються один раз нижче).</string>
 </resources>

@@ -16,11 +16,13 @@ import okhttp3.OkHttpClient
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.TimeUnit
+import org.junit.experimental.categories.Category
 
 /**
  * Live against YouTube: what audio the direct (visionOS) answer offers for well-known songs, and that Prism picks Opus
  * from it at High quality whenever there is one, as YouTube Music does.
  */
+@Category(LiveNetwork::class)
 class StreamChoiceLiveTest {
     private val http = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
     private var settings = AppSettings()
