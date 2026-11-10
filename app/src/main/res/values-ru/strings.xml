@@ -5173,4 +5173,19 @@
     <string name="tour_183_also_songs_from">Треки Медиатеки из выбранных плейлистов</string>
     <string name="tour_183_also_lock">Повтор и «Далее» на экране блокировки</string>
     <string name="tour_183_also_uploads">Загрузка и удаление в Загрузках</string>
+    <string name="musical_passport">Музыкальный паспорт</string>
+    <string name="listening_calendar">Календарь прослушиваний</string>
+    <string name="musical_passport_subtitle">Откуда музыка, которую вы слушали</string>
+    <plurals name="you_listened_to_on_n_days">
+        <item quantity="one">Вы слушали %1$s в течение %2$d дня</item>
+        <item quantity="other">Вы слушали %1$s в течение %2$d разных дней</item>
+    </plurals>
+    <plurals name="and_n_other_places">
+        <item quantity="one">И еще %d место</item>
+        <item quantity="other">И еще %d других мест</item>
+    </plurals>
+    <plurals name="listened_to_artists_from_n_places">
+        <item quantity="one">В этом году я слушал исполнителей из %d места</item>
+        <item quantity="other">В этом году я слушал исполнителей из более чем %d разных мест</item>
+    </plurals>
 </resources>

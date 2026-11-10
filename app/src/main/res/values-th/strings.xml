@@ -4957,4 +4957,19 @@
     <string name="tour_183_also_songs_from">เพลงในคลังเพลงจากเพลย์ลิสต์ที่คุณเลือก</string>
     <string name="tour_183_also_lock">เล่นซ้ำและถัดไปบนหน้าจอล็อก</string>
     <string name="tour_183_also_uploads">อัปโหลดและลบในรายการที่อัปโหลด</string>
+    <string name="musical_passport">พาสปอร์ตดนตรี</string>
+    <string name="listening_calendar">ปฏิทินการฟัง</string>
+    <string name="musical_passport_subtitle">สถานที่ที่สร้างสรรค์เพลงที่คุณฟัง</string>
+    <plurals name="you_listened_to_on_n_days">
+        <item quantity="one">คุณฟัง %1$s ไป %2$d วัน</item>
+        <item quantity="other">คุณฟัง %1$s ไป %2$d วันที่แตกต่างกัน</item>
+    </plurals>
+    <plurals name="and_n_other_places">
+        <item quantity="one">และอีก %d แห่ง</item>
+        <item quantity="other">และอีก %d แห่ง</item>
+    </plurals>
+    <plurals name="listened_to_artists_from_n_places">
+        <item quantity="one">ปีนี้ฉันฟังศิลปินจาก %d แห่ง</item>
+        <item quantity="other">ปีนี้ฉันฟังศิลปินจากมากกว่า %d แห่ง</item>
+    </plurals>
 </resources>

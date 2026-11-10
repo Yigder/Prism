@@ -5058,4 +5058,19 @@
     <string name="tour_183_also_songs_from">Library\'s Songs from the playlists you choose</string>
     <string name="tour_183_also_lock">Repeat and Up next on the lock screen</string>
     <string name="tour_183_also_uploads">Upload and delete in Uploads</string>
+    <string name="musical_passport">Musical Passport</string>
+    <string name="listening_calendar">Listening calendar</string>
+    <string name="musical_passport_subtitle">Where the music you listened to was made</string>
+    <plurals name="you_listened_to_on_n_days">
+        <item quantity="one">You listened to %1$s on %2$d day</item>
+        <item quantity="other">You listened to %1$s on %2$d different days</item>
+    </plurals>
+    <plurals name="and_n_other_places">
+        <item quantity="one">And %d other place</item>
+        <item quantity="other">And %d other places</item>
+    </plurals>
+    <plurals name="listened_to_artists_from_n_places">
+        <item quantity="one">I listened to artists from %d place this year</item>
+        <item quantity="other">I listened to artists from more than %d different places this year</item>
+    </plurals>
 </resources>

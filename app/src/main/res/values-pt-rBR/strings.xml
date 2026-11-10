@@ -5101,4 +5101,19 @@
     <string name="tour_183_also_songs_from">Músicas da Biblioteca a partir das playlists que você escolher</string>
     <string name="tour_183_also_lock">Repetir e A seguir na tela de bloqueio</string>
     <string name="tour_183_also_uploads">Enviar e excluir em Envios</string>
+    <string name="musical_passport">Passaporte musical</string>
+    <string name="listening_calendar">Calendário de reprodução</string>
+    <string name="musical_passport_subtitle">De onde veio a música que você ouviu</string>
+    <plurals name="you_listened_to_on_n_days">
+        <item quantity="one">Você ouviu %1$s em %2$d dia</item>
+        <item quantity="other">Você ouviu %1$s em %2$d dias diferentes</item>
+    </plurals>
+    <plurals name="and_n_other_places">
+        <item quantity="one">E mais %d lugar</item>
+        <item quantity="other">E mais %d outros lugares</item>
+    </plurals>
+    <plurals name="listened_to_artists_from_n_places">
+        <item quantity="one">Ouvi artistas de %d lugar este ano</item>
+        <item quantity="other">Ouvi artistas de mais de %d lugares diferentes este ano</item>
+    </plurals>
 </resources>

@@ -3,6 +3,7 @@ package com.prism.music.data
 import com.prism.music.R
 import com.prism.music.tr
 import com.prism.music.data.db.mergeUploads
+import com.prism.music.data.db.mainArtist
 import android.content.Context
 import android.util.Log
 import androidx.work.CoroutineWorker
@@ -136,6 +137,42 @@ class Rewinds(private val c: AppContainer) {
         val topLyric = if (top?.songId == topNow?.songId) lyricJob.await() else top?.let { lyricLine(it) }
         val leadImage = imageJob.await()
 
+        // #443: Musical Passport countries and top artist listening days
+        val countryMap = c.countries.resolveCountries(artists.map { it.artistName })
+        val passport = artists.mapNotNull { a -> countryMap[a.artistName]?.let { code -> code to a } }
+            .groupBy { it.first }
+            .map { (code, pairs) ->
+                PassportCountry(
+                    code = code,
+                    name = c.countries.countryName(code),
+                    artistCount = pairs.size,
+                    artists = pairs.map { it.second.artistName },
+                )
+            }
+            .sortedByDescending { it.artistCount }
+
+        val topArtist = artists.firstOrNull()
+        val topArtistName = topArtist?.artistName
+        val targetSongIds = if (topArtistName != null) {
+            songs.filter { it.mainArtist == topArtistName }.map { it.songId }.toSet()
+        } else emptySet()
+        val targetEvents = if (targetSongIds.isNotEmpty()) {
+            events.filter { it.songId in targetSongIds }
+        } else if (top != null) {
+            events.filter { it.songId == top.songId }
+        } else emptyList()
+        val activeDates = targetEvents.map {
+            Instant.ofEpochMilli(it.timestamp).atZone(zone).toLocalDate().toString()
+        }.distinct().sorted()
+        val topArtistDays = if (activeDates.isNotEmpty()) {
+            TopArtistDays(
+                artistName = topArtistName ?: top?.title ?: "",
+                distinctDays = activeDates.size,
+                activeDates = activeDates,
+                thumbnail = topArtist?.thumbnail ?: top?.thumbnail,
+            )
+        } else null
+
         RewindSnapshot(
             year = year, frozenAt = now, totalMs = totalMs, previousMs = previousMs,
             previousTopArtist = if (previousMs != null) dao.topArtists(prevFrom, prevTo, 1).firstOrNull()?.artistName else null,
@@ -158,6 +195,8 @@ class Rewinds(private val c: AppContainer) {
             seasons = seasons,
             prism = prism,
             topLyric = topLyric,
+            passport = passport,
+            topArtistDays = topArtistDays,
         )
     }
 

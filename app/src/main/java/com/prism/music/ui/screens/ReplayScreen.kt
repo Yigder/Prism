@@ -64,9 +64,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.sp
+import com.prism.music.data.PassportCountry
+import com.prism.music.data.TopArtistDays
 import com.prism.music.data.db.ArtistPlays
 import com.prism.music.data.db.MonthTotal
 import com.prism.music.data.db.SongPlays
+import com.prism.music.data.db.mainArtist
+import com.prism.music.data.meta.ArtistCountryResolver
 import com.prism.music.data.model.AlbumRef
 import com.prism.music.data.model.ArtistRef
 import com.prism.music.data.model.Song
@@ -151,6 +157,8 @@ private data class ReplayData(
     val top250: List<SongPlays> = songs,
     /** #286/#287: the graph by hours, days or weeks for a shorter stretch (null: by month, [months]). */
     val timeline: ReplayTimeline? = null,
+    val passport: List<PassportCountry> = emptyList(),
+    val topArtistDays: TopArtistDays? = null,
 )
 
 internal fun SongPlays.toSong() = Song(
@@ -264,14 +272,55 @@ fun ReplayScreen(bottomPadding: Dp) {
         // The top 250 are kept for Play / Shuffle; the screen itself shows the top 100 at most.
         val top = dao.topSongs(from, to, 300).mergeUploads().take(250)
         val songs = top.take(100)
+        val artists = dao.topArtists(from, to, 12)
         val genreMap = c.meta.cachedGenres(songs.map { it.toSong() })
         val genres = songs.filter { genreMap[it.songId] != null }.groupBy { genreMap.getValue(it.songId) }
             .mapValues { (_, v) -> v.sumOf { it.ms } }
             .toList().sortedByDescending { it.second }.take(6)
+
+        // Musical Passport & Top Artist Days (#443)
+        val countryMap = c.countries.resolveCountries(artists.map { it.artistName })
+        val passport = artists.mapNotNull { a -> countryMap[a.artistName]?.let { code -> code to a } }
+            .groupBy { it.first }
+            .map { (code, pairs) ->
+                PassportCountry(
+                    code = code,
+                    name = c.countries.countryName(code),
+                    artistCount = pairs.size,
+                    artists = pairs.map { it.second.artistName },
+                )
+            }
+            .sortedByDescending { it.artistCount }
+
+        val zone = java.time.ZoneId.systemDefault()
+        val periodEvents = dao.events(from, to)
+        val topArtist = artists.firstOrNull()
+        val topArtistName = topArtist?.artistName
+        val targetSongIds = if (topArtistName != null) {
+            songs.filter { it.mainArtist == topArtistName }.map { it.songId }.toSet()
+        } else emptySet()
+        val targetEvents = if (targetSongIds.isNotEmpty()) {
+            periodEvents.filter { it.songId in targetSongIds }
+        } else if (top.isNotEmpty()) {
+            periodEvents.filter { it.songId == top.first().songId }
+        } else emptyList()
+        val activeDates = targetEvents.map {
+            java.time.Instant.ofEpochMilli(it.timestamp).atZone(zone).toLocalDate().toString()
+        }.distinct().sorted()
+        val topArtistDays = if (activeDates.isNotEmpty()) {
+            TopArtistDays(
+                artistName = topArtistName ?: top.firstOrNull()?.title ?: "",
+                distinctDays = activeDates.size,
+                activeDates = activeDates,
+                thumbnail = topArtist?.thumbnail ?: top.firstOrNull()?.thumbnail,
+            )
+        } else null
+
         value = ReplayData(
             totalMs = dao.totalMs(from, to), plays = dao.count(from, to), activeDays = dao.activeDays(from, to),
-            songCount = dao.songCount(from, to), songs = songs, artists = dao.topArtists(from, to, 12), months = dao.monthly(from, to), genres = genres,
+            songCount = dao.songCount(from, to), songs = songs, artists = artists, months = dao.monthly(from, to), genres = genres,
             top250 = top, timeline = runCatching { loadTimeline(dao, period, from, to) }.getOrNull(),
+            passport = passport, topArtistDays = topArtistDays,
         )
         // Fill in genres for the top tracks in the background so the next visit is richer.
         songs.take(40).filter { it.songId !in genreMap }.forEach { runCatching { c.meta.genreFor(it.toSong()) } }
@@ -398,6 +447,27 @@ fun ReplayScreen(bottomPadding: Dp) {
                         Text(a.artistName, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(listenTime(a.ms), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
+                }
+            }
+            d.topArtistDays?.takeIf { it.distinctDays >= 2 }?.let { info ->
+                Spacer(Modifier.height(14.dp))
+                ListeningDaysBanner(info)
+            }
+        }
+        if (d.passport.isNotEmpty()) item {
+            SectionHeader(tr(R.string.musical_passport))
+            Text(
+                tr(R.string.musical_passport_subtitle),
+                Modifier.padding(start = 20.dp, end = 20.dp, bottom = 12.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                items(d.passport) { country ->
+                    PassportCard(country)
                 }
             }
         }
@@ -635,6 +705,99 @@ private fun MonthChart(months: List<MonthTotal>, modifier: Modifier) {
                 val idx = m.month.substringAfter("-").toIntOrNull()?.minus(1) ?: 0
                 Text(names[idx.coerceIn(0, 11)], Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, color = label, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
+        }
+    }
+}
+
+@Composable
+private fun ListeningDaysBanner(info: TopArtistDays) {
+    Row(
+        Modifier
+            .padding(horizontal = 16.dp)
+            .fillMaxWidth()
+            .clip(com.prism.music.ui.theme.LocalUi.current.shape(16.dp))
+            .background(com.prism.music.ui.components.quietFill())
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                PrismIcons.Calendar,
+                null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(22.dp),
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                trp(R.plurals.you_listened_to_on_n_days, info.distinctDays, info.artistName, info.distinctDays),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Text(
+                tr(R.string.listening_calendar),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun PassportCard(country: PassportCountry) {
+    val flag = ArtistCountryResolver.flagEmoji(country.code)
+    Column(
+        Modifier
+            .width(150.dp)
+            .clip(com.prism.music.ui.theme.LocalUi.current.shape(16.dp))
+            .background(com.prism.music.ui.components.quietFill())
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), com.prism.music.ui.theme.LocalUi.current.shape(16.dp))
+            .padding(14.dp),
+    ) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(flag, style = TextStyle(fontSize = 26.sp))
+            Text(
+                country.code,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
+            )
+        }
+        Spacer(Modifier.height(10.dp))
+        Text(
+            country.name,
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            trp(R.plurals.n_artists, country.artistCount),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        if (country.artists.isNotEmpty()) {
+            Spacer(Modifier.height(2.dp))
+            Text(
+                country.artists.take(2).joinToString(", "),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
