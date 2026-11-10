@@ -5101,4 +5101,19 @@
     <string name="tour_183_also_songs_from">שירים בספרייה מהפלייליסטים שבחרת</string>
     <string name="tour_183_also_lock">חזרה והבא בתור במסך הנעילה</string>
     <string name="tour_183_also_uploads">העלאה ומחיקה בהעלאות</string>
+    <string name="musical_passport">דרכון מוזיקלי</string>
+    <string name="listening_calendar">לוח האזנה</string>
+    <string name="musical_passport_subtitle">היכן נוצרה המוזיקה שהאזנת לה</string>
+    <plurals name="you_listened_to_on_n_days">
+        <item quantity="one">האזנת ל-%1$s ב-%2$d יום</item>
+        <item quantity="other">האזנת ל-%1$s ב-%2$d ימים שונים</item>
+    </plurals>
+    <plurals name="and_n_other_places">
+        <item quantity="one">ועוד מקום %d</item>
+        <item quantity="other">ועוד %d מקומות אחרים</item>
+    </plurals>
+    <plurals name="listened_to_artists_from_n_places">
+        <item quantity="one">השנה האזנתי לאמנים מ-%d מקום</item>
+        <item quantity="other">השנה האזנתי לאמנים מיותר מ-%d מקומות שונים</item>
+    </plurals>
 </resources>

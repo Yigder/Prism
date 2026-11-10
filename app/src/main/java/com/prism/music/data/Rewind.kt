@@ -80,6 +80,22 @@ data class PrismYear(
     val any: Boolean get() = sung + djSongs + smartPicks + recognized + blends + radarFinds > 0
 }
 
+@Serializable
+data class PassportCountry(
+    val code: String,
+    val name: String,
+    val artistCount: Int,
+    val artists: List<String> = emptyList(),
+)
+
+@Serializable
+data class TopArtistDays(
+    val artistName: String,
+    val distinctDays: Int,
+    val activeDates: List<String> = emptyList(),
+    val thumbnail: String? = null,
+)
+
 /**
  * A year's Rewind, everything its story shows. Finished years are worked out once and kept ([RewindStore], in the
  * backup), so they open at once and stay as they were.
@@ -117,10 +133,12 @@ data class RewindSnapshot(
     val prism: PrismYear = PrismYear(),
     /** A line from the #1 song, where its best part starts. */
     val topLyric: String? = null,
+    val passport: List<PassportCountry> = emptyList(),
+    val topArtistDays: TopArtistDays? = null,
 ) {
     fun habits() = Habits(byHour.toLongArray(), byWeekday.toLongArray(), longestStreak, biggestDay?.let { LocalDate.parse(it) }, biggestDayMs)
 
-    companion object { const val VERSION = 1 }
+    companion object { const val VERSION = 2 }
 }
 
 /** Kept Rewinds of finished years: `files/rewind/<year>.json`. */
@@ -144,8 +162,8 @@ class RewindStore(private val dir: File) {
 
 /** The parts of a Replay or Rewind story. */
 enum class StoryPart(val seconds: Int) {
-    INTRO(6), MINUTES(9), SEASONS(9), GENRES(8), TOP_ARTIST(9), TOP_ARTISTS(8), TOP_SONG(10), TOP_SONGS(8), TOP_ALBUM(8),
-    MONTHS(8), FIRST_SONG(8), HABITS(9), DISCOVERY(8), PRISM_YEAR(9), YEAR_COMPARE(8), PERSONALITY(9), SUMMARY(0),
+    INTRO(6), MINUTES(9), SEASONS(9), GENRES(8), TOP_ARTIST(9), TOP_ARTISTS(8), TOP_ARTIST_DAYS(9), TOP_SONG(10), TOP_SONGS(8), TOP_ALBUM(8),
+    MONTHS(8), FIRST_SONG(8), HABITS(9), DISCOVERY(8), PASSPORT(9), PRISM_YEAR(9), YEAR_COMPARE(8), PERSONALITY(9), SUMMARY(0),
 }
 
 /** What a story has to go on, for [StoryParts.pick]. */
@@ -164,6 +182,8 @@ data class StoryFacts(
     val newArtists: Int = 0,
     val prism: Boolean = false,
     val previous: Boolean = false,
+    val passport: Int = 0,
+    val topArtistDays: Int = 0,
 )
 
 object StoryParts {
@@ -186,6 +206,7 @@ object StoryParts {
         if (f.genres > 0) add(StoryPart.GENRES)
         if (f.artists > 0) add(StoryPart.TOP_ARTIST)
         if (f.artists >= 3) add(StoryPart.TOP_ARTISTS)
+        if (f.topArtistDays >= 2) add(StoryPart.TOP_ARTIST_DAYS)
         if (f.songs > 0) add(StoryPart.TOP_SONG)
         if (f.songs >= 3) add(StoryPart.TOP_SONGS)
         if (f.rewind && f.album != null && f.album.songs >= 2 && f.album.plays >= 5) add(StoryPart.TOP_ALBUM)
@@ -193,6 +214,7 @@ object StoryParts {
         if (f.rewind && f.firstSong) add(StoryPart.FIRST_SONG)
         if (f.activeDays >= 5) add(StoryPart.HABITS)
         if (f.newArtists > 0) add(StoryPart.DISCOVERY)
+        if (f.passport > 0) add(StoryPart.PASSPORT)
         if (f.rewind && f.prism) add(StoryPart.PRISM_YEAR)
         if (f.rewind && f.previous) add(StoryPart.YEAR_COMPARE)
         if (f.activeDays >= 5) add(StoryPart.PERSONALITY)

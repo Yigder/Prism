@@ -5029,4 +5029,19 @@
     <string name="tour_183_also_songs_from">A Könyvtár dalai a választott listákból</string>
     <string name="tour_183_also_lock">Ismétlés és Következő a lezárási képernyőn</string>
     <string name="tour_183_also_uploads">Feltöltés és törlés a Feltöltésekben</string>
+    <string name="musical_passport">Zenei útlevél</string>
+    <string name="listening_calendar">Zenehallgatási naptár</string>
+    <string name="musical_passport_subtitle">Honnan származnak a hallgatott zenék</string>
+    <plurals name="you_listened_to_on_n_days">
+        <item quantity="one">%2$d napon hallgattad %1$s előadót</item>
+        <item quantity="other">%2$d különböző napon hallgattad %1$s előadót</item>
+    </plurals>
+    <plurals name="and_n_other_places">
+        <item quantity="one">És még %d másik hely</item>
+        <item quantity="other">És még %d másik hely</item>
+    </plurals>
+    <plurals name="listened_to_artists_from_n_places">
+        <item quantity="one">Idén %d helyről hallgattam előadókat</item>
+        <item quantity="other">Idén több mint %d különböző helyről hallgattam előadókat</item>
+    </plurals>
 </resources>

@@ -5029,4 +5029,19 @@
     <string name="tour_183_also_songs_from">Mga kanta sa Library mula sa mga playlist na pinili mo</string>
     <string name="tour_183_also_lock">Ulitin at Susunod sa lock screen</string>
     <string name="tour_183_also_uploads">Mag-upload at magbura sa Mga Upload</string>
+    <string name="musical_passport">Musical Passport</string>
+    <string name="listening_calendar">Kalendaryo ng pakikinig</string>
+    <string name="musical_passport_subtitle">Kung saan ginawa ang musikang pinakinggan mo</string>
+    <plurals name="you_listened_to_on_n_days">
+        <item quantity="one">Pinakinggan mo ang %1$s sa %2$d araw</item>
+        <item quantity="other">Pinakinggan mo ang %1$s sa %2$d magkakaibang araw</item>
+    </plurals>
+    <plurals name="and_n_other_places">
+        <item quantity="one">At %d iba pang lugar</item>
+        <item quantity="other">At %d iba pang lugar</item>
+    </plurals>
+    <plurals name="listened_to_artists_from_n_places">
+        <item quantity="one">Nakikinig ako sa mga artist mula sa %d lugar ngayong taon</item>
+        <item quantity="other">Nakikinig ako sa mga artist mula sa mahigit %d magkakaibang lugar ngayong taon</item>
+    </plurals>
 </resources>

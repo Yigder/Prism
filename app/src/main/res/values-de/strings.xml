@@ -5029,4 +5029,19 @@
     <string name="tour_183_also_songs_from">Songs in der Mediathek aus Playlists deiner Wahl</string>
     <string name="tour_183_also_lock">Wiederholen und Als Nächstes auf dem Sperrbildschirm</string>
     <string name="tour_183_also_uploads">Hochladen und Löschen in Uploads</string>
+    <string name="musical_passport">Musikalischer Pass</string>
+    <string name="listening_calendar">Hör-Kalender</string>
+    <string name="musical_passport_subtitle">Woher deine gehörte Musik stammt</string>
+    <plurals name="you_listened_to_on_n_days">
+        <item quantity="one">Du hast %1$s an %2$d Tag gehört</item>
+        <item quantity="other">Du hast %1$s an %2$d verschiedenen Tagen gehört</item>
+    </plurals>
+    <plurals name="and_n_other_places">
+        <item quantity="one">Und %d weiterer Ort</item>
+        <item quantity="other">Und %d weitere Orte</item>
+    </plurals>
+    <plurals name="listened_to_artists_from_n_places">
+        <item quantity="one">Ich habe dieses Jahr Künstler aus %d Ort gehört</item>
+        <item quantity="other">Ich habe dieses Jahr Künstler aus mehr als %d verschiedenen Orten gehört</item>
+    </plurals>
 </resources>

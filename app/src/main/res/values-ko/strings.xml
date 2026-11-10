@@ -4957,4 +4957,19 @@
     <string name="tour_183_also_songs_from">선택한 재생목록으로 보관함 노래 보기</string>
     <string name="tour_183_also_lock">잠금 화면의 반복 및 다음 곡</string>
     <string name="tour_183_also_uploads">업로드에서 업로드 및 삭제</string>
+    <string name="musical_passport">뮤직 여권</string>
+    <string name="listening_calendar">감상 캘린더</string>
+    <string name="musical_passport_subtitle">내가 들은 음악이 만들어진 곳</string>
+    <plurals name="you_listened_to_on_n_days">
+        <item quantity="one">%2$d일 동안 %1$s의 음악을 들었습니다</item>
+        <item quantity="other">%2$d일 동안 %1$s의 음악을 들었습니다</item>
+    </plurals>
+    <plurals name="and_n_other_places">
+        <item quantity="one">외 %d곳</item>
+        <item quantity="other">외 %d곳</item>
+    </plurals>
+    <plurals name="listened_to_artists_from_n_places">
+        <item quantity="one">올해 %d개 지역의 아티스트를 들었습니다</item>
+        <item quantity="other">올해 %d개가 넘는 다양한 지역의 아티스트를 들었습니다</item>
+    </plurals>
 </resources>

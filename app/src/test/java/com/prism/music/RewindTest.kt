@@ -121,7 +121,7 @@ class RewindTest {
             // A file from another version (or another year's under this name) isn't used.
             java.io.File(dir, "2024.json").writeText(java.io.File(dir, "2025.json").readText())
             assertNull(store.load(2024))
-            java.io.File(dir, "2023.json").writeText(java.io.File(dir, "2025.json").readText().replace("\"version\":1", "\"version\":99"))
+            java.io.File(dir, "2023.json").writeText(java.io.File(dir, "2025.json").readText().replace("\"version\":2", "\"version\":99"))
             assertNull(store.load(2023))
             java.io.File(dir, "2022.json").writeText("not json")
             assertNull(store.load(2022))
@@ -133,7 +133,7 @@ class RewindTest {
     private val full = StoryFacts(
         rewind = true, totalMs = 400 * 3_600_000L, plays = 5000, activeDays = 280, songs = 100, artists = 20, genres = 5,
         seasonsWithGenre = 4, album = AlbumPlays("A", "B", 40, 1, 8, null), monthsWithListening = 12, firstSong = true,
-        newArtists = 30, prism = true, previous = true,
+        newArtists = 30, prism = true, previous = true, passport = 5, topArtistDays = 20,
     )
 
     @Test

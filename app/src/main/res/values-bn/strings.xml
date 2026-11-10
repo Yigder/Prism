@@ -5029,4 +5029,19 @@
     <string name="tour_183_also_songs_from">আপনার বাছা প্লেলিস্ট থেকে লাইব্রেরির গান</string>
     <string name="tour_183_also_lock">লক স্ক্রিনে রিপিট ও এরপর</string>
     <string name="tour_183_also_uploads">আপলোডে আপলোড ও মুছে ফেলা</string>
+    <string name="musical_passport">মিউজিক্যাল পাসপোর্ট</string>
+    <string name="listening_calendar">শোনার ক্যালেন্ডার</string>
+    <string name="musical_passport_subtitle">আপনার শোনা সঙ্গীত কোথায় তৈরি হয়েছিল</string>
+    <plurals name="you_listened_to_on_n_days">
+        <item quantity="one">আপনি %2$d দিনে %1$s শুনেছেন</item>
+        <item quantity="other">আপনি %2$d টি ভিন্ন দিনে %1$s শুনেছেন</item>
+    </plurals>
+    <plurals name="and_n_other_places">
+        <item quantity="one">এবং আরও %d টি স্থান</item>
+        <item quantity="other">এবং আরও %d টি স্থান</item>
+    </plurals>
+    <plurals name="listened_to_artists_from_n_places">
+        <item quantity="one">আমি এই বছর %d টি স্থানের শিল্পীদের গান শুনেছি</item>
+        <item quantity="other">আমি এই বছর %d টিরও বেশি ভিন্ন স্থানের শিল্পীদের গান শুনেছি</item>
+    </plurals>
 </resources>

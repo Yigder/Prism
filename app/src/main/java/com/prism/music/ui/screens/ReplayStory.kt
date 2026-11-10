@@ -166,6 +166,8 @@ internal class ReplayStory(
     val previousSongCount: Int? = null,
     /** "Includes Spotify" when an imported history is counted (1.8.1): every card says so. */
     val includes: String? = null,
+    val passport: List<com.prism.music.data.PassportCountry> = emptyList(),
+    val topArtistDays: com.prism.music.data.TopArtistDays? = null,
 ) {
     /** "PRISM REWIND" for a year, "PRISM REPLAY" otherwise. */
     val brandName: String get() = if (rewind) tr(R.string.prism_rewind) else tr(R.string.prism_replay)
@@ -178,7 +180,7 @@ internal fun ReplayStory.facts() = com.prism.music.data.StoryFacts(
     rewind = rewind, totalMs = totalMs, plays = plays, activeDays = activeDays, songs = songs.size, artists = artists.size,
     genres = genres.size, seasonsWithGenre = seasons.count { it.genre != null }, album = topAlbum,
     monthsWithListening = months.count { it.ms > 0 }, firstSong = firstSong != null, newArtists = newArtists?.size ?: 0,
-    prism = prism.any, previous = previousMs != null,
+    prism = prism.any, previous = previousMs != null, passport = passport.size, topArtistDays = topArtistDays?.distinctDays ?: 0,
 )
 
 /** A year's Rewind as its story: kept (or just worked out) by [com.prism.music.data.Rewinds], plus the top artist's type. */
@@ -203,6 +205,7 @@ private suspend fun loadRewindStory(c: AppContainer, year: Int): ReplayStory = w
         rewind = true, months = s.months, topAlbum = s.topAlbum, firstSong = s.firstSong, seasons = s.seasons, prism = s.prism,
         topLyric = s.topLyric, previousTopArtist = s.previousTopArtist, previousSongCount = s.previousSongCount,
         includes = includesLine(c),
+        passport = s.passport, topArtistDays = s.topArtistDays,
     )
 }
 
@@ -264,6 +267,43 @@ private suspend fun loadPeriodStory(c: AppContainer, period: Period): ReplayStor
     }
     withTimeoutOrNull(6_000) { photos.join() }
 
+    // Musical Passport & Top Artist Days (#443)
+    val countryMap = c.countries.resolveCountries(artists.map { it.artistName })
+    val passport = artists.mapNotNull { a -> countryMap[a.artistName]?.let { code -> code to a } }
+        .groupBy { it.first }
+        .map { (code, pairs) ->
+            com.prism.music.data.PassportCountry(
+                code = code,
+                name = c.countries.countryName(code),
+                artistCount = pairs.size,
+                artists = pairs.map { it.second.artistName },
+            )
+        }
+        .sortedByDescending { it.artistCount }
+
+    val zone = java.time.ZoneId.systemDefault()
+    val periodEvents = dao.events(from, to)
+    val topArtistName = lead?.artistName
+    val targetSongIds = if (topArtistName != null) {
+        songs.filter { it.mainArtist == topArtistName }.map { it.songId }.toSet()
+    } else emptySet()
+    val targetEvents = if (targetSongIds.isNotEmpty()) {
+        periodEvents.filter { it.songId in targetSongIds }
+    } else if (top != null) {
+        periodEvents.filter { it.songId == top.songId }
+    } else emptyList()
+    val activeDates = targetEvents.map {
+        java.time.Instant.ofEpochMilli(it.timestamp).atZone(zone).toLocalDate().toString()
+    }.distinct().sorted()
+    val topArtistDays = if (activeDates.isNotEmpty()) {
+        com.prism.music.data.TopArtistDays(
+            artistName = topArtistName ?: top?.title ?: "",
+            distinctDays = activeDates.size,
+            activeDates = activeDates,
+            thumbnail = leadPage?.thumbnail ?: top?.thumbnail,
+        )
+    } else null
+
     ReplayStory(
         period = period,
         title = when (period.kind) {
@@ -285,6 +325,8 @@ private suspend fun loadPeriodStory(c: AppContainer, period: Period): ReplayStor
         topArtistType = leadType,
         months = months,
         includes = includesLine(c),
+        passport = passport,
+        topArtistDays = topArtistDays,
     )
 }
 
@@ -319,6 +361,8 @@ private fun slidesFor(s: ReplayStory): List<Slide> {
             Kind.PRISM_YEAR -> Slide(part, songs.getOrNull(8) ?: songs.firstOrNull(), palette(0xFF100A24, 0xFFFF7A9C, 0xFF6BE3FF, 0xFFB18CFF))
             Kind.YEAR_COMPARE -> Slide(part, songs.getOrNull(9) ?: songs.firstOrNull(), palette(0xFF07161F, 0xFF00C2FF, 0xFF7C5CFF, 0xFF1ED38A))
             Kind.PERSONALITY -> Slide(part, songs.getOrNull(1) ?: songs.firstOrNull(), palette(0xFF240C4A, 0xFFD53369, 0xFFDAAE51, 0xFF7C5CFF))
+            Kind.TOP_ARTIST_DAYS -> Slide(part, byArtist(s.topArtistDays?.artistName) ?: songs.firstOrNull(), palette(0xFF071B26, 0xFF00C2FF, 0xFFB8FF3B, 0xFF7C5CFF))
+            Kind.PASSPORT -> Slide(part, songs.getOrNull(3) ?: songs.firstOrNull(), palette(0xFF1E1028, 0xFFFF7A59, 0xFF6C5CE7, 0xFF00CEC9))
             Kind.SUMMARY -> Slide(part, songs.firstOrNull(), palette(0xFF0C0C14, 0xFF7C5CFF, 0xFFFF3B5C, 0xFF00C2FF))
         }
     }
@@ -698,6 +742,8 @@ private fun SlideView(slide: Slide, s: ReplayStory, onReplay: () -> Unit, onPlay
             Kind.PRISM_YEAR -> PrismYearSlide(s, pad)
             Kind.YEAR_COMPARE -> YearCompare(s, pad)
             Kind.PERSONALITY -> PersonalitySlide(s.personality, pad)
+            Kind.TOP_ARTIST_DAYS -> TopArtistDaysSlide(s, pad)
+            Kind.PASSPORT -> PassportSlide(s, pad)
             Kind.SUMMARY -> Summary(s, pad, onReplay, onPlayAll)
         }
     }
@@ -1014,6 +1060,243 @@ private fun PersonalitySlide(p: Personality, modifier: Modifier) {
         Spacer(Modifier.height(28.dp))
         FitText(p.name.uppercase(), display(64.sp), Modifier.reveal(700), oneLine = false)
         Text(p.line, style = body, modifier = Modifier.reveal(1_200).padding(top = 14.dp))
+    }
+}
+
+@Composable
+private fun TopArtistDaysSlide(s: ReplayStory, modifier: Modifier) {
+    val info = s.topArtistDays ?: return
+    val activeSet = remember(info.activeDates) { info.activeDates.toSet() }
+    val year = remember(s, info) {
+        if (s.period.isYear) s.period.year
+        else info.activeDates.lastOrNull()?.take(4)?.toIntOrNull() ?: java.time.LocalDate.now().year
+    }
+    val monthNames = remember { java.text.DateFormatSymbols.getInstance().shortMonths }
+
+    Column(modifier, verticalArrangement = Arrangement.Center) {
+        Text(tr(R.string.listening_calendar), style = kicker(), modifier = Modifier.reveal(100))
+        Spacer(Modifier.height(4.dp))
+        FitText(info.artistName.uppercase(), display(46.sp), Modifier.reveal(250))
+        Text(
+            trp(R.plurals.you_listened_to_on_n_days, info.distinctDays, info.artistName, info.distinctDays),
+            style = body.copy(fontSize = 17.sp, color = Color.White.copy(alpha = 0.9f)),
+            modifier = Modifier.reveal(400).padding(top = 4.dp),
+        )
+        Spacer(Modifier.height(20.dp))
+
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .reveal(600)
+                .clip(RoundedCornerShape(20.dp))
+                .background(Color.White.copy(alpha = 0.10f))
+                .padding(horizontal = 14.dp, vertical = 14.dp),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                for (row in 0 until 3) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        for (col in 0 until 4) {
+                            val m = row * 4 + col + 1
+                            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    monthNames.getOrElse(m - 1) { "" }.uppercase(),
+                                    style = kicker(9.sp).copy(color = Color.White.copy(alpha = 0.65f)),
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 1,
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                MonthDotCanvas(
+                                    year = year,
+                                    month = m,
+                                    activeSet = activeSet,
+                                    modifier = Modifier.fillMaxWidth().height(36.dp),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(20.dp))
+        Row(
+            Modifier.reveal(900).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AsyncImage(
+                hiRes(info.thumbnail ?: s.topArtistImage, 200), null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.size(52.dp).clip(CircleShape).border(1.5.dp, Color(0xFFB8FF3B), CircleShape),
+            )
+            Spacer(Modifier.width(14.dp))
+            Column {
+                Text(info.artistName, style = body.copy(fontSize = 18.sp, fontWeight = FontWeight.Bold), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    trp(R.plurals.you_listened_to_on_n_days, info.distinctDays, info.artistName, info.distinctDays),
+                    style = body.copy(fontSize = 13.sp, color = Color.White.copy(alpha = 0.75f)),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MonthDotCanvas(
+    year: Int,
+    month: Int,
+    activeSet: Set<String>,
+    modifier: Modifier = Modifier,
+) {
+    val daysInMonth = remember(year, month) {
+        runCatching { java.time.YearMonth.of(year, month).lengthOfMonth() }.getOrDefault(30)
+    }
+    val startDayOffset = remember(year, month) {
+        runCatching {
+            (java.time.LocalDate.of(year, month, 1).dayOfWeek.value - 1) % 7
+        }.getOrDefault(0)
+    }
+
+    Canvas(modifier) {
+        val cols = 7
+        val rows = 5
+        val cellW = size.width / cols
+        val cellH = size.height / rows
+        val activeRadius = minOf(cellW, cellH) * 0.38f
+        val inactiveRadius = minOf(cellW, cellH) * 0.22f
+
+        for (d in 1..daysInMonth) {
+            val slot = startDayOffset + d - 1
+            val c = slot % cols
+            val r = (slot / cols).coerceAtMost(rows - 1)
+            val cx = (c + 0.5f) * cellW
+            val cy = (r + 0.5f) * cellH
+
+            val dateStr = "%04d-%02d-%02d".format(year, month, d)
+            val isActive = dateStr in activeSet
+
+            if (isActive) {
+                drawCircle(Color(0xFFB8FF3B).copy(alpha = 0.35f), activeRadius * 1.5f, Offset(cx, cy))
+                drawCircle(Color(0xFFB8FF3B), activeRadius, Offset(cx, cy))
+            } else {
+                drawCircle(Color.White.copy(alpha = 0.20f), inactiveRadius, Offset(cx, cy))
+            }
+        }
+    }
+}
+
+@Composable
+private fun PassportSlide(s: ReplayStory, modifier: Modifier) {
+    val countries = s.passport
+    if (countries.isEmpty()) return
+
+    Column(modifier, verticalArrangement = Arrangement.Center) {
+        Text(s.brand, style = kicker(), modifier = Modifier.reveal(100))
+        Spacer(Modifier.height(4.dp))
+        FitText(tr(R.string.musical_passport).uppercase(), display(46.sp), Modifier.reveal(250))
+        Text(
+            trp(R.plurals.listened_to_artists_from_n_places, countries.size, countries.size),
+            style = body.copy(fontSize = 17.sp, color = Color.White.copy(alpha = 0.85f)),
+            modifier = Modifier.reveal(400).padding(top = 4.dp),
+        )
+        Spacer(Modifier.height(20.dp))
+
+        val topCountries = countries.take(4)
+        val rotations = listOf(-2f, 2f, 1.5f, -1.5f)
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            for (row in 0 until (topCountries.size + 1) / 2) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    for (col in 0 until 2) {
+                        val idx = row * 2 + col
+                        if (idx < topCountries.size) {
+                            val c = topCountries[idx]
+                            PassportStamp(
+                                country = c,
+                                rotation = rotations.getOrElse(idx) { 0f },
+                                modifier = Modifier.weight(1f).reveal(550 + idx * 150),
+                            )
+                        } else {
+                            Spacer(Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+        }
+
+        val remaining = countries.size - topCountries.size
+        if (remaining > 0) {
+            Spacer(Modifier.height(14.dp))
+            Text(
+                trp(R.plurals.and_n_other_places, remaining, remaining),
+                style = kicker(12.sp).copy(color = Color.White.copy(alpha = 0.75f)),
+                modifier = Modifier.reveal(1100).padding(start = 4.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun PassportStamp(
+    country: com.prism.music.data.PassportCountry,
+    rotation: Float,
+    modifier: Modifier = Modifier,
+) {
+    val flag = com.prism.music.data.meta.ArtistCountryResolver.flagEmoji(country.code)
+    Column(
+        modifier
+            .rotate(rotation)
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.White.copy(alpha = 0.12f))
+            .border(1.dp, Color.White.copy(alpha = 0.28f), RoundedCornerShape(16.dp))
+            .padding(14.dp),
+    ) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(flag, style = TextStyle(fontSize = 28.sp))
+            Text(
+                country.code,
+                style = kicker(10.sp).copy(
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White.copy(alpha = 0.7f),
+                ),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Color.White.copy(alpha = 0.15f))
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            country.name,
+            style = display(22.sp),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            trp(R.plurals.n_artists, country.artistCount),
+            style = kicker(10.sp).copy(color = Color.White.copy(alpha = 0.8f)),
+            maxLines = 1,
+        )
+        if (country.artists.isNotEmpty()) {
+            Spacer(Modifier.height(2.dp))
+            Text(
+                country.artists.take(2).joinToString(", "),
+                style = body.copy(fontSize = 12.sp, color = Color.White.copy(alpha = 0.65f)),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 

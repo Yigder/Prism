@@ -5317,4 +5317,19 @@
     <string name="tour_183_also_songs_from">أغاني المكتبة من القوائم التي تختارها</string>
     <string name="tour_183_also_lock">التكرار والتالي على شاشة القفل</string>
     <string name="tour_183_also_uploads">الرفع والحذف في الملفات المرفوعة</string>
+    <string name="musical_passport">جواز السفر الموسيقي</string>
+    <string name="listening_calendar">تقويم الاستماع</string>
+    <string name="musical_passport_subtitle">مكان إنتاج الموسيقى التي استمعت إليها</string>
+    <plurals name="you_listened_to_on_n_days">
+        <item quantity="one">استمعت إلى %1$s في %2$d يوم</item>
+        <item quantity="other">استمعت إلى %1$s في %2$d يوم مختلف</item>
+    </plurals>
+    <plurals name="and_n_other_places">
+        <item quantity="one">و%d مكان آخر</item>
+        <item quantity="other">و%d أماكن أخرى</item>
+    </plurals>
+    <plurals name="listened_to_artists_from_n_places">
+        <item quantity="one">استمعت إلى فنانين من %d مكان هذا العام</item>
+        <item quantity="other">استمعت إلى فنانين من أكثر من %d مكان مختلف هذا العام</item>
+    </plurals>
 </resources>

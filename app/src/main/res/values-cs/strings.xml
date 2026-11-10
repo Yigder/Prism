@@ -5173,4 +5173,19 @@
     <string name="tour_183_also_songs_from">Skladby v Knihovně z vybraných playlistů</string>
     <string name="tour_183_also_lock">Opakování a Další na zamykací obrazovce</string>
     <string name="tour_183_also_uploads">Nahrávání a mazání v Nahraných</string>
+    <string name="musical_passport">Hudební pas</string>
+    <string name="listening_calendar">Kalendář poslechu</string>
+    <string name="musical_passport_subtitle">Odkud pochází hudba, kterou jste poslouchali</string>
+    <plurals name="you_listened_to_on_n_days">
+        <item quantity="one">Poslouchali jste %1$s v %2$d dni</item>
+        <item quantity="other">Poslouchali jste %1$s v %2$d různých dnech</item>
+    </plurals>
+    <plurals name="and_n_other_places">
+        <item quantity="one">A %d další místo</item>
+        <item quantity="other">A %d dalších míst</item>
+    </plurals>
+    <plurals name="listened_to_artists_from_n_places">
+        <item quantity="one">Letos jsem poslouchal umělce z %d místa</item>
+        <item quantity="other">Letos jsem poslouchal umělce z více než %d různých míst</item>
+    </plurals>
 </resources>
