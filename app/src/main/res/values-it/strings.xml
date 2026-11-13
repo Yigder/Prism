@@ -5481,6 +5481,9 @@
     <string name="canvas_keep_controls_keywords">controlli scompaiono nascondi schermo intero tocco</string>
     <string name="canvas_lighter_keywords">qualità 480p 720p 1080p dati dimensione più piccolo</string>
     <string name="canvas_pick_part">Scegli un\'altra parte</string>
+    <string name="canvas_pick_video">Scegli un altro video</string>
+    <string name="canvas_video_no_loop">Da quel video non si può ricavare un loop</string>
+    <string name="canvas_no_videos">Nessun video trovato per questo brano</string>
     <string name="canvas_use">Usa</string>
     <string name="canvas_not_this_video">Non questo video</string>
     <string name="tour_186_canvas_title">Canvas</string>

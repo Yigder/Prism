@@ -5481,6 +5481,9 @@
     <string name="canvas_keep_controls_keywords">commandes effacer masquer plein écran toucher</string>
     <string name="canvas_lighter_keywords">qualité 480p 720p 1080p données taille plus petit</string>
     <string name="canvas_pick_part">Choisir un autre passage</string>
+    <string name="canvas_pick_video">Choisir un autre clip</string>
+    <string name="canvas_video_no_loop">Ce clip ne peut pas faire une boucle</string>
+    <string name="canvas_no_videos">Aucun clip trouvé pour ce titre</string>
     <string name="canvas_use">Utiliser</string>
     <string name="canvas_not_this_video">Pas ce clip</string>
     <string name="tour_186_canvas_title">Canvas</string>

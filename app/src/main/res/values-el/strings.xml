@@ -5406,6 +5406,9 @@
     <string name="canvas_keep_controls_keywords">χειριστήρια εξαφάνιση απόκρυψη πλήρης οθόνη άγγιγμα</string>
     <string name="canvas_lighter_keywords">ποιότητα 480p 720p 1080p δεδομένα μέγεθος μικρότερο</string>
     <string name="canvas_pick_part">Επιλογή άλλου τμήματος</string>
+    <string name="canvas_pick_video">Επιλογή άλλου βίντεο</string>
+    <string name="canvas_video_no_loop">Αυτό το βίντεο δεν κάνει για λούπα</string>
+    <string name="canvas_no_videos">Δεν βρέθηκαν βίντεο για αυτό το τραγούδι</string>
     <string name="canvas_use">Χρήση</string>
     <string name="canvas_not_this_video">Όχι αυτό το βίντεο</string>
     <string name="tour_186_canvas_title">Canvas</string>

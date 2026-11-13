@@ -5331,6 +5331,9 @@
     <string name="canvas_keep_controls_keywords">컨트롤 사라짐 숨기기 전체 화면 탭</string>
     <string name="canvas_lighter_keywords">화질 480p 720p 1080p 데이터 용량 작게</string>
     <string name="canvas_pick_part">다른 구간 선택</string>
+    <string name="canvas_pick_video">다른 영상 선택</string>
+    <string name="canvas_video_no_loop">이 영상으로는 루프를 만들 수 없어요</string>
+    <string name="canvas_no_videos">이 곡의 영상을 찾을 수 없어요</string>
     <string name="canvas_use">사용</string>
     <string name="canvas_not_this_video">이 영상 아님</string>
     <string name="tour_186_canvas_title">Canvas</string>

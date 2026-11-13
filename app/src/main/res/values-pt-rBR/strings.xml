@@ -5481,6 +5481,9 @@
     <string name="canvas_keep_controls_keywords">controles sumir esconder tela cheia toque</string>
     <string name="canvas_lighter_keywords">qualidade 480p 720p 1080p dados tamanho menor</string>
     <string name="canvas_pick_part">Escolher outro trecho</string>
+    <string name="canvas_pick_video">Escolher outro vídeo</string>
+    <string name="canvas_video_no_loop">Não dá para fazer um loop com esse vídeo</string>
+    <string name="canvas_no_videos">Nenhum vídeo encontrado para esta música</string>
     <string name="canvas_use">Usar</string>
     <string name="canvas_not_this_video">Não é este vídeo</string>
     <string name="tour_186_canvas_title">Canvas</string>

@@ -5556,6 +5556,9 @@
     <string name="canvas_keep_controls_keywords">sterowanie znika ukryj pełny ekran dotknięcie</string>
     <string name="canvas_lighter_keywords">jakość 480p 720p 1080p dane rozmiar mniejszy</string>
     <string name="canvas_pick_part">Wybierz inny fragment</string>
+    <string name="canvas_pick_video">Wybierz inny teledysk</string>
+    <string name="canvas_video_no_loop">Z tego teledysku nie da się zrobić pętli</string>
+    <string name="canvas_no_videos">Nie znaleziono teledysków do tego utworu</string>
     <string name="canvas_use">Użyj</string>
     <string name="canvas_not_this_video">To nie ten teledysk</string>
     <string name="tour_186_canvas_title">Canvas</string>

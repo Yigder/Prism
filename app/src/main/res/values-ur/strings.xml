@@ -5406,6 +5406,9 @@
     <string name="canvas_keep_controls_keywords">کنٹرولز غائب چھپانا پوری اسکرین ٹیپ</string>
     <string name="canvas_lighter_keywords">کوالٹی 480p 720p 1080p ڈیٹا سائز چھوٹا</string>
     <string name="canvas_pick_part">کوئی اور حصہ چنیں</string>
+    <string name="canvas_pick_video">کوئی اور ویڈیو چنیں</string>
+    <string name="canvas_video_no_loop">اس ویڈیو سے لوپ نہیں بن سکتا</string>
+    <string name="canvas_no_videos">اس گانے کے لیے کوئی ویڈیو نہیں ملی</string>
     <string name="canvas_use">استعمال</string>
     <string name="canvas_not_this_video">یہ ویڈیو نہیں</string>
     <string name="tour_186_canvas_title">Canvas</string>

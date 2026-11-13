@@ -5556,6 +5556,9 @@
     <string name="canvas_keep_controls_keywords">елементи керування зникають ховати на весь екран дотик</string>
     <string name="canvas_lighter_keywords">якість 480p 720p 1080p трафік розмір менший</string>
     <string name="canvas_pick_part">Обрати іншу частину</string>
+    <string name="canvas_pick_video">Обрати інше відео</string>
+    <string name="canvas_video_no_loop">З цього відео не вийде зробити цикл</string>
+    <string name="canvas_no_videos">Для цієї пісні відео не знайдено</string>
     <string name="canvas_use">Показувати</string>
     <string name="canvas_not_this_video">Це не те відео</string>
     <string name="tour_186_canvas_title">Canvas</string>

@@ -5406,6 +5406,9 @@
     <string name="canvas_keep_controls_keywords">کنترل‌ها محو پنهان تمام‌صفحه ضربه</string>
     <string name="canvas_lighter_keywords">کیفیت 480p 720p 1080p داده حجم کوچک‌تر</string>
     <string name="canvas_pick_part">انتخاب بخش دیگر</string>
+    <string name="canvas_pick_video">انتخاب ویدیوی دیگر</string>
+    <string name="canvas_video_no_loop">از این ویدیو نمی‌شود لوپ ساخت</string>
+    <string name="canvas_no_videos">ویدیویی برای این آهنگ پیدا نشد</string>
     <string name="canvas_use">استفاده</string>
     <string name="canvas_not_this_video">این ویدیو نه</string>
     <string name="tour_186_canvas_title">Canvas</string>

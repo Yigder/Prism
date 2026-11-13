@@ -5406,6 +5406,9 @@
     <string name="canvas_keep_controls_keywords">mga kontrol nawawala itago full screen tap</string>
     <string name="canvas_lighter_keywords">kalidad 480p 720p 1080p data laki mas maliit</string>
     <string name="canvas_pick_part">Pumili ng ibang bahagi</string>
+    <string name="canvas_pick_video">Pumili ng ibang video</string>
+    <string name="canvas_video_no_loop">Hindi makakagawa ng loop ang video na iyon</string>
+    <string name="canvas_no_videos">Walang nahanap na video para sa kantang ito</string>
     <string name="canvas_use">Gamitin</string>
     <string name="canvas_not_this_video">Hindi ang video na ito</string>
     <string name="tour_186_canvas_title">Canvas</string>

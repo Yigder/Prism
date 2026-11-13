@@ -5331,6 +5331,9 @@
     <string name="canvas_keep_controls_keywords">コントロール 消える 隠す 全画面 タップ</string>
     <string name="canvas_lighter_keywords">画質 480p 720p 1080p データ サイズ 小さい</string>
     <string name="canvas_pick_part">別の部分を選ぶ</string>
+    <string name="canvas_pick_video">別のビデオを選ぶ</string>
+    <string name="canvas_video_no_loop">このビデオではループを作れません</string>
+    <string name="canvas_no_videos">この曲のビデオが見つかりません</string>
     <string name="canvas_use">使用</string>
     <string name="canvas_not_this_video">このビデオではない</string>
     <string name="tour_186_canvas_title">Canvas</string>

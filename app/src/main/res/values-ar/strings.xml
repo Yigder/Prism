@@ -5706,6 +5706,9 @@
     <string name="canvas_keep_controls_keywords">عناصر التحكم تختفي إخفاء ملء الشاشة نقرة</string>
     <string name="canvas_lighter_keywords">جودة 480p 720p 1080p بيانات حجم أصغر</string>
     <string name="canvas_pick_part">اختيار جزء آخر</string>
+    <string name="canvas_pick_video">اختيار فيديو آخر</string>
+    <string name="canvas_video_no_loop">لا يمكن إنشاء مقطع متكرر من هذا الفيديو</string>
+    <string name="canvas_no_videos">لم يتم العثور على فيديوهات لهذه الأغنية</string>
     <string name="canvas_use">استخدام</string>
     <string name="canvas_not_this_video">ليس هذا الفيديو</string>
     <string name="tour_186_canvas_title">Canvas</string>

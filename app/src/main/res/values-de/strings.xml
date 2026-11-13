@@ -5406,6 +5406,9 @@
     <string name="canvas_keep_controls_keywords">steuerung ausblenden verschwinden vollbild tippen</string>
     <string name="canvas_lighter_keywords">qualität 480p 720p 1080p daten größe kleiner</string>
     <string name="canvas_pick_part">Anderen Ausschnitt wählen</string>
+    <string name="canvas_pick_video">Anderes Video wählen</string>
+    <string name="canvas_video_no_loop">Aus diesem Video lässt sich keine Schleife machen</string>
+    <string name="canvas_no_videos">Keine Videos für diesen Song gefunden</string>
     <string name="canvas_use">Verwenden</string>
     <string name="canvas_not_this_video">Nicht dieses Video</string>
     <string name="tour_186_canvas_title">Canvas</string>

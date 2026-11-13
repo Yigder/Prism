@@ -5406,6 +5406,9 @@
     <string name="canvas_keep_controls_keywords">कंट्रोल गायब छिपाएं पूरी स्क्रीन टैप</string>
     <string name="canvas_lighter_keywords">क्वालिटी 480p 720p 1080p डेटा साइज़ छोटा</string>
     <string name="canvas_pick_part">दूसरा हिस्सा चुनें</string>
+    <string name="canvas_pick_video">दूसरा वीडियो चुनें</string>
+    <string name="canvas_video_no_loop">इस वीडियो से लूप नहीं बन सकता</string>
+    <string name="canvas_no_videos">इस गाने के लिए कोई वीडियो नहीं मिला</string>
     <string name="canvas_use">इस्तेमाल</string>
     <string name="canvas_not_this_video">यह वीडियो नहीं</string>
     <string name="tour_186_canvas_title">Canvas</string>

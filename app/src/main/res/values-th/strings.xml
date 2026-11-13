@@ -5331,6 +5331,9 @@
     <string name="canvas_keep_controls_keywords">ปุ่มควบคุม หาย ซ่อน เต็มหน้าจอ แตะ</string>
     <string name="canvas_lighter_keywords">คุณภาพ 480p 720p 1080p ข้อมูล ขนาด เล็กลง</string>
     <string name="canvas_pick_part">เลือกช่วงอื่น</string>
+    <string name="canvas_pick_video">เลือกวิดีโออื่น</string>
+    <string name="canvas_video_no_loop">วิดีโอนั้นทำเป็นลูปไม่ได้</string>
+    <string name="canvas_no_videos">ไม่พบวิดีโอของเพลงนี้</string>
     <string name="canvas_use">ใช้</string>
     <string name="canvas_not_this_video">ไม่ใช่วิดีโอนี้</string>
     <string name="tour_186_canvas_title">Canvas</string>

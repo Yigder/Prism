@@ -5331,6 +5331,9 @@
     <string name="canvas_keep_controls_keywords">控制項 淡出 隱藏 全螢幕 輕觸</string>
     <string name="canvas_lighter_keywords">畫質 480p 720p 1080p 流量 大小 更小</string>
     <string name="canvas_pick_part">選擇其他片段</string>
+    <string name="canvas_pick_video">選擇其他影片</string>
+    <string name="canvas_video_no_loop">這支影片無法製作循環</string>
+    <string name="canvas_no_videos">找不到這首歌的影片</string>
     <string name="canvas_use">使用</string>
     <string name="canvas_not_this_video">不是這支影片</string>
     <string name="tour_186_canvas_title">Canvas</string>

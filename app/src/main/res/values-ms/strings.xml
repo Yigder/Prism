@@ -5331,6 +5331,9 @@
     <string name="canvas_keep_controls_keywords">kawalan pudar sembunyi skrin penuh ketik</string>
     <string name="canvas_lighter_keywords">kualiti 480p 720p 1080p data saiz lebih kecil</string>
     <string name="canvas_pick_part">Pilih bahagian lain</string>
+    <string name="canvas_pick_video">Pilih video lain</string>
+    <string name="canvas_video_no_loop">Video itu tidak boleh dijadikan gelung</string>
+    <string name="canvas_no_videos">Tiada video ditemui untuk lagu ini</string>
     <string name="canvas_use">Guna</string>
     <string name="canvas_not_this_video">Bukan video ini</string>
     <string name="tour_186_canvas_title">Canvas</string>

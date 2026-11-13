@@ -5406,6 +5406,9 @@
     <string name="canvas_keep_controls_keywords">vezérlők eltűnik elrejtés teljes képernyő érintés</string>
     <string name="canvas_lighter_keywords">minőség 480p 720p 1080p adat méret kisebb</string>
     <string name="canvas_pick_part">Másik rész kiválasztása</string>
+    <string name="canvas_pick_video">Másik videó kiválasztása</string>
+    <string name="canvas_video_no_loop">Ebből a videóból nem készíthető hurok</string>
+    <string name="canvas_no_videos">Nem található videó ehhez a dalhoz</string>
     <string name="canvas_use">Használat</string>
     <string name="canvas_not_this_video">Nem ez a videó</string>
     <string name="tour_186_canvas_title">Canvas</string>

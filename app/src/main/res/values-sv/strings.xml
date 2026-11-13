@@ -5406,6 +5406,9 @@
     <string name="canvas_keep_controls_keywords">kontroller tonas bort dölj helskärm tryck</string>
     <string name="canvas_lighter_keywords">kvalitet 480p 720p 1080p data storlek mindre</string>
     <string name="canvas_pick_part">Välj en annan del</string>
+    <string name="canvas_pick_video">Välj en annan video</string>
+    <string name="canvas_video_no_loop">Den videon går inte att göra en loop av</string>
+    <string name="canvas_no_videos">Inga videor hittades för den här låten</string>
     <string name="canvas_use">Använd</string>
     <string name="canvas_not_this_video">Inte den här videon</string>
     <string name="tour_186_canvas_title">Canvas</string>

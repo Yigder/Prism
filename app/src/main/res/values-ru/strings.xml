@@ -5556,6 +5556,9 @@
     <string name="canvas_keep_controls_keywords">кнопки управление исчезают скрыть во весь экран касание</string>
     <string name="canvas_lighter_keywords">качество 480p 720p 1080p трафик данные размер меньше</string>
     <string name="canvas_pick_part">Выбрать другой фрагмент</string>
+    <string name="canvas_pick_video">Выбрать другой клип</string>
+    <string name="canvas_video_no_loop">Из этого клипа не получится сделать ролик</string>
+    <string name="canvas_no_videos">Для этого трека клипов не найдено</string>
     <string name="canvas_use">Показывать</string>
     <string name="canvas_not_this_video">Не тот клип</string>
     <string name="tour_186_canvas_title">Canvas</string>

@@ -5556,6 +5556,9 @@
     <string name="canvas_keep_controls_keywords">ovládání mizí skrýt celá obrazovka klepnutí</string>
     <string name="canvas_lighter_keywords">kvalita 480p 720p 1080p data velikost menší</string>
     <string name="canvas_pick_part">Vybrat jinou část</string>
+    <string name="canvas_pick_video">Vybrat jiné video</string>
+    <string name="canvas_video_no_loop">Z tohoto videa nelze vytvořit smyčku</string>
+    <string name="canvas_no_videos">Pro tuto skladbu nebyla nalezena žádná videa</string>
     <string name="canvas_use">Použít</string>
     <string name="canvas_not_this_video">Ne toto video</string>
     <string name="tour_186_canvas_title">Canvas</string>

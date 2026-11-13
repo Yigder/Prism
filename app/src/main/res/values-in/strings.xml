@@ -5331,6 +5331,9 @@
     <string name="canvas_keep_controls_keywords">kontrol hilang sembunyikan layar penuh ketuk</string>
     <string name="canvas_lighter_keywords">kualitas 480p 720p 1080p data ukuran lebih kecil</string>
     <string name="canvas_pick_part">Pilih bagian lain</string>
+    <string name="canvas_pick_video">Pilih video lain</string>
+    <string name="canvas_video_no_loop">Video itu tidak bisa dibuat menjadi loop</string>
+    <string name="canvas_no_videos">Tidak ada video untuk lagu ini</string>
     <string name="canvas_use">Pakai</string>
     <string name="canvas_not_this_video">Bukan video ini</string>
     <string name="tour_186_canvas_title">Canvas</string>

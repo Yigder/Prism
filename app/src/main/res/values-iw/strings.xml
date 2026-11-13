@@ -5481,6 +5481,9 @@
     <string name="canvas_keep_controls_keywords">פקדים נעלמים הסתרה מסך מלא הקשה</string>
     <string name="canvas_lighter_keywords">איכות 480p 720p 1080p נתונים גודל קטן יותר</string>
     <string name="canvas_pick_part">בחירת קטע אחר</string>
+    <string name="canvas_pick_video">בחירת קליפ אחר</string>
+    <string name="canvas_video_no_loop">אי אפשר ליצור לופ מהקליפ הזה</string>
+    <string name="canvas_no_videos">לא נמצאו קליפים לשיר הזה</string>
     <string name="canvas_use">שימוש</string>
     <string name="canvas_not_this_video">לא הקליפ הזה</string>
     <string name="tour_186_canvas_title">Canvas</string>

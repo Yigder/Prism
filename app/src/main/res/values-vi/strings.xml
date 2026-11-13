@@ -5331,6 +5331,9 @@
     <string name="canvas_keep_controls_keywords">nút điều khiển mờ ẩn toàn màn hình chạm</string>
     <string name="canvas_lighter_keywords">chất lượng 480p 720p 1080p dữ liệu dung lượng nhỏ hơn</string>
     <string name="canvas_pick_part">Chọn đoạn khác</string>
+    <string name="canvas_pick_video">Chọn video khác</string>
+    <string name="canvas_video_no_loop">Video đó không tạo được đoạn lặp</string>
+    <string name="canvas_no_videos">Không tìm thấy video cho bài hát này</string>
     <string name="canvas_use">Dùng</string>
     <string name="canvas_not_this_video">Không phải video này</string>
     <string name="tour_186_canvas_title">Canvas</string>

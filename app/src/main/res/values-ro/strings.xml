@@ -5481,6 +5481,9 @@
     <string name="canvas_keep_controls_keywords">controale dispar ascunde ecran complet atingere</string>
     <string name="canvas_lighter_keywords">calitate 480p 720p 1080p date dimensiune mai mic</string>
     <string name="canvas_pick_part">Alege altă parte</string>
+    <string name="canvas_pick_video">Alege alt videoclip</string>
+    <string name="canvas_video_no_loop">Din acest videoclip nu se poate face o buclă</string>
+    <string name="canvas_no_videos">Nu am găsit videoclipuri pentru această melodie</string>
     <string name="canvas_use">Folosește</string>
     <string name="canvas_not_this_video">Nu acest videoclip</string>
     <string name="tour_186_canvas_title">Canvas</string>

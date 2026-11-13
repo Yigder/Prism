@@ -5406,6 +5406,9 @@
     <string name="canvas_keep_controls_keywords">kontroller kaybolma gizle tam ekran dokun</string>
     <string name="canvas_lighter_keywords">kalite 480p 720p 1080p veri boyut küçük</string>
     <string name="canvas_pick_part">Başka bir bölüm seç</string>
+    <string name="canvas_pick_video">Başka bir video seç</string>
+    <string name="canvas_video_no_loop">Bu videodan döngü oluşturulamıyor</string>
+    <string name="canvas_no_videos">Bu şarkı için video bulunamadı</string>
     <string name="canvas_use">Kullan</string>
     <string name="canvas_not_this_video">Bu video değil</string>
     <string name="tour_186_canvas_title">Canvas</string>

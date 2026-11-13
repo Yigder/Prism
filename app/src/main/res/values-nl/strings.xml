@@ -5406,6 +5406,9 @@
     <string name="canvas_keep_controls_keywords">bediening vervagen verbergen volledig scherm tik</string>
     <string name="canvas_lighter_keywords">kwaliteit 480p 720p 1080p data grootte kleiner</string>
     <string name="canvas_pick_part">Ander stuk kiezen</string>
+    <string name="canvas_pick_video">Andere video kiezen</string>
+    <string name="canvas_video_no_loop">Van die video kan geen loop worden gemaakt</string>
+    <string name="canvas_no_videos">Geen video\'s gevonden voor dit nummer</string>
     <string name="canvas_use">Gebruik</string>
     <string name="canvas_not_this_video">Niet deze video</string>
     <string name="tour_186_canvas_title">Canvas</string>
