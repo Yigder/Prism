@@ -49,16 +49,16 @@ The optional lock screen player needs a permission called "Display over other ap
 
 Prism walks you through this on the setting's page. It uses the permission only to bring its player up on your lock screen, and never draws over other apps.
 
-## New in 1.8.5
+## New in 1.8.6
 
-Replay & Rewind 2026.
+Canvas.
 
-- **Listening clock and calendar:** your week hour by hour and every day with music, both shareable as a picture.
-- **Milestones and a monthly recap:** your 25th, 100th or 1,000th play of a song, hours of music, days in a row, and last month at a glance on Home.
-- **Rewind 2026** opens on December 1 with four new slides.
-- **Replay widgets** for your home screen, and **Finish the lyric**, a game from your most played songs.
-- **Also new:** search your history and remove a play, 30 recent searches, hold Previous for the song before, Pause when face down, and a tap on the small cover to play or pause.
-- **Fixes** for static at the start of a song with Normalize volume on, and more.
+- **Canvas:** a silent, looping picture on the cover or behind the whole player. It was called animated covers before.
+- **Loops from music videos** (off until you turn it on): a song without an animated cover can show a few seconds of its own official music video, fetched once on Wi-Fi.
+- **Full screen:** the controls fade away after a few seconds and come back on a tap.
+- **Your say, per song:** Canvas on or off, Pick another part, Not this video.
+- **Easy on the phone:** it holds still with Reduce motion, in battery saver and when the phone runs hot, and a loop that flashes is never shown.
+- **Also new:** "Hours by month" in Replay shows each month's hours on its bar.
 
 Everything is worked out on your phone. See every change in the [changelog](CHANGELOG.md).
 
