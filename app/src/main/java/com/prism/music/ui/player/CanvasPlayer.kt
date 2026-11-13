@@ -76,6 +76,14 @@ fun CanvasPlayer(
     LaunchedEffect(canvas) { clip.show(canvas) }
     val url = clip.url
     var texture by remember { mutableStateOf<TextureView?>(null) }
+    // 1.8.6: a loop from a music video takes a moment to start again (0.1 to 0.3 s on the A16, its last frame standing
+    // meanwhile). Its first frame, kept as a picture, dissolves in over the last quarter second and goes the moment the
+    // loop's real first frame is drawn under it: the end runs into the start with nothing standing still.
+    val restart = remember { RestartCover() }
+    var still by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    val endMessage = remember { arrayOfNulls<androidx.media3.exoplayer.PlayerMessage>(1) }
+    DisposableEffect(Unit) { onDispose { endMessage[0]?.cancel(); endMessage[0] = null } }
+    LaunchedEffect(restart.shown) { if (restart.shown) { kotlinx.coroutines.delay(RESTART_GIVE_UP_MS); restart.giveUp() } }
 
     // The player is borrowed from [CanvasPlayers] and handed back when the clip leaves the screen, so opening the
     // player again picks up the same one, clip and decoder (#343: a new player each time made a new video decoder
@@ -93,19 +101,41 @@ fun CanvasPlayer(
             }
 
             override fun onPlayerError(error: PlaybackException) = clip.failed()
+
+            // 1.8.6: a loop from a music video going round ([RestartCover]).
+            override fun onPositionDiscontinuity(old: Player.PositionInfo, new: Player.PositionInfo, reason: Int) {
+                if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION) restart.wentRound()
+            }
+
+            override fun onRenderedFirstFrame() = restart.firstFrameOut()
         }
         player.addListener(listener)
         onDispose { player.removeListener(listener) }
     }
     LaunchedEffect(url) {
         clip.rendered = false
+        still = null
+        endMessage[0]?.cancel(); endMessage[0] = null
+        // Told a quarter second before each end of a video loop (animated covers loop by themselves, cut for it).
+        fun watchTheEnd() {
+            val loop = clip.canvas.clip ?: return
+            endMessage[0] = player.createMessage { _, _ -> restart.nearEnd() }
+                .setLooper(android.os.Looper.getMainLooper())
+                .setPosition((loop.lengthMs - RESTART_COVER_MS).coerceAtLeast(0L))
+                .setDeleteAfterDelivery(false)
+                .send()
+        }
         // The same clip as last time the player was open: it carries on, no new loading or decoder.
         if (CanvasPlayers.playing(player, url)) {
             val v = player.videoSize
             clip.videoSize(v.width * v.pixelWidthHeightRatio, v.height)
             texture?.cropTo(clip.aspect, clip.canvas.clip)
+            // Somewhere in the middle of its loop: the first frame is kept the next time round.
+            restart.reset(atStart = false)
+            watchTheEnd()
             return@LaunchedEffect
         }
+        restart.reset(atStart = clip.canvas.clip != null)
         // A new clip: nothing shows until its own size and first frame are known (not the last clip's).
         clip.aspect = 0f
         val item = MediaItem.Builder().setUri(url)
@@ -121,6 +151,7 @@ fun CanvasPlayer(
         }
         player.setMediaItem(item.build())
         player.prepare()
+        watchTheEnd()
     }
 
     // Only decode while the app is visible; pausing the song keeps the clip moving
@@ -145,7 +176,12 @@ fun CanvasPlayer(
         player.playWhenReady = canvasMoves(foreground, hold, reduceMotion, strain.value.powerSave, strain.value.hot, pausedLong)
     }
 
-    val alpha by animateFloatAsState(if (clip.rendered) 1f else 0f, tween(320), label = "canvasAlpha")
+    // 1.8.6 (R2): it comes in from the cover over half a second, never pops.
+    val alpha by animateFloatAsState(if (clip.rendered) 1f else 0f, tween(if (clip.rendered) 500 else 320), label = "canvasAlpha")
+    // In over the loop's last moments; gone at once when the real first frame is under it.
+    val stillAlpha by animateFloatAsState(
+        if (restart.shown && still != null) 1f else 0f, if (restart.shown) tween(RESTART_DISSOLVE_MS) else androidx.compose.animation.core.snap(), label = "canvasRestart",
+    )
     val cover by rememberUpdatedState(onCoverChanged)
     // Held, the still cover shows in the clip's place (the video view is taken off screen, below).
     LaunchedEffect(alpha, hold) { cover(if (hold) 0f else alpha * presentationAlpha()) }
@@ -172,26 +208,94 @@ fun CanvasPlayer(
                     override fun onSurfaceTextureUpdated(s: SurfaceTexture) {
                         delegate?.onSurfaceTextureUpdated(s)
                         if (clip.frame()) cropTo(clip.aspect, clip.canvas.clip)
+                        // The loop's first frame is on screen: keep it as a picture, once, for the restarts to come.
+                        if (restart.frameDrawn() && still == null) still = firstFrameOf(this@apply, clip.aspect)
                     }
                 }
             }
             texture = tv
+            val firstFrame = android.widget.ImageView(ctx).apply {
+                layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                scaleType = android.widget.ImageView.ScaleType.MATRIX
+                this.alpha = 0f
+            }
             FadingFrame(ctx).apply {
                 layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
                 addView(tv)
+                addView(firstFrame)
             }
         },
         update = { frame ->
             val tv = frame.getChildAt(0) as TextureView
+            val firstFrame = frame.getChildAt(1) as android.widget.ImageView
             // Under a sheet the video view isn't drawn at all: paused, it was still a live layer (with its fade effect)
             // in the window, and dragging the ⋯ sheet over an animated cover kept sticking.
             frame.visibility = if (hold) android.view.View.INVISIBLE else android.view.View.VISIBLE
             tv.alpha = alpha * presentationAlpha()
             tv.cropTo(clip.aspect, clip.canvas.clip)
             if (Build.VERSION.SDK_INT >= 31) tv.bottomFade(bottomFade) else frame.fade = bottomFade
+            // The kept first frame, placed exactly where the video draws it.
+            val picture = still
+            if (firstFrame.drawable == null || (firstFrame.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap !== picture) firstFrame.setImageBitmap(picture)
+            firstFrame.alpha = if (picture == null) 0f else stillAlpha * alpha * presentationAlpha()
+            firstFrame.visibility = if (picture == null || stillAlpha <= 0f) android.view.View.GONE else android.view.View.VISIBLE
+            if (picture != null && tv.width > 0 && clip.aspect > 0f) {
+                val t = cropTransform(tv.width.toFloat(), tv.height.toFloat(), clip.aspect, clip.canvas.clip?.bars ?: com.prism.music.data.canvas.Bars.NONE, clip.canvas.clip?.cropX ?: 0.5f)
+                firstFrame.imageMatrix = Matrix().apply {
+                    setScale(tv.width.toFloat() / picture.width * t[0], tv.height.toFloat() / picture.height * t[1])
+                    postTranslate(t[2], t[3])
+                }
+                if (Build.VERSION.SDK_INT >= 31) firstFrame.bottomFade(bottomFade)
+            }
         },
         modifier = modifier,
     )
+}
+
+/** How long before a video loop's end its kept first frame starts to dissolve in, and how long that takes. */
+internal const val RESTART_COVER_MS = 280L
+internal const val RESTART_DISSOLVE_MS = 220
+/** A restart that never drew its first frame (the phone held the picture, the clip failed): the kept frame goes anyway. */
+internal const val RESTART_GIVE_UP_MS = 1_500L
+
+/**
+ * The cover over a video loop's restart (1.8.6): what happens in which order. The loop's first frame is kept as a
+ * picture when it is drawn ([frameDrawn] says when); near each end the picture shows ([nearEnd]); the loop goes round
+ * ([wentRound]), the decoder puts its first frame out ([firstFrameOut]), and the next frame drawn takes the picture off
+ * again. A frame of the old round that is drawn late, between the two, must not take it off: that is the moment it hides.
+ */
+internal class RestartCover {
+    /** The kept first frame is over the video. */
+    var shown by mutableStateOf(false); private set
+    private var kept = false
+    private var nextIsFirst = false
+    private var round = false
+    private var out = false
+
+    /** A clip was loaded ([atStart]: its first frame drawn will be the loop's first) or picked up as it plays. */
+    fun reset(atStart: Boolean) { shown = false; kept = false; nextIsFirst = atStart; round = false; out = false }
+
+    fun nearEnd() { if (kept) shown = true }
+    fun wentRound() { round = true; out = false }
+    fun firstFrameOut() { if (round) out = true }
+
+    /** A frame reached the screen. True when it is the loop's first and no picture of it is kept yet: keep it now. */
+    fun frameDrawn(): Boolean {
+        val first = if (round && out) { round = false; out = false; shown = false; true } else if (nextIsFirst) { nextIsFirst = false; true } else false
+        if (!first || kept) return false
+        kept = true
+        return true
+    }
+
+    fun giveUp() { shown = false; round = false; out = false }
+}
+
+/** The frame on [view] now as a picture of the whole video frame (uncropped), no taller than the view; null if it can't be had. */
+private fun firstFrameOf(view: TextureView, aspect: Float): android.graphics.Bitmap? {
+    if (aspect <= 0f || view.height <= 0) return null
+    val h = view.height.coerceAtMost(1080)
+    val w = (h * aspect).toInt().coerceIn(2, 1920)
+    return runCatching { view.getBitmap(w, h) }.getOrNull()
 }
 
 /** A paused song's canvas keeps moving this long, then holds its frame (plan-canvas §11a R7). */
