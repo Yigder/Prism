@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.prism.music.R
 import com.prism.music.data.prefs.AppSettings
 import com.prism.music.data.prefs.BleedFit
+import com.prism.music.data.prefs.CanvasKinds
 import com.prism.music.data.prefs.CoverShape
 import com.prism.music.data.prefs.CoverSize
 import com.prism.music.data.prefs.DeckPart
@@ -141,48 +142,24 @@ enum class EdgeToEdge(val cover: Boolean, val video: Boolean) {
 }
 
 /**
- * Canvas (1.8.6; "Animated covers" before): Off / On the cover / Full screen. Stored: (enabled, fills), as before, so
- * nobody's choice moves: [FILL_THE_PLAYER] is what was called "Fill the player". "Fills" without "enabled" does nothing:
- * Off, kept.
+ * "Where it shows" (1.8.6), for animated covers and Canvas's loops alike: On the cover / Full screen. Stored:
+ * `canvasFillsBackground`, as before ("Fill the player" is Full screen). Whether anything shows at all is the two
+ * switches' ([com.prism.music.data.prefs.CanvasKinds]).
  */
-enum class AnimatedCovers {
-    OFF, ON_THE_COVER, FILL_THE_PLAYER;
+internal fun canvasPlaceWords(fills: Boolean): String = if (fills) tr(R.string.full_screen) else tr(R.string.settings_player_on_the_cover)
 
-    val label: String
-        get() = when (this) {
-            OFF -> tr(R.string.off)
-            ON_THE_COVER -> tr(R.string.settings_player_on_the_cover)
-            FILL_THE_PLAYER -> tr(R.string.full_screen)
-        }
-
-    fun toStored(was: Pair<Boolean, Boolean>): Pair<Boolean, Boolean> = keep(this, was, ::toMerged) {
-        when (it) { OFF -> false to false; ON_THE_COVER -> true to false; FILL_THE_PLAYER -> true to true }
-    }
-
-    companion object {
-        fun toMerged(stored: Pair<Boolean, Boolean>): AnimatedCovers = when {
-            !stored.first -> OFF
-            stored.second -> FILL_THE_PLAYER
-            else -> ON_THE_COVER
-        }
-
-        /**
-         * Plan-canvas §11a R6: picking Full screen (from another choice) while "Use music videos" is off asks right there
-         * whether music videos may be used. Full screen is stored either way; nothing switches on by itself.
-         */
-        fun asksForVideos(was: AnimatedCovers, picked: AnimatedCovers, useVideos: Boolean): Boolean =
-            picked == FILL_THE_PLAYER && was != FILL_THE_PLAYER && !useVideos
-    }
-}
+/**
+ * Plan-canvas §11a R6: picking Full screen (from On the cover) while Canvas's loops are off asks right there whether
+ * music videos may be used. Full screen is stored either way; nothing switches on by itself.
+ */
+internal fun canvasAsksForVideos(wasFills: Boolean, pickedFills: Boolean, videosShown: Boolean): Boolean = pickedFills && !wasFills && !videosShown
 
 /** "When a song has both": the animated cover first (as before), or the music video's loop. */
 internal fun canvasBothWords(videoFirst: Boolean): String = if (videoFirst) tr(R.string.music_video_3) else tr(R.string.animated_cover)
 
-/** The Canvas row's line: the choice, and "Music videos" while they're used. */
-internal fun canvasWords(s: AppSettings): String {
-    val pick = AnimatedCovers.toMerged(s.canvasEnabled to s.canvasFillsBackground)
-    return if (pick != AnimatedCovers.OFF && s.behavior.canvas.useVideos) pick.label + " · " + tr(R.string.music_videos_label) else pick.label
-}
+/** The Canvas row's line: Off while its switch is off, else where it shows. */
+internal fun canvasWords(s: AppSettings): String =
+    if (CanvasKinds.shown(s).videos) canvasPlaceWords(s.canvasFillsBackground) else tr(R.string.off)
 
 /**
  * Hide controls over videos + Video buttons wait for a tap. Stored: (controlsHide, buttonsHide). The plan names three
@@ -366,21 +343,15 @@ internal val playerSettings: List<PlayerSetting<*>> by lazy {
         ps(listOf("bleed_fit"), g.cover, R.string.how_the_cover_fits, { it.view.bleedFit }, { it.label }) { p, v -> p.setBleedFit(v) },
         flag(listOf("bleed_roomy"), g.cover, R.string.more_room_for_the_picture, { it.view.bleedRoomy }) { p, v -> p.setBleedRoomy(v) },
         flag(listOf("art_shrink_on_pause"), g.cover, R.string.shrink_when_paused, { it.artShrinkOnPause }) { p, v -> p.setArtShrinkOnPause(v) },
-        ps(
-            listOf("cover_flight", "cover_flight_back"), g.cover, R.string.settings_player_cover_animation,
-            { it.view.coverFlight to it.view.coverFlightBack }, { CoverAnimation.toMerged(it).label },
-        ) { p, v -> p.setCoverFlight(v.first); p.setCoverFlightBack(v.second) },
-        ps(
-            listOf("canvas_enabled", "canvas_fills_background"), g.cover, R.string.canvas,
-            { it.canvasEnabled to it.canvasFillsBackground }, { AnimatedCovers.toMerged(it).label },
-        ) { p, v -> p.setCanvasEnabled(v.first); p.setCanvasFillsBackground(v.second) },
-        // 1.8.6: the rest of Canvas, in the Canvas row's sheet.
-        flag(listOf("canvas_covers"), g.cover, R.string.animated_covers, { it.behavior.canvas.covers }, canvasSheet) { p, v -> p.setCanvasCovers(v) },
-        flag(listOf("canvas_use_videos"), g.cover, R.string.canvas_use_videos, { it.behavior.canvas.useVideos }, canvasSheet) { p, v -> p.setCanvasUseVideos(v) },
+        // Owner, 2026-11-13 ("keep these options separate"): Animated covers on the page, Canvas (the loops from music
+        // videos) a switch in its own row's sheet; "Canvas on" (canvas_enabled) is stored as either of them on.
+        flag(listOf("canvas_enabled", "canvas_covers"), g.cover, R.string.animated_covers, { CanvasKinds.shown(it).covers }) { p, v -> p.setCanvasKinds(covers = v) },
+        flag(listOf("canvas_use_videos"), g.cover, R.string.canvas, { CanvasKinds.shown(it).videos }, canvasSheet) { p, v -> p.setCanvasKinds(videos = v) },
         flag(listOf("canvas_videos_cellular"), g.cover, R.string.use_mobile_data, { it.behavior.canvas.videosOnCellular }, canvasSheet) { p, v -> p.setCanvasVideosOnCellular(v) },
         ps(listOf("canvas_video_first"), g.cover, R.string.canvas_both, { it.behavior.canvas.videoFirst }, ::canvasBothWords, canvasSheet) { p, v -> p.setCanvasVideoFirst(v) },
-        flag(listOf("canvas_keep_controls"), g.cover, R.string.canvas_keep_controls, { it.behavior.canvas.keepControls }, canvasSheet) { p, v -> p.setCanvasKeepControls(v) },
         flag(listOf("canvas_lighter"), g.cover, R.string.canvas_lighter, { it.behavior.canvas.lighter }, canvasSheet) { p, v -> p.setCanvasLighter(v) },
+        ps(listOf("canvas_fills_background"), g.cover, R.string.canvas_where, { it.canvasFillsBackground }, ::canvasPlaceWords, canvasSheet) { p, v -> p.setCanvasFillsBackground(v) },
+        flag(listOf("canvas_keep_controls"), g.cover, R.string.canvas_keep_controls, { it.behavior.canvas.keepControls }, canvasSheet) { p, v -> p.setCanvasKeepControls(v) },
         // On it
         ps(
             listOf("player_hidden_parts", "player_handle", "show_playing_from", "lyrics_on_player", "show_quality", "best_part_button", "player_shuffle_repeat", "hide_volume_bar", "show_output_device", "player_nav_band", "crossfade_mark", "blend_covers"),
@@ -415,6 +386,11 @@ internal val playerSettings: List<PlayerSetting<*>> by lazy {
         // Modes
         ps(listOf("visualizer"), g.modes, R.string.visualizer, { it.visualizer }, { it.label }) { p, v -> p.setVisualizer(v) },
         ps(listOf("visualizer_color"), g.modes, R.string.visualizer_color, { it.visualizerColor }, { it.label }) { p, v -> p.setVisualizerColor(v) },
+        // 1.8.6: from Cover, which keeps to seven rows with Animated covers and Canvas apart.
+        ps(
+            listOf("cover_flight", "cover_flight_back"), g.modes, R.string.settings_player_cover_animation,
+            { it.view.coverFlight to it.view.coverFlightBack }, { CoverAnimation.toMerged(it).label },
+        ) { p, v -> p.setCoverFlight(v.first); p.setCoverFlightBack(v.second) },
         flag(listOf("immersive_player"), g.modes, R.string.immersive_mode, { it.immersivePlayer }) { p, v -> p.setImmersivePlayer(v) },
         ps(listOf("immersive_art"), g.modes, R.string.artwork, { it.immersiveArt }, { it.label }, immersive) { p, v -> p.setImmersiveArt(v) },
         ps(listOf("immersive_lyrics"), g.modes, R.string.lyrics, { it.immersiveLyrics }, { it.label }, immersive) { p, v -> p.setImmersiveLyrics(v) },

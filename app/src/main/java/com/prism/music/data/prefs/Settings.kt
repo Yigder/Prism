@@ -431,6 +431,44 @@ data class CanvasPrefs(
     val videosOnCellular: Boolean = false,
 )
 
+/**
+ * What a new install comes with on (owner, 2026-11-13), by stored name: written once at the first run
+ * (`SettingsRepository.setOnboarded`), each only where nothing was ever stored, so people updating keep what they have
+ * and the data classes' defaults stay as they are.
+ */
+object NewInstall {
+    /** Canvas full screen, fade on pause and play, "You and this artist", Replay's "Finish the lyric", the album pages' full-width picture. */
+    val on: List<String> = listOf("canvas_fills_background", "pause_fade", "artist_you", "finish_lyric", "album_hero_cover")
+
+    /**
+     * Motion kept apart: the mini player's cover flying into the player and back, and the player's background fading into
+     * the next cover. These may be dropped after a smoothness check on a budget phone.
+     */
+    val motion: List<String> = listOf("cover_flight", "cover_flight_back", "backdrop_fade")
+}
+
+/** The three stored flags behind Settings' two Canvas switches ([CanvasKinds]), as they are stored. */
+data class CanvasStored(val enabled: Boolean, val covers: Boolean, val videos: Boolean)
+
+/**
+ * Settings → Player's two switches (owner, 2026-11-13: "keep these options separate"): "Animated covers" and "Canvas"
+ * (the loops from music videos), over the three flags stored as always: [AppSettings.canvasEnabled] (what the rest of
+ * Prism reads), [CanvasPrefs.covers] and [CanvasPrefs.useVideos]. The rule: enabled == (covers || videos), so nobody's
+ * stored choice changes meaning. Written in one go by `SettingsRepository.setCanvasKinds`.
+ */
+data class CanvasKinds(val covers: Boolean, val videos: Boolean) {
+    val any: Boolean get() = covers || videos
+
+    /** What is stored for this pair, from what is stored now ([was]). Both off: Canvas off, the two flags kept as they are. */
+    fun toStored(was: CanvasStored): CanvasStored = if (any) CanvasStored(true, covers, videos) else was.copy(enabled = false)
+
+    companion object {
+        /** What the two switches show for what is stored: each is on only while Canvas as a whole is on. */
+        fun shown(stored: CanvasStored): CanvasKinds = CanvasKinds(stored.enabled && stored.covers, stored.enabled && stored.videos)
+        fun shown(s: AppSettings): CanvasKinds = shown(CanvasStored(s.canvasEnabled, s.behavior.canvas.covers, s.behavior.canvas.useVideos))
+    }
+}
+
 /** D57 (1.8.4): the Shuffle button goes off → shuffle → Smart Shuffle → off (as before), or only on and off. */
 enum class ShuffleButton(val label: String) {
     SHUFFLE_AND_SMART(tr(R.string.shuffle_button_both)), SHUFFLE_ONLY(tr(R.string.shuffle_button_only)),
@@ -3044,8 +3082,14 @@ class SettingsRepository(
     /**
      * A new install comes with Canvas using music videos (owner, 2026-11-13: without them Canvas shows nothing for most
      * songs). Someone updating from before 1.8.6 never passes here: they are asked once in the player ([canvasVideosAnswered]).
+     * The same goes for the rest of a new install's own defaults ([NewInstall]).
      */
-    fun setOnboarded(v: Boolean) = edit { it[K.onboarded] = v; if (v && it[K.canvasUseVideos] == null) it[K.canvasUseVideos] = true }
+    fun setOnboarded(v: Boolean) = edit {
+        it[K.onboarded] = v
+        if (v && it[K.canvasUseVideos] == null) it[K.canvasUseVideos] = true
+        // The rest of a new install's own defaults (owner, 2026-11-13), each only where nothing was ever stored.
+        if (v) for (name in NewInstall.on + NewInstall.motion) booleanPreferencesKey(name).let { k -> if (it[k] == null) it[k] = true }
+    }
     /** Whether "Use music videos" was ever decided on this phone (by the first run, the question, or the switch). */
     val canvasVideosAnswered: Boolean get() = raw[K.canvasUseVideos] != null
 
@@ -3510,6 +3554,24 @@ class SettingsRepository(
     // 1.8.6 Canvas ([CanvasPrefs]).
     fun setCanvasCovers(v: Boolean) = edit { it[K.canvasCovers] = v }
     fun setCanvasUseVideos(v: Boolean) = edit { it[K.canvasUseVideos] = v }
+
+    /**
+     * Settings' "Animated covers" and "Canvas" switches ([CanvasKinds]), in one write: Canvas on while either is on, and
+     * then both flags as asked; both off turns Canvas off and leaves the two flags as stored. [covers] or [videos] null:
+     * that one as it shows now, read in the same write (so two calls in a row, as "Reset this page" makes, never race).
+     */
+    fun setCanvasKinds(covers: Boolean? = null, videos: Boolean? = null) = edit { p ->
+        val d = AppSettings()
+        val was = CanvasStored(p[K.canvasEnabled] ?: d.canvasEnabled, p[K.canvasCovers] ?: d.behavior.canvas.covers, p[K.canvasUseVideos] ?: d.behavior.canvas.useVideos)
+        val now = CanvasKinds.shown(was)
+        val want = CanvasKinds(covers ?: now.covers, videos ?: now.videos)
+        val to = want.toStored(was)
+        p[K.canvasEnabled] = to.enabled
+        if (want.any) {
+            p[K.canvasCovers] = to.covers
+            p[K.canvasUseVideos] = to.videos
+        }
+    }
     fun setCanvasVideoFirst(v: Boolean) = edit { it[K.canvasVideoFirst] = v }
     fun setCanvasKeepControls(v: Boolean) = edit { it[K.canvasKeepControls] = v }
     fun setCanvasLighter(v: Boolean) = edit { it[K.canvasLighter] = v }

@@ -1,7 +1,8 @@
 package com.prism.music
 
+import com.prism.music.data.prefs.CanvasKinds
+import com.prism.music.data.prefs.CanvasStored
 import com.prism.music.data.prefs.LyricsAlign
-import com.prism.music.ui.screens.settings.AnimatedCovers
 import com.prism.music.ui.screens.settings.CoverAnimation
 import com.prism.music.ui.screens.settings.EdgeToEdge
 import com.prism.music.ui.screens.settings.LineOnPlayer
@@ -44,13 +45,36 @@ class PlayerMergeTest {
         assertEquals(EdgeToEdge.BOTH, EdgeToEdge.toMerged(true to true))
     }
 
-    @Test fun animatedCoversKeepsAllFourStoredCombinations() {
-        for (stored in pairs) assertEquals("$stored", stored, AnimatedCovers.toMerged(stored).toStored(stored))
-        assertEquals(AnimatedCovers.OFF, AnimatedCovers.toMerged(false to false))
-        assertEquals(AnimatedCovers.OFF, AnimatedCovers.toMerged(false to true))
-        assertEquals(AnimatedCovers.ON_THE_COVER, AnimatedCovers.toMerged(true to false))
-        assertEquals(AnimatedCovers.FILL_THE_PLAYER, AnimatedCovers.toMerged(true to true))
-        for (was in pairs) for (pick in AnimatedCovers.entries) assertEquals("$was → $pick", pick, AnimatedCovers.toMerged(pick.toStored(was)))
+    /** Owner, 2026-11-13: Animated covers and Canvas, two switches over the three stored flags (enabled, covers, videos). */
+    @Test fun animatedCoversAndCanvasOverAllEightStoredCombinations() {
+        val triples = flags(3).map { CanvasStored(it[0], it[1], it[2]) }
+        assertEquals(8, triples.size)
+        val kinds = pairs.map { CanvasKinds(it.first, it.second) }
+        for (was in triples) {
+            // Shown: each on only while Canvas as a whole is on.
+            val shown = CanvasKinds.shown(was)
+            assertEquals("$was", CanvasKinds(was.enabled && was.covers, was.enabled && was.videos), shown)
+            // Storing what is shown changes nothing that shows; with something on, nothing stored at all.
+            assertEquals("$was", shown, CanvasKinds.shown(shown.toStored(was)))
+            if (shown.any) assertEquals("$was", was, shown.toStored(was))
+            for (want in kinds) {
+                val to = want.toStored(was)
+                // Any pair can be had from any stored combination, and is then what shows; the rule holds.
+                assertEquals("$was → $want", want, CanvasKinds.shown(to))
+                assertEquals("$was → $want", want.covers || want.videos, to.enabled)
+                // Both off: Canvas off, the two flags as they were.
+                if (!want.any) assertEquals("$was → $want", was.copy(enabled = false), to)
+                else assertEquals("$was → $want", CanvasStored(true, want.covers, want.videos), to)
+            }
+        }
+        // Stored off with both flags on (Canvas switched off before 1.8.6): both show off.
+        val offBoth = CanvasStored(false, true, true)
+        assertEquals(CanvasKinds(false, false), CanvasKinds.shown(offBoth))
+        // Animated covers on from there: the loops stay off.
+        assertEquals(CanvasStored(true, true, false), CanvasKinds(true, false).toStored(offBoth))
+        // The last one off turns Canvas off.
+        assertEquals(CanvasStored(false, true, false), CanvasKinds(false, false).toStored(CanvasStored(true, true, false)))
+        assertEquals(CanvasStored(false, false, true), CanvasKinds(false, false).toStored(CanvasStored(true, false, true)))
     }
 
     @Test fun controlsOverVideosKeepsTheFourthCombination() {

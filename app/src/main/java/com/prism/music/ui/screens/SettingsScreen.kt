@@ -517,7 +517,8 @@ private fun CustomizeSheetContent(target: com.prism.music.ui.components.Customiz
                 com.prism.music.ui.components.CustomizeTarget.PLAYER -> {
                     SettingsGroup(PlayerGroups.layout) { PlayerLayoutRows() }
                     SettingsGroup(PlayerGroups.progress) { PlayerProgressRows() }
-                    SettingsGroup(PlayerGroups.cover) { PlayerCoverRows() }
+                    // Cover animation is in Modes on the page (1.8.6); here, where Modes isn't, it stays with the cover.
+                    SettingsGroup(PlayerGroups.cover) { PlayerCoverRows(); com.prism.music.ui.screens.settings.PlayerCoverAnimationRow() }
                     SettingsGroup(PlayerGroups.onIt) { PlayerOnItRows() }
                     SettingsGroup(tr(R.string.visualizer)) { PlayerVisualizerRows() }
                     // "Lyrics" and not "Style": here the group's name has to say whose.
