@@ -525,13 +525,36 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
     val metered = remember { context.getSystemService(ConnectivityManager::class.java)?.isActiveNetworkMetered == true }
     val savedCanvases by c.canvas.saved.collectAsState()
     val canvasSaved = savedCanvases.has(song.id, com.prism.music.data.canvas.CanvasRepository.albumKey(song))
-    val songCanvas by produceState<CanvasArtwork?>(c.canvas.cached(song), song.id, song.album?.title, settings.canvasEnabled) {
+    val canvasPrefs = settings.behavior.canvas
+    val songCanvas by produceState<CanvasArtwork?>(
+        c.canvas.cached(song), song.id, song.album?.title, settings.canvasEnabled,
+        canvasPrefs.useVideos, canvasPrefs.videoFirst, canvasPrefs.lighter, settings.canvasFillsBackground,
+    ) {
+        if (!settings.canvasEnabled) { value = null; return@produceState }
         // Saved clips play from the phone, so mobile data doesn't matter for them.
-        if (!settings.canvasEnabled || (metered && (!settings.canvasOnCellular || settings.dataSaver) && !c.canvas.isSaved(song))) { value = null; return@produceState }
-        val known = c.canvas.cached(song)
-        value = known
-        if (known == null) delay(500)
-        value = c.canvas.canvasFor(song)
+        val coverAllowed = !(metered && (!settings.canvasOnCellular || settings.dataSaver)) || c.canvas.isSaved(song)
+        var cover: CanvasArtwork? = null
+        if (coverAllowed) {
+            val known = c.canvas.cached(song)
+            value = known
+            if (known == null) delay(500)
+            cover = c.canvas.canvasFor(song)
+        }
+        value = cover
+        // 1.8.6: a loop from the song's music video, where the song has no animated cover or the listener put the
+        // video first (the setting, or "Use:" for this song). It is only asked for when it is the one that would show.
+        if (canvasPrefs.useVideos) {
+            val choice = c.canvasClips.choice(song.id)
+            if (com.prism.music.data.canvas.pickSource(cover != null, true, true, canvasPrefs.videoFirst, choice) == com.prism.music.data.canvas.CanvasSource.VIDEO) {
+                // Sharp where it fills the screen, lighter on the cover (plan §11a R1).
+                val height = if (canvasPrefs.lighter) 480 else if (settings.canvasFillsBackground) 1080 else 720
+                val loop = c.canvasClips.artworkFor(song, height, saved = c.canvas.isSaved(song), allowed = {
+                    val onData = context.getSystemService(ConnectivityManager::class.java)?.isActiveNetworkMetered == true
+                    !onData || (canvasPrefs.videosOnCellular && !settings.dataSaver)
+                })
+                if (loop != null) value = loop
+            }
+        }
     }
     // Animated artwork can be switched off per song from the song options.
     val canvasHidden by c.canvas.hidden.collectAsState()

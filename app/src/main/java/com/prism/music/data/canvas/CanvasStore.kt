@@ -89,6 +89,29 @@ class CanvasStore(
         }
     }
 
+    /**
+     * 1.8.6: [dataSourceFactory], and files too: a loop cut from a music video is a file on the phone
+     * ([ClipFiles]), which the network chain above can't open.
+     */
+    fun playerSourceFactory(clip: () -> String, keep: () -> Boolean): DataSource.Factory {
+        val net = dataSourceFactory(clip, keep)
+        return DataSource.Factory { FileOrNetwork(androidx.media3.datasource.FileDataSource(), net.createDataSource()) }
+    }
+
+    private class FileOrNetwork(private val file: DataSource, private val net: DataSource) : DataSource {
+        private var open: DataSource? = null
+        override fun addTransferListener(l: androidx.media3.datasource.TransferListener) { file.addTransferListener(l); net.addTransferListener(l) }
+        override fun open(spec: androidx.media3.datasource.DataSpec): Long {
+            val source = if (spec.uri.scheme == "file") file else net
+            open = source
+            return source.open(spec)
+        }
+        override fun read(buffer: ByteArray, offset: Int, length: Int): Int = open!!.read(buffer, offset, length)
+        override fun getUri(): android.net.Uri? = open?.uri
+        override fun getResponseHeaders(): Map<String, List<String>> = open?.responseHeaders ?: emptyMap()
+        override fun close() { try { open?.close() } finally { open = null } }
+    }
+
     /** Saves the cover from the player: this song's, and every other song's on the album. */
     fun save(song: Song) {
         repo.setSaved(song, true)

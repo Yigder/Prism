@@ -1088,6 +1088,17 @@ class AppContainer(val app: Application) {
 
     /** Animated-cover clips on the phone: recently played, and saved (from the player, by album, or with downloads). */
     val canvasStore by lazy { com.prism.music.data.canvas.CanvasStore(app, http, canvas, ytm, databaseProvider, scope) }
+    /** 1.8.6: Canvas loops cut from music videos, kept as small files (recent ones in the cache, downloads' for good). */
+    val clipFiles by lazy {
+        com.prism.music.data.canvas.ClipFiles(File(app.cacheDir, "canvas_clips"), File(app.filesDir, "canvas_clips")) { 400L * 1024 * 1024 }
+    }
+    val canvasClips by lazy {
+        com.prism.music.data.canvas.ClipRepository(
+            db.canvasClips(),
+            com.prism.music.data.canvas.ClipFinder.create(ytm, innerTube, http),
+            com.prism.music.data.canvas.ClipFetcher(streamHttp, { id -> kotlinx.coroutines.withContext(Dispatchers.IO) { innerTube.visionOsPlayer(id) } }, clipFiles),
+        )
+    }
     fun songCacheBytes(): Long = runCatching { playerCache.cacheSpace }.getOrDefault(0)
 
     fun clearSongCache() {

@@ -89,7 +89,7 @@ fun CanvasPlayer(
         val listener = object : Player.Listener {
             override fun onVideoSizeChanged(videoSize: VideoSize) {
                 clip.videoSize(videoSize.width * videoSize.pixelWidthHeightRatio, videoSize.height)
-                texture?.cropTo(clip.aspect)
+                texture?.cropTo(clip.aspect, clip.canvas.clip)
             }
 
             override fun onPlayerError(error: PlaybackException) = clip.failed()
@@ -103,13 +103,22 @@ fun CanvasPlayer(
         if (CanvasPlayers.playing(player, url)) {
             val v = player.videoSize
             clip.videoSize(v.width * v.pixelWidthHeightRatio, v.height)
-            texture?.cropTo(clip.aspect)
+            texture?.cropTo(clip.aspect, clip.canvas.clip)
             return@LaunchedEffect
         }
         // A new clip: nothing shows until its own size and first frame are known (not the last clip's).
         clip.aspect = 0f
         val item = MediaItem.Builder().setUri(url)
         if (url.substringBefore('?').endsWith(".m3u8")) item.setMimeType(MimeTypes.APPLICATION_M3U8)
+        // 1.8.6: a loop from a music video is some seconds of a longer file, from a key frame on.
+        clip.canvas.clip?.let { loop ->
+            item.setClippingConfiguration(
+                MediaItem.ClippingConfiguration.Builder()
+                    .setStartPositionMs((loop.startMs - loop.fileStartMs).coerceAtLeast(0))
+                    .setEndPositionMs((loop.endMs - loop.fileStartMs).coerceAtLeast(1))
+                    .build()
+            )
+        }
         player.setMediaItem(item.build())
         player.prepare()
     }
@@ -143,7 +152,7 @@ fun CanvasPlayer(
                     override fun onSurfaceTextureAvailable(s: SurfaceTexture, w: Int, h: Int) { delegate?.onSurfaceTextureAvailable(s, w, h) }
                     override fun onSurfaceTextureSizeChanged(s: SurfaceTexture, w: Int, h: Int) {
                         delegate?.onSurfaceTextureSizeChanged(s, w, h)
-                        cropTo(clip.aspect)
+                        cropTo(clip.aspect, clip.canvas.clip)
                     }
                     override fun onSurfaceTextureDestroyed(s: SurfaceTexture): Boolean {
                         clip.rendered = false
@@ -151,7 +160,7 @@ fun CanvasPlayer(
                     }
                     override fun onSurfaceTextureUpdated(s: SurfaceTexture) {
                         delegate?.onSurfaceTextureUpdated(s)
-                        if (clip.frame()) cropTo(clip.aspect)
+                        if (clip.frame()) cropTo(clip.aspect, clip.canvas.clip)
                     }
                 }
             }
@@ -167,7 +176,7 @@ fun CanvasPlayer(
             // in the window, and dragging the ⋯ sheet over an animated cover kept sticking.
             frame.visibility = if (hold) android.view.View.INVISIBLE else android.view.View.VISIBLE
             tv.alpha = alpha * presentationAlpha()
-            tv.cropTo(clip.aspect)
+            tv.cropTo(clip.aspect, clip.canvas.clip)
             if (Build.VERSION.SDK_INT >= 31) tv.bottomFade(bottomFade) else frame.fade = bottomFade
         },
         modifier = modifier,
@@ -232,7 +241,7 @@ internal object CanvasPlayers {
         (parked.firstOrNull { it.source.clip == url } ?: parked.lastOrNull())?.let { parked.remove(it); return it }
         val source = Source()
         // Clips come from the phone when they've played before (or were saved), else stream and are kept.
-        val sources = DefaultMediaSourceFactory(c.canvasStore.dataSourceFactory({ source.clip }) { source.keep })
+        val sources = DefaultMediaSourceFactory(c.canvasStore.playerSourceFactory({ source.clip }) { source.keep })
         val side = com.prism.music.data.canvas.canvasMaxSide(context)
         val player = ExoPlayer.Builder(context.applicationContext).setMediaSourceFactory(sources)
             // A clip of a few seconds, looping, mostly read from the phone: a few seconds ahead is plenty. With the
@@ -278,14 +287,37 @@ internal object CanvasPlayers {
         current == url && !failed && state != Player.STATE_IDLE
 }
 
-/** Centre-crop the video into the view (a TextureView stretches by default). */
-internal fun TextureView.cropTo(clipAspect: Float) {
+/**
+ * Crop the video into the view (a TextureView stretches by default): centred for an animated cover; for a loop from a
+ * music video ([loop]) its black bars are cut off first and the crop sits where the loop says ([VideoClip.cropX]).
+ */
+internal fun TextureView.cropTo(clipAspect: Float, loop: com.prism.music.data.canvas.VideoClip? = null) {
     if (width <= 0 || height <= 0 || clipAspect <= 0f) { setTransform(Matrix()); return }
-    val viewAspect = width.toFloat() / height
+    val t = cropTransform(width.toFloat(), height.toFloat(), clipAspect, loop?.bars ?: com.prism.music.data.canvas.Bars.NONE, loop?.cropX ?: 0.5f)
     val m = Matrix()
-    if (clipAspect > viewAspect) m.setScale(clipAspect / viewAspect, 1f, width / 2f, height / 2f)
-    else m.setScale(1f, viewAspect / clipAspect, width / 2f, height / 2f)
+    m.setScale(t[0], t[1])
+    m.postTranslate(t[2], t[3])
     setTransform(m)
+}
+
+/**
+ * Scale (x, y) and shift (x, y) that take a frame stretched over the whole view (what a TextureView draws) to one that
+ * keeps its shape and covers the view with the picture inside [bars]. Across, the part that doesn't fit is shared out
+ * by [cropX] (0 keeps the picture's left edge, 0.5 its middle, 1 its right edge); up and down it is centred.
+ */
+internal fun cropTransform(viewW: Float, viewH: Float, aspect: Float, bars: com.prism.music.data.canvas.Bars, cropX: Float): FloatArray {
+    val across = (1f - bars.left - bars.right).takeIf { it > 0.1f } ?: 1f
+    val down = (1f - bars.top - bars.bottom).takeIf { it > 0.1f } ?: 1f
+    val left = if (across == 1f) 0f else bars.left
+    val top = if (down == 1f) 0f else bars.top
+    val pictureAspect = aspect * across / down
+    // The whole frame's size on screen, so that the picture inside the bars just covers the view.
+    val frameH: Float
+    val frameW: Float
+    if (pictureAspect > viewW / viewH) { frameH = viewH / down; frameW = frameH * aspect } else { frameW = viewW / across; frameH = frameW / aspect }
+    val spareX = (across * frameW - viewW).coerceAtLeast(0f)
+    val spareY = (down * frameH - viewH).coerceAtLeast(0f)
+    return floatArrayOf(frameW / viewW, frameH / viewH, -(left * frameW + spareX * cropX.coerceIn(0f, 1f)), -(top * frameH + spareY / 2f))
 }
 
 /** Dissolve the bottom edge on the view's own node (a Compose mask can't reach video frames). */

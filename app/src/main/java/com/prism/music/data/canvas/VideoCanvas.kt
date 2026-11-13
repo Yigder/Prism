@@ -29,6 +29,8 @@ data class VideoClip(
     val bars: Bars = Bars.NONE,
     /** False while this is the storyboard's guess (restart by dissolve); true once cut to the real frames. */
     val refined: Boolean = false,
+    /** The video's time at the kept file's own 0 (the file holds whole fragments around the loop); 0 until fetched. */
+    val fileStartMs: Long = 0,
 ) {
     val lengthMs: Long get() = endMs - startMs
 
