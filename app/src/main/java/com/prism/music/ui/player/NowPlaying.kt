@@ -542,17 +542,21 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
     val savedCanvases by c.canvas.saved.collectAsState()
     val canvasSaved = savedCanvases.has(song.id, com.prism.music.data.canvas.CanvasRepository.albumKey(song))
     val canvasPrefs = settings.behavior.canvas
+    // The song's two switches in the ⋯ menu: its animated cover off, its loop from the video off. One leaves the other.
+    val coverHidden = song.id in c.canvas.hidden.collectAsState().value
+    val loopHidden = song.id in c.canvas.hiddenLoops.collectAsState().value
+    val coverWanted = com.prism.music.data.canvas.canvasCoverWanted(settings, coverHidden)
     val songCanvas by produceState<CanvasArtwork?>(
-        c.canvas.cached(song), song.id, song.album?.title, settings.canvasEnabled,
-        canvasPrefs.useVideos, canvasPrefs.videoFirst, canvasPrefs.lighter, settings.canvasFillsBackground,
+        if (coverWanted) c.canvas.cached(song) else null, song.id, song.album?.title, settings.canvasEnabled,
+        canvasPrefs.covers, canvasPrefs.useVideos, canvasPrefs.videoFirst, canvasPrefs.lighter, settings.canvasFillsBackground,
         // The song's own choices from the ⋯ menu (another part, "Use:", "Not this video"): looked at again.
         c.canvasClips.changes.collectAsState().value,
-        song.id in c.canvas.hidden.collectAsState().value,
+        coverHidden, loopHidden,
     ) {
         if (!settings.canvasEnabled) { value = null; return@produceState }
         // 1.8.6: the song's music video is looked up meanwhile (no video is fetched by this), so a song without an
         // animated cover doesn't wait for that answer first: three seconds less before a new song's loop shows.
-        if (canvasPrefs.useVideos && song.id !in c.canvas.hidden.value && com.prism.music.data.canvas.ClipGate.isSong(song)) launch {
+        if (canvasPrefs.useVideos && !loopHidden && com.prism.music.data.canvas.ClipGate.isSong(song)) launch {
             runCatching {
                 c.canvasClips.findAhead(song, com.prism.music.data.canvas.canvasHeight(settings), allowed = {
                     com.prism.music.data.canvas.canvasNetworkAllowed(settings, context.getSystemService(ConnectivityManager::class.java)?.isActiveNetworkMetered == true)
@@ -562,7 +566,8 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
         // Saved clips play from the phone, so mobile data doesn't matter for them.
         val coverAllowed = !(metered && (!settings.canvasOnCellular || settings.dataSaver)) || c.canvas.isSaved(song)
         var cover: CanvasArtwork? = null
-        if (coverAllowed) {
+        // The animated cover only when it may play ([canvasCoverWanted]: "Animated covers" on, not off for this song).
+        if (coverWanted && coverAllowed) {
             val known = c.canvas.cached(song)
             value = known
             if (known == null) delay(500)
@@ -576,7 +581,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
             val choice = c.canvasClips.choice(song.id)
             val want = com.prism.music.data.canvas.canvasWant(
                 settings, metered, hasCover = cover != null, songChoice = choice,
-                hidden = song.id in c.canvas.hidden.value, isSong = com.prism.music.data.canvas.ClipGate.isSong(song),
+                hidden = loopHidden, isSong = com.prism.music.data.canvas.ClipGate.isSong(song),
             )
             if (want.video) {
                 val loop = c.canvasClips.artworkFor(song, want.height, saved = c.canvas.isSaved(song), allowed = {
@@ -587,9 +592,8 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
             }
         }
     }
-    // Animated artwork can be switched off per song from the song options.
-    val canvasHidden by c.canvas.hidden.collectAsState()
-    val canvas = songCanvas.takeIf { !videoMode && song.id !in canvasHidden }
+    // What a song switched off from the ⋯ menu may show is decided above (its cover, its loop, each on its own).
+    val canvas = songCanvas.takeIf { !videoMode }
     var canvasCover by remember(canvas) { mutableFloatStateOf(0f) }
 
     // ---------------------------------------------------------------- Artwork
@@ -749,9 +753,9 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
         if (showProviders) LyricsProviderSheet(lyricsState) { showProviders = false }
         if (showActions) PlayerOptionsSheet(
             song,
-            // A song whose Canvas was turned off here keeps the switch (owner, 2026-11-13: with only a video loop the
-            // row went with the loop, and there was no way to turn it back on).
-            hasCanvas = canvasMenuShown(songCanvas != null, song.id in canvasHidden),
+            // Something shows now; the menu itself adds the song's two switches, each kept after it was switched off
+            // (owner, 2026-11-13: with only a video loop the row went with the loop, and there was no way back).
+            hasCanvas = songCanvas != null,
             shownClip = canvas?.clip,
             statsShown = statsOpen,
             hasNext = hasNext,

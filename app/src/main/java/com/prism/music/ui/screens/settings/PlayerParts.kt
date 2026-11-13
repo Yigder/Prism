@@ -375,6 +375,7 @@ internal val playerSettings: List<PlayerSetting<*>> by lazy {
             { it.canvasEnabled to it.canvasFillsBackground }, { AnimatedCovers.toMerged(it).label },
         ) { p, v -> p.setCanvasEnabled(v.first); p.setCanvasFillsBackground(v.second) },
         // 1.8.6: the rest of Canvas, in the Canvas row's sheet.
+        flag(listOf("canvas_covers"), g.cover, R.string.animated_covers, { it.behavior.canvas.covers }, canvasSheet) { p, v -> p.setCanvasCovers(v) },
         flag(listOf("canvas_use_videos"), g.cover, R.string.canvas_use_videos, { it.behavior.canvas.useVideos }, canvasSheet) { p, v -> p.setCanvasUseVideos(v) },
         flag(listOf("canvas_videos_cellular"), g.cover, R.string.use_mobile_data, { it.behavior.canvas.videosOnCellular }, canvasSheet) { p, v -> p.setCanvasVideosOnCellular(v) },
         ps(listOf("canvas_video_first"), g.cover, R.string.canvas_both, { it.behavior.canvas.videoFirst }, ::canvasBothWords, canvasSheet) { p, v -> p.setCanvasVideoFirst(v) },

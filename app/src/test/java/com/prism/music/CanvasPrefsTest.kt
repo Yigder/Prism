@@ -40,8 +40,10 @@ class CanvasPrefsTest {
     private fun read(cond: (AppSettings) -> Boolean): AppSettings = runBlocking { withTimeout(5_000) { repo.stored.first(cond) } }
 
     @Test fun allOffAsPrismComes() {
-        assertEquals(CanvasPrefs(false, false, false, false, false), AppSettings().behavior.canvas)
+        // Animated covers play as they always did (owner, 2026-11-13: on by default, so nothing changes for anyone).
+        assertEquals(CanvasPrefs(covers = true, useVideos = false, videoFirst = false, keepControls = false, lighter = false, videosOnCellular = false), AppSettings().behavior.canvas)
         assertEquals(CanvasPrefs(), read { true }.behavior.canvas)
+        assertTrue(read { true }.behavior.canvas.covers)
         // Canvas itself comes as before: on the cover.
         assertEquals(AnimatedCovers.ON_THE_COVER, AnimatedCovers.toMerged(AppSettings().canvasEnabled to AppSettings().canvasFillsBackground))
     }
@@ -80,8 +82,23 @@ class CanvasPrefsTest {
         }
     }
 
+    /** Owner, 2026-11-13: "Animated covers" on its own, stored and read back, apart from the music videos. */
+    @Test fun animatedCoversAreStoredApartFromMusicVideos() {
+        repo.setCanvasUseVideos(true)
+        repo.setCanvasCovers(false)
+        val off = read { !it.behavior.canvas.covers && it.behavior.canvas.useVideos }.behavior.canvas
+        assertEquals(CanvasPrefs(covers = false, useVideos = true), off)
+        repo.setCanvasCovers(true)
+        assertEquals(CanvasPrefs(covers = true, useVideos = true), read { it.behavior.canvas.covers }.behavior.canvas)
+        // Performance mode pauses Canvas as a whole; the stored switch is kept.
+        repo.setCanvasCovers(false); repo.setPerformanceMode(true)
+        val paused = read { !it.behavior.canvas.covers && it.performanceMode }
+        assertFalse(paused.effective().canvasEnabled)
+        assertFalse(paused.effective().behavior.canvas.covers)
+    }
+
     @Test fun noneIsPartOfALook() {
-        for (k in keys) {
+        for (k in keys + "canvas_covers") {
             assertTrue("$k is stored", k in repo.allKeyNames)
             assertTrue("$k is listed as not part of a Look", k in repo.notLookNames)
             assertFalse("$k is not in a Look", k in repo.lookKinds)

@@ -24,7 +24,8 @@ class CanvasDiagnosticsTest {
     private fun now(
         stored: AppSettings = stored(), metered: Boolean = false, videoMode: Boolean = false, song: Song? = this.song,
         hidden: Boolean = false, cover: CanvasArtwork? = null, row: CanvasClipEntity? = null, kept: List<ClipFiles.Kept> = emptyList(),
-    ): String = canvasDiagnostics(stored, stored.effective(), metered, videoMode, song, hidden, cover, row, kept, now).lines()[1]
+        coverHidden: Boolean = false,
+    ): String = canvasDiagnostics(stored, stored.effective(), metered, videoMode, song, hidden, cover, row, kept, now, coverHidden).lines()[1]
 
     private val loopRow = clipRow("s1", VideoClip("vidA", 12_000, 18_500, 1080), null, null, now - 3 * 86_400_000L, videoType = "MUSIC_VIDEO_TYPE_OMV", itag = 137)
 
@@ -52,7 +53,26 @@ class CanvasDiagnosticsTest {
         val cover = CanvasArtwork("https://mvod.itunes.apple.com/itunes-assets/x.m3u8")
         assertEquals("Canvas now: animated cover from mvod.itunes.apple.com; no loop: not asked: the animated cover shows first", now(cover = cover))
         assertEquals("Canvas now: still cover (no animated cover known); no loop: not asked: music videos off", now(stored(prefs = CanvasPrefs())))
-        assertEquals("Canvas now: still cover (no animated cover known); no loop: not asked: Canvas hidden for this song", now(hidden = true))
+        assertEquals("Canvas now: still cover (no animated cover known); no loop: not asked: Canvas loop hidden for this song", now(hidden = true))
+    }
+
+    /** Owner, 2026-11-13: the animated cover and the loop are switched off apart, for a song and in settings. */
+    @Test fun theCoverAndTheLoopSwitchedOffApart() {
+        val cover = CanvasArtwork("https://mvod.itunes.apple.com/itunes-assets/x.m3u8")
+        // The song's cover off: it counts as none, so its loop is looked for.
+        assertEquals("Canvas now: still cover (animated cover hidden for this song); no loop: not looked up yet", now(cover = cover, coverHidden = true))
+        // Its loop off: the animated cover still plays.
+        assertEquals(
+            "Canvas now: animated cover from mvod.itunes.apple.com; no loop: not asked: Canvas loop hidden for this song",
+            now(cover = cover, hidden = true),
+        )
+        // "Animated covers" off in settings.
+        val noCovers = stored(prefs = CanvasPrefs(covers = false, useVideos = true))
+        assertEquals("Canvas now: still cover (animated covers off); no loop: not looked up yet", now(noCovers, cover = cover))
+        assertEquals(
+            "Canvas: on the cover, animated covers off, music videos on, videos on mobile data off, performance mode off",
+            canvasSettingLine(noCovers),
+        )
     }
 
     @Test fun aLoopFromAKeptFile() {

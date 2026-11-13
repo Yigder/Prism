@@ -186,8 +186,9 @@ object AudioDiagnostics {
         com.prism.music.data.canvas.canvasDiagnostics(
             stored = c.settings.stored.value, used = c.settings.current,
             metered = c.app.getSystemService(android.net.ConnectivityManager::class.java)?.isActiveNetworkMetered == true,
-            videoMode = c.player.videoMode.value, song = song, hidden = song != null && song.id in c.canvas.hidden.value,
+            videoMode = c.player.videoMode.value, song = song, hidden = song != null && song.id in c.canvas.hiddenLoops.value,
             cover = song?.let { c.canvas.cached(it) }, row = row, kept = kept,
+            coverHidden = song != null && song.id in c.canvas.hidden.value,
         )
     }.getOrElse { "Canvas: couldn't read ($it)" }
 

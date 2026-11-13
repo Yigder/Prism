@@ -114,14 +114,39 @@ class CanvasMenuTest {
         val playing = PlayerParts().menuLayout(all).groups.first { it.first == MenuGroup.PLAYING }.second
         val at = playing.indexOf(MenuAction.ANIMATED_COVER)
         assertEquals(
-            listOf(MenuAction.ANIMATED_COVER, MenuAction.CANVAS_PART, MenuAction.CANVAS_VIDEO, MenuAction.CANVAS_USE, MenuAction.CANVAS_NOT_THIS_VIDEO, MenuAction.SAVE_ANIMATED_COVER),
-            playing.subList(at, at + 6),
+            listOf(
+                MenuAction.ANIMATED_COVER, MenuAction.CANVAS, MenuAction.CANVAS_PART, MenuAction.CANVAS_VIDEO, MenuAction.CANVAS_USE,
+                MenuAction.CANVAS_NOT_THIS_VIDEO, MenuAction.SAVE_ANIMATED_COVER,
+            ),
+            playing.subList(at, at + 7),
         )
         // A layout saved before: the switch hidden under More, under its stored name; the new rows show.
         val old = PlayerParts(menuHidden = setOf(MenuAction.valueOf("ANIMATED_COVER")))
         val l = old.menuLayout(all)
         assertEquals(listOf(MenuAction.ANIMATED_COVER), l.more)
-        assertTrue(l.groups.first { it.first == MenuGroup.PLAYING }.second.containsAll(listOf(MenuAction.CANVAS_PART, MenuAction.CANVAS_USE, MenuAction.CANVAS_NOT_THIS_VIDEO)))
-        assertEquals(tr(R.string.canvas), menuLabel(MenuAction.ANIMATED_COVER))
+        assertTrue(l.groups.first { it.first == MenuGroup.PLAYING }.second.containsAll(listOf(MenuAction.CANVAS, MenuAction.CANVAS_PART, MenuAction.CANVAS_USE, MenuAction.CANVAS_NOT_THIS_VIDEO)))
+        // Owner, 2026-11-13: two switches, each named for what it switches.
+        assertEquals(tr(R.string.animated_cover), menuLabel(MenuAction.ANIMATED_COVER))
+        assertEquals(tr(R.string.canvas), menuLabel(MenuAction.CANVAS))
+    }
+
+    /** The "Animated cover" switch says its own name and state, apart from "Canvas". */
+    @Test fun theAnimatedCoverSwitchIsItsOwn() {
+        var cover by mutableStateOf(false)
+        compose.setContent {
+            PrismTheme(AppSettings(), artworkColor = null) {
+                ActionGroup(null, listOf(
+                    canvasToggleItem(cover, tr(R.string.animated_cover), com.prism.music.ui.theme.PrismIcons.AnimatedCover) { cover = !cover },
+                    canvasToggleItem(true) {},
+                )) { it.onClick() }
+            }
+        }
+        val coverRow = compose.onAllNodes(hasText(tr(R.string.animated_cover)))[0]
+        coverRow.assert(isSwitch(false))
+        compose.onAllNodes(hasText(tr(R.string.canvas)))[0].assert(isSwitch(true))
+        coverRow.performClick()
+        compose.waitForIdle()
+        coverRow.assert(isSwitch(true))
+        compose.onAllNodes(hasText(tr(R.string.canvas)))[0].assert(isSwitch(true))
     }
 }

@@ -414,6 +414,11 @@ data class BehaviorPrefs(
  * the cover or full screen, stays in [AppSettings.canvasEnabled] and [AppSettings.canvasFillsBackground].
  */
 data class CanvasPrefs(
+    /**
+     * A song's animated cover (Apple/Tidal motion art) plays. On by default, as before; apart from [useVideos], so Canvas
+     * can be the animated covers alone, the loops from videos alone, or both.
+     */
+    val covers: Boolean = true,
     /** A song without an animated cover may show a short silent loop cut from its music video. */
     val useVideos: Boolean = false,
     /** When a song has both: false, the animated cover first (as before); true, the music video's loop first. */
@@ -664,8 +669,10 @@ enum class MenuAction(val group: MenuGroup, val fromPlayer: Boolean = false, val
     PREVIOUS(MenuGroup.PLAYING, true), NEXT(MenuGroup.PLAYING, true), DJ(MenuGroup.PLAYING, true), EQUALIZER(MenuGroup.PLAYING, true),
     SLEEP(MenuGroup.PLAYING), SPEED_PITCH(MenuGroup.PLAYING), OUTPUT(MenuGroup.PLAYING), IMMERSIVE(MenuGroup.PLAYING),
     VIDEO_DOWNLOAD(MenuGroup.PLAYING), LISTEN_TOGETHER(MenuGroup.PLAYING), BEST_PART(MenuGroup.PLAYING),
-    /** "Canvas" for this song, on or off (named for the animated cover it was before 1.8.6: names are stored). */
+    /** "Animated cover" for this song, on or off (names are stored). */
     ANIMATED_COVER(MenuGroup.PLAYING),
+    /** 1.8.6: "Canvas" for this song, on or off: its loop from the music video, apart from its animated cover. */
+    CANVAS(MenuGroup.PLAYING),
     /** 1.8.6 Canvas, for one song: another part of its video's loop, which source it uses, and "Not this video". */
     CANVAS_PART(MenuGroup.PLAYING),
     /** Which video the song's loop is cut from, picked by the listener (owner, 2026-11-13: as a song has "Play a different version"). */
@@ -2252,6 +2259,7 @@ class SettingsRepository(
         val faceDownPause = booleanPreferencesKey("face_down_pause")
         val lyricsCoverPlays = booleanPreferencesKey("lyrics_cover_plays")
         // 1.8.6 ([CanvasPrefs], in [BehaviorPrefs]).
+        val canvasCovers = booleanPreferencesKey("canvas_covers")
         val canvasUseVideos = booleanPreferencesKey("canvas_use_videos")
         val canvasVideoFirst = booleanPreferencesKey("canvas_video_first")
         val canvasKeepControls = booleanPreferencesKey("canvas_keep_controls")
@@ -2404,6 +2412,7 @@ class SettingsRepository(
                 "recap_notify", "milestone_notify", "finish_lyric", "face_down_pause", "lyrics_cover_plays",
                 // 1.8.6 ([CanvasPrefs]): where a canvas comes from, its controls, its quality and its data: behaviour, not a look.
                 "canvas_use_videos", "canvas_video_first", "canvas_keep_controls", "canvas_lighter", "canvas_videos_cellular",
+                "canvas_covers",
             )
         }
     }
@@ -2747,6 +2756,7 @@ class SettingsRepository(
                 faceDownPause = p[K.faceDownPause] ?: d.behavior.faceDownPause,
                 lyricsCoverPlays = p[K.lyricsCoverPlays] ?: d.behavior.lyricsCoverPlays,
                 canvas = CanvasPrefs(
+                    covers = p[K.canvasCovers] ?: d.behavior.canvas.covers,
                     useVideos = p[K.canvasUseVideos] ?: d.behavior.canvas.useVideos,
                     videoFirst = p[K.canvasVideoFirst] ?: d.behavior.canvas.videoFirst,
                     keepControls = p[K.canvasKeepControls] ?: d.behavior.canvas.keepControls,
@@ -3498,6 +3508,7 @@ class SettingsRepository(
     fun setFaceDownPause(v: Boolean) = edit { it[K.faceDownPause] = v }
     fun setLyricsCoverPlays(v: Boolean) = edit { it[K.lyricsCoverPlays] = v }
     // 1.8.6 Canvas ([CanvasPrefs]).
+    fun setCanvasCovers(v: Boolean) = edit { it[K.canvasCovers] = v }
     fun setCanvasUseVideos(v: Boolean) = edit { it[K.canvasUseVideos] = v }
     fun setCanvasVideoFirst(v: Boolean) = edit { it[K.canvasVideoFirst] = v }
     fun setCanvasKeepControls(v: Boolean) = edit { it[K.canvasKeepControls] = v }

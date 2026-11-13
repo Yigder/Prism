@@ -291,7 +291,7 @@ internal fun PlayerCoverRows() {
     SheetRow(
         tr(R.string.canvas), canvasWords(s),
         info = words(tr(R.string.motion_artwork_and_video_covers_turn), tr(R.string.the_moving_artwork_fills_the_whole)),
-        changed = listOf("canvas_enabled", "canvas_use_videos", "canvas_videos_cellular", "canvas_video_first", "canvas_keep_controls", "canvas_lighter").any { ch(it) },
+        changed = listOf("canvas_enabled", "canvas_covers", "canvas_use_videos", "canvas_videos_cellular", "canvas_video_first", "canvas_keep_controls", "canvas_lighter").any { ch(it) },
     ) { CanvasOptions() }
 }
 
@@ -312,6 +312,8 @@ private fun CanvasOptions() {
         if (AnimatedCovers.asksForVideos(now, v, c.useVideos)) asking = true
     }
     val on = now != AnimatedCovers.OFF
+    // Animated covers on their own (owner, 2026-11-13): Canvas can be the covers alone, the videos' loops alone, or both.
+    if (on) SwitchRow(tr(R.string.animated_covers), c.covers, changed = ch("canvas_covers")) { prefs.setCanvasCovers(it) }
     if (on) SwitchRow(
         tr(R.string.canvas_use_videos), c.useVideos, info = tr(R.string.canvas_use_videos_info), changed = ch("canvas_use_videos"),
     ) { prefs.setCanvasUseVideos(it) }
@@ -320,7 +322,7 @@ private fun CanvasOptions() {
     if (on && c.useVideos) SwitchRow(
         tr(R.string.use_mobile_data), c.videosOnCellular, info = tr(R.string.canvas_from_videos_info), changed = ch("canvas_videos_cellular"),
     ) { prefs.setCanvasVideosOnCellular(it) }
-    if (on && c.useVideos) ChoiceRow(
+    if (on && c.covers && c.useVideos) ChoiceRow(
         tr(R.string.canvas_both), listOf(false, true), c.videoFirst, ::canvasBothWords, info = tr(R.string.canvas_both_info), changed = ch("canvas_video_first"),
     ) { prefs.setCanvasVideoFirst(it) }
     if (now == AnimatedCovers.FILL_THE_PLAYER) SwitchRow(
@@ -621,6 +623,10 @@ val playerIndex: List<SettingEntry> by lazy {
         val edge = turnOn(tr(R.string.settings_player_edge_to_edge)) { it.fullBleedArtwork || it.videoFullBleed }
         val canvasOn = turnOn(tr(R.string.canvas)) { it.canvasEnabled }
         val canvasVideos = turnOn(tr(R.string.canvas_use_videos)) { it.canvasEnabled && it.behavior.canvas.useVideos }
+        // "When a song has both" asks for both kinds: the animated covers and the music videos.
+        val canvasBoth = Needs(tr(R.string.turn_on_first, tr(R.string.animated_covers) + " · " + tr(R.string.canvas_use_videos))) {
+            it.canvasEnabled && it.behavior.canvas.covers && it.behavior.canvas.useVideos
+        }
         listOf(
             // Layout
             SettingEntry(page, g.layout, tr(R.string.layout), tr(R.string.player_layout_standard_cover_lyrics_minimal)),
@@ -684,9 +690,10 @@ val playerIndex: List<SettingEntry> by lazy {
                     tr(R.string.full_screen) + " " + tr(R.string.canvas_background_full_screen_behind),
             ),
             SettingEntry(page, g.cover, tr(R.string.canvas_where)),
+            SettingEntry(page, g.cover, tr(R.string.animated_covers), tr(R.string.canvas_motion_video_cover), needs = canvasOn),
             SettingEntry(page, g.cover, tr(R.string.canvas_use_videos), tr(R.string.canvas_use_videos_keywords), needs = canvasOn),
             SettingEntry(page, g.cover, tr(R.string.use_mobile_data), tr(R.string.canvas_from_videos) + " " + tr(R.string.cellular_mobile_data) + " " + tr(R.string.canvas), needs = canvasVideos),
-            SettingEntry(page, g.cover, tr(R.string.canvas_both), tr(R.string.canvas_both_keywords), needs = canvasVideos),
+            SettingEntry(page, g.cover, tr(R.string.canvas_both), tr(R.string.canvas_both_keywords), needs = canvasBoth),
             SettingEntry(
                 page, g.cover, tr(R.string.canvas_keep_controls), tr(R.string.canvas_keep_controls_keywords),
                 needs = turnOn(tr(R.string.full_screen)) { it.canvasEnabled && it.canvasFillsBackground },

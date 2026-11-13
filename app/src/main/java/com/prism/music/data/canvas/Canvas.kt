@@ -60,15 +60,30 @@ private const val UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/53
  * track, because a wrong clip is worse than none; any failure is just "no canvas".
  */
 class CanvasRepository(private val http: OkHttpClient) {
-    /** Songs whose animated artwork you've switched off from the player; set up by the app container. */
+    /**
+     * Songs whose animated cover you've switched off from the player ("Animated cover" in the ⋯ menu), and apart from
+     * them (1.8.6) songs whose Canvas loop from the music video you've switched off ("Canvas"); set up by the app
+     * container. One leaves the other alone: a song with its cover off may show its video's loop, and the other way round.
+     */
     var hiddenPrefs: android.content.SharedPreferences? = null
-        set(v) { field = v; hidden.value = v?.getStringSet("ids", emptySet())?.toSet() ?: emptySet() }
+        set(v) {
+            field = v
+            hidden.value = v?.getStringSet("ids", emptySet())?.toSet() ?: emptySet()
+            hiddenLoops.value = v?.getStringSet("loops", emptySet())?.toSet() ?: emptySet()
+        }
     val hidden = kotlinx.coroutines.flow.MutableStateFlow<Set<String>>(emptySet())
+    val hiddenLoops = kotlinx.coroutines.flow.MutableStateFlow<Set<String>>(emptySet())
 
     fun setHidden(songId: String, hide: Boolean) {
         val next = if (hide) hidden.value + songId else hidden.value - songId
         hidden.value = next
         hiddenPrefs?.edit()?.putStringSet("ids", next)?.apply()
+    }
+
+    fun setLoopHidden(songId: String, hide: Boolean) {
+        val next = if (hide) hiddenLoops.value + songId else hiddenLoops.value - songId
+        hiddenLoops.value = next
+        hiddenPrefs?.edit()?.putStringSet("loops", next)?.apply()
     }
 
     /**

@@ -210,6 +210,8 @@ class PlayerPageTest {
         "lock_screen_player_look",
         // 1.8.6: Canvas's sheet.
         "canvas_use_videos", "canvas_videos_cellular", "canvas_video_first", "canvas_keep_controls", "canvas_lighter",
+        // Owner, 2026-11-13: animated covers on their own.
+        "canvas_covers",
     )
 
     @Test fun everyLedgerKeyHasItsSetting() {
@@ -394,8 +396,10 @@ class PlayerPageTest {
         assertEquals("On the cover", row.config[SettingsRowValue])
         tap("Canvas")
         sheetOpen()
-        // As Prism comes (on the cover, no music videos): the choice and "Use music videos" only.
-        assertTrue("Where it shows" in rows() && "Use music videos" in rows())
+        // As Prism comes (on the cover, no music videos): the choice, "Animated covers" (on) and "Use music videos" only.
+        assertTrue("Where it shows" in rows() && "Animated covers" in rows() && "Use music videos" in rows())
+        assertEquals(SettingsTags.ROW_SWITCH, rows().getValue("Animated covers").config[SemanticsProperties.TestTag])
+        assertTrue(stored.behavior.canvas.covers)
         for (t in listOf("Use mobile data", "When a song has both", "Keep controls showing", "Lighter loops")) assertFalse(t, t in rows())
         assertEquals("On the cover", rows().getValue("Where it shows").config[SettingsRowValue])
 
@@ -413,6 +417,15 @@ class PlayerPageTest {
         until("video_first") { it.behavior.canvas.videoFirst }
         tap("Lighter loops")
         until("lighter") { it.behavior.canvas.lighter }
+        // Animated covers off (owner, 2026-11-13): the loops stay, and "When a song has both" goes (there is no both).
+        tap("Animated covers")
+        until("covers off") { !it.behavior.canvas.covers }
+        assertTrue(stored.behavior.canvas.useVideos)
+        assertFalse("When a song has both" in rows())
+        assertTrue("Lighter loops" in rows())
+        tap("Animated covers")
+        until("covers on") { it.behavior.canvas.covers }
+        assertTrue("When a song has both" in rows())
 
         // Full screen (music videos are on: nothing is asked) brings "Keep controls showing".
         chip("Where it shows", "Full screen")
@@ -425,7 +438,7 @@ class PlayerPageTest {
         // Off: none of the rows that depend on it; what they hold is kept.
         chip("Where it shows", "Off")
         until("off") { !it.canvasEnabled }
-        for (t in listOf("Use music videos", "Use mobile data", "When a song has both", "Keep controls showing", "Lighter loops")) assertFalse(t, t in rows())
+        for (t in listOf("Animated covers", "Use music videos", "Use mobile data", "When a song has both", "Keep controls showing", "Lighter loops")) assertFalse(t, t in rows())
         assertTrue(stored.behavior.canvas.useVideos && stored.behavior.canvas.lighter)
         closeSheet()
         assertEquals("Off", rows().getValue("Canvas").config[SettingsRowValue])
@@ -485,14 +498,17 @@ class PlayerPageTest {
     @Test fun canvasSearchLines() {
         val mine = com.prism.music.ui.screens.SettingsIndex.entries.filter { it.page == SettingsPageId.PLAYER && it.group == "Cover" }
         fun line(t: String) = mine.single { it.title == t }
-        assertTrue(mine.none { it.title == "Animated covers" })
-        // The old name still finds it.
+        // The old name still finds Canvas; "Animated covers" is the sheet's own switch now (owner, 2026-11-13).
         assertTrue(com.prism.music.ui.screens.SettingsIndex.search("animated covers").any { it.title == "Canvas" && it.page == SettingsPageId.PLAYER })
         assertEquals(null, line("Canvas").needs)
         val d = AppSettings()
         val videos = d.copy(behavior = d.behavior.copy(canvas = d.behavior.canvas.copy(useVideos = true)))
+        assertTrue(line("Animated covers").needs!!.on(d))
+        assertFalse(line("Animated covers").needs!!.on(d.copy(canvasEnabled = false)))
         assertTrue(line("Use music videos").needs!!.on(d))
         assertFalse(line("Use music videos").needs!!.on(d.copy(canvasEnabled = false)))
+        // "When a song has both" needs both.
+        assertFalse(line("When a song has both").needs!!.on(videos.copy(behavior = videos.behavior.copy(canvas = videos.behavior.canvas.copy(covers = false)))))
         for (t in listOf("When a song has both", "Lighter loops")) {
             assertFalse(t, line(t).needs!!.on(d))
             assertTrue(t, line(t).needs!!.on(videos))

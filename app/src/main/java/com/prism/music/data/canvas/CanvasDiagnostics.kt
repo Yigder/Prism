@@ -12,13 +12,13 @@ import java.util.Locale
  *
  * [stored] is the setting as the listener set it, [used] as Prism uses it ([AppSettings.effective]). [cover] is the
  * song's animated cover as far as it is known on the phone, [row] its `canvas_clips` row, [kept] the loop files kept for
- * the row's video.
+ * the row's video. [hidden] is the song's loop switched off from the player, [coverHidden] its animated cover.
  */
 fun canvasDiagnostics(
     stored: AppSettings, used: AppSettings, metered: Boolean, videoMode: Boolean,
     song: Song?, hidden: Boolean, cover: CanvasArtwork?, row: CanvasClipEntity?, kept: List<ClipFiles.Kept>,
-    now: Long = System.currentTimeMillis(),
-): String = canvasSettingLine(stored) + "\n" + "Canvas now: " + canvasNow(stored, used, metered, videoMode, song, hidden, cover, row, kept, now)
+    now: Long = System.currentTimeMillis(), coverHidden: Boolean = false,
+): String = canvasSettingLine(stored) + "\n" + "Canvas now: " + canvasNow(stored, used, metered, videoMode, song, hidden, coverHidden, cover, row, kept, now)
 
 /** "Canvas: full screen, music videos on (video first), videos on mobile data off, performance mode off". */
 fun canvasSettingLine(stored: AppSettings): String {
@@ -31,6 +31,7 @@ fun canvasSettingLine(stored: AppSettings): String {
     val extras = listOfNotNull("video first".takeIf { p.videoFirst }, "lighter, 480p".takeIf { p.lighter })
     return buildString {
         append("Canvas: ").append(mode)
+        if (!p.covers) append(", animated covers off")
         append(", music videos ").append(onOff(p.useVideos))
         if (p.useVideos && extras.isNotEmpty()) append(" (").append(extras.joinToString(", ")).append(')')
         append(", videos on mobile data ").append(onOff(p.videosOnCellular))
@@ -40,13 +41,20 @@ fun canvasSettingLine(stored: AppSettings): String {
 
 private fun canvasNow(
     stored: AppSettings, used: AppSettings, metered: Boolean, videoMode: Boolean,
-    song: Song?, hidden: Boolean, cover: CanvasArtwork?, row: CanvasClipEntity?, kept: List<ClipFiles.Kept>, now: Long,
+    song: Song?, hidden: Boolean, coverHidden: Boolean, cover: CanvasArtwork?, row: CanvasClipEntity?, kept: List<ClipFiles.Kept>, now: Long,
 ): String {
     if (song == null) return "nothing playing"
     if (!used.canvasEnabled) return "still cover (" + (if (stored.canvasEnabled) "Canvas paused by performance mode" else "Canvas off") + ")"
     if (videoMode) return "the music video plays (video mode), no canvas"
-    val coverText = cover?.let { "animated cover from " + host(it.url) } ?: "still cover (no animated cover known)"
-    val want = canvasWant(used, metered, hasCover = cover != null, songChoice = CanvasSource.of(row?.prefer), hidden = hidden, isSong = ClipGate.isSong(song))
+    // An animated cover that may not play counts as none ([canvasCoverWanted]), as in the player.
+    val coverWanted = canvasCoverWanted(used, coverHidden)
+    val shownCover = cover?.takeIf { coverWanted }
+    val coverText = shownCover?.let { "animated cover from " + host(it.url) } ?: when {
+        coverWanted -> "still cover (no animated cover known)"
+        coverHidden && used.behavior.canvas.covers -> "still cover (animated cover hidden for this song)"
+        else -> "still cover (animated covers off)"
+    }
+    val want = canvasWant(used, metered, hasCover = shownCover != null, songChoice = CanvasSource.of(row?.prefer), hidden = hidden, isSong = ClipGate.isSong(song))
     val choice = row?.prefer?.let { ", this song set to $it" }.orEmpty()
     if (!want.video) return "$coverText; no loop: not asked: ${want.notAsked?.text}$choice"
     if (row == null) return "$coverText; no loop: not looked up yet" + (if (want.network) "" else " and no Wi-Fi")

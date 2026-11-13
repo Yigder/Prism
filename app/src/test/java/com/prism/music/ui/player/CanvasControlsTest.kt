@@ -52,10 +52,32 @@ class CanvasControlsTest {
     }
 
     /** Owner, 2026-11-13: switched off for a song, the switch went too and Canvas couldn't be put back for it. */
-    @Test fun theSongsCanvasSwitchStaysAfterItIsSwitchedOff() {
-        assertTrue(canvasMenuShown(hasCanvas = true, switchedOff = false))
-        assertTrue("off for this song: nothing shows, the switch stays", canvasMenuShown(hasCanvas = false, switchedOff = true))
-        assertFalse("a song that never had one", canvasMenuShown(hasCanvas = false, switchedOff = false))
+    @Test fun theSongsAnimatedCoverSwitchStaysAfterItIsSwitchedOff() {
+        assertTrue(canvasCoverSwitchShown(canvasOn = true, covers = true, hasCover = true, switchedOff = false))
+        assertTrue("off for this song: not looked up any more, the switch stays", canvasCoverSwitchShown(canvasOn = true, covers = true, hasCover = false, switchedOff = true))
+        assertFalse("a song that has none", canvasCoverSwitchShown(canvasOn = true, covers = true, hasCover = false, switchedOff = false))
+        assertFalse("\"Animated covers\" off in settings", canvasCoverSwitchShown(canvasOn = true, covers = false, hasCover = true, switchedOff = true))
+        assertFalse("Canvas off", canvasCoverSwitchShown(canvasOn = false, covers = true, hasCover = true, switchedOff = false))
+    }
+
+    /** Owner, 2026-11-13: the song's Canvas (its video's loop) has its own switch, apart from its animated cover. */
+    @Test fun theSongsCanvasSwitchIsForItsLoopAndStaysAfterItIsSwitchedOff() {
+        assertTrue(canvasLoopSwitchShown(canvasOn = true, useVideos = true, isSong = true, hasVideo = true, switchedOff = false))
+        assertTrue("off for this song: the switch stays", canvasLoopSwitchShown(canvasOn = true, useVideos = true, isSong = true, hasVideo = false, switchedOff = true))
+        assertFalse("no video found for it", canvasLoopSwitchShown(canvasOn = true, useVideos = true, isSong = true, hasVideo = false, switchedOff = false))
+        assertFalse("music videos off: animated covers only", canvasLoopSwitchShown(canvasOn = true, useVideos = false, isSong = true, hasVideo = true, switchedOff = false))
+        assertFalse("a file, a podcast", canvasLoopSwitchShown(canvasOn = true, useVideos = true, isSong = false, hasVideo = true, switchedOff = false))
+        assertFalse("Canvas off", canvasLoopSwitchShown(canvasOn = false, useVideos = true, isSong = true, hasVideo = true, switchedOff = true))
+    }
+
+    /** "Use:" only for a song that has both, neither switched off for it. */
+    @Test fun useIsOfferedOnlyWithBothOn() {
+        fun use(covers: Boolean = true, videos: Boolean = true, cover: Boolean = true, video: Boolean = true, coverOff: Boolean = false, loopOff: Boolean = false, on: Boolean = true) =
+            canvasUseShown(on, covers, videos, cover, video, coverOff, loopOff)
+        assertTrue(use())
+        assertFalse(use(cover = false)); assertFalse(use(video = false))
+        assertFalse("its animated cover off", use(coverOff = true)); assertFalse("its loop off", use(loopOff = true))
+        assertFalse(use(covers = false)); assertFalse(use(videos = false)); assertFalse(use(on = false))
     }
 
     /** Owner, 2026-11-13: a song's video can be picked as its version can; also for a song that has no loop yet. */
@@ -64,7 +86,7 @@ class CanvasControlsTest {
         assertFalse(canvasVideoPickShown(canvasOn = false, useVideos = true, isSong = true, switchedOff = false))
         assertFalse("animated covers only", canvasVideoPickShown(canvasOn = true, useVideos = false, isSong = true, switchedOff = false))
         assertFalse("a file, a podcast", canvasVideoPickShown(canvasOn = true, useVideos = true, isSong = false, switchedOff = false))
-        assertFalse("Canvas is off for this song", canvasVideoPickShown(canvasOn = true, useVideos = true, isSong = true, switchedOff = true))
+        assertFalse("its Canvas loop is off for this song", canvasVideoPickShown(canvasOn = true, useVideos = true, isSong = true, switchedOff = true))
     }
 
     @Test fun someoneUpdatingWithCanvasOnIsAskedOnceInThePlayer() {

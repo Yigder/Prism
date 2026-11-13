@@ -34,13 +34,14 @@ class CanvasAhead(
         fun settings(): AppSettings
         /** On mobile data (a fresh check). */
         fun metered(): Boolean
+        /** The song's Canvas loop is switched off from the player (its animated cover's switch is [hasCover]'s). */
         fun hidden(songId: String): Boolean
         /** The song's Canvas is kept for good (saved from the player, its album saved, or downloaded). */
         fun saved(song: Song): Boolean
         /** The same, by id alone (a song saved by its album doesn't count: its loop goes back to recent, and returns when played). */
         fun savedById(songId: String): Boolean
         suspend fun choice(songId: String): CanvasSource?
-        /** Whether the song has an animated cover (looked up if not known yet). */
+        /** Whether the song has an animated cover that may play ([canvasCoverWanted]; looked up if not known yet). */
         suspend fun hasCover(song: Song): Boolean
         /** Finds and fetches the loop ([ClipRepository.prepare]); true when it is on the phone. */
         suspend fun prepare(song: Song, height: Int, saved: Boolean, allowed: () -> Boolean): Boolean

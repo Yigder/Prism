@@ -1108,11 +1108,14 @@ class AppContainer(val app: Application) {
         com.prism.music.data.canvas.CanvasAhead(scope, object : com.prism.music.data.canvas.CanvasAhead.Facts {
             override fun settings() = settings.current
             override fun metered() = app.getSystemService(android.net.ConnectivityManager::class.java)?.isActiveNetworkMetered != false
-            override fun hidden(songId: String) = songId in canvas.hidden.value
+            // The song's loop switched off (its animated cover's own switch is read in hasCover).
+            override fun hidden(songId: String) = songId in canvas.hiddenLoops.value
             override fun saved(song: com.prism.music.data.model.Song) = canvas.isSaved(song)
             override fun savedById(songId: String) = canvas.saved.value.has(songId, null)
             override suspend fun choice(songId: String) = canvasClips.choice(songId)
-            override suspend fun hasCover(song: com.prism.music.data.model.Song) = canvas.canvasFor(song) != null
+            // Only an animated cover that may play counts ([canvasCoverWanted]): one that may not leaves room for the loop.
+            override suspend fun hasCover(song: com.prism.music.data.model.Song) =
+                com.prism.music.data.canvas.canvasCoverWanted(settings.current, song.id in canvas.hidden.value) && canvas.canvasFor(song) != null
             override suspend fun prepare(song: com.prism.music.data.model.Song, height: Int, saved: Boolean, allowed: () -> Boolean) =
                 canvasClips.prepare(song, height, saved, allowed)
             override suspend fun videoOf(songId: String) = canvasClips.row(songId)?.videoId

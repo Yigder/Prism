@@ -23,14 +23,14 @@ data class CanvasWant(
 enum class NotAsked(val text: String) {
     CANVAS_OFF("Canvas off"),
     VIDEOS_OFF("music videos off"),
-    HIDDEN("Canvas hidden for this song"),
+    HIDDEN("Canvas loop hidden for this song"),
     NOT_A_SONG("not a song (a file, an upload, an episode or live)"),
     COVER_FIRST("the animated cover shows first"),
 }
 
 /**
- * The decision: [hasCover] is whether the song has an animated cover, [songChoice] the listener's "Use:" for it,
- * [hidden] its Canvas switched off from the player, [isSong] [ClipGate.isSong]. [metered]: on mobile data (or any
+ * The decision: [hasCover] is whether the song has an animated cover that may play ([canvasCoverWanted]), [songChoice]
+ * the listener's "Use:" for it, [hidden] its Canvas loop switched off from the player (not its animated cover), [isSong] [ClipGate.isSong]. [metered]: on mobile data (or any
  * network that charges by use).
  */
 fun canvasWant(
@@ -48,6 +48,15 @@ fun canvasWant(
     if (notAsked != null) return CanvasWant(false, 0, false, notAsked)
     return CanvasWant(true, canvasHeight(settings), canvasNetworkAllowed(settings, metered), null)
 }
+
+/**
+ * Whether a song's animated cover may play (1.8.6), in one place for the player, the next-song preparation and
+ * diagnostics: Canvas on, "Animated covers" on, and not switched off for this song ([coverHidden], the ⋯ menu's
+ * "Animated cover"). Apart from the loop from the music video: a song whose cover may not play counts as having none, so
+ * its video's loop may show ([canvasWant] with `hasCover = false`).
+ */
+fun canvasCoverWanted(settings: AppSettings, coverHidden: Boolean): Boolean =
+    settings.canvasEnabled && settings.behavior.canvas.covers && !coverHidden
 
 /** Sharp where it fills the screen, lighter on the cover (plan §11a R1); "lighter" is 480 everywhere. */
 fun canvasHeight(settings: AppSettings): Int = when {

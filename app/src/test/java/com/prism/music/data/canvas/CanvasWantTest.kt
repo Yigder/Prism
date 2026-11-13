@@ -72,6 +72,31 @@ class CanvasWantTest {
         assertEquals(NotAsked.NOT_A_SONG, want(isSong = false).notAsked)
     }
 
+    /** Owner, 2026-11-13: an animated cover plays by its own switches, whatever the music videos do. */
+    @Test fun theAnimatedCoverPlaysByItsOwnSwitches() {
+        assertTrue("as Prism comes", canvasCoverWanted(s(), coverHidden = false))
+        assertTrue("music videos off: the covers still play", canvasCoverWanted(s(prefs = CanvasPrefs(useVideos = false)), coverHidden = false))
+        assertFalse("\"Animated covers\" off", canvasCoverWanted(s(prefs = CanvasPrefs(covers = false, useVideos = true)), coverHidden = false))
+        assertFalse("off for this song", canvasCoverWanted(s(), coverHidden = true))
+        assertFalse("Canvas off", canvasCoverWanted(s(enabled = false), coverHidden = false))
+        assertFalse("Performance mode pauses it", canvasCoverWanted(s(performance = true), coverHidden = false))
+    }
+
+    /** The song's cover switched off counts as no cover (its loop may show); its loop switched off leaves the cover be. */
+    @Test fun theCoverAndTheLoopAreSwitchedOffApart() {
+        // Cover hidden: the player passes hasCover = false (canvasCoverWanted), so the loop is wanted.
+        val coverOff = want(hasCover = canvasCoverWanted(s(), coverHidden = true), hidden = false)
+        assertTrue(coverOff.video)
+        // Loop hidden: no loop, whatever the cover; the cover still plays.
+        val loopOff = want(hasCover = true, hidden = true)
+        assertFalse(loopOff.video)
+        assertEquals(NotAsked.HIDDEN, loopOff.notAsked)
+        assertTrue(canvasCoverWanted(s(), coverHidden = false))
+        // "Animated covers" off in settings: the same as a song without one, its loop is wanted.
+        val noCovers = s(prefs = CanvasPrefs(covers = false, useVideos = true))
+        assertTrue(want(noCovers, hasCover = canvasCoverWanted(noCovers, coverHidden = false)).video)
+    }
+
     @Test fun mobileDataNeedsTheChipAndNoDataSaver() {
         assertFalse(want(metered = true).network)
         assertTrue(want(metered = true).video) // wanted: a kept loop still plays

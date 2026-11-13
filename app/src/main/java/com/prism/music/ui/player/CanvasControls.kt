@@ -52,12 +52,26 @@ internal fun canvasScrim(controls: Float, panel: Float, video: Boolean): FloatAr
 internal fun canvasFullScreen(fills: Boolean, videoMode: Boolean, wide: Boolean): Boolean = fills && !videoMode && !wide
 
 /**
- * The song's Canvas switch is in the ⋯ menu while the song has a canvas, and stays there after it was switched off for
- * the song (a song switched off has none to show, and the switch is the only way back).
+ * The song's "Animated cover" switch in the ⋯ menu: while Canvas and "Animated covers" are on and the song has an
+ * animated cover, and it stays after it was switched off for the song (the switch is the only way back; a cover switched
+ * off is no longer looked up, so it may not be known).
  */
-internal fun canvasMenuShown(hasCanvas: Boolean, switchedOff: Boolean): Boolean = hasCanvas || switchedOff
+internal fun canvasCoverSwitchShown(canvasOn: Boolean, covers: Boolean, hasCover: Boolean, switchedOff: Boolean): Boolean =
+    canvasOn && covers && (hasCover || switchedOff)
 
-/** "Pick another video" is offered for a song (not a file, a podcast…) while Canvas is on, uses music videos and isn't off for the song. */
+/**
+ * The song's "Canvas" switch (its loop from the music video) in the ⋯ menu: while Canvas and "Use music videos" are on,
+ * for a song (not a file, a podcast…) that has a video, and it stays after it was switched off for the song.
+ */
+internal fun canvasLoopSwitchShown(canvasOn: Boolean, useVideos: Boolean, isSong: Boolean, hasVideo: Boolean, switchedOff: Boolean): Boolean =
+    canvasOn && useVideos && isSong && (hasVideo || switchedOff)
+
+/** "Use:" is offered for a song that has both an animated cover and a video loop, neither of them switched off. */
+internal fun canvasUseShown(
+    canvasOn: Boolean, covers: Boolean, useVideos: Boolean, hasCover: Boolean, hasVideo: Boolean, coverOff: Boolean, loopOff: Boolean,
+): Boolean = canvasOn && covers && useVideos && hasCover && hasVideo && !coverOff && !loopOff
+
+/** "Pick another video" is offered for a song (not a file, a podcast…) while Canvas is on, uses music videos and its loop isn't off for the song. */
 internal fun canvasVideoPickShown(canvasOn: Boolean, useVideos: Boolean, isSong: Boolean, switchedOff: Boolean): Boolean =
     canvasOn && useVideos && isSong && !switchedOff
 

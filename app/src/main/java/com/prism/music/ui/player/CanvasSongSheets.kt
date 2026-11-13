@@ -64,9 +64,16 @@ import okhttp3.Request
  * animated cover and a loop from its music video, and "Pick another part" with stills from the video's preview frames.
  */
 
-/** "Canvas" for this song, on or off: a switch to a screen reader ("Canvas, On"). */
-internal fun canvasToggleItem(on: Boolean, onToggle: () -> Unit): ActionItem =
-    ActionItem(PrismIcons.AnimatedCover, tr(R.string.canvas), active = on, keepOpen = true, toggle = on, onClick = onToggle)
+/**
+ * "Canvas" (the loop from the song's music video) or "Animated cover" for this song, on or off: a switch to a screen
+ * reader ("Canvas, On").
+ */
+internal fun canvasToggleItem(
+    on: Boolean,
+    label: String = tr(R.string.canvas),
+    icon: androidx.compose.ui.graphics.vector.ImageVector = PrismIcons.Video,
+    onToggle: () -> Unit,
+): ActionItem = ActionItem(icon, label, active = on, keepOpen = true, toggle = on, onClick = onToggle)
 
 /** Which one a song with both shows now: its own "Use:", else the setting "When a song has both". */
 internal fun canvasUseNow(settings: AppSettings, row: CanvasClipEntity?): CanvasSource =
