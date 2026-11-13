@@ -469,7 +469,8 @@ internal fun ReplayContent(
             TimelineChart(timeline, Modifier.padding(horizontal = 20.dp).fillMaxWidth().height(196.dp))
         } else if (d.months.size > 1) item {
             SectionHeader(if (LocalAppSettings.current.replayHours) tr(R.string.hours_by_month) else tr(R.string.minutes_by_month))
-            MonthChart(d.months, Modifier.padding(horizontal = 20.dp).fillMaxWidth().height(160.dp))
+            // 176 dp since 1.8.6 (160 before): the 16 more are the numbers' line, the bars keep their height.
+            MonthChart(d.months, Modifier.padding(horizontal = 20.dp).fillMaxWidth().height(176.dp))
             // The busiest month, as the shorter graphs say theirs.
             d.months.maxByOrNull { it.ms }?.takeIf { it.ms > 0 }?.let { m ->
                 val (y, mo) = m.month.split("-").mapNotNull { it.toIntOrNull() }.takeIf { it.size == 2 } ?: return@let
@@ -1267,6 +1268,24 @@ private fun MilestoneRow(m: ShownMilestone) {
     }
 }
 
+/**
+ * The number over a bar of "Hours by month" (1.8.6): the whole hours listened ("116h", "<1h" under one), or with Replay counting in
+ * minutes the minutes alone ("940", "7.0k" from a thousand, "120k" from a hundred thousand). Nothing for an empty month.
+ * Short on purpose: twelve bars leave each about as wide as four letters.
+ */
+internal fun monthBarLabel(ms: Long, hours: Boolean): String {
+    if (ms <= 0) return ""
+    val m = ms / 60_000
+    // Whole hours, never rounded up: a bar must not say more than the "Busiest month" line under it (19h 36m is "19h").
+    if (hours) return if (m < 60) "<1h" else "%,dh".format(m / 60)
+    return when {
+        m < 1 -> "<1"
+        m < 1_000 -> m.toString()
+        m < 100_000 -> "%.1fk".format(m / 1000.0)
+        else -> "%,dk".format((m + 500) / 1000)
+    }
+}
+
 @Composable
 private fun MonthChart(months: List<MonthTotal>, modifier: Modifier) {
     val primary = MaterialTheme.colorScheme.primary
@@ -1275,19 +1294,31 @@ private fun MonthChart(months: List<MonthTotal>, modifier: Modifier) {
     val anim = remember(months) { Animatable(0f) }
     LaunchedEffect(months) { anim.animateTo(1f, tween(900)) }
     val names = listOf("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")
+    // 1.8.6: each bar says its own total over it ("116h"), so the graph reads without guessing from the tallest one.
+    val hours = LocalAppSettings.current.replayHours
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val valueStyle = MaterialTheme.typography.labelSmall.copy(color = label)
+    val values = remember(months, hours, valueStyle) { months.map { measurer.measure(monthBarLabel(it.ms, hours), valueStyle, maxLines = 1, softWrap = false) } }
     Column(modifier) {
         Canvas(Modifier.fillMaxWidth().weight(1f)) {
             val max = months.maxOf { it.ms }.coerceAtLeast(1)
             val gap = 8.dp.toPx()
             val w = (size.width - gap * (months.size - 1)) / months.size
+            // The tallest bar stops short of the top: its number sits there.
+            val room = (values.maxOfOrNull { it.size.height } ?: 0) + 4.dp.toPx()
+            val full = (size.height - room).coerceAtLeast(0f)
             months.forEachIndexed { i, m ->
-                val h = size.height * (m.ms / max.toFloat()) * anim.value
+                val h = full * (m.ms / max.toFloat()) * anim.value
                 drawRoundRect(
                     Brush.verticalGradient(listOf(tertiary, primary)),
                     topLeft = Offset(i * (w + gap), size.height - h),
                     size = Size(w, h),
                     cornerRadius = CornerRadius(6.dp.toPx()),
                 )
+                val text = values[i]
+                // Centred over its bar; a number wider than the bar runs over the gaps, kept inside the graph's edges.
+                val x = (i * (w + gap) + (w - text.size.width) / 2).coerceIn(0f, (size.width - text.size.width).coerceAtLeast(0f))
+                drawText(text, topLeft = Offset(x, size.height - h - text.size.height - 3.dp.toPx()), alpha = anim.value)
             }
         }
         Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
