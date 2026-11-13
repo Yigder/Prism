@@ -28,6 +28,8 @@ data class CanvasArtwork(
     val title: String? = null,
     val artist: String? = null,
     val album: String? = null,
+    /** 1.8.6: set when this is a loop cut from the song's music video; [url] is then the clip's own key ([VideoClip.key]). */
+    val clip: VideoClip? = null,
 )
 
 /**

@@ -160,6 +160,39 @@ class MigrationTest {
         db.close()
     }
 
+    /** v12 (1.8.6): Canvas loops cut from music videos, a row a song; the listener's choices outlive a clear-out. */
+    @Test
+    fun v12AddsCanvasClips() {
+        val context = RuntimeEnvironment.getApplication()
+        val name = "migrate-v12-canvas.db"
+        context.deleteDatabase(name)
+        createAt(context.getDatabasePath(name), 11)
+        val db = Room.databaseBuilder(context, PrismDatabase::class.java, name)
+            .addMigrations(*PrismDatabase.MIGRATIONS).allowMainThreadQueries().build()
+        fun row(id: String, video: String?, picked: Boolean = false, prefer: String? = null, rejected: String = "") = com.prism.music.data.db.CanvasClipEntity(
+            id, video, if (video == null) "STILL" else "", "OMV", 1080, 137, 64_898, 71_900, 0.5f, 0f, 0.12f, 0f, 0.12f, "30000,90000",
+            refined = true, picked = picked, rejectedVideos = rejected, prefer = prefer, checkedAt = 1L,
+        )
+        runBlocking {
+            assertEquals(0, db.canvasClips().count())
+            db.canvasClips().put(row("guess", "v1"))
+            db.canvasClips().put(row("none", null))
+            db.canvasClips().put(row("picked", "v2", picked = true))
+            db.canvasClips().put(row("prefers", "v3", prefer = "cover"))
+            db.canvasClips().put(row("rejected", null, rejected = "v9"))
+            assertEquals("only rows with a loop count", 3, db.canvasClips().count())
+            assertEquals(0.12f, db.canvasClips().get("guess")!!.barTop, 1e-6f)
+            db.canvasClips().clearGuesses()
+            assertEquals(null, db.canvasClips().get("guess"))
+            assertEquals(null, db.canvasClips().get("none"))
+            assertEquals("v2", db.canvasClips().get("picked")!!.videoId)
+            assertEquals("cover", db.canvasClips().get("prefers")!!.prefer)
+            assertEquals("v9", db.canvasClips().get("rejected")!!.rejectedVideos)
+            assertEquals("history kept", 2, db.plays().count(0, Long.MAX_VALUE))
+        }
+        db.close()
+    }
+
     @Test
     fun currentSchemaIsExported() {
         // A version bump without its exported schema would leave the next migration untestable.

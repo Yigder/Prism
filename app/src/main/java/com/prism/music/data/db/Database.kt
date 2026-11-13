@@ -129,6 +129,45 @@ data class HeatmapEntity(
     val fetchedAt: Long,
 )
 
+/**
+ * A song's Canvas loop cut from its music video (1.8.6, [com.prism.music.data.canvas.VideoClip]), and the listener's
+ * own choices for the song. One row a song that was looked at: [videoId] null means no loop, [why] says which rule said
+ * so (shown in diagnostics); a row is asked again once it is old ([checkedAt]) unless the listener chose something.
+ */
+@Entity(tableName = "canvas_clips")
+data class CanvasClipEntity(
+    @PrimaryKey val songId: String,
+    val videoId: String?,
+    /** "" when there is a loop, else the reason there is none ([com.prism.music.data.canvas.NoClip]'s name). */
+    val why: String,
+    /** YouTube Music's own word for the video ("OMV"…), kept for diagnostics. */
+    val videoType: String?,
+    /** The stream the loop is cut from: its height in pixels and its itag (0 until fetched). */
+    val height: Int,
+    val itag: Int,
+    /** The loop, in the video's time. [startMs] is on a key frame once [refined]. */
+    val startMs: Long,
+    val endMs: Long,
+    /** Where the upright crop sits across the picture inside the bars: 0 = left edge, 0.5 = centre, 1 = right edge. */
+    val cropX: Float,
+    /** Black bars baked into the video, as shares of its width and height. */
+    val barLeft: Float,
+    val barTop: Float,
+    val barRight: Float,
+    val barBottom: Float,
+    /** The other good parts' starts (ms, comma-separated), best first: "Pick another part". */
+    val windows: String,
+    /** False while the loop is the storyboard's guess; true once its cuts and crop were set on the real frames. */
+    val refined: Boolean,
+    /** The listener picked this part: never replaced by a new guess. */
+    val picked: Boolean,
+    /** Videos the listener said "Not this video" to (ids, comma-separated): never offered for this song again. */
+    val rejectedVideos: String,
+    /** The listener's "Use:" for this song: "cover", "video", or null for the setting's order. */
+    val prefer: String?,
+    val checkedAt: Long,
+)
+
 /** A song's lyrics in Latin letters ([com.prism.music.data.lyrics.Romanizer]), keyed by song, lyrics and engine. */
 @Entity(tableName = "romanized")
 data class RomanizedEntity(
@@ -692,6 +731,25 @@ interface HeatmapDao {
 }
 
 @Dao
+interface CanvasClipDao {
+    @Query("SELECT * FROM canvas_clips WHERE songId = :songId")
+    suspend fun get(songId: String): CanvasClipEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun put(e: CanvasClipEntity)
+
+    @Query("DELETE FROM canvas_clips WHERE songId = :songId")
+    suspend fun delete(songId: String)
+
+    /** Guesses only: what the listener chose (a part, a source, a rejected video) stays. */
+    @Query("DELETE FROM canvas_clips WHERE picked = 0 AND prefer IS NULL AND rejectedVideos = ''")
+    suspend fun clearGuesses()
+
+    @Query("SELECT COUNT(*) FROM canvas_clips WHERE videoId IS NOT NULL")
+    suspend fun count(): Int
+}
+
+@Dao
 interface RomanizedDao {
     @Query("SELECT * FROM romanized WHERE `key` = :key")
     suspend fun get(key: String): RomanizedEntity?
@@ -703,9 +761,9 @@ interface RomanizedDao {
 @Database(
     entities = [SongEntity::class, PlayEventEntity::class, LyricsEntity::class, GenreEntity::class, MotionArtEntity::class, HeatmapEntity::class,
         RomanizedEntity::class, ReleaseEntity::class, MixEntity::class, BlendEntity::class, RecognitionEntity::class,
-        ImportedPlayEntity::class, ImportMatchEntity::class, SongTraitsEntity::class, SongTagEntity::class],
+        ImportedPlayEntity::class, ImportMatchEntity::class, SongTraitsEntity::class, SongTagEntity::class, CanvasClipEntity::class],
     views = [CountedPlay::class],
-    version = 11,
+    version = 12,
     exportSchema = true,
 )
 abstract class PrismDatabase : RoomDatabase() {
@@ -731,6 +789,8 @@ abstract class PrismDatabase : RoomDatabase() {
     abstract fun traits(): TraitsDao
     /** The listener's own labels on songs (1.8.3). */
     abstract fun tags(): TagDao
+    /** Canvas loops cut from music videos, and the listener's choices for them (1.8.6). */
+    abstract fun canvasClips(): CanvasClipDao
 
     companion object {
         /**
@@ -815,6 +875,12 @@ abstract class PrismDatabase : RoomDatabase() {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("CREATE TABLE IF NOT EXISTS `song_tags` (`tag` TEXT NOT NULL, `songId` TEXT NOT NULL, `addedAt` INTEGER NOT NULL, PRIMARY KEY(`tag`, `songId`))")
                     db.execSQL("CREATE INDEX IF NOT EXISTS `index_song_tags_songId` ON `song_tags` (`songId`)")
+                }
+            },
+            // 1.8.6: Canvas loops from music videos, a row a song.
+            object : Migration(11, 12) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("CREATE TABLE IF NOT EXISTS `canvas_clips` (`songId` TEXT NOT NULL, `videoId` TEXT, `why` TEXT NOT NULL, `videoType` TEXT, `height` INTEGER NOT NULL, `itag` INTEGER NOT NULL, `startMs` INTEGER NOT NULL, `endMs` INTEGER NOT NULL, `cropX` REAL NOT NULL, `barLeft` REAL NOT NULL, `barTop` REAL NOT NULL, `barRight` REAL NOT NULL, `barBottom` REAL NOT NULL, `windows` TEXT NOT NULL, `refined` INTEGER NOT NULL, `picked` INTEGER NOT NULL, `rejectedVideos` TEXT NOT NULL, `prefer` TEXT, `checkedAt` INTEGER NOT NULL, PRIMARY KEY(`songId`))")
                 }
             },
         )
