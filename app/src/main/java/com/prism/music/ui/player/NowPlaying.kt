@@ -537,6 +537,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
         canvasPrefs.useVideos, canvasPrefs.videoFirst, canvasPrefs.lighter, settings.canvasFillsBackground,
         // The song's own choices from the ⋯ menu (another part, "Use:", "Not this video"): looked at again.
         c.canvasClips.changes.collectAsState().value,
+        song.id in c.canvas.hidden.collectAsState().value,
     ) {
         if (!settings.canvasEnabled) { value = null; return@produceState }
         // Saved clips play from the phone, so mobile data doesn't matter for them.
@@ -550,15 +551,18 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
         }
         value = cover
         // 1.8.6: a loop from the song's music video, where the song has no animated cover or the listener put the
-        // video first (the setting, or "Use:" for this song). It is only asked for when it is the one that would show.
+        // video first (the setting, or "Use:" for this song). It is only asked for when it is the one that would show:
+        // [canvasWant], the rule the next-song preparation, downloads and diagnostics share.
         if (canvasPrefs.useVideos) {
             val choice = c.canvasClips.choice(song.id)
-            if (com.prism.music.data.canvas.pickSource(cover != null, true, true, canvasPrefs.videoFirst, choice) == com.prism.music.data.canvas.CanvasSource.VIDEO) {
-                // Sharp where it fills the screen, lighter on the cover (plan §11a R1).
-                val height = if (canvasPrefs.lighter) 480 else if (settings.canvasFillsBackground) 1080 else 720
-                val loop = c.canvasClips.artworkFor(song, height, saved = c.canvas.isSaved(song), allowed = {
+            val want = com.prism.music.data.canvas.canvasWant(
+                settings, metered, hasCover = cover != null, songChoice = choice,
+                hidden = song.id in c.canvas.hidden.value, isSong = com.prism.music.data.canvas.ClipGate.isSong(song),
+            )
+            if (want.video) {
+                val loop = c.canvasClips.artworkFor(song, want.height, saved = c.canvas.isSaved(song), allowed = {
                     val onData = context.getSystemService(ConnectivityManager::class.java)?.isActiveNetworkMetered == true
-                    !onData || (canvasPrefs.videosOnCellular && !settings.dataSaver)
+                    com.prism.music.data.canvas.canvasNetworkAllowed(settings, onData)
                 })
                 if (loop != null) value = loop
             }

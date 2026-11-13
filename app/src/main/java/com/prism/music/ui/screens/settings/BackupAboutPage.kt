@@ -80,7 +80,9 @@ fun BackupAboutPage(bottomPadding: Dp, find: String? = null, showBack: Boolean =
         checkNow = { c.updates.checkNow() },
         shareDiagnostics = {
             scope.launch {
-                val file = withContext(Dispatchers.IO) { AudioDiagnostics.export(context, AudioDiagnostics.about(c)) }
+                val file = withContext(Dispatchers.IO) {
+                    AudioDiagnostics.export(context, AudioDiagnostics.about(c) + "\n" + AudioDiagnostics.canvas(c))
+                }
                 val uri = FileProvider.getUriForFile(context, "${context.packageName}.share", file)
                 context.startActivity(Intent.createChooser(diagnosticsShareIntent(uri), tr(R.string.share_diagnostics)))
             }

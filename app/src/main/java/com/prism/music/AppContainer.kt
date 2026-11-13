@@ -1099,6 +1099,22 @@ class AppContainer(val app: Application) {
             com.prism.music.data.canvas.ClipFetcher(streamHttp, { id -> kotlinx.coroutines.withContext(Dispatchers.IO) { innerTube.visionOsPlayer(id) } }, clipFiles),
         ).apply { files = clipFiles }
     }
+    /** 1.8.6: the next two songs' loops got ready on Wi-Fi, and downloads' kept with them (plan-canvas 4.8). */
+    val canvasAhead by lazy {
+        com.prism.music.data.canvas.CanvasAhead(scope, object : com.prism.music.data.canvas.CanvasAhead.Facts {
+            override fun settings() = settings.current
+            override fun metered() = app.getSystemService(android.net.ConnectivityManager::class.java)?.isActiveNetworkMetered != false
+            override fun hidden(songId: String) = songId in canvas.hidden.value
+            override fun saved(song: com.prism.music.data.model.Song) = canvas.isSaved(song)
+            override fun savedById(songId: String) = canvas.saved.value.has(songId, null)
+            override suspend fun choice(songId: String) = canvasClips.choice(songId)
+            override suspend fun hasCover(song: com.prism.music.data.model.Song) = canvas.canvasFor(song) != null
+            override suspend fun prepare(song: com.prism.music.data.model.Song, height: Int, saved: Boolean, allowed: () -> Boolean) =
+                canvasClips.prepare(song, height, saved, allowed)
+            override suspend fun videoOf(songId: String) = canvasClips.row(songId)?.videoId
+            override fun unsave(videoId: String) = clipFiles.unsave(videoId)
+        })
+    }
     fun songCacheBytes(): Long = runCatching { playerCache.cacheSpace }.getOrDefault(0)
 
     fun clearSongCache() {
