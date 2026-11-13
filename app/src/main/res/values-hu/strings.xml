@@ -5385,4 +5385,34 @@
     <string name="gb_lyrics_cover_plays">Koppints a kis borítóra a lejátszáshoz vagy szüneteltetéshez</string>
     <string name="gb_lyrics_cover_plays_info">Megnyitott dalszövegnél a kis borítóra koppintva elindul vagy szünetel a lejátszás, hosszú nyomásra pedig bezárul a dalszöveg. Kikapcsolva: koppintásra bezárul a dalszöveg.</string>
     <string name="gb_lyrics_cover_plays_keywords">dalszöveg kis borító bélyegkép borítókép koppintás lejátszás szünet hosszú nyomás bezárás lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">Hol jelenjen meg</string>
+    <string name="canvas_use_videos">Zenei videók használata</string>
+    <string name="canvas_use_videos_info">Ha egy dalnak nincs animált borítója, a dal saját YouTube-os zenei videójából egy rövid, néma hurkot vágunk ki. Egyszer töltődik le, Wi-Fin, utána a telefonról játszódik le: dalonként kb. 5 MB Teljes képernyőn, kb. 2 MB a borítón.</string>
+    <string name="canvas_both">Ha egy dalhoz mindkettő van</string>
+    <string name="canvas_both_info">Melyik játszódjon le előbb. A lejátszó ⋯ menüjében egy dalra átállítható.</string>
+    <string name="canvas_keep_controls">Vezérlők állandó mutatása</string>
+    <string name="canvas_keep_controls_info">Teljes képernyőn a vezérlők néhány másodperc után eltűnnek, érintésre visszajönnek. Bekapcsolva végig látszanak.</string>
+    <string name="canvas_lighter">Könnyebb hurkok</string>
+    <string name="canvas_lighter_info">A zenei videók hurkai 480p-ben: dalonként kb. 1 MB, Teljes képernyőn kicsit lágyabb a kép.</string>
+    <string name="canvas_ask_title">Zenei videók használata?</string>
+    <string name="canvas_ask_text">Az animált borító nélküli dalok a zenei videójukból egy rövid hurkot mutathatnak. Minden hurok egyszer töltődik le, Wi-Fin: dalonként kb. 5 MB Teljes képernyőn.</string>
+    <string name="canvas_from_videos">Canvas videókból</string>
+    <string name="canvas_from_videos_info">Kikapcsolva a zenei videók hurkai csak Wi-Fin töltődnek le. A telefonon már meglévő hurkok így is, úgy is lejátszódnak.</string>
+    <string name="canvas_keywords">animált borító mozgás grafika mozgókép hurok teljes képernyő háttér</string>
+    <string name="canvas_use_videos_keywords">zenei videó hurok klip mozgókép</string>
+    <string name="canvas_both_keywords">animált borító zenei videó először sorrend</string>
+    <string name="canvas_keep_controls_keywords">vezérlők eltűnik elrejtés teljes képernyő érintés</string>
+    <string name="canvas_lighter_keywords">minőség 480p 720p 1080p adat méret kisebb</string>
+    <string name="canvas_pick_part">Másik rész kiválasztása</string>
+    <string name="canvas_use">Használat</string>
+    <string name="canvas_not_this_video">Nem ez a videó</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">Néma, hurkolt mozgókép a zenéd mögött. Az animált borítók új nevet kaptak, és az a dal, amelynek nincs ilyen, a saját zenei videójának néhány másodpercét használhatja.</string>
+    <string name="tour_186_canvas_point_1">Teljes képernyő: a hurok kitölti a lejátszót. A vezérlők eltűnnek, és érintésre visszajönnek.</string>
+    <string name="tour_186_canvas_point_2">A(z) %1$s kikapcsolva marad, amíg be nem kapcsolod. A hurok egyszer töltődik le, Wi-Fin: dalonként kb. 5 MB Teljes képernyőn.</string>
+    <string name="tour_186_canvas_point_3">A lejátszó ⋯ menüje: %1$s vagy %2$s.</string>
+    <string name="tour_186_canvas_point_4">Megáll, ha be van kapcsolva a Mozgás csökkentése, akkumulátorkímélő módban, és ha a telefon felforrósodik.</string>
+    <string name="tour_186_also_hours">Replay: a(z) %1$s megmutatja az órákat minden oszlopon.</string>
 </resources>

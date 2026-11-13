@@ -5385,4 +5385,34 @@
     <string name="gb_lyrics_cover_plays">Oynatmak veya duraklatmak için küçük kapağa dokun</string>
     <string name="gb_lyrics_cover_plays_info">Sözler açıkken küçük kapağa dokunmak oynatır veya duraklatır, uzun basmak ise sözleri kapatır. Kapalıyken: dokunmak sözleri kapatır.</string>
     <string name="gb_lyrics_cover_plays_keywords">sözler küçük kapak önizleme albüm kapağı dokun oynat duraklat uzun bas kapat lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">Nerede görünür</string>
+    <string name="canvas_use_videos">Müzik videolarını kullan</string>
+    <string name="canvas_use_videos_info">Bir şarkının hareketli kapağı yoksa, şarkının YouTube\'daki kendi müzik videosundan kısa, sessiz bir döngü kesilir. Bir kez, Wi-Fi ile alınır, sonra telefondan oynatılır: Tam ekranda şarkı başına yaklaşık 5 MB, kapakta yaklaşık 2 MB.</string>
+    <string name="canvas_both">Şarkıda ikisi de varsa</string>
+    <string name="canvas_both_info">Hangisinin önce oynayacağı. Oynatıcının ⋯ menüsünden tek bir şarkı için değiştirilebilir.</string>
+    <string name="canvas_keep_controls">Kontroller görünür kalsın</string>
+    <string name="canvas_keep_controls_info">Tam ekranda kontroller birkaç saniye sonra kaybolur ve dokununca geri gelir. Açıkken hep görünür kalırlar.</string>
+    <string name="canvas_lighter">Daha hafif döngüler</string>
+    <string name="canvas_lighter_info">Müzik videolarından döngüler 480p ile alınır: şarkı başına yaklaşık 1 MB, Tam ekranda daha yumuşak görüntü.</string>
+    <string name="canvas_ask_title">Müzik videoları kullanılsın mı?</string>
+    <string name="canvas_ask_text">Hareketli kapağı olmayan şarkılar, müzik videolarından kısa bir döngü gösterebilir. Her döngü bir kez, Wi-Fi ile alınır: Tam ekranda şarkı başına yaklaşık 5 MB.</string>
+    <string name="canvas_from_videos">Videolardan Canvas</string>
+    <string name="canvas_from_videos_info">Kapalıyken müzik videolarından döngüler yalnızca Wi-Fi ile alınır. Telefonda zaten bulunan döngüler her durumda oynatılır.</string>
+    <string name="canvas_keywords">hareketli kapak hareket kapak resmi hareketli resim döngü tam ekran arka plan</string>
+    <string name="canvas_use_videos_keywords">müzik videosu döngü klip hareketli resim</string>
+    <string name="canvas_both_keywords">hareketli kapak müzik videosu önce sıra</string>
+    <string name="canvas_keep_controls_keywords">kontroller kaybolma gizle tam ekran dokun</string>
+    <string name="canvas_lighter_keywords">kalite 480p 720p 1080p veri boyut küçük</string>
+    <string name="canvas_pick_part">Başka bir bölüm seç</string>
+    <string name="canvas_use">Kullan</string>
+    <string name="canvas_not_this_video">Bu video değil</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">Müziğinin arkasında sessiz, döngüsel bir görüntü. Hareketli kapakların adı değişti ve hareketli kapağı olmayan bir şarkı kendi müzik videosundan birkaç saniye kullanabilir.</string>
+    <string name="tour_186_canvas_point_1">Tam ekran: döngü oynatıcıyı kaplar. Kontroller kaybolur ve dokununca geri gelir.</string>
+    <string name="tour_186_canvas_point_2">%1$s, sen açana kadar kapalıdır. Döngü bir kez, Wi-Fi ile alınır: Tam ekranda şarkı başına yaklaşık 5 MB.</string>
+    <string name="tour_186_canvas_point_3">Oynatıcının ⋯ menüsü: %1$s veya %2$s.</string>
+    <string name="tour_186_canvas_point_4">Hareketi azalt açıkken, pil tasarrufunda ve telefon ısındığında durur.</string>
+    <string name="tour_186_also_hours">Replay: %1$s her çubukta saatleri gösterir.</string>
 </resources>

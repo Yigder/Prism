@@ -5535,4 +5535,34 @@
     <string name="gb_lyrics_cover_plays">Dotknij małej okładki, aby odtworzyć lub wstrzymać</string>
     <string name="gb_lyrics_cover_plays_info">Przy otwartym tekście dotknięcie małej okładki odtwarza lub wstrzymuje, a długie przytrzymanie zamyka tekst. Wyłączone: dotknięcie zamyka tekst.</string>
     <string name="gb_lyrics_cover_plays_keywords">tekst mała okładka miniatura grafika dotknięcie odtwórz wstrzymaj długie przytrzymanie zamknij lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">Gdzie się pokazuje</string>
+    <string name="canvas_use_videos">Używaj teledysków</string>
+    <string name="canvas_use_videos_info">Gdy utwór nie ma animowanej okładki, z jego własnego teledysku w YouTube wycinana jest krótka, cicha pętla. Pobiera się ją raz, przez Wi-Fi, a potem odtwarza z telefonu: około 5 MB na utwór w trybie Pełny ekran, około 2 MB na okładce.</string>
+    <string name="canvas_both">Gdy utwór ma oba</string>
+    <string name="canvas_both_info">Co odtwarza się najpierw. W menu ⋯ odtwarzacza można to zmienić dla jednego utworu.</string>
+    <string name="canvas_keep_controls">Zawsze pokazuj sterowanie</string>
+    <string name="canvas_keep_controls_info">W trybie Pełny ekran sterowanie znika po kilku sekundach i wraca po dotknięciu. Gdy włączone, zostaje na ekranie.</string>
+    <string name="canvas_lighter">Lżejsze pętle</string>
+    <string name="canvas_lighter_info">Pętle z teledysków w 480p: około 1 MB na utwór, łagodniejszy obraz w trybie Pełny ekran.</string>
+    <string name="canvas_ask_title">Używać teledysków?</string>
+    <string name="canvas_ask_text">Utwory bez animowanej okładki mogą pokazywać krótką pętlę z teledysku. Każda pętla jest pobierana raz, przez Wi-Fi: około 5 MB na utwór w trybie Pełny ekran.</string>
+    <string name="canvas_from_videos">Canvas z teledysków</string>
+    <string name="canvas_from_videos_info">Gdy wyłączone, pętle z teledysków są pobierane tylko przez Wi-Fi. Pętle, które są już w telefonie, odtwarzają się w obu przypadkach.</string>
+    <string name="canvas_keywords">animowana okładka ruch grafika ruchomy obraz pętla pełny ekran tło</string>
+    <string name="canvas_use_videos_keywords">teledysk pętla klip ruchomy obraz</string>
+    <string name="canvas_both_keywords">animowana okładka teledysk najpierw kolejność</string>
+    <string name="canvas_keep_controls_keywords">sterowanie znika ukryj pełny ekran dotknięcie</string>
+    <string name="canvas_lighter_keywords">jakość 480p 720p 1080p dane rozmiar mniejszy</string>
+    <string name="canvas_pick_part">Wybierz inny fragment</string>
+    <string name="canvas_use">Użyj</string>
+    <string name="canvas_not_this_video">To nie ten teledysk</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">Cichy, zapętlony obraz za Twoją muzyką. Animowane okładki mają nową nazwę, a utwór bez niej może użyć kilku sekund własnego teledysku.</string>
+    <string name="tour_186_canvas_point_1">Pełny ekran: pętla wypełnia odtwarzacz. Sterowanie znika i wraca po dotknięciu.</string>
+    <string name="tour_186_canvas_point_2">%1$s jest wyłączone, dopóki go nie włączysz. Pętla jest pobierana raz, przez Wi-Fi: około 5 MB na utwór w trybie Pełny ekran.</string>
+    <string name="tour_186_canvas_point_3">Menu ⋯ odtwarzacza: %1$s lub %2$s.</string>
+    <string name="tour_186_canvas_point_4">Odpoczywa przy opcji Ogranicz ruch, w oszczędzaniu baterii i gdy telefon się nagrzewa.</string>
+    <string name="tour_186_also_hours">Replay: %1$s pokazuje godziny na każdym słupku.</string>
 </resources>

@@ -5310,4 +5310,34 @@
     <string name="gb_lyrics_cover_plays">แตะที่ปกขนาดเล็กเพื่อเล่นหรือหยุดชั่วคราว</string>
     <string name="gb_lyrics_cover_plays_info">เมื่อเปิดเนื้อเพลงอยู่ การแตะที่ปกขนาดเล็กจะเล่นหรือหยุดชั่วคราว และการกดค้างจะปิดเนื้อเพลง เมื่อปิดอยู่: การแตะจะปิดเนื้อเพลง</string>
     <string name="gb_lyrics_cover_plays_keywords">เนื้อเพลง ปกเล็ก ภาพขนาดย่อ ปก แตะ เล่น หยุดชั่วคราว กดค้าง ปิด lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">แสดงที่ไหน</string>
+    <string name="canvas_use_videos">ใช้มิวสิกวิดีโอ</string>
+    <string name="canvas_use_videos_info">เมื่อเพลงไม่มีปกเคลื่อนไหว ระบบจะตัดลูปสั้น ๆ แบบไม่มีเสียงจากมิวสิกวิดีโอของเพลงนั้นบน YouTube โดยดึงมาครั้งเดียวผ่าน Wi-Fi แล้วเล่นจากโทรศัพท์: ประมาณ 5 MB ต่อเพลงในโหมดเต็มหน้าจอ ประมาณ 2 MB บนปก</string>
+    <string name="canvas_both">เมื่อเพลงมีทั้งสองอย่าง</string>
+    <string name="canvas_both_info">อย่างไหนเล่นก่อน เมนู ⋯ ของเพลเยอร์เปลี่ยนค่านี้สำหรับเพลงเดียวได้</string>
+    <string name="canvas_keep_controls">แสดงปุ่มควบคุมค้างไว้</string>
+    <string name="canvas_keep_controls_info">ในโหมดเต็มหน้าจอ ปุ่มควบคุมจะค่อย ๆ หายไปหลังไม่กี่วินาทีและกลับมาเมื่อแตะ ถ้าเปิดไว้ ปุ่มจะแสดงค้างอยู่</string>
+    <string name="canvas_lighter">ลูปแบบเบา</string>
+    <string name="canvas_lighter_info">ลูปจากมิวสิกวิดีโอที่ 480p: ประมาณ 1 MB ต่อเพลง ภาพจะนุ่มลงในโหมดเต็มหน้าจอ</string>
+    <string name="canvas_ask_title">ใช้มิวสิกวิดีโอไหม</string>
+    <string name="canvas_ask_text">เพลงที่ไม่มีปกเคลื่อนไหวสามารถแสดงลูปสั้น ๆ จากมิวสิกวิดีโอของเพลงได้ แต่ละลูปจะดึงมาครั้งเดียวผ่าน Wi-Fi: ประมาณ 5 MB ต่อเพลงในโหมดเต็มหน้าจอ</string>
+    <string name="canvas_from_videos">Canvas จากวิดีโอ</string>
+    <string name="canvas_from_videos_info">เมื่อปิด ลูปจากมิวสิกวิดีโอจะดึงผ่าน Wi-Fi เท่านั้น ลูปที่อยู่ในโทรศัพท์แล้วยังเล่นได้ตามปกติ</string>
+    <string name="canvas_keywords">ปกเคลื่อนไหว การเคลื่อนไหว ภาพเคลื่อนไหว ลูป เต็มหน้าจอ พื้นหลัง</string>
+    <string name="canvas_use_videos_keywords">มิวสิกวิดีโอ ลูป คลิป ภาพเคลื่อนไหว</string>
+    <string name="canvas_both_keywords">ปกเคลื่อนไหว มิวสิกวิดีโอ ก่อน ลำดับ</string>
+    <string name="canvas_keep_controls_keywords">ปุ่มควบคุม หาย ซ่อน เต็มหน้าจอ แตะ</string>
+    <string name="canvas_lighter_keywords">คุณภาพ 480p 720p 1080p ข้อมูล ขนาด เล็กลง</string>
+    <string name="canvas_pick_part">เลือกช่วงอื่น</string>
+    <string name="canvas_use">ใช้</string>
+    <string name="canvas_not_this_video">ไม่ใช่วิดีโอนี้</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">ภาพลูปไร้เสียงอยู่เบื้องหลังเพลงของคุณ ปกเคลื่อนไหวมีชื่อใหม่ และเพลงที่ไม่มีปกแบบนี้ก็ใช้มิวสิกวิดีโอของตัวเองได้ไม่กี่วินาที</string>
+    <string name="tour_186_canvas_point_1">เต็มหน้าจอ: ลูปเต็มทั้งเพลเยอร์ ปุ่มควบคุมจะหายไปและกลับมาเมื่อแตะ</string>
+    <string name="tour_186_canvas_point_2">%1$s ปิดอยู่จนกว่าคุณจะเปิด ลูปจะดึงมาครั้งเดียวผ่าน Wi-Fi: ประมาณ 5 MB ต่อเพลงในโหมดเต็มหน้าจอ</string>
+    <string name="tour_186_canvas_point_3">เมนู ⋯ ของเพลเยอร์: %1$s หรือ %2$s</string>
+    <string name="tour_186_canvas_point_4">จะหยุดพักเมื่อใช้ลดการเคลื่อนไหว ในโหมดประหยัดแบตเตอรี่ และเมื่อโทรศัพท์ร้อน</string>
+    <string name="tour_186_also_hours">Replay: %1$s แสดงชั่วโมงบนแต่ละแท่ง</string>
 </resources>

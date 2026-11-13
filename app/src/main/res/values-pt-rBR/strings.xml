@@ -5460,4 +5460,34 @@
     <string name="gb_lyrics_cover_plays">Toque na capa pequena para tocar ou pausar</string>
     <string name="gb_lyrics_cover_plays_info">Com a letra aberta, um toque na capa pequena toca ou pausa, e um toque longo fecha a letra. Desativado: um toque fecha a letra.</string>
     <string name="gb_lyrics_cover_plays_keywords">letra capa pequena miniatura toque tocar pausar toque longo fechar lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">Onde aparece</string>
+    <string name="canvas_use_videos">Usar videoclipes</string>
+    <string name="canvas_use_videos_info">Quando uma música não tem capa animada, um loop curto e sem som é cortado do videoclipe da própria música no YouTube. Ele é baixado uma vez, no Wi-Fi, e depois toca direto do celular: cerca de 5 MB por música em Tela cheia, cerca de 2 MB na capa.</string>
+    <string name="canvas_both">Quando a música tem os dois</string>
+    <string name="canvas_both_info">Qual toca primeiro. O menu ⋯ do player pode mudar isso para uma música.</string>
+    <string name="canvas_keep_controls">Manter os controles visíveis</string>
+    <string name="canvas_keep_controls_info">Em Tela cheia, os controles somem depois de alguns segundos e voltam com um toque. Ativado, eles ficam.</string>
+    <string name="canvas_lighter">Loops mais leves</string>
+    <string name="canvas_lighter_info">Loops de videoclipes em 480p: cerca de 1 MB por música, mais suaves em Tela cheia.</string>
+    <string name="canvas_ask_title">Usar videoclipes?</string>
+    <string name="canvas_ask_text">Músicas sem capa animada podem mostrar um loop curto do videoclipe. Cada loop é baixado uma vez, no Wi-Fi: cerca de 5 MB por música em Tela cheia.</string>
+    <string name="canvas_from_videos">Canvas de vídeos</string>
+    <string name="canvas_from_videos_info">Desativado, os loops de videoclipes só são baixados no Wi-Fi. Os loops que já estão no celular tocam de qualquer forma.</string>
+    <string name="canvas_keywords">capa animada movimento arte imagem em movimento loop tela cheia plano de fundo</string>
+    <string name="canvas_use_videos_keywords">videoclipe loop clipe imagem em movimento</string>
+    <string name="canvas_both_keywords">capa animada videoclipe primeiro ordem</string>
+    <string name="canvas_keep_controls_keywords">controles sumir esconder tela cheia toque</string>
+    <string name="canvas_lighter_keywords">qualidade 480p 720p 1080p dados tamanho menor</string>
+    <string name="canvas_pick_part">Escolher outro trecho</string>
+    <string name="canvas_use">Usar</string>
+    <string name="canvas_not_this_video">Não é este vídeo</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">Uma imagem silenciosa em loop atrás da sua música. As capas animadas ganharam um novo nome, e uma música sem uma pode usar alguns segundos do próprio videoclipe.</string>
+    <string name="tour_186_canvas_point_1">Tela cheia: o loop preenche o player. Os controles somem e voltam com um toque.</string>
+    <string name="tour_186_canvas_point_2">%1$s fica desativado até você ativar. Um loop é baixado uma vez, no Wi-Fi: cerca de 5 MB por música em Tela cheia.</string>
+    <string name="tour_186_canvas_point_3">O menu ⋯ do player: %1$s ou %2$s.</string>
+    <string name="tour_186_canvas_point_4">Ele descansa com Reduzir movimento, na economia de bateria e quando o celular esquenta.</string>
+    <string name="tour_186_also_hours">Replay: %1$s mostra as horas em cada barra.</string>
 </resources>

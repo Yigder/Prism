@@ -5310,4 +5310,34 @@
     <string name="gb_lyrics_cover_plays">Ketuk sampul kecil untuk memutar atau menjeda</string>
     <string name="gb_lyrics_cover_plays_info">Saat lirik terbuka, mengetuk sampul kecil akan memutar atau menjeda, dan menekan lama akan menutup lirik. Nonaktif: mengetuk akan menutup lirik.</string>
     <string name="gb_lyrics_cover_plays_keywords">lirik sampul kecil gambar mini sampul ketuk putar jeda tekan lama tutup lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">Tempat tampil</string>
+    <string name="canvas_use_videos">Pakai video musik</string>
+    <string name="canvas_use_videos_info">Jika lagu tidak punya sampul animasi, loop singkat tanpa suara dipotong dari video musik asli lagu itu di YouTube. Loop diambil sekali lewat Wi-Fi, lalu diputar dari ponsel: sekitar 5 MB per lagu di Layar penuh, sekitar 2 MB di sampul.</string>
+    <string name="canvas_both">Jika lagu punya keduanya</string>
+    <string name="canvas_both_info">Mana yang diputar lebih dulu. Menu ⋯ di pemutar bisa mengubahnya untuk satu lagu.</string>
+    <string name="canvas_keep_controls">Tampilkan kontrol terus</string>
+    <string name="canvas_keep_controls_info">Di Layar penuh, kontrol menghilang setelah beberapa detik dan muncul lagi saat diketuk. Jika aktif, kontrol tetap tampil.</string>
+    <string name="canvas_lighter">Loop lebih ringan</string>
+    <string name="canvas_lighter_info">Loop dari video musik dalam 480p: sekitar 1 MB per lagu, sedikit lebih lembut di Layar penuh.</string>
+    <string name="canvas_ask_title">Pakai video musik?</string>
+    <string name="canvas_ask_text">Lagu tanpa sampul animasi bisa menampilkan loop singkat dari video musiknya. Setiap loop diambil sekali lewat Wi-Fi: sekitar 5 MB per lagu di Layar penuh.</string>
+    <string name="canvas_from_videos">Canvas dari video</string>
+    <string name="canvas_from_videos_info">Jika nonaktif, loop dari video musik hanya diambil lewat Wi-Fi. Loop yang sudah ada di ponsel tetap diputar.</string>
+    <string name="canvas_keywords">sampul animasi gerak gambar bergerak loop layar penuh latar</string>
+    <string name="canvas_use_videos_keywords">video musik loop klip gambar bergerak</string>
+    <string name="canvas_both_keywords">sampul animasi video musik pertama urutan</string>
+    <string name="canvas_keep_controls_keywords">kontrol hilang sembunyikan layar penuh ketuk</string>
+    <string name="canvas_lighter_keywords">kualitas 480p 720p 1080p data ukuran lebih kecil</string>
+    <string name="canvas_pick_part">Pilih bagian lain</string>
+    <string name="canvas_use">Pakai</string>
+    <string name="canvas_not_this_video">Bukan video ini</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">Gambar loop tanpa suara di balik musikmu. Sampul animasi punya nama baru, dan lagu yang tidak punya bisa memakai beberapa detik dari video musiknya sendiri.</string>
+    <string name="tour_186_canvas_point_1">Layar penuh: loop memenuhi pemutar. Kontrol menghilang dan muncul lagi saat diketuk.</string>
+    <string name="tour_186_canvas_point_2">%1$s nonaktif sampai kamu mengaktifkannya. Loop diambil sekali lewat Wi-Fi: sekitar 5 MB per lagu di Layar penuh.</string>
+    <string name="tour_186_canvas_point_3">Menu ⋯ di pemutar: %1$s, atau %2$s.</string>
+    <string name="tour_186_canvas_point_4">Berhenti saat Kurangi gerakan aktif, di mode hemat baterai, dan saat ponsel panas.</string>
+    <string name="tour_186_also_hours">Replay: %1$s menampilkan jam di setiap batang.</string>
 </resources>

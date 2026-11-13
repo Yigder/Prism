@@ -5385,4 +5385,34 @@
     <string name="gb_lyrics_cover_plays">Πάτημα στο μικρό εξώφυλλο για αναπαραγωγή ή παύση</string>
     <string name="gb_lyrics_cover_plays_info">Με ανοιχτούς τους στίχους, ένα πάτημα στο μικρό εξώφυλλο ξεκινά ή παύει την αναπαραγωγή και ένα παρατεταμένο πάτημα κλείνει τους στίχους. Ανενεργό: ένα πάτημα κλείνει τους στίχους.</string>
     <string name="gb_lyrics_cover_plays_keywords">στίχοι μικρό εξώφυλλο μικρογραφία πάτημα αναπαραγωγή παύση παρατεταμένο πάτημα κλείσιμο lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">Πού εμφανίζεται</string>
+    <string name="canvas_use_videos">Χρήση μουσικών βίντεο</string>
+    <string name="canvas_use_videos_info">Όταν ένα τραγούδι δεν έχει κινούμενο εξώφυλλο, κόβεται ένα σύντομο βουβό λουπάρισμα από το δικό του μουσικό βίντεο στο YouTube. Κατεβαίνει μία φορά, μέσω Wi-Fi, και μετά παίζει από το τηλέφωνο: περίπου 5 MB ανά τραγούδι σε πλήρη οθόνη, περίπου 2 MB στο εξώφυλλο.</string>
+    <string name="canvas_both">Όταν ένα τραγούδι έχει και τα δύο</string>
+    <string name="canvas_both_info">Ποιο παίζει πρώτο. Από το μενού ⋯ της οθόνης αναπαραγωγής αλλάζει για ένα τραγούδι.</string>
+    <string name="canvas_keep_controls">Συνεχής εμφάνιση χειριστηρίων</string>
+    <string name="canvas_keep_controls_info">Σε πλήρη οθόνη τα χειριστήρια εξαφανίζονται μετά από λίγα δευτερόλεπτα και επιστρέφουν με ένα άγγιγμα. Όταν είναι ενεργό, μένουν.</string>
+    <string name="canvas_lighter">Ελαφρύτερα λουπαρίσματα</string>
+    <string name="canvas_lighter_info">Λουπαρίσματα από μουσικά βίντεο στα 480p: περίπου 1 MB ανά τραγούδι, πιο απαλή εικόνα σε πλήρη οθόνη.</string>
+    <string name="canvas_ask_title">Χρήση μουσικών βίντεο;</string>
+    <string name="canvas_ask_text">Τα τραγούδια χωρίς κινούμενο εξώφυλλο μπορούν να δείχνουν ένα σύντομο λουπάρισμα από το μουσικό τους βίντεο. Κάθε λουπάρισμα κατεβαίνει μία φορά, μέσω Wi-Fi: περίπου 5 MB ανά τραγούδι σε πλήρη οθόνη.</string>
+    <string name="canvas_from_videos">Canvas από βίντεο</string>
+    <string name="canvas_from_videos_info">Όταν είναι ανενεργό, τα λουπαρίσματα από μουσικά βίντεο κατεβαίνουν μόνο μέσω Wi-Fi. Όσα υπάρχουν ήδη στο τηλέφωνο παίζουν και στις δύο περιπτώσεις.</string>
+    <string name="canvas_keywords">κινούμενο εξώφυλλο κίνηση artwork κινούμενη εικόνα λουπάρισμα πλήρης οθόνη φόντο</string>
+    <string name="canvas_use_videos_keywords">μουσικό βίντεο λουπάρισμα κλιπ κινούμενη εικόνα</string>
+    <string name="canvas_both_keywords">κινούμενο εξώφυλλο μουσικό βίντεο πρώτο σειρά</string>
+    <string name="canvas_keep_controls_keywords">χειριστήρια εξαφάνιση απόκρυψη πλήρης οθόνη άγγιγμα</string>
+    <string name="canvas_lighter_keywords">ποιότητα 480p 720p 1080p δεδομένα μέγεθος μικρότερο</string>
+    <string name="canvas_pick_part">Επιλογή άλλου τμήματος</string>
+    <string name="canvas_use">Χρήση</string>
+    <string name="canvas_not_this_video">Όχι αυτό το βίντεο</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">Μια βουβή, επαναλαμβανόμενη εικόνα πίσω από τη μουσική σου. Τα κινούμενα εξώφυλλα έχουν νέο όνομα και ένα τραγούδι χωρίς εξώφυλλο μπορεί να χρησιμοποιήσει μερικά δευτερόλεπτα από το δικό του μουσικό βίντεο.</string>
+    <string name="tour_186_canvas_point_1">Πλήρης οθόνη: το λουπάρισμα γεμίζει την οθόνη αναπαραγωγής. Τα χειριστήρια εξαφανίζονται και επιστρέφουν με ένα άγγιγμα.</string>
+    <string name="tour_186_canvas_point_2">Το «%1$s» είναι ανενεργό μέχρι να το ενεργοποιήσεις. Ένα λουπάρισμα κατεβαίνει μία φορά, μέσω Wi-Fi: περίπου 5 MB ανά τραγούδι σε πλήρη οθόνη.</string>
+    <string name="tour_186_canvas_point_3">Το μενού ⋯ της οθόνης αναπαραγωγής: «%1$s» ή «%2$s».</string>
+    <string name="tour_186_canvas_point_4">Σταματά με τη Μείωση κίνησης, στην εξοικονόμηση μπαταρίας και όταν το τηλέφωνο ζεσταίνεται.</string>
+    <string name="tour_186_also_hours">Replay: το «%1$s» δείχνει τις ώρες σε κάθε μπάρα.</string>
 </resources>

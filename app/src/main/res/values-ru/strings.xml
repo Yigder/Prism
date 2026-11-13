@@ -5535,4 +5535,34 @@
     <string name="gb_lyrics_cover_plays">Нажатие на маленькую обложку: воспроизведение или пауза</string>
     <string name="gb_lyrics_cover_plays_info">При открытом тексте нажатие на маленькую обложку включает воспроизведение или паузу, а долгое нажатие закрывает текст. Выключено: нажатие закрывает текст.</string>
     <string name="gb_lyrics_cover_plays_keywords">текст песни маленькая обложка миниатюра нажатие играть пауза долгое нажатие закрыть lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">Где показывать</string>
+    <string name="canvas_use_videos">Использовать клипы</string>
+    <string name="canvas_use_videos_info">Если у песни нет анимированной обложки, из её клипа на YouTube вырезается короткий беззвучный ролик. Он загружается один раз по Wi-Fi, затем воспроизводится с телефона: около 5 МБ на песню в режиме «Во весь экран», около 2 МБ на обложке.</string>
+    <string name="canvas_both">Если есть и то и другое</string>
+    <string name="canvas_both_info">Что воспроизводится первым. В меню ⋯ плеера это можно изменить для одной песни.</string>
+    <string name="canvas_keep_controls">Не скрывать кнопки</string>
+    <string name="canvas_keep_controls_info">Во весь экран кнопки исчезают через несколько секунд и возвращаются по касанию. Если включено, они остаются.</string>
+    <string name="canvas_lighter">Облегчённые ролики</string>
+    <string name="canvas_lighter_info">Ролики из клипов в 480p: около 1 МБ на песню, чуть мягче в режиме «Во весь экран».</string>
+    <string name="canvas_ask_title">Использовать клипы?</string>
+    <string name="canvas_ask_text">Песни без анимированной обложки могут показывать короткий ролик из своего клипа. Каждый ролик загружается один раз по Wi-Fi: около 5 МБ на песню в режиме «Во весь экран».</string>
+    <string name="canvas_from_videos">Canvas из клипов</string>
+    <string name="canvas_from_videos_info">Если выключено, ролики из клипов загружаются только по Wi-Fi. Ролики, уже сохранённые на телефоне, воспроизводятся в любом случае.</string>
+    <string name="canvas_keywords">анимированная обложка движение живая картинка ролик цикл петля во весь экран фон</string>
+    <string name="canvas_use_videos_keywords">клип музыкальное видео ролик цикл петля живая картинка</string>
+    <string name="canvas_both_keywords">анимированная обложка клип музыкальное видео первым порядок</string>
+    <string name="canvas_keep_controls_keywords">кнопки управление исчезают скрыть во весь экран касание</string>
+    <string name="canvas_lighter_keywords">качество 480p 720p 1080p трафик данные размер меньше</string>
+    <string name="canvas_pick_part">Выбрать другой фрагмент</string>
+    <string name="canvas_use">Показывать</string>
+    <string name="canvas_not_this_video">Не тот клип</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">Беззвучная зацикленная картинка за вашей музыкой. У анимированных обложек новое название, а песня без такой обложки может использовать несколько секунд своего клипа.</string>
+    <string name="tour_186_canvas_point_1">Во весь экран: ролик заполняет плеер. Кнопки исчезают и возвращаются по касанию.</string>
+    <string name="tour_186_canvas_point_2">«%1$s» выключено, пока вы его не включите. Ролик загружается один раз по Wi-Fi: около 5 МБ на песню в режиме «Во весь экран».</string>
+    <string name="tour_186_canvas_point_3">В меню ⋯ плеера: «%1$s» или «%2$s».</string>
+    <string name="tour_186_canvas_point_4">Отдыхает при уменьшении движения, в режиме энергосбережения и когда телефон нагрелся.</string>
+    <string name="tour_186_also_hours">Replay: «%1$s» показывает часы на каждом столбце.</string>
 </resources>

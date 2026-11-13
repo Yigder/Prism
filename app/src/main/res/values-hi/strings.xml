@@ -5385,4 +5385,34 @@
     <string name="gb_lyrics_cover_plays">छोटे कवर पर टैप करके चलाएं या रोकें</string>
     <string name="gb_lyrics_cover_plays_info">बोल खुले होने पर छोटे कवर पर टैप करने से गाना चलता या रुकता है और देर तक दबाने से बोल बंद हो जाते हैं। बंद होने पर: टैप करने से बोल बंद हो जाते हैं।</string>
     <string name="gb_lyrics_cover_plays_keywords">बोल छोटा कवर थंबनेल आर्टवर्क टैप चलाएं रोकें देर तक दबाएं बंद lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">कहाँ दिखे</string>
+    <string name="canvas_use_videos">म्यूज़िक वीडियो इस्तेमाल करें</string>
+    <string name="canvas_use_videos_info">जिस गाने का एनिमेटेड कवर नहीं है, उसके लिए YouTube पर उसी गाने के म्यूज़िक वीडियो से एक छोटा, बिना आवाज़ का लूप काटा जाता है। यह Wi-Fi पर एक बार लाया जाता है, फिर फ़ोन से चलता है: पूरी स्क्रीन में एक गाने का लगभग 5 MB, कवर पर लगभग 2 MB।</string>
+    <string name="canvas_both">जब गाने में दोनों हों</string>
+    <string name="canvas_both_info">पहले कौन-सा चलेगा। प्लेयर के ⋯ मेन्यू से एक गाने के लिए इसे बदला जा सकता है।</string>
+    <string name="canvas_keep_controls">कंट्रोल दिखते रहें</string>
+    <string name="canvas_keep_controls_info">पूरी स्क्रीन में कंट्रोल कुछ सेकंड बाद गायब हो जाते हैं और टैप करने पर लौट आते हैं। चालू होने पर वे दिखते रहते हैं।</string>
+    <string name="canvas_lighter">हल्के लूप</string>
+    <string name="canvas_lighter_info">म्यूज़िक वीडियो के लूप 480p में: एक गाने का लगभग 1 MB, पूरी स्क्रीन में थोड़े कम साफ़।</string>
+    <string name="canvas_ask_title">म्यूज़िक वीडियो इस्तेमाल करें?</string>
+    <string name="canvas_ask_text">जिन गानों का एनिमेटेड कवर नहीं है, वे अपने म्यूज़िक वीडियो का छोटा लूप दिखा सकते हैं। हर लूप Wi-Fi पर एक बार लाया जाता है: पूरी स्क्रीन में एक गाने का लगभग 5 MB।</string>
+    <string name="canvas_from_videos">वीडियो से Canvas</string>
+    <string name="canvas_from_videos_info">बंद होने पर म्यूज़िक वीडियो के लूप सिर्फ़ Wi-Fi पर लाए जाते हैं। फ़ोन में पहले से मौजूद लूप दोनों हालत में चलते हैं।</string>
+    <string name="canvas_keywords">एनिमेटेड कवर मोशन आर्टवर्क चलती तस्वीर लूप पूरी स्क्रीन बैकग्राउंड</string>
+    <string name="canvas_use_videos_keywords">म्यूज़िक वीडियो लूप क्लिप चलती तस्वीर</string>
+    <string name="canvas_both_keywords">एनिमेटेड कवर म्यूज़िक वीडियो पहले क्रम</string>
+    <string name="canvas_keep_controls_keywords">कंट्रोल गायब छिपाएं पूरी स्क्रीन टैप</string>
+    <string name="canvas_lighter_keywords">क्वालिटी 480p 720p 1080p डेटा साइज़ छोटा</string>
+    <string name="canvas_pick_part">दूसरा हिस्सा चुनें</string>
+    <string name="canvas_use">इस्तेमाल</string>
+    <string name="canvas_not_this_video">यह वीडियो नहीं</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">आपके संगीत के पीछे बिना आवाज़ की, लूप में चलती तस्वीर। एनिमेटेड कवर को नया नाम मिला है, और जिस गाने का कवर एनिमेटेड नहीं है, वह अपने म्यूज़िक वीडियो के कुछ सेकंड इस्तेमाल कर सकता है।</string>
+    <string name="tour_186_canvas_point_1">पूरी स्क्रीन: लूप पूरे प्लेयर में फैल जाता है। कंट्रोल गायब हो जाते हैं और टैप करने पर लौट आते हैं।</string>
+    <string name="tour_186_canvas_point_2">%1$s आपके चालू करने तक बंद रहता है। लूप Wi-Fi पर एक बार लाया जाता है: पूरी स्क्रीन में एक गाने का लगभग 5 MB।</string>
+    <string name="tour_186_canvas_point_3">प्लेयर का ⋯ मेन्यू: %1$s, या %2$s।</string>
+    <string name="tour_186_canvas_point_4">यह मोशन कम करें के साथ, बैटरी सेवर में और फ़ोन गर्म होने पर रुक जाता है।</string>
+    <string name="tour_186_also_hours">Replay: %1$s हर बार पर घंटे दिखाता है।</string>
 </resources>

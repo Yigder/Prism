@@ -5460,4 +5460,34 @@
     <string name="gb_lyrics_cover_plays">הקשה על העטיפה הקטנה להפעלה או השהיה</string>
     <string name="gb_lyrics_cover_plays_info">כשהמילים פתוחות, הקשה על העטיפה הקטנה מפעילה או משהה, ולחיצה ארוכה סוגרת את המילים. כבוי: הקשה סוגרת את המילים.</string>
     <string name="gb_lyrics_cover_plays_keywords">מילים עטיפה קטנה תמונה ממוזערת הקשה הפעלה השהיה לחיצה ארוכה סגירה lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">היכן להציג</string>
+    <string name="canvas_use_videos">שימוש בקליפים</string>
+    <string name="canvas_use_videos_info">כשלשיר אין עטיפה מונפשת, נחתך לופ קצר ושקט מהקליפ של השיר ב-YouTube. הוא יורד פעם אחת, ב-Wi-Fi, ואז מתנגן מהטלפון: כ-5 MB לשיר במסך מלא, כ-2 MB על העטיפה.</string>
+    <string name="canvas_both">כשלשיר יש את שניהם</string>
+    <string name="canvas_both_info">איזה מהם מתנגן קודם. אפשר לשנות זאת לשיר אחד בתפריט ⋯ של הנגן.</string>
+    <string name="canvas_keep_controls">להשאיר את הפקדים גלויים</string>
+    <string name="canvas_keep_controls_info">במסך מלא הפקדים נעלמים אחרי כמה שניות וחוזרים בהקשה. כשהאפשרות פועלת, הם נשארים.</string>
+    <string name="canvas_lighter">לופים קלים יותר</string>
+    <string name="canvas_lighter_info">לופים מקליפים ב-480p: כ-1 MB לשיר, רכים יותר במסך מלא.</string>
+    <string name="canvas_ask_title">להשתמש בקליפים?</string>
+    <string name="canvas_ask_text">שירים בלי עטיפה מונפשת יכולים להציג לופ קצר מהקליפ שלהם. כל לופ יורד פעם אחת, ב-Wi-Fi: כ-5 MB לשיר במסך מלא.</string>
+    <string name="canvas_from_videos">Canvas מקליפים</string>
+    <string name="canvas_from_videos_info">כשהאפשרות כבויה, לופים מקליפים יורדים רק ב-Wi-Fi. לופים שכבר בטלפון מתנגנים בכל מקרה.</string>
+    <string name="canvas_keywords">עטיפה מונפשת תנועה יצירה תמונה נעה לופ מסך מלא רקע</string>
+    <string name="canvas_use_videos_keywords">קליפ לופ וידאו תמונה נעה</string>
+    <string name="canvas_both_keywords">עטיפה מונפשת קליפ קודם סדר</string>
+    <string name="canvas_keep_controls_keywords">פקדים נעלמים הסתרה מסך מלא הקשה</string>
+    <string name="canvas_lighter_keywords">איכות 480p 720p 1080p נתונים גודל קטן יותר</string>
+    <string name="canvas_pick_part">בחירת קטע אחר</string>
+    <string name="canvas_use">שימוש</string>
+    <string name="canvas_not_this_video">לא הקליפ הזה</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">תמונה שקטה ומתחלפת בלופ מאחורי המוזיקה שלך. לעטיפות מונפשות יש שם חדש, ושיר בלי עטיפה כזו יכול להשתמש בכמה שניות מהקליפ שלו.</string>
+    <string name="tour_186_canvas_point_1">מסך מלא: הלופ ממלא את הנגן. הפקדים נעלמים וחוזרים בהקשה.</string>
+    <string name="tour_186_canvas_point_2">\"%1$s\" כבוי עד שתפעילו אותו. כל לופ יורד פעם אחת, ב-Wi-Fi: כ-5 MB לשיר במסך מלא.</string>
+    <string name="tour_186_canvas_point_3">בתפריט ⋯ של הנגן: \"%1$s\" או \"%2$s\".</string>
+    <string name="tour_186_canvas_point_4">הוא נח כשהפחתת תנועה פועלת, בחיסכון בסוללה וכשהטלפון מתחמם.</string>
+    <string name="tour_186_also_hours">Replay: \"%1$s\" מציג את השעות על כל עמודה.</string>
 </resources>

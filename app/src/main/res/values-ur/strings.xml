@@ -5385,4 +5385,34 @@
     <string name="gb_lyrics_cover_plays">چھوٹے کور پر ٹیپ کر کے چلائیں یا روکیں</string>
     <string name="gb_lyrics_cover_plays_info">بول کھلے ہوں تو چھوٹے کور پر ٹیپ کرنے سے گانا چلتا یا رکتا ہے اور دیر تک دبانے سے بول بند ہو جاتے ہیں۔ بند ہونے پر: ٹیپ کرنے سے بول بند ہو جاتے ہیں۔</string>
     <string name="gb_lyrics_cover_plays_keywords">بول چھوٹا کور تھمب نیل آرٹ ورک ٹیپ چلائیں روکیں دیر تک دبائیں بند lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">کہاں دکھائے</string>
+    <string name="canvas_use_videos">میوزک ویڈیوز استعمال کریں</string>
+    <string name="canvas_use_videos_info">اگر گانے کا اینیمیٹڈ کور نہ ہو تو YouTube پر گانے کی اپنی میوزک ویڈیو سے ایک مختصر، خاموش لوپ کاٹا جاتا ہے۔ وہ ایک بار Wi-Fi پر حاصل کیا جاتا ہے، پھر فون سے چلتا ہے: پوری اسکرین میں تقریباً 5 MB فی گانا، کور پر تقریباً 2 MB۔</string>
+    <string name="canvas_both">جب گانے میں دونوں ہوں</string>
+    <string name="canvas_both_info">پہلے کون سا چلے۔ پلیئر کے ⋯ مینو سے کسی ایک گانے کے لیے اسے بدلا جا سکتا ہے۔</string>
+    <string name="canvas_keep_controls">کنٹرولز دکھاتے رہیں</string>
+    <string name="canvas_keep_controls_info">پوری اسکرین میں کنٹرولز چند سیکنڈ بعد غائب ہو جاتے ہیں اور ٹیپ کرنے پر واپس آتے ہیں۔ آن ہو تو وہ دکھائی دیتے رہتے ہیں۔</string>
+    <string name="canvas_lighter">ہلکے لوپس</string>
+    <string name="canvas_lighter_info">میوزک ویڈیوز سے لوپس 480p میں: تقریباً 1 MB فی گانا، پوری اسکرین میں قدرے نرم تصویر۔</string>
+    <string name="canvas_ask_title">میوزک ویڈیوز استعمال کریں؟</string>
+    <string name="canvas_ask_text">جن گانوں کا اینیمیٹڈ کور نہیں ہوتا وہ اپنی میوزک ویڈیو سے ایک مختصر لوپ دکھا سکتے ہیں۔ ہر لوپ ایک بار Wi-Fi پر حاصل ہوتا ہے: پوری اسکرین میں تقریباً 5 MB فی گانا۔</string>
+    <string name="canvas_from_videos">ویڈیوز سے Canvas</string>
+    <string name="canvas_from_videos_info">بند ہو تو میوزک ویڈیوز کے لوپس صرف Wi-Fi پر حاصل ہوتے ہیں۔ فون میں پہلے سے موجود لوپس دونوں صورتوں میں چلتے ہیں۔</string>
+    <string name="canvas_keywords">اینیمیٹڈ کور حرکت آرٹ ورک متحرک تصویر لوپ پوری اسکرین پس منظر</string>
+    <string name="canvas_use_videos_keywords">میوزک ویڈیو لوپ کلپ متحرک تصویر</string>
+    <string name="canvas_both_keywords">اینیمیٹڈ کور میوزک ویڈیو پہلے ترتیب</string>
+    <string name="canvas_keep_controls_keywords">کنٹرولز غائب چھپانا پوری اسکرین ٹیپ</string>
+    <string name="canvas_lighter_keywords">کوالٹی 480p 720p 1080p ڈیٹا سائز چھوٹا</string>
+    <string name="canvas_pick_part">کوئی اور حصہ چنیں</string>
+    <string name="canvas_use">استعمال</string>
+    <string name="canvas_not_this_video">یہ ویڈیو نہیں</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">آپ کی موسیقی کے پیچھے ایک خاموش، لوپ ہوتی تصویر۔ اینیمیٹڈ کورز کا نیا نام ہے، اور جس گانے کا کور نہ ہو وہ اپنی میوزک ویڈیو کے چند سیکنڈ استعمال کر سکتا ہے۔</string>
+    <string name="tour_186_canvas_point_1">پوری اسکرین: لوپ پورے پلیئر پر چھا جاتا ہے۔ کنٹرولز غائب ہو جاتے ہیں اور ٹیپ کرنے پر واپس آتے ہیں۔</string>
+    <string name="tour_186_canvas_point_2">%1$s اس وقت تک بند رہتا ہے جب تک آپ اسے آن نہ کریں۔ لوپ ایک بار Wi-Fi پر حاصل ہوتا ہے: پوری اسکرین میں تقریباً 5 MB فی گانا۔</string>
+    <string name="tour_186_canvas_point_3">پلیئر کا ⋯ مینو: %1$s، یا %2$s۔</string>
+    <string name="tour_186_canvas_point_4">یہ حرکت کم کریں کے ساتھ، بیٹری سیور میں اور فون گرم ہونے پر رک جاتا ہے۔</string>
+    <string name="tour_186_also_hours">Replay: %1$s ہر بار پر گھنٹے دکھاتا ہے۔</string>
 </resources>

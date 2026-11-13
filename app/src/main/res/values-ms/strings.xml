@@ -5310,4 +5310,34 @@
     <string name="gb_lyrics_cover_plays">Ketik kulit album kecil untuk main atau jeda</string>
     <string name="gb_lyrics_cover_plays_info">Apabila lirik dibuka, mengetik kulit album kecil akan main atau jeda, dan tekan lama menutup lirik. Mati: mengetik menutup lirik.</string>
     <string name="gb_lyrics_cover_plays_keywords">lirik kulit album kecil lakaran kecil gambar sampul ketik main jeda tekan lama tutup lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">Tempat ia dipaparkan</string>
+    <string name="canvas_use_videos">Guna video muzik</string>
+    <string name="canvas_use_videos_info">Apabila lagu tiada kulit beranimasi, gelung senyap yang pendek dipotong daripada video muzik lagu itu sendiri di YouTube. Ia diambil sekali sahaja, melalui Wi-Fi, kemudian dimainkan dari telefon: kira-kira 5 MB satu lagu dalam Skrin penuh, kira-kira 2 MB pada kulit.</string>
+    <string name="canvas_both">Apabila lagu ada kedua-duanya</string>
+    <string name="canvas_both_info">Yang mana dimainkan dahulu. Menu ⋯ pemain boleh mengubahnya untuk satu lagu.</string>
+    <string name="canvas_keep_controls">Kekalkan kawalan dipaparkan</string>
+    <string name="canvas_keep_controls_info">Dalam Skrin penuh, kawalan pudar selepas beberapa saat dan muncul semula apabila diketik. Jika dihidupkan, kawalan kekal.</string>
+    <string name="canvas_lighter">Gelung lebih ringan</string>
+    <string name="canvas_lighter_info">Gelung daripada video muzik pada 480p: kira-kira 1 MB satu lagu, lebih lembut dalam Skrin penuh.</string>
+    <string name="canvas_ask_title">Guna video muzik?</string>
+    <string name="canvas_ask_text">Lagu tanpa kulit beranimasi boleh memaparkan gelung pendek daripada video muzik. Setiap gelung diambil sekali sahaja, melalui Wi-Fi: kira-kira 5 MB satu lagu dalam Skrin penuh.</string>
+    <string name="canvas_from_videos">Canvas daripada video</string>
+    <string name="canvas_from_videos_info">Jika dimatikan, gelung daripada video muzik hanya diambil melalui Wi-Fi. Gelung yang sudah ada pada telefon tetap dimainkan.</string>
+    <string name="canvas_keywords">kulit beranimasi gerakan karya seni gambar bergerak gelung skrin penuh latar belakang</string>
+    <string name="canvas_use_videos_keywords">video muzik gelung klip gambar bergerak</string>
+    <string name="canvas_both_keywords">kulit beranimasi video muzik dahulu susunan</string>
+    <string name="canvas_keep_controls_keywords">kawalan pudar sembunyi skrin penuh ketik</string>
+    <string name="canvas_lighter_keywords">kualiti 480p 720p 1080p data saiz lebih kecil</string>
+    <string name="canvas_pick_part">Pilih bahagian lain</string>
+    <string name="canvas_use">Guna</string>
+    <string name="canvas_not_this_video">Bukan video ini</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">Gambar senyap yang berulang di belakang muzik anda. Kulit beranimasi kini ada nama baharu, dan lagu tanpanya boleh menggunakan beberapa saat daripada video muziknya sendiri.</string>
+    <string name="tour_186_canvas_point_1">Skrin penuh: gelung memenuhi pemain. Kawalan pudar dan muncul semula apabila diketik.</string>
+    <string name="tour_186_canvas_point_2">%1$s dimatikan sehingga anda menghidupkannya. Gelung diambil sekali sahaja, melalui Wi-Fi: kira-kira 5 MB satu lagu dalam Skrin penuh.</string>
+    <string name="tour_186_canvas_point_3">Menu ⋯ pemain: %1$s, atau %2$s.</string>
+    <string name="tour_186_canvas_point_4">Ia berehat dengan Kurangkan gerakan, dalam penjimat bateri dan apabila telefon menjadi panas.</string>
+    <string name="tour_186_also_hours">Replay: %1$s menunjukkan jam pada setiap bar.</string>
 </resources>

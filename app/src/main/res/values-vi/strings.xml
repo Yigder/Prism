@@ -5310,4 +5310,34 @@
     <string name="gb_lyrics_cover_plays">Chạm vào ảnh bìa nhỏ để phát hoặc tạm dừng</string>
     <string name="gb_lyrics_cover_plays_info">Khi đang mở lời bài hát, chạm vào ảnh bìa nhỏ sẽ phát hoặc tạm dừng, nhấn giữ sẽ đóng lời bài hát. Tắt: chạm sẽ đóng lời bài hát.</string>
     <string name="gb_lyrics_cover_plays_keywords">lời bài hát ảnh bìa nhỏ hình thu nhỏ chạm phát tạm dừng nhấn giữ đóng lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">Hiển thị ở đâu</string>
+    <string name="canvas_use_videos">Dùng video nhạc</string>
+    <string name="canvas_use_videos_info">Khi bài hát không có ảnh bìa động, một đoạn lặp ngắn, không tiếng sẽ được cắt từ video nhạc của chính bài hát trên YouTube. Đoạn này được tải một lần, qua Wi-Fi, rồi phát từ điện thoại: khoảng 5 MB mỗi bài ở chế độ Toàn màn hình, khoảng 2 MB trên ảnh bìa.</string>
+    <string name="canvas_both">Khi bài hát có cả hai</string>
+    <string name="canvas_both_info">Cái nào phát trước. Menu ⋯ của trình phát có thể đổi điều này cho một bài hát.</string>
+    <string name="canvas_keep_controls">Luôn hiện nút điều khiển</string>
+    <string name="canvas_keep_controls_info">Ở chế độ Toàn màn hình, các nút điều khiển mờ đi sau vài giây và hiện lại khi chạm. Khi bật, chúng luôn hiện.</string>
+    <string name="canvas_lighter">Đoạn lặp nhẹ hơn</string>
+    <string name="canvas_lighter_info">Đoạn lặp từ video nhạc ở 480p: khoảng 1 MB mỗi bài, hình mềm hơn ở chế độ Toàn màn hình.</string>
+    <string name="canvas_ask_title">Dùng video nhạc?</string>
+    <string name="canvas_ask_text">Bài hát không có ảnh bìa động có thể hiển thị một đoạn lặp ngắn từ video nhạc của bài. Mỗi đoạn được tải một lần, qua Wi-Fi: khoảng 5 MB mỗi bài ở chế độ Toàn màn hình.</string>
+    <string name="canvas_from_videos">Canvas từ video</string>
+    <string name="canvas_from_videos_info">Khi tắt, đoạn lặp từ video nhạc chỉ được tải qua Wi-Fi. Đoạn lặp đã có trên điện thoại vẫn phát bình thường.</string>
+    <string name="canvas_keywords">ảnh bìa động chuyển động ảnh nghệ thuật hình động lặp toàn màn hình nền</string>
+    <string name="canvas_use_videos_keywords">video nhạc lặp clip hình động</string>
+    <string name="canvas_both_keywords">ảnh bìa động video nhạc trước thứ tự</string>
+    <string name="canvas_keep_controls_keywords">nút điều khiển mờ ẩn toàn màn hình chạm</string>
+    <string name="canvas_lighter_keywords">chất lượng 480p 720p 1080p dữ liệu dung lượng nhỏ hơn</string>
+    <string name="canvas_pick_part">Chọn đoạn khác</string>
+    <string name="canvas_use">Dùng</string>
+    <string name="canvas_not_this_video">Không phải video này</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">Một hình ảnh lặp, không tiếng phía sau âm nhạc của bạn. Ảnh bìa động có tên mới, và bài hát không có ảnh bìa động có thể dùng vài giây từ video nhạc của chính nó.</string>
+    <string name="tour_186_canvas_point_1">Toàn màn hình: đoạn lặp phủ kín trình phát. Các nút điều khiển mờ đi và hiện lại khi chạm.</string>
+    <string name="tour_186_canvas_point_2">%1$s tắt cho đến khi bạn bật. Đoạn lặp được tải một lần, qua Wi-Fi: khoảng 5 MB mỗi bài ở chế độ Toàn màn hình.</string>
+    <string name="tour_186_canvas_point_3">Menu ⋯ của trình phát: %1$s, hoặc %2$s.</string>
+    <string name="tour_186_canvas_point_4">Nó tạm nghỉ khi bật Giảm chuyển động, khi tiết kiệm pin và khi điện thoại nóng.</string>
+    <string name="tour_186_also_hours">Replay: %1$s hiển thị số giờ trên mỗi cột.</string>
 </resources>

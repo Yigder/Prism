@@ -5385,4 +5385,34 @@
     <string name="gb_lyrics_cover_plays">با ضربه روی کاور کوچک پخش یا متوقف کنید</string>
     <string name="gb_lyrics_cover_plays_info">وقتی متن آهنگ باز است، ضربه روی کاور کوچک آهنگ را پخش یا متوقف می‌کند و لمس طولانی متن آهنگ را می‌بندد. خاموش: ضربه، متن آهنگ را می‌بندد.</string>
     <string name="gb_lyrics_cover_plays_keywords">متن آهنگ کاور کوچک تصویر بندانگشتی ضربه پخش توقف لمس طولانی بستن lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">محل نمایش</string>
+    <string name="canvas_use_videos">استفاده از موزیک‌ویدیوها</string>
+    <string name="canvas_use_videos_info">وقتی آهنگی کاور متحرک ندارد، یک لوپ کوتاه و بی‌صدا از موزیک‌ویدیوی خود آهنگ در YouTube بریده می‌شود. یک‌بار با Wi-Fi دریافت می‌شود و بعد از روی گوشی پخش می‌شود: حدود ۵ MB برای هر آهنگ در حالت تمام‌صفحه و حدود ۲ MB روی کاور.</string>
+    <string name="canvas_both">وقتی آهنگ هر دو را دارد</string>
+    <string name="canvas_both_info">کدام یک اول پخش شود. منوی ⋯ پخش‌کننده می‌تواند آن را برای یک آهنگ تغییر دهد.</string>
+    <string name="canvas_keep_controls">نمایش دائمی کنترل‌ها</string>
+    <string name="canvas_keep_controls_info">در حالت تمام‌صفحه، کنترل‌ها پس از چند ثانیه محو می‌شوند و با یک ضربه برمی‌گردند. اگر روشن باشد، می‌مانند.</string>
+    <string name="canvas_lighter">لوپ‌های سبک‌تر</string>
+    <string name="canvas_lighter_info">لوپ‌های موزیک‌ویدیو با کیفیت 480p: حدود ۱ MB برای هر آهنگ، کمی نرم‌تر در حالت تمام‌صفحه.</string>
+    <string name="canvas_ask_title">از موزیک‌ویدیوها استفاده شود؟</string>
+    <string name="canvas_ask_text">آهنگ‌های بدون کاور متحرک می‌توانند یک لوپ کوتاه از موزیک‌ویدیوی خود را نشان دهند. هر لوپ یک‌بار با Wi-Fi دریافت می‌شود: حدود ۵ MB برای هر آهنگ در حالت تمام‌صفحه.</string>
+    <string name="canvas_from_videos">Canvas از ویدیوها</string>
+    <string name="canvas_from_videos_info">اگر خاموش باشد، لوپ‌های موزیک‌ویدیو فقط با Wi-Fi دریافت می‌شوند. لوپ‌هایی که از قبل روی گوشی هستند در هر حال پخش می‌شوند.</string>
+    <string name="canvas_keywords">کاور متحرک حرکت آثار هنری تصویر متحرک لوپ تمام‌صفحه پس‌زمینه</string>
+    <string name="canvas_use_videos_keywords">موزیک‌ویدیو لوپ کلیپ تصویر متحرک</string>
+    <string name="canvas_both_keywords">کاور متحرک موزیک‌ویدیو اول ترتیب</string>
+    <string name="canvas_keep_controls_keywords">کنترل‌ها محو پنهان تمام‌صفحه ضربه</string>
+    <string name="canvas_lighter_keywords">کیفیت 480p 720p 1080p داده حجم کوچک‌تر</string>
+    <string name="canvas_pick_part">انتخاب بخش دیگر</string>
+    <string name="canvas_use">استفاده</string>
+    <string name="canvas_not_this_video">این ویدیو نه</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">یک تصویر بی‌صدا و تکرارشونده پشت موسیقی شما. کاورهای متحرک نام تازه‌ای دارند و آهنگی که کاور متحرک ندارد می‌تواند از چند ثانیه موزیک‌ویدیوی خودش استفاده کند.</string>
+    <string name="tour_186_canvas_point_1">تمام‌صفحه: لوپ تمام پخش‌کننده را پر می‌کند. کنترل‌ها محو می‌شوند و با یک ضربه برمی‌گردند.</string>
+    <string name="tour_186_canvas_point_2">«%1$s» تا وقتی روشنش نکنید خاموش است. هر لوپ یک‌بار با Wi-Fi دریافت می‌شود: حدود ۵ MB برای هر آهنگ در حالت تمام‌صفحه.</string>
+    <string name="tour_186_canvas_point_3">منوی ⋯ پخش‌کننده: «%1$s» یا «%2$s».</string>
+    <string name="tour_186_canvas_point_4">با «کاهش حرکت»، در حالت صرفه‌جویی باتری و وقتی گوشی داغ می‌شود، متوقف می‌ماند.</string>
+    <string name="tour_186_also_hours">Replay: «%1$s» ساعت‌ها را روی هر ستون نشان می‌دهد.</string>
 </resources>

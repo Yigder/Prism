@@ -26,6 +26,14 @@ class CanvasControlsTest {
         assertFalse("Reduce motion: nothing moves behind them", fades(reduce = true))
     }
 
+    @Test fun theAlbumCoverIsNotSeenOverAFullScreenCanvas() {
+        assertEquals("the canvas is up: no cover", 0f, coverOverCanvas(true, 1f, 0f), 0.001f)
+        assertEquals("still loading, or the song has none: its cover", 1f, coverOverCanvas(true, 0f, 0f), 0.001f)
+        assertEquals("they change places as it fades in", 0.6f, coverOverCanvas(true, 0.4f, 0f), 0.001f)
+        assertEquals("the small cover beside the title, over the lyrics and the queue", 1f, coverOverCanvas(true, 1f, 1f), 0.001f)
+        assertEquals("Canvas on the cover plays in the cover", 1f, coverOverCanvas(false, 1f, 0f), 0.001f)
+    }
+
     @Test fun theDarkeningLiftsWithTheControlsAndTheTitleStaysReadable() {
         val shown = canvasScrim(1f, 0f, video = false); val away = canvasScrim(0f, 0f, video = false)
         // With the controls up: what a full-screen animated cover had before 1.8.6.

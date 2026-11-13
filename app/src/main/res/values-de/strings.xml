@@ -5385,4 +5385,34 @@
     <string name="gb_lyrics_cover_plays">Auf das kleine Cover tippen, um abzuspielen oder zu pausieren</string>
     <string name="gb_lyrics_cover_plays_info">Bei geöffnetem Songtext spielt ein Tippen auf das kleine Cover ab oder pausiert, ein langer Druck schließt den Songtext. Aus: Ein Tippen schließt den Songtext.</string>
     <string name="gb_lyrics_cover_plays_keywords">Songtext kleines Cover Vorschaubild Albumcover Tippen Abspielen Pause langer Druck schließen lyrics</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">Wo es erscheint</string>
+    <string name="canvas_use_videos">Musikvideos verwenden</string>
+    <string name="canvas_use_videos_info">Hat ein Song kein animiertes Cover, wird aus seinem Musikvideo auf YouTube eine kurze, stumme Schleife geschnitten. Sie wird einmal im WLAN geladen und läuft dann vom Handy: etwa 5 MB pro Song im Vollbild, etwa 2 MB auf dem Cover.</string>
+    <string name="canvas_both">Wenn ein Song beides hat</string>
+    <string name="canvas_both_info">Was zuerst läuft. Im ⋯-Menü des Players lässt es sich für einen Song ändern.</string>
+    <string name="canvas_keep_controls">Steuerung sichtbar lassen</string>
+    <string name="canvas_keep_controls_info">Im Vollbild blendet die Steuerung nach ein paar Sekunden aus und kommt mit einem Tippen zurück. Wenn aktiviert, bleibt sie sichtbar.</string>
+    <string name="canvas_lighter">Leichtere Schleifen</string>
+    <string name="canvas_lighter_info">Schleifen aus Musikvideos in 480p: etwa 1 MB pro Song, im Vollbild weicher.</string>
+    <string name="canvas_ask_title">Musikvideos verwenden?</string>
+    <string name="canvas_ask_text">Songs ohne animiertes Cover können eine kurze Schleife aus ihrem Musikvideo zeigen. Jede Schleife wird einmal im WLAN geladen: etwa 5 MB pro Song im Vollbild.</string>
+    <string name="canvas_from_videos">Canvas aus Videos</string>
+    <string name="canvas_from_videos_info">Wenn aus, werden Schleifen aus Musikvideos nur im WLAN geladen. Schleifen, die schon auf dem Handy sind, laufen in jedem Fall.</string>
+    <string name="canvas_keywords">animiertes cover bewegung artwork bewegtes bild schleife loop vollbild hintergrund</string>
+    <string name="canvas_use_videos_keywords">musikvideo schleife loop clip bewegtes bild</string>
+    <string name="canvas_both_keywords">animiertes cover musikvideo zuerst reihenfolge</string>
+    <string name="canvas_keep_controls_keywords">steuerung ausblenden verschwinden vollbild tippen</string>
+    <string name="canvas_lighter_keywords">qualität 480p 720p 1080p daten größe kleiner</string>
+    <string name="canvas_pick_part">Anderen Ausschnitt wählen</string>
+    <string name="canvas_use">Verwenden</string>
+    <string name="canvas_not_this_video">Nicht dieses Video</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">Ein stilles, sich wiederholendes Bild hinter deiner Musik. Animierte Cover haben einen neuen Namen, und ein Song ohne eins kann ein paar Sekunden aus seinem eigenen Musikvideo nutzen.</string>
+    <string name="tour_186_canvas_point_1">Vollbild: Die Schleife füllt den Player. Die Steuerung blendet aus und kommt mit einem Tippen zurück.</string>
+    <string name="tour_186_canvas_point_2">%1$s ist aus, bis du es einschaltest. Eine Schleife wird einmal im WLAN geladen: etwa 5 MB pro Song im Vollbild.</string>
+    <string name="tour_186_canvas_point_3">Das ⋯-Menü des Players: %1$s oder %2$s.</string>
+    <string name="tour_186_canvas_point_4">Sie pausiert bei Bewegung reduzieren, im Energiesparmodus und wenn das Handy heiß wird.</string>
+    <string name="tour_186_also_hours">Replay: %1$s zeigt die Stunden an jedem Balken.</string>
 </resources>

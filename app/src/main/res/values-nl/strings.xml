@@ -5385,4 +5385,34 @@
     <string name="gb_lyrics_cover_plays">Tik op de kleine cover om af te spelen of te pauzeren</string>
     <string name="gb_lyrics_cover_plays_info">Met geopende songtekst speelt een tik op de kleine cover af of pauzeert, en een lange druk sluit de songtekst. Uit: een tik sluit de songtekst.</string>
     <string name="gb_lyrics_cover_plays_keywords">songtekst kleine cover miniatuur albumhoes tik afspelen pauzeren lange druk sluiten lyrics</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">Waar het verschijnt</string>
+    <string name="canvas_use_videos">Muziekvideo\'s gebruiken</string>
+    <string name="canvas_use_videos_info">Als een nummer geen geanimeerde cover heeft, wordt een korte stille loop geknipt uit de eigen muziekvideo van het nummer op YouTube. Die wordt eenmalig opgehaald via Wi-Fi en daarna afgespeeld vanaf de telefoon: ongeveer 5 MB per nummer in Volledig scherm, ongeveer 2 MB op de cover.</string>
+    <string name="canvas_both">Als een nummer beide heeft</string>
+    <string name="canvas_both_info">Welke als eerste speelt. Via het ⋯-menu van de speler kun je dit voor één nummer wijzigen.</string>
+    <string name="canvas_keep_controls">Bediening zichtbaar houden</string>
+    <string name="canvas_keep_controls_info">In Volledig scherm verdwijnt de bediening na een paar seconden en komt die terug met een tik. Staat dit aan, dan blijft de bediening zichtbaar.</string>
+    <string name="canvas_lighter">Lichtere loops</string>
+    <string name="canvas_lighter_info">Loops uit muziekvideo\'s in 480p: ongeveer 1 MB per nummer, zachter in Volledig scherm.</string>
+    <string name="canvas_ask_title">Muziekvideo\'s gebruiken?</string>
+    <string name="canvas_ask_text">Nummers zonder geanimeerde cover kunnen een korte loop uit hun muziekvideo tonen. Elke loop wordt eenmalig opgehaald via Wi-Fi: ongeveer 5 MB per nummer in Volledig scherm.</string>
+    <string name="canvas_from_videos">Canvas uit video\'s</string>
+    <string name="canvas_from_videos_info">Uit: loops uit muziekvideo\'s worden alleen via Wi-Fi opgehaald. Loops die al op de telefoon staan, worden in beide gevallen afgespeeld.</string>
+    <string name="canvas_keywords">geanimeerde cover beweging artwork bewegend beeld loop volledig scherm achtergrond</string>
+    <string name="canvas_use_videos_keywords">muziekvideo loop clip bewegend beeld</string>
+    <string name="canvas_both_keywords">geanimeerde cover muziekvideo eerst volgorde</string>
+    <string name="canvas_keep_controls_keywords">bediening vervagen verbergen volledig scherm tik</string>
+    <string name="canvas_lighter_keywords">kwaliteit 480p 720p 1080p data grootte kleiner</string>
+    <string name="canvas_pick_part">Ander stuk kiezen</string>
+    <string name="canvas_use">Gebruik</string>
+    <string name="canvas_not_this_video">Niet deze video</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">Een stil, herhalend beeld achter je muziek. Geanimeerde covers hebben een nieuwe naam, en een nummer zonder kan een paar seconden van de eigen muziekvideo gebruiken.</string>
+    <string name="tour_186_canvas_point_1">Volledig scherm: de loop vult de speler. De bediening verdwijnt en komt terug met een tik.</string>
+    <string name="tour_186_canvas_point_2">%1$s staat uit totdat je het aanzet. Een loop wordt eenmalig opgehaald via Wi-Fi: ongeveer 5 MB per nummer in Volledig scherm.</string>
+    <string name="tour_186_canvas_point_3">Het ⋯-menu van de speler: %1$s, of %2$s.</string>
+    <string name="tour_186_canvas_point_4">Het rust bij Minder beweging, in de batterijbesparing en als de telefoon heet wordt.</string>
+    <string name="tour_186_also_hours">Replay: %1$s toont de uren bij elke balk.</string>
 </resources>

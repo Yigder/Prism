@@ -5385,4 +5385,34 @@
     <string name="gb_lyrics_cover_plays">ছোট কভারে ট্যাপ করে চালান বা বিরতি দিন</string>
     <string name="gb_lyrics_cover_plays_info">লিরিক্স খোলা থাকলে ছোট কভারে ট্যাপ করলে গান চলে বা বিরতি নেয়, আর দীর্ঘক্ষণ চেপে ধরলে লিরিক্স বন্ধ হয়। বন্ধ থাকলে: ট্যাপ করলে লিরিক্স বন্ধ হয়।</string>
     <string name="gb_lyrics_cover_plays_keywords">লিরিক্স ছোট কভার থাম্বনেইল ছবি ট্যাপ চালান বিরতি দীর্ঘক্ষণ চাপ বন্ধ lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">কোথায় দেখাবে</string>
+    <string name="canvas_use_videos">মিউজিক ভিডিও ব্যবহার করুন</string>
+    <string name="canvas_use_videos_info">কোনো গানের অ্যানিমেটেড কভার না থাকলে YouTube-এ গানটির নিজের মিউজিক ভিডিও থেকে একটি ছোট নিঃশব্দ লুপ কেটে নেওয়া হয়। এটি একবারই Wi-Fi-তে আনা হয়, তারপর ফোন থেকেই চলে: পূর্ণ স্ক্রিনে গান প্রতি প্রায় 5 MB, কভারে প্রায় 2 MB।</string>
+    <string name="canvas_both">দুটোই থাকলে</string>
+    <string name="canvas_both_info">কোনটি আগে চলবে। প্লেয়ারের ⋯ মেনু থেকে একটি গানের জন্য বদলানো যায়।</string>
+    <string name="canvas_keep_controls">কন্ট্রোল দেখানো রাখুন</string>
+    <string name="canvas_keep_controls_info">পূর্ণ স্ক্রিনে কয়েক সেকেন্ড পরে কন্ট্রোল মিলিয়ে যায় আর ট্যাপ করলে ফিরে আসে। চালু থাকলে সেগুলো থেকে যায়।</string>
+    <string name="canvas_lighter">হালকা লুপ</string>
+    <string name="canvas_lighter_info">মিউজিক ভিডিও থেকে 480p-তে লুপ: গান প্রতি প্রায় 1 MB, পূর্ণ স্ক্রিনে একটু কম ধারালো।</string>
+    <string name="canvas_ask_title">মিউজিক ভিডিও ব্যবহার করবেন?</string>
+    <string name="canvas_ask_text">অ্যানিমেটেড কভার ছাড়া গানগুলো তাদের মিউজিক ভিডিও থেকে একটি ছোট লুপ দেখাতে পারে। প্রতিটি লুপ একবারই Wi-Fi-তে আনা হয়: পূর্ণ স্ক্রিনে গান প্রতি প্রায় 5 MB।</string>
+    <string name="canvas_from_videos">ভিডিও থেকে Canvas</string>
+    <string name="canvas_from_videos_info">বন্ধ থাকলে মিউজিক ভিডিওর লুপ শুধু Wi-Fi-তে আনা হয়। ফোনে আগে থেকে থাকা লুপ দুই ক্ষেত্রেই চলে।</string>
+    <string name="canvas_keywords">অ্যানিমেটেড কভার নড়াচড়া আর্টওয়ার্ক চলমান ছবি লুপ পূর্ণ স্ক্রিন ব্যাকগ্রাউন্ড</string>
+    <string name="canvas_use_videos_keywords">মিউজিক ভিডিও লুপ ক্লিপ চলমান ছবি</string>
+    <string name="canvas_both_keywords">অ্যানিমেটেড কভার মিউজিক ভিডিও আগে ক্রম</string>
+    <string name="canvas_keep_controls_keywords">কন্ট্রোল মিলিয়ে যাওয়া লুকানো পূর্ণ স্ক্রিন ট্যাপ</string>
+    <string name="canvas_lighter_keywords">কোয়ালিটি 480p 720p 1080p ডেটা সাইজ ছোট</string>
+    <string name="canvas_pick_part">আরেকটি অংশ বেছে নিন</string>
+    <string name="canvas_use">ব্যবহার</string>
+    <string name="canvas_not_this_video">এই ভিডিও নয়</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">আপনার গানের পেছনে একটি নিঃশব্দ, লুপে চলা ছবি। অ্যানিমেটেড কভারের নতুন নাম হয়েছে, আর যে গানের তা নেই সে তার নিজের মিউজিক ভিডিওর কয়েক সেকেন্ড ব্যবহার করতে পারে।</string>
+    <string name="tour_186_canvas_point_1">পূর্ণ স্ক্রিন: লুপ পুরো প্লেয়ার জুড়ে চলে। কন্ট্রোল মিলিয়ে যায় আর ট্যাপ করলে ফিরে আসে।</string>
+    <string name="tour_186_canvas_point_2">আপনি চালু না করা পর্যন্ত %1$s বন্ধ থাকে। লুপ একবারই Wi-Fi-তে আনা হয়: পূর্ণ স্ক্রিনে গান প্রতি প্রায় 5 MB।</string>
+    <string name="tour_186_canvas_point_3">প্লেয়ারের ⋯ মেনু: %1$s, অথবা %2$s।</string>
+    <string name="tour_186_canvas_point_4">নড়াচড়া কমান চালু থাকলে, ব্যাটারি সেভারে আর ফোন গরম হলে এটি থেমে থাকে।</string>
+    <string name="tour_186_also_hours">Replay: %1$s প্রতিটি বারে ঘণ্টা দেখায়।</string>
 </resources>

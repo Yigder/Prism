@@ -597,6 +597,9 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
         covered = covered, panelOpen = lyricsOpen || queueOpen || statsOpen, dragging = volume.dragging,
         screenReader = screenReader, reduceMotion = settings.reduceMotion,
     )
+    // How much of the full-screen canvas is up (0 while it loads, or under a sheet): the album cover goes as it comes.
+    var canvasBehindShown by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    if (!canvasBehind || canvas == null) canvasBehindShown = 0f
     var canvasQuiet by remember { mutableStateOf(false) }
     val canvasTouches = remember { kotlinx.coroutines.flow.MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
     LaunchedEffect(canvasFades) {
@@ -844,6 +847,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
             CanvasPlayer(
                 clip, canvasSaved, isPlaying, Modifier.fillMaxSize(), hold = covered,
                 presentationAlpha = { (1f - 2f * p()).coerceIn(0f, 1f) },
+                onCoverChanged = { canvasBehindShown = it },
             )
             // Darkened under the type: lighter while the controls are away, stronger under the lyrics and the queue.
             val video = clip.clip != null
@@ -1157,7 +1161,8 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                                 val idle = artScale + (1f - artScale) * p()
                                 scaleX = idle; scaleY = idle
                                 translationX = swipe.value * (1f - p())
-                                alpha = ctl()
+                                // Over a full-screen canvas the cover isn't seen: the picture has its place.
+                                alpha = ctl() * coverOverCanvas(canvasBehind, canvasBehindShown, p())
                             }
                             .smallCoverTaps(
                                 lyricsOpen, queueOpen || statsOpen, settings.behavior.lyricsCoverPlays, isPlaying,

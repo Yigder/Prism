@@ -5460,4 +5460,34 @@
     <string name="gb_lyrics_cover_plays">Toque na capa pequena para reproduzir ou pausar</string>
     <string name="gb_lyrics_cover_plays_info">Com a letra aberta, um toque na capa pequena reproduz ou pausa, e um toque longo fecha a letra. Desativado: um toque fecha a letra.</string>
     <string name="gb_lyrics_cover_plays_keywords">letra capa pequena miniatura toque reproduzir pausar toque longo fechar lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">Onde aparece</string>
+    <string name="canvas_use_videos">Usar vídeos de música</string>
+    <string name="canvas_use_videos_info">Quando uma música não tem capa animada, é cortado um pequeno ciclo silencioso do vídeo de música da própria música no YouTube. É transferido uma só vez, em Wi-Fi, e depois reproduz-se a partir do telemóvel: cerca de 5 MB por música em Ecrã inteiro, cerca de 2 MB na capa.</string>
+    <string name="canvas_both">Quando uma música tem ambos</string>
+    <string name="canvas_both_info">Qual é reproduzido primeiro. O menu ⋯ do leitor pode alterá-lo para uma música.</string>
+    <string name="canvas_keep_controls">Manter os controlos visíveis</string>
+    <string name="canvas_keep_controls_info">Em Ecrã inteiro, os controlos desaparecem após alguns segundos e voltam com um toque. Ativado, ficam sempre visíveis.</string>
+    <string name="canvas_lighter">Ciclos mais leves</string>
+    <string name="canvas_lighter_info">Ciclos de vídeos de música em 480p: cerca de 1 MB por música, mais suaves em Ecrã inteiro.</string>
+    <string name="canvas_ask_title">Usar vídeos de música?</string>
+    <string name="canvas_ask_text">As músicas sem capa animada podem mostrar um pequeno ciclo do seu vídeo de música. Cada ciclo é transferido uma só vez, em Wi-Fi: cerca de 5 MB por música em Ecrã inteiro.</string>
+    <string name="canvas_from_videos">Canvas de vídeos</string>
+    <string name="canvas_from_videos_info">Desativado, os ciclos de vídeos de música são transferidos apenas em Wi-Fi. Os ciclos já no telemóvel reproduzem-se de qualquer forma.</string>
+    <string name="canvas_keywords">capa animada movimento imagem em movimento ciclo loop ecrã inteiro fundo</string>
+    <string name="canvas_use_videos_keywords">vídeo de música ciclo loop clipe imagem em movimento</string>
+    <string name="canvas_both_keywords">capa animada vídeo de música primeiro ordem</string>
+    <string name="canvas_keep_controls_keywords">controlos desaparecer ocultar ecrã inteiro toque</string>
+    <string name="canvas_lighter_keywords">qualidade 480p 720p 1080p dados tamanho menor</string>
+    <string name="canvas_pick_part">Escolher outra parte</string>
+    <string name="canvas_use">Usar</string>
+    <string name="canvas_not_this_video">Não é este vídeo</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">Uma imagem silenciosa em ciclo por trás da sua música. As capas animadas têm um novo nome, e uma música sem capa animada pode usar alguns segundos do seu próprio vídeo de música.</string>
+    <string name="tour_186_canvas_point_1">Ecrã inteiro: o ciclo preenche o leitor. Os controlos desaparecem e voltam com um toque.</string>
+    <string name="tour_186_canvas_point_2">%1$s está desativado até o ativar. Um ciclo é transferido uma só vez, em Wi-Fi: cerca de 5 MB por música em Ecrã inteiro.</string>
+    <string name="tour_186_canvas_point_3">O menu ⋯ do leitor: %1$s ou %2$s.</string>
+    <string name="tour_186_canvas_point_4">Pára com Reduzir movimento, na poupança de bateria e quando o telemóvel aquece.</string>
+    <string name="tour_186_also_hours">Replay: %1$s mostra as horas em cada barra.</string>
 </resources>

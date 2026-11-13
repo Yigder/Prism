@@ -5460,4 +5460,34 @@
     <string name="gb_lyrics_cover_plays">Toucher la petite pochette pour lire ou mettre en pause</string>
     <string name="gb_lyrics_cover_plays_info">Avec les paroles ouvertes, un appui sur la petite pochette lance la lecture ou la met en pause, et un appui long ferme les paroles. Désactivé : un appui ferme les paroles.</string>
     <string name="gb_lyrics_cover_plays_keywords">paroles petite pochette vignette cover appui lecture pause appui long fermer lyrics</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">Où l\'afficher</string>
+    <string name="canvas_use_videos">Utiliser les clips</string>
+    <string name="canvas_use_videos_info">Quand un titre n\'a pas de pochette animée, une courte boucle silencieuse est extraite de son clip sur YouTube. Elle est téléchargée une fois, en Wi-Fi, puis lue depuis le téléphone : environ 5 Mo par titre en plein écran, environ 2 Mo sur la pochette.</string>
+    <string name="canvas_both">Quand un titre a les deux</string>
+    <string name="canvas_both_info">Lequel est lu en premier. Le menu ⋯ du lecteur peut le changer pour un titre.</string>
+    <string name="canvas_keep_controls">Garder les commandes visibles</string>
+    <string name="canvas_keep_controls_info">En plein écran, les commandes s\'effacent après quelques secondes et reviennent d\'un toucher. Activé, elles restent.</string>
+    <string name="canvas_lighter">Boucles allégées</string>
+    <string name="canvas_lighter_info">Boucles de clips en 480p : environ 1 Mo par titre, plus douces en plein écran.</string>
+    <string name="canvas_ask_title">Utiliser les clips ?</string>
+    <string name="canvas_ask_text">Les titres sans pochette animée peuvent afficher une courte boucle de leur clip. Chaque boucle est téléchargée une fois, en Wi-Fi : environ 5 Mo par titre en plein écran.</string>
+    <string name="canvas_from_videos">Canvas des clips</string>
+    <string name="canvas_from_videos_info">Désactivé, les boucles de clips ne sont téléchargées qu\'en Wi-Fi. Les boucles déjà sur le téléphone sont lues dans tous les cas.</string>
+    <string name="canvas_keywords">pochette animée mouvement illustration image animée boucle plein écran arrière-plan</string>
+    <string name="canvas_use_videos_keywords">clip vidéo boucle extrait image animée</string>
+    <string name="canvas_both_keywords">pochette animée clip en premier ordre</string>
+    <string name="canvas_keep_controls_keywords">commandes effacer masquer plein écran toucher</string>
+    <string name="canvas_lighter_keywords">qualité 480p 720p 1080p données taille plus petit</string>
+    <string name="canvas_pick_part">Choisir un autre passage</string>
+    <string name="canvas_use">Utiliser</string>
+    <string name="canvas_not_this_video">Pas ce clip</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">Une image silencieuse en boucle derrière votre musique. Les pochettes animées ont un nouveau nom, et un titre qui n\'en a pas peut utiliser quelques secondes de son propre clip.</string>
+    <string name="tour_186_canvas_point_1">Plein écran : la boucle remplit le lecteur. Les commandes s\'effacent et reviennent d\'un toucher.</string>
+    <string name="tour_186_canvas_point_2">« %1$s » est désactivé tant que vous ne l\'activez pas. Une boucle est téléchargée une fois, en Wi-Fi : environ 5 Mo par titre en plein écran.</string>
+    <string name="tour_186_canvas_point_3">Le menu ⋯ du lecteur : « %1$s » ou « %2$s ».</string>
+    <string name="tour_186_canvas_point_4">Elle se met en pause avec Réduire les animations, en mode économiseur de batterie et quand le téléphone chauffe.</string>
+    <string name="tour_186_also_hours">Replay : « %1$s » affiche les heures sur chaque barre.</string>
 </resources>

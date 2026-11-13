@@ -44,6 +44,15 @@ internal fun canvasScrim(controls: Float, panel: Float, video: Boolean): FloatAr
     return floatArrayOf(top, mid, bottom).map { (it + (1f - it) * 0.45f * p).coerceIn(0f, 0.92f) }.toFloatArray()
 }
 
+/**
+ * How much of the album cover shows on the player (0..1) while a canvas fills it (owner, 2026-11-13: "when canvas is
+ * showing, the album artwork should not be seen"). It goes as the canvas comes in ([canvasShown] 0..1, so a song whose
+ * canvas is still loading, or that has none, keeps its cover), and returns as the cover shrinks into the header over the
+ * lyrics and the queue ([collapsed] 0..1), where it is the small picture beside the title.
+ */
+internal fun coverOverCanvas(fullScreen: Boolean, canvasShown: Float, collapsed: Float): Float =
+    if (!fullScreen) 1f else 1f - canvasShown.coerceIn(0f, 1f) * (1f - collapsed.coerceIn(0f, 1f))
+
 /** True while a screen reader that explores by touch (TalkBack) is on. */
 @Composable
 internal fun rememberTouchExploration(): State<Boolean> {

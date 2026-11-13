@@ -5385,4 +5385,34 @@
     <string name="gb_lyrics_cover_plays">Tryck på det lilla omslaget för att spela eller pausa</string>
     <string name="gb_lyrics_cover_plays_info">Med låttexten öppen spelar eller pausar ett tryck på det lilla omslaget, och ett långt tryck stänger låttexten. Av: ett tryck stänger låttexten.</string>
     <string name="gb_lyrics_cover_plays_keywords">låttext litet omslag miniatyr omslagsbild tryck spela pausa långt tryck stäng lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">Var det visas</string>
+    <string name="canvas_use_videos">Använd musikvideor</string>
+    <string name="canvas_use_videos_info">När en låt saknar animerat omslag klipps en kort tyst loop ut ur låtens egen musikvideo på YouTube. Den hämtas en gång, på Wi-Fi, och spelas sedan från telefonen: cirka 5 MB per låt i Helskärm, cirka 2 MB på omslaget.</string>
+    <string name="canvas_both">När en låt har båda</string>
+    <string name="canvas_both_info">Vilken som spelas först. Spelarens ⋯-meny kan ändra det för en enskild låt.</string>
+    <string name="canvas_keep_controls">Behåll kontrollerna synliga</string>
+    <string name="canvas_keep_controls_info">I Helskärm tonas kontrollerna bort efter några sekunder och kommer tillbaka vid en tryckning. Påslaget ligger de kvar.</string>
+    <string name="canvas_lighter">Lättare loopar</string>
+    <string name="canvas_lighter_info">Loopar från musikvideor i 480p: cirka 1 MB per låt, mjukare i Helskärm.</string>
+    <string name="canvas_ask_title">Använda musikvideor?</string>
+    <string name="canvas_ask_text">Låtar utan animerat omslag kan visa en kort loop från sin musikvideo. Varje loop hämtas en gång, på Wi-Fi: cirka 5 MB per låt i Helskärm.</string>
+    <string name="canvas_from_videos">Canvas från videor</string>
+    <string name="canvas_from_videos_info">Avslaget hämtas loopar från musikvideor bara på Wi-Fi. Loopar som redan finns på telefonen spelas ändå.</string>
+    <string name="canvas_keywords">animerat omslag rörelse rörlig bild loop helskärm bakgrund</string>
+    <string name="canvas_use_videos_keywords">musikvideo loop klipp rörlig bild</string>
+    <string name="canvas_both_keywords">animerat omslag musikvideo först ordning</string>
+    <string name="canvas_keep_controls_keywords">kontroller tonas bort dölj helskärm tryck</string>
+    <string name="canvas_lighter_keywords">kvalitet 480p 720p 1080p data storlek mindre</string>
+    <string name="canvas_pick_part">Välj en annan del</string>
+    <string name="canvas_use">Använd</string>
+    <string name="canvas_not_this_video">Inte den här videon</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">En tyst, loopande bild bakom din musik. Animerade omslag har fått ett nytt namn, och en låt utan ett sådant kan använda några sekunder av sin egen musikvideo.</string>
+    <string name="tour_186_canvas_point_1">Helskärm: loopen fyller spelaren. Kontrollerna tonas bort och kommer tillbaka vid en tryckning.</string>
+    <string name="tour_186_canvas_point_2">%1$s är av tills du slår på det. En loop hämtas en gång, på Wi-Fi: cirka 5 MB per låt i Helskärm.</string>
+    <string name="tour_186_canvas_point_3">Spelarens ⋯-meny: %1$s eller %2$s.</string>
+    <string name="tour_186_canvas_point_4">Den vilar vid Minska rörelse, i batterisparläge och när telefonen blir varm.</string>
+    <string name="tour_186_also_hours">Replay: %1$s visar timmarna på varje stapel.</string>
 </resources>

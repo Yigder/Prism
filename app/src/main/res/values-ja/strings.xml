@@ -5310,4 +5310,34 @@
     <string name="gb_lyrics_cover_plays">小さなジャケットをタップして再生・一時停止</string>
     <string name="gb_lyrics_cover_plays_info">歌詞を開いているとき、小さなジャケットをタップすると再生または一時停止し、長押しすると歌詞を閉じます。オフの場合：タップで歌詞を閉じます。</string>
     <string name="gb_lyrics_cover_plays_keywords">歌詞 小さなジャケット サムネイル アートワーク タップ 再生 一時停止 長押し 閉じる lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">表示する場所</string>
+    <string name="canvas_use_videos">ミュージック ビデオを使う</string>
+    <string name="canvas_use_videos_info">アニメーション カバーがない曲は、YouTube にあるその曲のミュージック ビデオから、音のない短いループを切り出して使います。ループは Wi-Fi で一度だけ取得し、その後はスマホから再生されます。1 曲あたり、全画面で約 5 MB、カバー上で約 2 MB です。</string>
+    <string name="canvas_both">両方ある曲の場合</string>
+    <string name="canvas_both_info">どちらを先に再生するか。プレーヤーの ⋯ メニューから、1 曲だけ変更できます。</string>
+    <string name="canvas_keep_controls">コントロールを表示したままにする</string>
+    <string name="canvas_keep_controls_info">全画面では、コントロールは数秒で消え、タップすると戻ります。オンにすると表示されたままになります。</string>
+    <string name="canvas_lighter">軽量ループ</string>
+    <string name="canvas_lighter_info">ミュージック ビデオのループを 480p で取得します。1 曲あたり約 1 MB で、全画面ではやや柔らかい画質になります。</string>
+    <string name="canvas_ask_title">ミュージック ビデオを使いますか？</string>
+    <string name="canvas_ask_text">アニメーション カバーがない曲は、ミュージック ビデオの短いループを表示できます。各ループは Wi-Fi で一度だけ取得します。1 曲あたり、全画面で約 5 MB です。</string>
+    <string name="canvas_from_videos">ビデオからの Canvas</string>
+    <string name="canvas_from_videos_info">オフにすると、ミュージック ビデオのループは Wi-Fi でのみ取得します。すでにスマホにあるループはどちらの場合も再生されます。</string>
+    <string name="canvas_keywords">アニメーション カバー モーション アートワーク 動く 画像 ループ 全画面 背景</string>
+    <string name="canvas_use_videos_keywords">ミュージック ビデオ ループ クリップ 動く 画像</string>
+    <string name="canvas_both_keywords">アニメーション カバー ミュージック ビデオ 優先 順番</string>
+    <string name="canvas_keep_controls_keywords">コントロール 消える 隠す 全画面 タップ</string>
+    <string name="canvas_lighter_keywords">画質 480p 720p 1080p データ サイズ 小さい</string>
+    <string name="canvas_pick_part">別の部分を選ぶ</string>
+    <string name="canvas_use">使用</string>
+    <string name="canvas_not_this_video">このビデオではない</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">音楽の後ろで流れる、音のないループ映像です。アニメーション カバーは新しい名前になり、持っていない曲はミュージック ビデオの数秒を使えます。</string>
+    <string name="tour_186_canvas_point_1">全画面：ループがプレーヤー全体に広がります。コントロールは消え、タップすると戻ります。</string>
+    <string name="tour_186_canvas_point_2">「%1$s」は、オンにするまでオフです。ループは Wi-Fi で一度だけ取得します。1 曲あたり、全画面で約 5 MB です。</string>
+    <string name="tour_186_canvas_point_3">プレーヤーの ⋯ メニュー：「%1$s」または「%2$s」。</string>
+    <string name="tour_186_canvas_point_4">「視覚効果を減らす」がオンのとき、バッテリーセーバー中、スマホが熱いときは停止します。</string>
+    <string name="tour_186_also_hours">Replay：「%1$s」で各バーの時間が分かります。</string>
 </resources>

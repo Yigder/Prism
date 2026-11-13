@@ -5310,4 +5310,34 @@
     <string name="gb_lyrics_cover_plays">點按小封面可播放或暫停</string>
     <string name="gb_lyrics_cover_plays_info">開啟歌詞時，點按小封面可播放或暫停，長按則關閉歌詞。關閉此項：點按會關閉歌詞。</string>
     <string name="gb_lyrics_cover_plays_keywords">歌詞 小封面 縮圖 封面圖 點按 點擊 播放 暫停 長按 關閉 歌詞 lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">顯示位置</string>
+    <string name="canvas_use_videos">使用音樂影片</string>
+    <string name="canvas_use_videos_info">歌曲沒有動態封面時，會從該歌曲在 YouTube 上的音樂影片中擷取一小段靜音循環。它只會在 Wi-Fi 下取得一次，之後直接從手機播放：全螢幕約 5 MB 每首，封面上約 2 MB 每首。</string>
+    <string name="canvas_both">歌曲兩者都有時</string>
+    <string name="canvas_both_info">先播放哪一個。可在播放器的 ⋯ 選單中為單首歌曲變更。</string>
+    <string name="canvas_keep_controls">持續顯示控制項</string>
+    <string name="canvas_keep_controls_info">在全螢幕下，控制項幾秒後會淡出，輕觸後重新出現。開啟後，它們會一直顯示。</string>
+    <string name="canvas_lighter">更輕量的循環</string>
+    <string name="canvas_lighter_info">音樂影片循環採用 480p：約 1 MB 每首，全螢幕時畫面較柔和。</string>
+    <string name="canvas_ask_title">使用音樂影片？</string>
+    <string name="canvas_ask_text">沒有動態封面的歌曲可以顯示其音樂影片中的一小段循環。每段循環只在 Wi-Fi 下取得一次：全螢幕約 5 MB 每首。</string>
+    <string name="canvas_from_videos">來自影片的 Canvas</string>
+    <string name="canvas_from_videos_info">關閉時，音樂影片循環僅在 Wi-Fi 下取得。手機上已有的循環無論如何都會播放。</string>
+    <string name="canvas_keywords">動態封面 動態 封面圖 動圖 循環 全螢幕 背景</string>
+    <string name="canvas_use_videos_keywords">音樂影片 循環 片段 動圖</string>
+    <string name="canvas_both_keywords">動態封面 音樂影片 優先 順序</string>
+    <string name="canvas_keep_controls_keywords">控制項 淡出 隱藏 全螢幕 輕觸</string>
+    <string name="canvas_lighter_keywords">畫質 480p 720p 1080p 流量 大小 更小</string>
+    <string name="canvas_pick_part">選擇其他片段</string>
+    <string name="canvas_use">使用</string>
+    <string name="canvas_not_this_video">不是這支影片</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">音樂背後一段靜音的循環畫面。動態封面有了新名稱，沒有動態封面的歌曲可以使用自己音樂影片中的幾秒鐘。</string>
+    <string name="tour_186_canvas_point_1">全螢幕：循環畫面鋪滿播放器。控制項會淡出，輕觸後重新出現。</string>
+    <string name="tour_186_canvas_point_2">%1$s 在你開啟之前保持關閉。循環只在 Wi-Fi 下取得一次：全螢幕約 5 MB 每首。</string>
+    <string name="tour_186_canvas_point_3">播放器的 ⋯ 選單：%1$s，或 %2$s。</string>
+    <string name="tour_186_canvas_point_4">開啟減少動態效果、省電模式以及手機過熱時，它會暫停。</string>
+    <string name="tour_186_also_hours">Replay：%1$s 會在每根長條上顯示小時數。</string>
 </resources>

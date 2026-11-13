@@ -5460,4 +5460,34 @@
     <string name="gb_lyrics_cover_plays">Atinge coperta mică pentru a reda sau a întrerupe</string>
     <string name="gb_lyrics_cover_plays_info">Cu versurile deschise, o atingere pe coperta mică redă sau întrerupe, iar o apăsare lungă închide versurile. Dezactivat: o atingere închide versurile.</string>
     <string name="gb_lyrics_cover_plays_keywords">versuri copertă mică miniatură atingere redă întrerupe apăsare lungă închide lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">Unde apare</string>
+    <string name="canvas_use_videos">Folosește videoclipuri muzicale</string>
+    <string name="canvas_use_videos_info">Când o melodie nu are copertă animată, o buclă scurtă și silențioasă este tăiată din videoclipul muzical al melodiei de pe YouTube. Se descarcă o singură dată, pe Wi-Fi, apoi rulează de pe telefon: aproximativ 5 MB pe melodie în Ecran complet, aproximativ 2 MB pe copertă.</string>
+    <string name="canvas_both">Când o melodie le are pe ambele</string>
+    <string name="canvas_both_info">Care rulează primul. Meniul ⋯ al playerului îl poate schimba pentru o singură melodie.</string>
+    <string name="canvas_keep_controls">Păstrează controalele vizibile</string>
+    <string name="canvas_keep_controls_info">În Ecran complet, controalele dispar după câteva secunde și revin la o atingere. Activat, rămân vizibile.</string>
+    <string name="canvas_lighter">Bucle mai ușoare</string>
+    <string name="canvas_lighter_info">Bucle din videoclipuri muzicale la 480p: aproximativ 1 MB pe melodie, mai estompate în Ecran complet.</string>
+    <string name="canvas_ask_title">Folosești videoclipuri muzicale?</string>
+    <string name="canvas_ask_text">Melodiile fără copertă animată pot afișa o buclă scurtă din videoclipul lor muzical. Fiecare buclă se descarcă o singură dată, pe Wi-Fi: aproximativ 5 MB pe melodie în Ecran complet.</string>
+    <string name="canvas_from_videos">Canvas din videoclipuri</string>
+    <string name="canvas_from_videos_info">Dezactivat, buclele din videoclipuri muzicale se descarcă doar pe Wi-Fi. Buclele deja aflate pe telefon rulează oricum.</string>
+    <string name="canvas_keywords">copertă animată mișcare imagine în mișcare buclă loop ecran complet fundal</string>
+    <string name="canvas_use_videos_keywords">videoclip muzical buclă loop clip imagine în mișcare</string>
+    <string name="canvas_both_keywords">copertă animată videoclip muzical primul ordine</string>
+    <string name="canvas_keep_controls_keywords">controale dispar ascunde ecran complet atingere</string>
+    <string name="canvas_lighter_keywords">calitate 480p 720p 1080p date dimensiune mai mic</string>
+    <string name="canvas_pick_part">Alege altă parte</string>
+    <string name="canvas_use">Folosește</string>
+    <string name="canvas_not_this_video">Nu acest videoclip</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">O imagine silențioasă, în buclă, în spatele muzicii tale. Copertele animate au un nume nou, iar o melodie fără așa ceva poate folosi câteva secunde din propriul videoclip muzical.</string>
+    <string name="tour_186_canvas_point_1">Ecran complet: bucla umple playerul. Controalele dispar și revin la o atingere.</string>
+    <string name="tour_186_canvas_point_2">%1$s este dezactivat până îl pornești. O buclă se descarcă o singură dată, pe Wi-Fi: aproximativ 5 MB pe melodie în Ecran complet.</string>
+    <string name="tour_186_canvas_point_3">Meniul ⋯ al playerului: %1$s sau %2$s.</string>
+    <string name="tour_186_canvas_point_4">Se oprește cu Reducerea mișcării, în economisirea bateriei și când telefonul se încălzește.</string>
+    <string name="tour_186_also_hours">Replay: %1$s arată orele pe fiecare bară.</string>
 </resources>

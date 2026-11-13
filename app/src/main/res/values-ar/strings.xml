@@ -5685,4 +5685,34 @@
     <string name="gb_lyrics_cover_plays">اضغط على الغلاف الصغير للتشغيل أو الإيقاف المؤقت</string>
     <string name="gb_lyrics_cover_plays_info">مع فتح الكلمات، الضغط على الغلاف الصغير يشغّل أو يوقف مؤقتًا، والضغط مطولًا يغلق الكلمات. عند الإيقاف: الضغط يغلق الكلمات.</string>
     <string name="gb_lyrics_cover_plays_keywords">الكلمات غلاف صغير صورة مصغرة ضغط تشغيل إيقاف مؤقت ضغط مطول إغلاق lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">أين يظهر</string>
+    <string name="canvas_use_videos">استخدام الفيديوهات الموسيقية</string>
+    <string name="canvas_use_videos_info">عندما لا يكون للأغنية غلاف متحرك، يُقتطع مقطع قصير صامت متكرر من الفيديو الموسيقي الخاص بالأغنية على YouTube. يُجلب مرة واحدة عبر Wi-Fi، ثم يُشغَّل من الهاتف: نحو 5 MB للأغنية في وضع ملء الشاشة، ونحو 2 MB على الغلاف.</string>
+    <string name="canvas_both">عندما يكون للأغنية الاثنان</string>
+    <string name="canvas_both_info">أيّهما يُشغَّل أولًا. يمكن تغييره لأغنية واحدة من قائمة ⋯ في المشغّل.</string>
+    <string name="canvas_keep_controls">إبقاء عناصر التحكم ظاهرة</string>
+    <string name="canvas_keep_controls_info">في وضع ملء الشاشة تختفي عناصر التحكم بعد بضع ثوانٍ وتعود بنقرة. عند التفعيل تبقى ظاهرة.</string>
+    <string name="canvas_lighter">مقاطع أخف</string>
+    <string name="canvas_lighter_info">مقاطع من الفيديوهات الموسيقية بدقة 480p: نحو 1 MB للأغنية، وأقل وضوحًا في ملء الشاشة.</string>
+    <string name="canvas_ask_title">استخدام الفيديوهات الموسيقية؟</string>
+    <string name="canvas_ask_text">يمكن للأغاني التي بلا غلاف متحرك عرض مقطع قصير من فيديوها الموسيقي. يُجلب كل مقطع مرة واحدة عبر Wi-Fi: نحو 5 MB للأغنية في وضع ملء الشاشة.</string>
+    <string name="canvas_from_videos">Canvas من الفيديوهات</string>
+    <string name="canvas_from_videos_info">عند الإيقاف، تُجلب المقاطع من الفيديوهات الموسيقية عبر Wi-Fi فقط. المقاطع الموجودة على الهاتف تُشغَّل في الحالتين.</string>
+    <string name="canvas_keywords">غلاف متحرك حركة صورة متحركة مقطع متكرر ملء الشاشة خلفية</string>
+    <string name="canvas_use_videos_keywords">فيديو موسيقي مقطع متكرر كليب صورة متحركة</string>
+    <string name="canvas_both_keywords">غلاف متحرك فيديو موسيقي أولًا ترتيب</string>
+    <string name="canvas_keep_controls_keywords">عناصر التحكم تختفي إخفاء ملء الشاشة نقرة</string>
+    <string name="canvas_lighter_keywords">جودة 480p 720p 1080p بيانات حجم أصغر</string>
+    <string name="canvas_pick_part">اختيار جزء آخر</string>
+    <string name="canvas_use">استخدام</string>
+    <string name="canvas_not_this_video">ليس هذا الفيديو</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">صورة صامتة متكررة خلف موسيقاك. للأغلفة المتحركة اسم جديد، ويمكن للأغنية التي ليس لها غلاف متحرك أن تستخدم بضع ثوانٍ من فيديوها الموسيقي.</string>
+    <string name="tour_186_canvas_point_1">ملء الشاشة: يملأ المقطع المشغّل. تختفي عناصر التحكم وتعود بنقرة.</string>
+    <string name="tour_186_canvas_point_2">%1$s متوقف حتى تشغّله. يُجلب المقطع مرة واحدة عبر Wi-Fi: نحو 5 MB للأغنية في وضع ملء الشاشة.</string>
+    <string name="tour_186_canvas_point_3">قائمة ⋯ في المشغّل: %1$s، أو %2$s.</string>
+    <string name="tour_186_canvas_point_4">يتوقف مع تقليل الحركة، وفي وضع توفير الطاقة، وعندما يسخن الهاتف.</string>
+    <string name="tour_186_also_hours">Replay: يعرض %1$s الساعات على كل شريط.</string>
 </resources>

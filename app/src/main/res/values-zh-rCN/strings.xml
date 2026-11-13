@@ -5310,4 +5310,34 @@
     <string name="gb_lyrics_cover_plays">点按小封面可播放或暂停</string>
     <string name="gb_lyrics_cover_plays_info">打开歌词时，点按小封面可播放或暂停，长按则关闭歌词。关闭此项：点按会关闭歌词。</string>
     <string name="gb_lyrics_cover_plays_keywords">歌词 小封面 缩略图 封面图 点按 点击 播放 暂停 长按 关闭 lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">显示位置</string>
+    <string name="canvas_use_videos">使用音乐视频</string>
+    <string name="canvas_use_videos_info">歌曲没有动态封面时，会从该歌曲在 YouTube 上的音乐视频中截取一小段静音循环。它只会在 Wi-Fi 下获取一次，之后直接从手机播放：全屏约 5 MB 每首，封面上约 2 MB 每首。</string>
+    <string name="canvas_both">歌曲两者都有时</string>
+    <string name="canvas_both_info">先播放哪一个。可在播放器的 ⋯ 菜单中为单首歌曲更改。</string>
+    <string name="canvas_keep_controls">始终显示控制按钮</string>
+    <string name="canvas_keep_controls_info">在全屏下，控制按钮几秒后会淡出，点按后重新出现。开启后，它们会一直显示。</string>
+    <string name="canvas_lighter">更轻量的循环</string>
+    <string name="canvas_lighter_info">音乐视频循环采用 480p：约 1 MB 每首，全屏时画面更柔和。</string>
+    <string name="canvas_ask_title">使用音乐视频？</string>
+    <string name="canvas_ask_text">没有动态封面的歌曲可以显示其音乐视频中的一小段循环。每段循环只在 Wi-Fi 下获取一次：全屏约 5 MB 每首。</string>
+    <string name="canvas_from_videos">来自视频的 Canvas</string>
+    <string name="canvas_from_videos_info">关闭时，音乐视频循环仅在 Wi-Fi 下获取。手机上已有的循环无论如何都会播放。</string>
+    <string name="canvas_keywords">动态封面 动态 封面图 动图 循环 全屏 背景</string>
+    <string name="canvas_use_videos_keywords">音乐视频 循环 片段 动图</string>
+    <string name="canvas_both_keywords">动态封面 音乐视频 优先 顺序</string>
+    <string name="canvas_keep_controls_keywords">控制按钮 淡出 隐藏 全屏 点按</string>
+    <string name="canvas_lighter_keywords">画质 480p 720p 1080p 流量 大小 更小</string>
+    <string name="canvas_pick_part">选择其他片段</string>
+    <string name="canvas_use">使用</string>
+    <string name="canvas_not_this_video">不是这个视频</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">音乐背后一段静音的循环画面。动态封面有了新名字，没有动态封面的歌曲可以使用自己音乐视频中的几秒钟。</string>
+    <string name="tour_186_canvas_point_1">全屏：循环画面铺满播放器。控制按钮会淡出，点按后重新出现。</string>
+    <string name="tour_186_canvas_point_2">%1$s 在你开启之前保持关闭。循环只在 Wi-Fi 下获取一次：全屏约 5 MB 每首。</string>
+    <string name="tour_186_canvas_point_3">播放器的 ⋯ 菜单：%1$s，或 %2$s。</string>
+    <string name="tour_186_canvas_point_4">开启减少动态效果、省电模式以及手机发热时，它会暂停。</string>
+    <string name="tour_186_also_hours">Replay：%1$s 会在每根柱上显示小时数。</string>
 </resources>

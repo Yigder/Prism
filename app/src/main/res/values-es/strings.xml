@@ -5460,4 +5460,34 @@
     <string name="gb_lyrics_cover_plays">Tocar la portada pequeña para reproducir o pausar</string>
     <string name="gb_lyrics_cover_plays_info">Con la letra abierta, tocar la portada pequeña reproduce o pausa, y una pulsación larga cierra la letra. Desactivado: tocar cierra la letra.</string>
     <string name="gb_lyrics_cover_plays_keywords">letra portada pequeña miniatura carátula tocar reproducir pausar pulsación larga cerrar lyrics cover</string>
+    <!-- 1.8.6 Canvas -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">Dónde se muestra</string>
+    <string name="canvas_use_videos">Usar videos musicales</string>
+    <string name="canvas_use_videos_info">Cuando una canción no tiene portada animada, se corta un bucle corto y sin sonido del video musical de la canción en YouTube. Se descarga una vez, con Wi-Fi, y luego se reproduce desde el teléfono: unos 5 MB por canción en pantalla completa, unos 2 MB en la portada.</string>
+    <string name="canvas_both">Cuando una canción tiene ambos</string>
+    <string name="canvas_both_info">Cuál se reproduce primero. El menú ⋯ del reproductor puede cambiarlo para una canción.</string>
+    <string name="canvas_keep_controls">Mantener los controles visibles</string>
+    <string name="canvas_keep_controls_info">En pantalla completa, los controles se desvanecen tras unos segundos y vuelven al tocar. Activado, se quedan.</string>
+    <string name="canvas_lighter">Bucles más ligeros</string>
+    <string name="canvas_lighter_info">Bucles de videos musicales en 480p: unos 1 MB por canción, más suaves en pantalla completa.</string>
+    <string name="canvas_ask_title">¿Usar videos musicales?</string>
+    <string name="canvas_ask_text">Las canciones sin portada animada pueden mostrar un bucle corto de su video musical. Cada bucle se descarga una vez, con Wi-Fi: unos 5 MB por canción en pantalla completa.</string>
+    <string name="canvas_from_videos">Canvas de videos</string>
+    <string name="canvas_from_videos_info">Desactivado, los bucles de videos musicales se descargan solo con Wi-Fi. Los bucles que ya están en el teléfono se reproducen igualmente.</string>
+    <string name="canvas_keywords">portada animada movimiento carátula imagen en movimiento bucle pantalla completa fondo</string>
+    <string name="canvas_use_videos_keywords">video musical bucle clip imagen en movimiento</string>
+    <string name="canvas_both_keywords">portada animada video musical primero orden</string>
+    <string name="canvas_keep_controls_keywords">controles desvanecer ocultar pantalla completa tocar</string>
+    <string name="canvas_lighter_keywords">calidad 480p 720p 1080p datos tamaño más pequeño</string>
+    <string name="canvas_pick_part">Elegir otra parte</string>
+    <string name="canvas_use">Usar</string>
+    <string name="canvas_not_this_video">Este video no</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">Una imagen en bucle y sin sonido detrás de tu música. Las portadas animadas tienen un nombre nuevo, y una canción sin ella puede usar unos segundos de su propio video musical.</string>
+    <string name="tour_186_canvas_point_1">Pantalla completa: el bucle llena el reproductor. Los controles se desvanecen y vuelven al tocar.</string>
+    <string name="tour_186_canvas_point_2">%1$s está desactivado hasta que lo actives. Un bucle se descarga una vez, con Wi-Fi: unos 5 MB por canción en pantalla completa.</string>
+    <string name="tour_186_canvas_point_3">El menú ⋯ del reproductor: %1$s o %2$s.</string>
+    <string name="tour_186_canvas_point_4">Descansa con Reducir movimiento, con el ahorro de batería y cuando el teléfono se calienta.</string>
+    <string name="tour_186_also_hours">Replay: %1$s muestra las horas en cada barra.</string>
 </resources>
