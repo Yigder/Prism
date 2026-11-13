@@ -39,6 +39,44 @@ class CanvasLoopLiveTest {
     }
 
     /**
+     * The long run for heat and battery (`canvas-heat.ps1` reads the phone meanwhile): one song on repeat for
+     * `minutes=<n>`, the player open, with `cond=loop` (Full screen, its music video's loop) or `cond=still` (Canvas off).
+     */
+    @Test fun aLongRunForHeat() = runBlocking {
+        assumeTrue("live test: run with record=true", args.getString("record") == "true")
+        val loop = args.getString("cond") == "loop"
+        val minutes = args.getString("minutes")?.toDoubleOrNull() ?: 20.0
+        Fixture.ready()
+        val c = Fixture.container
+        c.settings.setPerformanceMode(false); c.settings.setReduceMotion(false); c.settings.setImmersivePlayer(false); c.settings.setFullBleedArtwork(false)
+        c.settings.setCanvasEnabled(loop); c.settings.setCanvasFillsBackground(loop); c.settings.setCanvasUseVideos(loop)
+        c.settings.setCanvasVideoFirst(true); c.settings.setCanvasKeepControls(false)
+        Fixture.launch()
+        val words = (args.getString("song") ?: "Flowers_Miley_Cyrus").replace('_', ' ')
+        val song = withContext(Dispatchers.IO) { c.ytm.search(words, SearchFilter.SONGS).items.filterIsInstance<SongItem>().first().song }
+        CanvasStats.showing = null
+        val before = CanvasStats.rounds to CanvasStats.errors
+        withContext(Dispatchers.Main) { c.player.playQueue(listOf(song), 0, QueueSource(QueueKind.SINGLE, "test")) }
+        Fixture.context.startActivity(
+            android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("prism://player"))
+                .setClass(Fixture.context, PrismActivity::class.java)
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP),
+        )
+        delay(3_000)
+        repeat(3) { if (c.player.repeatMode.value != androidx.media3.common.Player.REPEAT_MODE_ONE) { withContext(Dispatchers.Main) { c.player.cycleRepeat() }; delay(700) } }
+        val until = System.currentTimeMillis() + (minutes * 60_000).toLong()
+        if (loop) while (System.currentTimeMillis() < until && CanvasStats.showing?.startsWith("file://") != true) delay(200)
+        android.util.Log.i("CanvasHeat", "start ${if (loop) "loop" else "still"}: \"${song.title}\", repeat ${c.player.repeatMode.value}, showing ${CanvasStats.showing}, row ${c.canvasClips.row(song.id)?.height}p")
+        while (System.currentTimeMillis() < until) delay(1_000)
+        android.util.Log.i(
+            "CanvasHeat",
+            "end ${if (loop) "loop" else "still"}: rounds ${CanvasStats.rounds - before.first}, covered ${CanvasStats.covered}, errors ${CanvasStats.errors - before.second} " +
+                "(${CanvasStats.lastError}), showing ${CanvasStats.showing}, playing ${c.player.isPlaying.value}",
+        )
+        if (loop) assertEquals("no loop failed in the long run", before.second, CanvasStats.errors)
+    }
+
+    /**
      * The by-eye round on real loops: `songs=Words_of_one+Words_of_another` (underscores for spaces), each played until
      * its loop shows (or 45 s), with three pictures two seconds apart, the controls away. Nothing is asserted but that
      * it ran: the pictures and the log line per song ("CanvasEye") are what is looked at.
