@@ -100,11 +100,17 @@ fun CanvasPlayer(
                 texture?.cropTo(clip.aspect, clip.canvas.clip)
             }
 
-            override fun onPlayerError(error: PlaybackException) = clip.failed()
+            override fun onPlayerError(error: PlaybackException) {
+                CanvasStats.errors++; CanvasStats.lastError = error.errorCodeName
+                clip.failed()
+            }
 
             // 1.8.6: a loop from a music video going round ([RestartCover]).
             override fun onPositionDiscontinuity(old: Player.PositionInfo, new: Player.PositionInfo, reason: Int) {
-                if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION) restart.wentRound()
+                if (reason != Player.DISCONTINUITY_REASON_AUTO_TRANSITION) return
+                CanvasStats.rounds++
+                if (restart.shown) CanvasStats.covered++
+                restart.wentRound()
             }
 
             override fun onRenderedFirstFrame() = restart.firstFrameOut()
@@ -207,7 +213,8 @@ fun CanvasPlayer(
                     }
                     override fun onSurfaceTextureUpdated(s: SurfaceTexture) {
                         delegate?.onSurfaceTextureUpdated(s)
-                        if (clip.frame()) cropTo(clip.aspect, clip.canvas.clip)
+                        if (clip.frame()) { cropTo(clip.aspect, clip.canvas.clip); CanvasStats.showing = clip.url }
+                        CanvasStats.frames++
                         // The loop's first frame is on screen: keep it as a picture, once, for the restarts to come.
                         if (restart.frameDrawn() && still == null) still = firstFrameOf(this@apply, clip.aspect)
                     }
@@ -250,6 +257,20 @@ fun CanvasPlayer(
         },
         modifier = modifier,
     )
+}
+
+/**
+ * What the canvases did since Prism started, for Share diagnostics and the tests: times a clip went round, how many of
+ * those had the kept first frame over them, and what failed. Counted on the main thread; nothing is stored or sent.
+ */
+internal object CanvasStats {
+    @Volatile var rounds = 0
+    @Volatile var covered = 0
+    @Volatile var errors = 0
+    @Volatile var lastError: String? = null
+    /** The clip on screen last: its address (a file for a loop from a music video) and whether a frame of it showed. */
+    @Volatile var showing: String? = null
+    @Volatile var frames = 0
 }
 
 /** How long before a video loop's end its kept first frame starts to dissolve in, and how long that takes. */
