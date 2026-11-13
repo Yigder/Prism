@@ -124,7 +124,8 @@ fun CanvasPlayer(
                 restart.wentRound()
             }
 
-            override fun onRenderedFirstFrame() = restart.firstFrameOut()
+            // Only the clip that is loaded now counts (a late word about the one before it is not this one's first frame).
+            override fun onRenderedFirstFrame() { if (CanvasPlayers.playing(player, clip.url)) restart.firstFrameOut() }
         }
         player.addListener(listener)
         onDispose { player.removeListener(listener) }
@@ -303,16 +304,21 @@ internal class RestartCover {
     /** The kept first frame is over the video. */
     var shown by mutableStateOf(false); private set
     private var kept = false
+    private var awaited = false
     private var nextIsFirst = false
     private var round = false
     private var out = false
 
-    /** A clip was loaded ([atStart]: its first frame drawn will be the loop's first) or picked up as it plays. */
-    fun reset(atStart: Boolean) { shown = false; kept = false; nextIsFirst = atStart; round = false; out = false }
+    /**
+     * A clip was loaded ([atStart]: the first frame its decoder puts out is the loop's first) or picked up as it plays.
+     * The frames still being drawn from the clip before it are not this one's: on the A16 the last song's frame was kept
+     * as the next song's cover and flashed at each of its restarts, so the decoder's word is waited for.
+     */
+    fun reset(atStart: Boolean) { shown = false; kept = false; awaited = atStart; nextIsFirst = false; round = false; out = false }
 
     fun nearEnd() { if (kept) shown = true }
     fun wentRound() { round = true; out = false }
-    fun firstFrameOut() { if (round) out = true }
+    fun firstFrameOut() { if (round) out = true else if (awaited) { awaited = false; nextIsFirst = true } }
 
     /** A frame reached the screen. True when it is the loop's first and no picture of it is kept yet: keep it now. */
     fun frameDrawn(): Boolean {

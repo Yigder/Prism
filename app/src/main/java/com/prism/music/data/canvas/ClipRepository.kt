@@ -4,6 +4,7 @@ import com.prism.music.data.db.CanvasClipDao
 import com.prism.music.data.db.CanvasClipEntity
 import com.prism.music.data.model.Song
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.withLock
 import java.io.File
 
 /**
@@ -101,8 +102,21 @@ class ClipRepository(private val dao: CanvasClipDao, private val finder: ClipFin
      */
     suspend fun artworkFor(
         song: Song, height: Int, saved: Boolean, allowed: () -> Boolean, chorusMs: Long? = null, now: Long = System.currentTimeMillis(),
-        retried: Boolean = false,
-    ): CanvasArtwork? {
+    ): CanvasArtwork? = lock(song.id).withLock { loopFor(song, height, saved, allowed, chorusMs, now, retried = false) }
+
+    /** One song at a time is worked on once: the player, the look ahead and a download may all ask for the same one. */
+    private val locks = java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.sync.Mutex>()
+    private fun lock(songId: String) = locks.getOrPut(songId) { kotlinx.coroutines.sync.Mutex() }
+
+    /**
+     * Looks the song's video up (which video, which seconds: no video is fetched) if that hasn't been done, so the player
+     * can do it while it still asks whether the song has an animated cover. Whoever asks for the loop next finds it done.
+     */
+    suspend fun findAhead(song: Song, height: Int, allowed: () -> Boolean, now: Long = System.currentTimeMillis()) {
+        lock(song.id).withLock { if (needsFinding(dao.get(song.id), now) && allowed()) find(song, dao.get(song.id), height, null, now) }
+    }
+
+    private suspend fun loopFor(song: Song, height: Int, saved: Boolean, allowed: () -> Boolean, chorusMs: Long?, now: Long, retried: Boolean): CanvasArtwork? {
         var row = dao.get(song.id)
         val t0 = System.nanoTime()
         // A "no loop" is asked again after a week (a video may have been posted); a loop that was found stays.
@@ -137,7 +151,7 @@ class ClipRepository(private val dao: CanvasClipDao, private val finder: ClipFin
                         startMs = next, endMs = next + PICK_LENGTH_MS, refined = false, picked = false, crops = "",
                         windows = current.otherParts().filter { it != next && it != current.startMs }.joinToString(","),
                     ))
-                    return artworkFor(song, height, saved, allowed, chorusMs, now, retried = true)
+                    return loopFor(song, height, saved, allowed, chorusMs, now, retried = true)
                 }
                 // Mostly a face filling the frame (half a face, upright): the next part is tried once, unless the listener
                 // picked this one. The part stays among the others, last, so "Pick another part" can still have it.
@@ -147,7 +161,7 @@ class ClipRepository(private val dao: CanvasClipDao, private val finder: ClipFin
                         startMs = next, endMs = next + PICK_LENGTH_MS, refined = false, crops = "",
                         windows = (current.otherParts().filter { it != next && it != current.startMs } + current.startMs).joinToString(","),
                     ))
-                    return artworkFor(song, height, saved, allowed, chorusMs, now, retried = true)
+                    return loopFor(song, height, saved, allowed, chorusMs, now, retried = true)
                 }
                 else -> loop = loop.copy(endMs = judged.endMs.coerceIn(loop.startMs + 1, got.endMs.coerceAtLeast(loop.startMs + 1)), cropX = judged.cropX ?: loop.cropX, refined = true, crops = judged.crops)
             }

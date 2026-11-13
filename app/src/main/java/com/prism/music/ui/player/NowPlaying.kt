@@ -540,6 +540,15 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
         song.id in c.canvas.hidden.collectAsState().value,
     ) {
         if (!settings.canvasEnabled) { value = null; return@produceState }
+        // 1.8.6: the song's music video is looked up meanwhile (no video is fetched by this), so a song without an
+        // animated cover doesn't wait for that answer first: three seconds less before a new song's loop shows.
+        if (canvasPrefs.useVideos && song.id !in c.canvas.hidden.value && com.prism.music.data.canvas.ClipGate.isSong(song)) launch {
+            runCatching {
+                c.canvasClips.findAhead(song, com.prism.music.data.canvas.canvasHeight(settings), allowed = {
+                    com.prism.music.data.canvas.canvasNetworkAllowed(settings, context.getSystemService(ConnectivityManager::class.java)?.isActiveNetworkMetered == true)
+                })
+            }
+        }
         // Saved clips play from the phone, so mobile data doesn't matter for them.
         val coverAllowed = !(metered && (!settings.canvasOnCellular || settings.dataSaver)) || c.canvas.isSaved(song)
         var cover: CanvasArtwork? = null

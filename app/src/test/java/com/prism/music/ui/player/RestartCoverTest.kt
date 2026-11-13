@@ -7,20 +7,20 @@ import org.junit.Test
 /** 1.8.6 Canvas: the kept first frame over a video loop's restart, in the order things happen on the phone. */
 class RestartCoverTest {
     @Test fun theFirstFrameDrawnIsKeptOnce() {
-        val r = RestartCover().apply { reset(atStart = true) }
+        val r = RestartCover().apply { reset(atStart = true); firstFrameOut() }
         assertTrue("the loop's first frame", r.frameDrawn())
         assertFalse("the frames after it", r.frameDrawn())
         assertFalse(r.shown)
     }
 
     @Test fun nothingShowsUntilAFrameIsKept() {
-        val r = RestartCover().apply { reset(atStart = true) }
+        val r = RestartCover().apply { reset(atStart = true); firstFrameOut() }
         r.nearEnd()
         assertFalse(r.shown)
     }
 
     @Test fun itShowsNearTheEndAndGoesWithTheRealFirstFrame() {
-        val r = RestartCover().apply { reset(atStart = true) }
+        val r = RestartCover().apply { reset(atStart = true); firstFrameOut() }
         r.frameDrawn()
         r.nearEnd(); assertTrue(r.shown)
         // The last frames of this round are still being drawn.
@@ -43,7 +43,7 @@ class RestartCoverTest {
     }
 
     @Test fun aFirstFrameThatNeverComesLetsGo() {
-        val r = RestartCover().apply { reset(atStart = true) }
+        val r = RestartCover().apply { reset(atStart = true); firstFrameOut() }
         r.frameDrawn(); r.nearEnd(); r.wentRound()
         r.giveUp()
         assertFalse(r.shown)
@@ -52,10 +52,12 @@ class RestartCoverTest {
     }
 
     @Test fun aNewClipStartsOver() {
-        val r = RestartCover().apply { reset(atStart = true) }
+        val r = RestartCover().apply { reset(atStart = true); firstFrameOut() }
         r.frameDrawn(); r.nearEnd()
         r.reset(atStart = true)
         assertFalse(r.shown)
+        assertFalse("a frame of the clip before, drawn late, is not this one's first", r.frameDrawn())
+        r.firstFrameOut()
         assertTrue(r.frameDrawn())
     }
 }

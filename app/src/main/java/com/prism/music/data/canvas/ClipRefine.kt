@@ -38,13 +38,23 @@ object ClipRefine {
      * True when more than half of the loop's time is close-ups: the stretches between sightings of a large face. A
      * silent close-up of someone singing other words than the ones heard is also what looks most out of step.
      */
-    fun closeUp(faces: List<Face>, startMs: Long, endMs: Long): Boolean {
-        val times = faces.map { it.timeMs }.distinct().sorted()
-        if (times.size < 3 || endMs <= startMs) return false
-        val step = (times.zipWithNext { a, b -> b - a }.minOrNull() ?: return false).coerceAtLeast(1)
-        val close = times.count { t -> faces.any { it.timeMs == t && it.size >= CLOSE_FACE } }
-        return close * step > (endMs - startMs) / 2
+    fun closeUp(faces: List<Face>, startMs: Long, endMs: Long, cutsMs: List<Long> = emptyList()): Boolean {
+        if (endMs <= startMs) return false
+        // Scene by scene (the finder misses a sighting now and then): a scene with two large sightings counts whole.
+        val starts = listOf(startMs) + cutsMs.filter { it > startMs && it < endMs }
+        var close = 0L
+        starts.forEachIndexed { i, from ->
+            val to = starts.getOrElse(i + 1) { endMs }
+            val seen = faces.filter { it.timeMs >= from && it.timeMs < to }
+            val large = seen.filter { it.size >= CLOSE_FACE }.map { it.timeMs }.distinct().size
+            // Large in most of the scene's sightings, not for a moment of it.
+            if (large >= 2 && large * 2 > seen.map { it.timeMs }.distinct().size) close += to - from
+        }
+        return close >= (endMs - startMs) * CLOSE_SHARE
     }
+
+    /** The share of a loop's time that close-ups may take before another part is tried. */
+    private const val CLOSE_SHARE = 0.45f
 
     /** A cut: this much of the brightness changes from one frame to the next (of 255), and far more than around it. */
     private const val CUT = 22f
@@ -56,7 +66,7 @@ object ClipRefine {
     /** The upright band a tall phone shows of a wide picture, as a share of its width (for placing the crop). */
     const val BAND = 0.3f
     /** The crop follows the faces when this share of them (by size and sureness) fits in one band. */
-    private const val AGREE = 0.8
+    private const val AGREE = 0.6
 
     /** How much two frames differ: the mean change of a cell, 0..255. */
     fun change(a: ByteArray, b: ByteArray): Float {
@@ -136,6 +146,45 @@ object ClipRefine {
         return ((middle - BAND / 2f) / (1f - BAND)).coerceIn(0f, 1f)
     }
 
+    /** Where what moves is, when no faces say: a share of the movement this large in one upright band is the subject. */
+    private const val MOTION_SHARE = 0.55f
+
+    /**
+     * Where the crop sits by movement alone (the face finder only knows faces turned to the camera): the upright band
+     * that holds most of what changes from frame to frame, when one band clearly does (someone dancing or running in
+     * front of a still background). A moving camera changes the whole picture alike, and a still scene nothing: null.
+     */
+    fun motionX(frames: List<Frame>, bars: Bars): Float? {
+        if (frames.size < 10) return null
+        val cols = FloatArray(GRID_W)
+        var pairs = 0
+        for (i in 1 until frames.size) {
+            val a = frames[i - 1].grid; val b = frames[i].grid
+            if (change(a, b) >= CUT) continue
+            for (k in a.indices) cols[k % GRID_W] += abs((b[k].toInt() and 0xff) - (a[k].toInt() and 0xff))
+            pairs++
+        }
+        if (pairs < 8) return null
+        val across = (1f - bars.left - bars.right).takeIf { it > 0.1f } ?: 1f
+        val first = if (across == 1f) 0 else Math.round(bars.left * GRID_W)
+        val n = Math.round(across * GRID_W).coerceAtMost(GRID_W - first)
+        val w = Math.round(BAND * n).coerceAtLeast(1)
+        if (n < 4 || w >= n) return null
+        var total = 0f
+        for (c in first until first + n) total += cols[c]
+        // Barely anything moves (under one step of brightness a cell, a frame): nothing to go by.
+        if (total / pairs / (n * GRID_H) < 1f) return null
+        var best = 0f; var bestAt = first
+        for (s in first..first + n - w) {
+            var sum = 0f
+            for (c in s until s + w) sum += cols[c]
+            if (sum > best) { best = sum; bestAt = s }
+        }
+        if (best < total * MOTION_SHARE) return null
+        val middle = (bestAt - first + w / 2f) / n
+        return ((middle - BAND / 2f) / (1f - BAND)).coerceIn(0f, 1f)
+    }
+
     /** The whole second look at a loop that starts at [startMs] (the frames' own clock). */
     fun judge(frames: List<Frame>, faces: List<Face>, startMs: Long, bars: Bars): Refined {
         val from = frames.filter { it.timeMs >= startMs }
@@ -149,10 +198,10 @@ object ClipRefine {
         }
         val shown = from.filter { it.timeMs < end }
         val seen = faces.filter { it.timeMs in startMs until end }
-        val scenes = sceneCrops(seen, startMs, end, cuts, bars)
+        val scenes = sceneCrops(seen, startMs, end, cuts, bars, shown)
         // With a crop per scene, the scenes that have none keep the finder's guess: the faces of the other scenes say
         // nothing about them.
-        return Refined(end, if (scenes.isEmpty()) cropX(seen, bars) else null, flashing(shown), cuts, faces.size, scenes, closeUp(seen, startMs, end))
+        return Refined(end, if (scenes.isEmpty()) cropX(seen, bars) ?: motionX(shown, bars) else null, flashing(shown), cuts, faces.size, scenes, closeUp(seen, startMs, end, cuts))
     }
 
     /**
@@ -160,12 +209,16 @@ object ClipRefine {
      * serves them all. A scene gets its own when two sightings or more in it agree; the others are marked to use the
      * loop's own (below 0). Empty when no scene has one, or the loop is a single scene (its crop is the loop's).
      */
-    fun sceneCrops(faces: List<Face>, startMs: Long, endMs: Long, cutsMs: List<Long>, bars: Bars): List<SceneCrop> {
+    fun sceneCrops(faces: List<Face>, startMs: Long, endMs: Long, cutsMs: List<Long>, bars: Bars, frames: List<Frame> = emptyList()): List<SceneCrop> {
         val starts = listOf(startMs) + cutsMs.filter { it > startMs && it < endMs }
         if (starts.size < 2) return emptyList()
         val crops = starts.mapIndexed { i, from ->
             val to = starts.getOrElse(i + 1) { endMs }
-            SceneCrop(from, cropX(faces.filter { it.timeMs >= from && it.timeMs < to }, bars, sightings = 2) ?: -1f)
+            SceneCrop(
+                from,
+                cropX(faces.filter { it.timeMs >= from && it.timeMs < to }, bars, sightings = 2)
+                    ?: motionX(frames.filter { it.timeMs >= from && it.timeMs < to }, bars) ?: -1f,
+            )
         }
         return if (crops.any { it.cropX >= 0f }) crops else emptyList()
     }

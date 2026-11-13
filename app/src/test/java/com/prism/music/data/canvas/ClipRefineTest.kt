@@ -165,6 +165,36 @@ class ClipRefineTest {
         assertEquals(emptyList<SceneCrop>(), ClipRefine.sceneCrops(listOf(face(200, 0.2f), face(650, 0.2f)), 0, 7_000, listOf(7_000, 9_000), Bars.NONE))
     }
 
+    /** Frames with a still background and something moving in columns [from, to). */
+    private fun moving(n: Int, from: Int, to: Int, fromMs: Long = 0, everywhere: Boolean = false) = (0 until n).map { i ->
+        ClipRefine.Frame(fromMs + i * 1000L / 30, ByteArray(ClipRefine.GRID_W * ClipRefine.GRID_H) { k ->
+            val col = k % ClipRefine.GRID_W
+            (if (everywhere || col in from until to) 90 + ((i * 7 + k * 3) % 40) else 90).toByte()
+        })
+    }
+
+    @Test fun withNoFacesTheCropGoesWhereThingsMove() {
+        // Someone dancing in the right third, the rest still.
+        val x = ClipRefine.motionX(moving(60, 22, 30), Bars.NONE)!!
+        assertEquals(26f / 32f, bandMiddle(x), 0.06f)
+        // A moving camera (everything changes alike), a still scene, a handful of frames: nothing to go by.
+        assertNull(ClipRefine.motionX(moving(60, 0, 0, everywhere = true), Bars.NONE))
+        assertNull(ClipRefine.motionX(moving(60, 0, 0), Bars.NONE))
+        assertNull(ClipRefine.motionX(moving(6, 22, 30), Bars.NONE))
+        // Inside side bars the picture's own columns count.
+        val barred = ClipRefine.motionX(moving(60, 4, 10), Bars(left = 0.125f, right = 0.125f))!!
+        assertEquals("at the picture's left edge", 0f, barred, 0.08f)
+    }
+
+    @Test fun facesComeFirstAndMovementFillsInSceneByScene() {
+        // Scene one: faces on the left though something moves on the right. Scene two: no faces, movement on the right.
+        val frames = moving(60, 22, 30) + moving(60, 22, 30, fromMs = 2_000)
+        val faces = listOf(face(200, 0.2f), face(650, 0.2f))
+        val crops = ClipRefine.sceneCrops(faces, 0, 4_000, listOf(2_000), Bars.NONE, frames)
+        assertEquals(0.2f, bandMiddle(crops[0].cropX), 0.03f)
+        assertEquals(26f / 32f, bandMiddle(crops[1].cropX), 0.06f)
+    }
+
     @Test fun sceneCropsAreKeptWithTheSongAndReadBack() {
         val crops = listOf(SceneCrop(60_000, 0.25f), SceneCrop(62_480, -1f), SceneCrop(65_000, 1f))
         assertEquals(crops, SceneCrop.decode(SceneCrop.encode(crops)))
@@ -254,7 +284,13 @@ class ClipRefineTest {
         // The same faces small (a wide shot of the singer), large ones for a second only, or hardly any sightings: not one.
         assertFalse(ClipRefine.closeUp(big.map { it.copy(size = 0.04f) }, 0, 7_000))
         assertFalse(ClipRefine.closeUp(big.take(3) + (3 until 11).map { face(1_500L + it * 450, 0.3f, size = 0.04f) }, 0, 7_000))
-        assertFalse(ClipRefine.closeUp(big.take(2), 0, 7_000))
+        assertFalse("one sighting is not a close-up", ClipRefine.closeUp(big.take(1), 0, 7_000))
+        // By scenes: a close-up scene of half the loop counts whole though the finder missed a sighting in it (the A16's
+        // "Never Gonna Give You Up": wide shots to 3.4 s, then the singer's face to 6.96 s).
+        val rick = listOf(face(0, 0.45f, 0.04f), face(480, 0.38f, 0.06f), face(960, 0.56f, 0.07f)) +
+            listOf(3_840L, 4_320L, 4_800L, 5_280L, 6_240L, 6_720L).map { face(it, 0.3f, 0.1f) }
+        assertTrue(ClipRefine.closeUp(rick, 0, 6_960, listOf(280, 1_080, 1_840, 3_400)))
+        assertFalse("a short close-up among wide shots", ClipRefine.closeUp(rick.filter { it.timeMs < 4_500 }, 0, 6_960, listOf(280, 1_080, 1_840, 3_400, 4_500)))
     }
 
     @Test fun aCloseUpGivesWayToTheNextPartOnceAndStaysToBePicked() = runBlocking {

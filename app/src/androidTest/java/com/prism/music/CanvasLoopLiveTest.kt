@@ -38,6 +38,49 @@ class CanvasLoopLiveTest {
         runCatching { instrumentation.runOnMainSync { Fixture.container.player.stop() } }
     }
 
+    /**
+     * The by-eye round on real loops: `songs=Words_of_one+Words_of_another` (underscores for spaces), each played until
+     * its loop shows (or 45 s), with three pictures two seconds apart, the controls away. Nothing is asserted but that
+     * it ran: the pictures and the log line per song ("CanvasEye") are what is looked at.
+     */
+    @Test fun manySongsForTheEye() = runBlocking {
+        assumeTrue("live test: run with record=true", args.getString("record") == "true")
+        val list = args.getString("songs")?.split('+')?.map { it.replace('_', ' ') }?.filter { it.isNotBlank() }
+        assumeTrue("give songs=A+B", !list.isNullOrEmpty())
+        Fixture.ready()
+        val c = Fixture.container
+        c.settings.setPerformanceMode(false); c.settings.setReduceMotion(false); c.settings.setImmersivePlayer(false); c.settings.setFullBleedArtwork(false)
+        c.settings.setCanvasEnabled(true); c.settings.setCanvasFillsBackground(true); c.settings.setCanvasUseVideos(true)
+        c.settings.setCanvasVideoFirst(true); c.settings.setCanvasKeepControls(false)
+        Fixture.launch()
+        list!!.forEachIndexed { i, words ->
+            val song = runCatching { withContext(Dispatchers.IO) { c.ytm.search(words, SearchFilter.SONGS).items.filterIsInstance<SongItem>().first().song } }.getOrNull()
+            if (song == null) { android.util.Log.i("CanvasEye", "$i \"$words\": no song found"); return@forEachIndexed }
+            CanvasStats.showing = null
+            val asked = System.currentTimeMillis()
+            withContext(Dispatchers.Main) { c.player.playQueue(listOf(song), 0, QueueSource(QueueKind.SINGLE, "test")) }
+            if (i == 0) Fixture.context.startActivity(
+                android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("prism://player"))
+                    .setClass(Fixture.context, PrismActivity::class.java)
+                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            )
+            while (System.currentTimeMillis() < asked + 45_000 && CanvasStats.showing?.startsWith("file://") != true) delay(100)
+            val took = System.currentTimeMillis() - asked
+            val row = c.canvasClips.row(song.id)
+            val shown = CanvasStats.showing?.startsWith("file://") == true
+            android.util.Log.i(
+                "CanvasEye",
+                "$i \"${song.title}\" by ${song.artistText}: ${if (shown) "shown after $took ms" else "NO LOOP (${row?.why})"}; video ${row?.videoId} ${row?.videoType} " +
+                    "${row?.height}p ${row?.startMs}-${row?.endMs} crop ${row?.cropX} scenes ${row?.crops}; ${c.canvasClips.lastTimes}; ${com.prism.music.data.canvas.ClipDecode.last?.substringBefore(" [")}",
+            )
+            if (shown) {
+                // Past the controls' four seconds, then three moments of the loop.
+                delay(5_000)
+                for (k in 1..3) { Fixture.screenshot("CanvasEye-${i.toString().padStart(2, '0')}-$k"); delay(2_000) }
+            } else Fixture.screenshot("CanvasEye-${i.toString().padStart(2, '0')}-none")
+        }
+    }
+
     @Test fun aSongsMusicVideoLoopsBehindThePlayer() = runBlocking {
         assumeTrue("live test: run with record=true", args.getString("record") == "true")
         Fixture.ready()
