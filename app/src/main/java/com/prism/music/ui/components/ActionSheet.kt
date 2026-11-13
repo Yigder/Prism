@@ -4,6 +4,9 @@ import com.prism.music.ui.theme.PrismIcons
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,7 +50,8 @@ import com.prism.music.ui.theme.hairline
 /**
  * One choice in an [ActionSheet], as a tile ([QuickActions]) or a row ([ActionGroup]).
  * [value] is shown on the right of a row (a timer, a percentage); [active] lights it up (a mode
- * that's on); [keepOpen] runs it without closing the sheet; [danger] is for deleting things.
+ * that's on); [keepOpen] runs it without closing the sheet; [danger] is for deleting things. [toggle], when set, makes it
+ * a switch for a screen reader: it says the item's name, "On" or "Off", and that a tap changes it.
  */
 @Immutable
 class ActionItem(
@@ -57,8 +61,17 @@ class ActionItem(
     val active: Boolean = false,
     val keepOpen: Boolean = false,
     val danger: Boolean = false,
+    val toggle: Boolean? = null,
     val onClick: () -> Unit,
 )
+
+/** A tap on [a]: a switch ([ActionItem.toggle]) says its state to a screen reader; anything else is a plain button. */
+private fun Modifier.actionTap(a: ActionItem, onClick: () -> Unit): Modifier {
+    val on = a.toggle ?: return clickable(onClickLabel = a.label, onClick = onClick)
+    val state = com.prism.music.tr(if (on) com.prism.music.R.string.on_2 else com.prism.music.R.string.off)
+    return toggleable(on, role = androidx.compose.ui.semantics.Role.Switch) { onClick() }
+        .semantics { stateDescription = state }
+}
 
 fun SheetItem.toAction() = ActionItem(icon, label, danger = danger, onClick = onClick)
 
@@ -170,7 +183,7 @@ fun QuickActions(items: List<ActionItem>, onPick: (ActionItem) -> Unit) {
         items.forEachIndexed { i, a ->
             val hue = com.prism.music.ui.theme.PrismTokens.hue(i * step)
             Column(
-                Modifier.weight(1f).clip(LocalUi.current.tile).clickable(onClickLabel = a.label) { onPick(a) }
+                Modifier.weight(1f).clip(LocalUi.current.tile).actionTap(a) { onPick(a) }
                     .padding(horizontal = 4.dp, vertical = 10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
@@ -215,7 +228,8 @@ private fun ActionRow(a: ActionItem, onClick: () -> Unit) {
         else -> scheme.onSurface
     }
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 14.dp),
+        Modifier.fillMaxWidth().then(if (a.toggle != null) Modifier.actionTap(a, onClick) else Modifier.clickable(onClick = onClick))
+            .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(

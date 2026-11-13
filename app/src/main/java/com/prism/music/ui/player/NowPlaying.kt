@@ -535,6 +535,8 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
     val songCanvas by produceState<CanvasArtwork?>(
         c.canvas.cached(song), song.id, song.album?.title, settings.canvasEnabled,
         canvasPrefs.useVideos, canvasPrefs.videoFirst, canvasPrefs.lighter, settings.canvasFillsBackground,
+        // The song's own choices from the ⋯ menu (another part, "Use:", "Not this video"): looked at again.
+        c.canvasClips.changes.collectAsState().value,
     ) {
         if (!settings.canvasEnabled) { value = null; return@produceState }
         // Saved clips play from the phone, so mobile data doesn't matter for them.
@@ -705,6 +707,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
         if (showActions) PlayerOptionsSheet(
             song,
             hasCanvas = songCanvas != null,
+            shownClip = canvas?.clip,
             statsShown = statsOpen,
             hasNext = hasNext,
             // What the player's hidden parts did (1.8.0): open the lyrics or the queue, the music video, the buttons.

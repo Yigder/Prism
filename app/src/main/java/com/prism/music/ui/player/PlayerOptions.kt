@@ -55,6 +55,7 @@ import com.prism.music.ui.components.runAction
 import com.prism.music.ui.components.shareTarget
 import com.prism.music.ui.theme.LocalContainer
 import com.prism.music.ui.theme.LocalUi
+import kotlinx.coroutines.launch
 
 /**
  * The player's ⋯ menu, in the app's frosted look (the song's cover as frosted glass): like and share up top, four quick
@@ -86,6 +87,8 @@ fun PlayerOptionsSheet(
     videoAvailable: Boolean = false,
     onVideoMode: (Boolean) -> Unit = {},
     onButton: (PlayerButton) -> Unit = {},
+    /** 1.8.6: the loop from the song's music video the player shows now, if that is what it shows. */
+    shownClip: com.prism.music.data.canvas.VideoClip? = null,
     onDismiss: () -> Unit,
 ) {
     val c = LocalContainer.current
@@ -103,6 +106,11 @@ fun PlayerOptionsSheet(
     var pickPlaylist by remember { mutableStateOf(false) }
     var sharing by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf(false) }
+    // 1.8.6 Canvas for this song: its row (a loop from the video, the listener's "Use:"), and the two sheets it opens.
+    val clipChanges by c.canvasClips.changes.collectAsState()
+    val clipRow by androidx.compose.runtime.produceState<com.prism.music.data.db.CanvasClipEntity?>(null, song.id, clipChanges) { value = c.canvasClips.row(song.id) }
+    var canvasParts by remember { mutableStateOf(false) }
+    var canvasUse by remember { mutableStateOf(false) }
 
     var outputs by remember { mutableStateOf(false) }
     var credits by remember { mutableStateOf(false) }
@@ -129,6 +137,8 @@ fun PlayerOptionsSheet(
     if (sharing) { com.prism.music.ui.components.ShareSheet(song.shareTarget()) { sharing = false; onDismiss() }; return }
     // Edit this menu, in its place; done, the menu comes back as it now is.
     if (editing) { MenuEditorSheet { editing = false }; return }
+    if (canvasParts) { CanvasPartsSheet(song) { canvasParts = false; onDismiss() }; return }
+    if (canvasUse) { CanvasUseSheet(song, canvasUseNow(c.settings.current, clipRow)) { canvasUse = false; onDismiss() }; return }
 
     val isLiked = song.id in liked
     val dl = downloads[song.id]
@@ -266,8 +276,23 @@ fun PlayerOptionsSheet(
         ActionItem(PrismIcons.Flame, tr(R.string.your_best_part), value = c.bestParts.mine(song.id)?.let { "%d:%02d".format(it / 60_000, it / 1000 % 60) }) { BestPartEditor.open = true },
     )
     if (hasCanvas && !local) {
-        put(MenuAction.ANIMATED_COVER, ActionItem(PrismIcons.AnimatedCover, tr(R.string.animated_cover), active = song.id !in hidden, keepOpen = true) { c.canvas.setHidden(song.id, song.id !in hidden) })
-        put(
+        // Canvas for this song, on or off: both kinds (animated cover and video loop) go for the song.
+        val canvasOn = song.id !in hidden
+        put(MenuAction.ANIMATED_COVER, canvasToggleItem(canvasOn) { c.canvas.setHidden(song.id, canvasOn) })
+        // A loop from the song's music video shows: another part of it, or not this video at all.
+        if (shownClip != null && canvasOn) {
+            put(MenuAction.CANVAS_PART, ActionItem(PrismIcons.Carousel, tr(R.string.canvas_pick_part), keepOpen = true) { canvasParts = true })
+            put(MenuAction.CANVAS_NOT_THIS_VIDEO, ActionItem(PrismIcons.Block, tr(R.string.canvas_not_this_video)) {
+                c.scope.launch { c.canvasClips.rejectVideo(song.id) }
+            })
+        }
+        // The song has both an animated cover and a video loop: which one it uses, whatever "When a song has both" says.
+        if (canvasOn && settings.behavior.canvas.useVideos && clipRow?.videoId != null && c.canvas.cached(song) != null) {
+            val now = canvasUseNow(settings, clipRow)
+            put(MenuAction.CANVAS_USE, ActionItem(PrismIcons.Video, tr(R.string.canvas_use), value = canvasSourceName(now), keepOpen = true) { canvasUse = true })
+        }
+        // Only a song that has an animated cover (a loop from its video is kept by itself, and with its download).
+        if (c.canvas.cached(song) != null) put(
             MenuAction.SAVE_ANIMATED_COVER,
             if (saved.has(song.id, cover)) ActionItem(PrismIcons.Download, tr(R.string.animated_cover_saved), active = true, keepOpen = true) { c.canvasStore.unsave(song) }
             else ActionItem(PrismIcons.Download, tr(R.string.save_animated_cover), keepOpen = true) {
@@ -323,7 +348,7 @@ private fun ActionItem.tile(a: MenuAction): ActionItem {
         MenuAction.SLEEP -> tr(R.string.sleep)
         else -> return this
     }
-    return ActionItem(icon, short, value, active, keepOpen, danger, onClick)
+    return ActionItem(icon, short, value, active, keepOpen, danger, toggle, onClick)
 }
 
 /** An action's icon and name in Edit this menu, whatever song is playing. */
@@ -361,6 +386,9 @@ internal fun menuIcon(a: MenuAction): ImageVector = when (a) {
     MenuAction.LISTEN_TOGETHER -> PrismIcons.Groups
     MenuAction.BEST_PART -> PrismIcons.Flame
     MenuAction.ANIMATED_COVER -> PrismIcons.AnimatedCover
+    MenuAction.CANVAS_PART -> PrismIcons.Carousel
+    MenuAction.CANVAS_USE -> PrismIcons.Video
+    MenuAction.CANVAS_NOT_THIS_VIDEO -> PrismIcons.Block
     MenuAction.SAVE_ANIMATED_COVER -> PrismIcons.Download
     MenuAction.STATS -> PrismIcons.Stats
     MenuAction.MARK_STUTTER -> PrismIcons.Info
@@ -399,7 +427,10 @@ internal fun menuLabel(a: MenuAction): String = when (a) {
     MenuAction.VIDEO_DOWNLOAD -> tr(R.string.download_video)
     MenuAction.LISTEN_TOGETHER -> tr(R.string.listen_together)
     MenuAction.BEST_PART -> tr(R.string.your_best_part)
-    MenuAction.ANIMATED_COVER -> tr(R.string.animated_cover)
+    MenuAction.ANIMATED_COVER -> tr(R.string.canvas)
+    MenuAction.CANVAS_PART -> tr(R.string.canvas_pick_part)
+    MenuAction.CANVAS_USE -> tr(R.string.canvas_use)
+    MenuAction.CANVAS_NOT_THIS_VIDEO -> tr(R.string.canvas_not_this_video)
     MenuAction.SAVE_ANIMATED_COVER -> tr(R.string.save_animated_cover)
     MenuAction.STATS -> tr(R.string.stats_for_nerds)
     MenuAction.MARK_STUTTER -> tr(R.string.mark_a_stutter)

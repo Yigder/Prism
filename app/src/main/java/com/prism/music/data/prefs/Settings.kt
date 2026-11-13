@@ -664,7 +664,11 @@ enum class MenuAction(val group: MenuGroup, val fromPlayer: Boolean = false, val
     PREVIOUS(MenuGroup.PLAYING, true), NEXT(MenuGroup.PLAYING, true), DJ(MenuGroup.PLAYING, true), EQUALIZER(MenuGroup.PLAYING, true),
     SLEEP(MenuGroup.PLAYING), SPEED_PITCH(MenuGroup.PLAYING), OUTPUT(MenuGroup.PLAYING), IMMERSIVE(MenuGroup.PLAYING),
     VIDEO_DOWNLOAD(MenuGroup.PLAYING), LISTEN_TOGETHER(MenuGroup.PLAYING), BEST_PART(MenuGroup.PLAYING),
-    ANIMATED_COVER(MenuGroup.PLAYING), SAVE_ANIMATED_COVER(MenuGroup.PLAYING),
+    /** "Canvas" for this song, on or off (named for the animated cover it was before 1.8.6: names are stored). */
+    ANIMATED_COVER(MenuGroup.PLAYING),
+    /** 1.8.6 Canvas, for one song: another part of its video's loop, which source it uses, and "Not this video". */
+    CANVAS_PART(MenuGroup.PLAYING), CANVAS_USE(MenuGroup.PLAYING), CANVAS_NOT_THIS_VIDEO(MenuGroup.PLAYING),
+    SAVE_ANIMATED_COVER(MenuGroup.PLAYING),
     STATS(MenuGroup.HELP), MARK_STUTTER(MenuGroup.HELP);
 
     companion object {

@@ -5453,4 +5453,7 @@
     <string name="canvas_both_keywords">animated cover music video first order</string>
     <string name="canvas_keep_controls_keywords">controls fade hide full screen tap</string>
     <string name="canvas_lighter_keywords">quality 480p 720p 1080p data size smaller</string>
+    <string name="canvas_pick_part">Pick another part</string>
+    <string name="canvas_use">Use</string>
+    <string name="canvas_not_this_video">Not this video</string>
 </resources>

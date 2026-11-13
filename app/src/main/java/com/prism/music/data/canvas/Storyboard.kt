@@ -41,6 +41,16 @@ class Storyboard(
         }
     }
 
+    /** Where one frame sits: sheet number [sheet], its top-left corner at ([x], [y]) in that sheet. */
+    data class Spot(val sheet: Int, val x: Int, val y: Int)
+
+    /** The frame nearest the video's [ms] (the stills of "Pick another part"). */
+    fun frameAt(ms: Long): Spot {
+        val i = ((ms.coerceAtLeast(0) + intervalMs / 2) / intervalMs).coerceAtMost(count - 1L).toInt()
+        val k = i % perSheet
+        return Spot(i / perSheet, (k % cols) * frameW, (k / cols) * frameH)
+    }
+
     companion object {
         /** The largest level of [spec]; null when it can't be read. [lengthMs] stands in for a missing interval. */
         fun parse(spec: String?, lengthMs: Long = 0): Storyboard? {
