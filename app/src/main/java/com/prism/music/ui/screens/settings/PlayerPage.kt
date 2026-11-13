@@ -678,6 +678,7 @@ val playerIndex: List<SettingEntry> by lazy {
                 tr(R.string.canvas_keywords) + " " + tr(R.string.animated_covers) + " " + tr(R.string.canvas_motion_video_cover) + " " + tr(R.string.fill_the_player) + " " +
                     tr(R.string.full_screen) + " " + tr(R.string.canvas_background_full_screen_behind),
             ),
+            SettingEntry(page, g.cover, tr(R.string.canvas_where)),
             SettingEntry(page, g.cover, tr(R.string.canvas_use_videos), tr(R.string.canvas_use_videos_keywords), needs = canvasOn),
             SettingEntry(page, g.cover, tr(R.string.canvas_both), tr(R.string.canvas_both_keywords), needs = canvasVideos),
             SettingEntry(

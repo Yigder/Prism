@@ -2,6 +2,24 @@
 
 What changed in each release. Older releases are described on the [Releases page](https://github.com/Yigder/Prism/releases).
 
+## 1.8.6
+
+### Canvas
+
+- **Canvas** is the new name for animated covers: a silent, looping picture on the cover or behind the whole player. Settings → Player → Canvas: Off, On the cover, or Full screen. What you had before stays as it was.
+- **Loops from music videos** (off by default: "Use music videos"). A song without an animated cover can show a few seconds of its own official music video, cut to loop. Prism picks the part from the video's preview pictures and its most replayed moment, fetches those seconds once on Wi-Fi (about 5 MB a song in Full screen, about 2 MB on the cover) and plays them from the phone after that. Lyric videos, audio-only uploads, still pictures and live recordings are left out.
+- **Full screen**: the loop fills the player, and after a few seconds the controls fade away, leaving the title, the artist and a thin progress line. A tap brings them back. "Keep controls showing" turns the fading off.
+- **Your say, per song**, in the player's ⋯ menu: Canvas on or off, Pick another part, Use (animated cover or music video, when a song has both) and Not this video.
+- **When a song has both**, the animated cover plays first unless you put the music video first.
+- **Looked at before it shows.** Each loop is checked on its real frames, on the phone: it ends on one of the video's own cuts, and a loop that flashes is never shown.
+- **Ready in time.** On Wi-Fi the next two songs' loops are fetched ahead, and a downloaded song keeps its loop for offline.
+- **Easy on the phone.** Canvas holds still with Reduce motion (animated covers now do too), in battery saver, when the phone runs hot, and after a song has been paused for half a minute. Performance mode switches it off. On mobile data, loops from videos are only fetched if you allow it ("Use mobile data for" → Canvas from videos); Data saver never fetches them.
+- Share diagnostics says what Canvas showed for the song playing, and why not when it showed nothing.
+
+### New
+
+- **Hours on the Replay chart.** "Hours by month" shows each month's hours on its bar.
+
 ## 1.8.5
 
 ### Replay & Rewind 2026

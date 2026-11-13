@@ -64,6 +64,7 @@ private const val V1_8_3 = 59
 private const val V1_8_4 = 61
 /** Prism 1.8.5 (build 63): Replay & Rewind 2026. */
 private const val V1_8_5 = 63
+private const val V1_8_6 = 64
 
     /** Every step, in the order they're shown. */
     val steps: List<TourStep> = listOf(
@@ -690,6 +691,26 @@ private const val V1_8_5 = 63
                 tr(R.string.tour_185_also_open_with),
             ),
             listOf(PrismIcons.Search, PrismIcons.Shuffle),
+        ),
+        TourStep(
+            // 1.8.6 Canvas. Opens the Player page at Cover, the group the Canvas row is in.
+            V1_8_6, PrismIcons.AnimatedCover, tr(R.string.tour_186_canvas_title),
+            tr(R.string.tour_186_canvas_body),
+            listOf(
+                tr(R.string.tour_186_canvas_point_1),
+                tr(R.string.tour_186_canvas_point_2, tr(R.string.canvas_use_videos)),
+                tr(R.string.tour_186_canvas_point_3, tr(R.string.canvas_pick_part), tr(R.string.canvas_not_this_video)),
+                tr(R.string.tour_186_canvas_point_4),
+            ),
+            listOf(PrismIcons.Video, PrismIcons.Fullscreen),
+            showMe = Routes.settings(SettingsPageId.PLAYER.key, find = tr(R.string.cover)),
+        ),
+        TourStep(
+            // The hours on Replay's "Hours by month" bars (the owner's ask, 2026-11-13).
+            V1_8_6, PrismIcons.Stats, tr(R.string.also_new),
+            tr(R.string.from_your_requests),
+            listOf(tr(R.string.tour_186_also_hours, tr(R.string.hours_by_month))),
+            showMe = Routes.REPLAY,
         ),
         TourStep(
             V1_7, PrismIcons.Update, tr(R.string.stay_in_the_loop),

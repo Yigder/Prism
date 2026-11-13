@@ -5456,4 +5456,11 @@
     <string name="canvas_pick_part">Pick another part</string>
     <string name="canvas_use">Use</string>
     <string name="canvas_not_this_video">Not this video</string>
+    <string name="tour_186_canvas_title">Canvas</string>
+    <string name="tour_186_canvas_body">A silent, looping picture behind your music. Animated covers have a new name, and a song without one can use a few seconds of its own music video.</string>
+    <string name="tour_186_canvas_point_1">Full screen: the loop fills the player. The controls fade away and come back on a tap.</string>
+    <string name="tour_186_canvas_point_2">%1$s is off until you turn it on. A loop is fetched once, on Wi-Fi: about 5 MB a song in Full screen.</string>
+    <string name="tour_186_canvas_point_3">The player\'s ⋯ menu: %1$s, or %2$s.</string>
+    <string name="tour_186_canvas_point_4">It rests with Reduce motion, in battery saver and when the phone runs hot.</string>
+    <string name="tour_186_also_hours">Replay: %1$s shows the hours on each bar.</string>
 </resources>

@@ -142,13 +142,34 @@ class TourTest {
     }
 
     /**
+     * 1.8.6 (build 64): an update from 1.8.5 (63) shows Canvas, then the hours on Replay's chart, and nothing older.
+     * Canvas's page names the switch and the menu's rows as they are written, and opens the Player page at Cover.
+     */
+    @Test
+    fun anUpdateFrom185ShowsCanvas() {
+        val pages = Tour.stepsAfter(63)
+        assertEquals(listOf(R.string.tour_186_canvas_title, R.string.also_new).map { tr(it) }, pages.map { it.title })
+        assertTrue(pages.all { it.since == 64 && it.kind == TourStep.Kind.PLAIN })
+        assertTrue(pages.flatMap { it.points + it.body }.none { "%" in it })
+        val canvas = pages.first()
+        assertEquals(4, canvas.points.size)
+        assertTrue(canvas.points[1].contains(tr(R.string.canvas_use_videos)))
+        assertTrue(canvas.points[2].contains(tr(R.string.canvas_pick_part)) && canvas.points[2].contains(tr(R.string.canvas_not_this_video)))
+        val (key, find) = parse(canvas.showMe!!)
+        assertEquals(com.prism.music.ui.screens.settings.SettingsPageId.PLAYER.key, key)
+        assertEquals(tr(R.string.cover), find)
+        assertTrue(pages.last().points.single().contains(tr(R.string.hours_by_month)))
+        assertEquals(com.prism.music.ui.Routes.REPLAY, pages.last().showMe)
+    }
+
+    /**
      * 1.8.5 (build 63): an update from 1.8.4.1 (62) shows Replay's new sections, Rewind 2026, the widgets and notices,
      * and the rest, in that order, and nothing older.
      */
     @Test
     fun anUpdateFrom1841ShowsThe185Pages() {
-        val pages = Tour.stepsAfter(62)
-        assertTrue(pages.all { it.since == 63 && it.kind == TourStep.Kind.PLAIN })
+        val pages = Tour.stepsAfter(62).filter { it.since == 63 }
+        assertTrue(pages.all { it.kind == TourStep.Kind.PLAIN })
         assertEquals(
             listOf(R.string.tour_185_replay_title, R.string.tour_185_rewind_title, R.string.tour_185_more_title, R.string.also_new).map { tr(it) },
             pages.map { it.title },
