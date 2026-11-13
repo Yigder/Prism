@@ -651,15 +651,37 @@ class LyricsRepository(
         song.album?.title?.let { base.addQueryParameter("album_name", it) }
         if (song.durationSec > 0) base.addQueryParameter("duration", song.durationSec.toString())
         val exact = runCatching { getJson(base.build()) }.getOrNull()
-        val pick = exact ?: run {
+        val pick = pickLrcLib(song, exact, null) ?: run {
             val search = "https://lrclib.net/api/search".toHttpUrl().newBuilder()
                 .addQueryParameter("track_name", title)
                 .addQueryParameter("artist_name", song.primaryArtist).build()
             val list = (runCatching { getJson(search) }.getOrNull() as? JsonArray) ?: return null
-            list.minByOrNull { abs((it.str("duration")?.toDoubleOrNull() ?: 0.0) - song.durationSec) }
-                ?.takeIf { lengthFits(song, it.str("duration")?.toDoubleOrNull()) }
+            pickLrcLib(song, null, list)
         }
         return pick.str("syncedLyrics")?.takeIf { it.isNotBlank() } ?: pick.str("plainLyrics")
+    }
+
+    /**
+     * LRCLIB's search endpoint is broad and its exact endpoint may return the nearest recording. Do not accept a
+     * non-null response without proving its metadata belongs to this track; same-titled songs such as "São Paulo"
+     * otherwise get cached as the requested song's timed lyrics.
+     */
+    internal fun pickLrcLib(song: Song, exact: JsonElement?, search: JsonArray?): JsonElement? {
+        fun matches(value: JsonElement): Boolean {
+            val track = norm(cleanTitle(value.str("trackName") ?: ""))
+            val artist = norm(value.str("artistName") ?: "")
+            val wantedTrack = norm(cleanTitle(song.title))
+            val wantedArtist = norm(song.primaryArtist)
+            if (track.isBlank() || artist.isBlank() || wantedTrack.isBlank() || wantedArtist.isBlank()) return false
+            val titleMatches = track == wantedTrack
+            val artistMatches = artist == wantedArtist || artist.contains(wantedArtist) || wantedArtist.contains(artist)
+            return titleMatches && artistMatches && lengthFits(song, value.str("duration")?.toDoubleOrNull())
+        }
+        if (exact?.let(::matches) == true) return exact
+        return search.orEmpty().filter(::matches).minByOrNull {
+            val duration = it.str("duration")?.toDoubleOrNull() ?: 0.0
+            if (song.durationSec > 0) abs(duration - song.durationSec) else 0.0
+        }
     }
 
     internal fun fetchNetEase(song: Song): String? {
@@ -955,6 +977,8 @@ class LyricsRepository(
                 !cached.content.startsWith(WordFormat.PREFIX)
             // Answers from before the length check ([lengthFits]) may be another edit's timings: asked again once.
             val recheck = (source in LENGTH_CHECKED && cached.fetchedAt < LENGTH_CHECK_SINCE) ||
+                // LRCLIB rows saved before metadata validation may be another same-titled song.
+                (source == LyricsSource.LRCLIB && cached.fetchedAt < LRCLIB_MATCH_CHECKED_SINCE) ||
                 // KuGou's lyrics for another edition of the song (its own title says so), saved before that was checked.
                 (source == LyricsSource.KUGOU && Editions.otherEdition(Lrc.metaTag(cached.content, "ti"), song.title)) ||
                 // YouTube Music's plain text, saved before its synced lyrics were asked for: asked again once.
@@ -1001,6 +1025,8 @@ class LyricsRepository(
         const val LENGTH_CHECK_SINCE = 1_791_936_000_000L
         /** YouTube Music's synced lyrics came in (1.6.4); plain text from it saved before this is asked for again. */
         const val YT_SYNCED_SINCE = 1_792_627_200_000L // 2026-10-22
+        /** LRCLIB title/artist validation came in after same-titled songs were reported as wrong lyrics. */
+        const val LRCLIB_MATCH_CHECKED_SINCE = 1_794_528_000_000L // 2026-11-13
         /** How long [auto] waits on a source before asking the next one as well. */
         const val HEAD_START_MS = 1_200L
         /** How long word lyrics wait on line-timed ones to compare with (#301), and when "none to compare with" is asked again. */
