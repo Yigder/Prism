@@ -83,4 +83,11 @@ class ClipRepository(private val dao: CanvasClipDao, private val finder: ClipFin
         /** The file's address for the player; the loop's seconds ride along so another part of the same file is another clip. */
         fun fileUrl(file: File, loop: VideoClip): String = "file://" + file.absolutePath + "#" + loop.startMs + "-" + loop.endMs
     }
+
+    /**
+     * Gets [song]'s loop onto the phone before it shows (the next songs, a download: [CanvasAhead]); what would show is
+     * thrown away. A loop already kept costs no network. True when a loop is on the phone.
+     */
+    suspend fun prepare(song: Song, height: Int, saved: Boolean, allowed: () -> Boolean): Boolean =
+        artworkFor(song, height, saved, allowed) != null
 }

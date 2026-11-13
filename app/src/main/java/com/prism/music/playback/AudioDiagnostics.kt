@@ -175,6 +175,22 @@ object AudioDiagnostics {
         }
     }
 
+    /**
+     * 1.8.6: the Canvas lines for the song playing ([com.prism.music.data.canvas.canvasDiagnostics]): the setting, what
+     * shows, and why there is no loop from its music video. Reads the database and the loop folders: off the main thread.
+     */
+    suspend fun canvas(c: com.prism.music.AppContainer): String = runCatching {
+        val song = c.player.currentSong.value
+        val row = song?.let { c.canvasClips.row(it.id) }
+        val kept = row?.videoId?.let { c.clipFiles.of(it) }.orEmpty()
+        com.prism.music.data.canvas.canvasDiagnostics(
+            stored = c.settings.stored.value, used = c.settings.current,
+            metered = c.app.getSystemService(android.net.ConnectivityManager::class.java)?.isActiveNetworkMetered == true,
+            videoMode = c.player.videoMode.value, song = song, hidden = song != null && song.id in c.canvas.hidden.value,
+            cover = song?.let { c.canvas.cached(it) }, row = row, kept = kept,
+        )
+    }.getOrElse { "Canvas: couldn't read ($it)" }
+
     /** Clears the log (it starts again with a fresh header if diagnostics are on). */
     fun clear(header: () -> String) {
         runCatching { writer.submit { file?.delete() }.get(2, TimeUnit.SECONDS) }

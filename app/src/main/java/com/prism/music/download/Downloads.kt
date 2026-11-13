@@ -294,6 +294,8 @@ class DownloadRepository(private val context: Context, private val c: AppContain
                 noteFailure(download.request.id, null)
                 c.forgetDownloadFormat(download.request.id)
                 c.canvasStore.forgetDownloads(listOf(download.request.id))
+                // 1.8.6: its loop from the music video goes back to the recent ones.
+                c.canvasAhead.forgetDownloads(listOf(download.request.id))
             }
         })
         scope.launch {
@@ -720,6 +722,8 @@ class DownloadRepository(private val context: Context, private val c: AppContain
         val metered = context.getSystemService(android.net.ConnectivityManager::class.java)?.isActiveNetworkMetered != false
         if (metered && !s.canvasWithDownloadsCellular) return false
         c.canvasStore.saveWithDownload(song)
+        // 1.8.6: and its loop from the music video, where one is wanted for it (the player's rule).
+        c.canvasAhead.keepWithDownload(song)
         return true
     }
 

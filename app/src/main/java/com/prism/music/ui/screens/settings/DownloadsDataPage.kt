@@ -400,7 +400,10 @@ private fun DdCanvasStorage() {
     val saved by c.canvas.saved.collectAsState()
     var version by remember { mutableIntStateOf(0) }
     val sizes by produceState(0L to 0L, version, saved) {
-        value = withContext(Dispatchers.IO) { c.canvasStore.savedBytes to c.canvasStore.recentBytes }
+        // 1.8.6: loops cut from music videos count with the animated covers (Canvas is both).
+        value = withContext(Dispatchers.IO) {
+            (c.canvasStore.savedBytes + c.clipFiles.savedBytes) to (c.canvasStore.recentBytes + c.clipFiles.recentBytes)
+        }
     }
     fun mb(bytes: Long) = tr(R.string.t_0f_mb).format(bytes / 1_048_576f)
     LinkRow(
@@ -409,13 +412,13 @@ private fun DdCanvasStorage() {
         info = tr(R.string.save_one_from_the_player_s), action = true,
     ) {
         if (saved.count > 0) scope.launch {
-            withContext(Dispatchers.IO) { c.canvasStore.clearSaved() }
+            withContext(Dispatchers.IO) { c.canvasStore.clearSaved(); c.clipFiles.clearSaved() }
             version++
         }
     }
     LinkRow(tr(R.string.recently_played_covers), value = tr(R.string.tap_to_clear, mb(sizes.second)), info = tr(R.string.kept_up_to_400_mb_so), action = true) {
         scope.launch {
-            withContext(Dispatchers.IO) { c.canvasStore.clearRecent() }
+            withContext(Dispatchers.IO) { c.canvasStore.clearRecent(); c.clipFiles.clearRecent() }
             version++
         }
     }

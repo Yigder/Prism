@@ -1638,6 +1638,9 @@ open class PlaybackService : MediaLibraryService(), Player.Listener {
      * skipping ahead or moving on starts straight away. Downloaded songs don't need it.
      */
     private fun prefetchNext() {
+        // 1.8.6 Canvas: the next two songs' loops, on Wi-Fi, once this one has played a few seconds (a newer queue cancels).
+        // (One lined up as its video shows the video, not a canvas.)
+        c.canvasAhead.ahead(upcoming(com.prism.music.data.canvas.CanvasAhead.AHEAD).mapNotNull { if (it.videoModeId == null) it.toSong() else null })
         val i = player.nextMediaItemIndex
         if (i == C.INDEX_UNSET) return
         songForNextVideo(player.getMediaItemAt(i))

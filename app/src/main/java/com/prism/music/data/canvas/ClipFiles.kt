@@ -115,6 +115,11 @@ class ClipFiles(
         recentDir.listFiles()?.forEach { it.delete() }
     }
 
+    /** Settings → "Saved animated covers" → remove all: the downloaded songs' loops go with their covers. */
+    fun clearSaved() = synchronized(lock) {
+        savedDir.listFiles()?.forEach { it.delete() }
+    }
+
     /** Drops the least recently used recent loops until the folder fits its budget; saved ones are never touched. */
     fun prune(except: File? = null) = synchronized(lock) {
         val budget = recentBudget()
