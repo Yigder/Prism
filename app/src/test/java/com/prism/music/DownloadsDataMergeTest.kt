@@ -26,23 +26,24 @@ class DownloadsDataMergeTest {
     private fun stored(bits: Int) = MobileDataStored(
         noVideoOnData = bits and 1 != 0, preloadCellular = bits and 2 != 0, smartDownloadsCellular = bits and 4 != 0, lyricsOnMobileData = bits and 8 != 0,
         canvasOnCellular = bits and 16 != 0, canvasWithDownloadsCellular = bits and 32 != 0, mixTempoOnCellular = bits and 64 != 0, singOnCellular = bits and 128 != 0,
+        canvasVideosCellular = bits and 256 != 0,
     )
 
     @Test fun everyStoredCombinationGoesToTheChipsAndBackUnchanged() {
         val seen = HashSet<Set<MobileUse>>()
-        for (bits in 0 until 256) {
+        for (bits in 0 until 512) {
             val before = stored(bits)
             val chips = mobileDataToMerged(before)
             assertEquals("stored combination $bits", before, mobileDataToStored(chips))
             seen += chips
         }
-        assertEquals("256 stored combinations are 256 different sets of chips", 256, seen.size)
+        assertEquals("512 stored combinations are 512 different sets of chips", 512, seen.size)
     }
 
     @Test fun everySetOfChipsGoesToTheStoreAndBackUnchanged() {
         val all = MobileUse.entries
-        assertEquals(8, all.size)
-        for (bits in 0 until 256) {
+        assertEquals(9, all.size)
+        for (bits in 0 until 512) {
             val chips = all.filterIndexed { i, _ -> bits and (1 shl i) != 0 }.toSet()
             assertEquals(chips, mobileDataToMerged(mobileDataToStored(chips)))
         }
@@ -51,7 +52,7 @@ class DownloadsDataMergeTest {
     /** One chip, one stored switch: ticking a chip changes that switch and no other. "Videos" is stored the other way round. */
     @Test fun aChipIsOneStoredSwitch() {
         val none = mobileDataToStored(emptySet())
-        assertEquals(MobileDataStored(true, false, false, false, false, false, false, false), none)
+        assertEquals(MobileDataStored(true, false, false, false, false, false, false, false, false), none)
         assertEquals(none.copy(noVideoOnData = false), mobileDataToStored(setOf(MobileUse.VIDEOS)))
         assertEquals(none.copy(preloadCellular = true), mobileDataToStored(setOf(MobileUse.LOAD_AHEAD)))
         assertEquals(none.copy(smartDownloadsCellular = true), mobileDataToStored(setOf(MobileUse.SMART_DOWNLOADS)))
@@ -60,6 +61,7 @@ class DownloadsDataMergeTest {
         assertEquals(none.copy(canvasWithDownloadsCellular = true), mobileDataToStored(setOf(MobileUse.SAVING_COVERS)))
         assertEquals(none.copy(mixTempoOnCellular = true), mobileDataToStored(setOf(MobileUse.MEASURING)))
         assertEquals(none.copy(singOnCellular = true), mobileDataToStored(setOf(MobileUse.SING)))
+        assertEquals(none.copy(canvasVideosCellular = true), mobileDataToStored(setOf(MobileUse.CANVAS_VIDEOS)))
     }
 
     /** As Prism comes: lyrics and animated covers may use mobile data, videos aren't held back, the rest wait for Wi-Fi. */
@@ -93,6 +95,11 @@ class DownloadsDataMergeTest {
         assertFalse(shown(d.copy(normalize = false, mix = false), MobileUse.MEASURING))
         assertTrue(shown(d.copy(normalize = true, mix = false), MobileUse.MEASURING))
         assertTrue(shown(d.copy(normalize = false, mix = true), MobileUse.MEASURING))
+        // 1.8.6: Canvas from videos, only while Canvas is on and uses music videos.
+        val videos = d.copy(behavior = d.behavior.copy(canvas = d.behavior.canvas.copy(useVideos = true)))
+        assertFalse(shown(d, MobileUse.CANVAS_VIDEOS))
+        assertTrue(shown(videos, MobileUse.CANVAS_VIDEOS))
+        assertFalse(shown(videos.copy(canvasEnabled = false), MobileUse.CANVAS_VIDEOS))
     }
 
     /** Data saver is a mode beside the row, not a chip: no chip reads it or writes it. */

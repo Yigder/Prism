@@ -2,6 +2,7 @@ package com.prism.music.ui.screens.settings
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -43,6 +44,7 @@ import com.prism.music.data.prefs.shows
 import com.prism.music.tr
 import com.prism.music.ui.LocalNavigator
 import com.prism.music.ui.Routes
+import com.prism.music.ui.components.PrismTextButton
 import com.prism.music.ui.screens.ArtistLinksSample
 import com.prism.music.ui.screens.KnobSample
 import com.prism.music.ui.screens.LayoutSample
@@ -285,11 +287,50 @@ internal fun PlayerCoverRows() {
         info = words(tr(R.string.opening_the_player_the_mini_player), tr(R.string.instead_of_the_whole_player_sliding), tr(R.string.cover_flies_back_too_info)),
         changed = ch("cover_flight"),
     ) { v -> v.toStored(flight).let { (open, back) -> prefs.setCoverFlight(open); prefs.setCoverFlightBack(back) } }
-    val canvas = s.canvasEnabled to s.canvasFillsBackground
-    ChoiceRow(
-        tr(R.string.animated_covers), AnimatedCovers.entries, AnimatedCovers.toMerged(canvas), { it.label },
-        info = words(tr(R.string.motion_artwork_and_video_covers_turn), tr(R.string.the_moving_artwork_fills_the_whole)), changed = ch("canvas_enabled"),
-    ) { v -> v.toStored(canvas).let { (on, fills) -> prefs.setCanvasEnabled(on); prefs.setCanvasFillsBackground(fills) } }
+    // 1.8.6: Canvas (was "Animated covers") with its choices in one sheet: the Cover group stays at its seven rows.
+    SheetRow(
+        tr(R.string.canvas), canvasWords(s),
+        info = words(tr(R.string.motion_artwork_and_video_covers_turn), tr(R.string.the_moving_artwork_fills_the_whole)),
+        changed = listOf("canvas_enabled", "canvas_use_videos", "canvas_video_first", "canvas_keep_controls", "canvas_lighter").any { ch(it) },
+    ) { CanvasOptions() }
+}
+
+/**
+ * Canvas's sheet (plan-canvas §3.1, §3.6, §11a R1, R6): where it shows, then the rows that only apply to what is picked.
+ * Picking Full screen while music videos are off asks whether they may be used; either answer keeps Full screen.
+ */
+@Composable
+private fun CanvasOptions() {
+    val s = LocalAppSettings.current
+    val prefs = LocalContainer.current.settings
+    val c = s.behavior.canvas
+    val stored = s.canvasEnabled to s.canvasFillsBackground
+    val now = AnimatedCovers.toMerged(stored)
+    var asking by remember { mutableStateOf(false) }
+    ChoiceRow(tr(R.string.canvas_where), AnimatedCovers.entries, now, { it.label }, changed = ch("canvas_enabled")) { v ->
+        v.toStored(stored).let { (on, fills) -> prefs.setCanvasEnabled(on); prefs.setCanvasFillsBackground(fills) }
+        if (AnimatedCovers.asksForVideos(now, v, c.useVideos)) asking = true
+    }
+    val on = now != AnimatedCovers.OFF
+    if (on) SwitchRow(
+        tr(R.string.canvas_use_videos), c.useVideos, info = tr(R.string.canvas_use_videos_info), changed = ch("canvas_use_videos"),
+    ) { prefs.setCanvasUseVideos(it) }
+    if (on && c.useVideos) ChoiceRow(
+        tr(R.string.canvas_both), listOf(false, true), c.videoFirst, ::canvasBothWords, info = tr(R.string.canvas_both_info), changed = ch("canvas_video_first"),
+    ) { prefs.setCanvasVideoFirst(it) }
+    if (now == AnimatedCovers.FILL_THE_PLAYER) SwitchRow(
+        tr(R.string.canvas_keep_controls), c.keepControls, info = tr(R.string.canvas_keep_controls_info), changed = ch("canvas_keep_controls"),
+    ) { prefs.setCanvasKeepControls(it) }
+    if (on && c.useVideos) SwitchRow(
+        tr(R.string.canvas_lighter), c.lighter, info = tr(R.string.canvas_lighter_info), changed = ch("canvas_lighter"),
+    ) { prefs.setCanvasLighter(it) }
+    if (asking) AlertDialog(
+        onDismissRequest = { asking = false },
+        title = { Text(tr(R.string.canvas_ask_title)) },
+        text = { Text(tr(R.string.canvas_ask_text)) },
+        confirmButton = { PrismTextButton(onClick = { asking = false; prefs.setCanvasUseVideos(true) }) { Text(tr(R.string.canvas_use_videos)) } },
+        dismissButton = { PrismTextButton(onClick = { asking = false }) { Text(tr(R.string.not_now)) } },
+    )
 }
 
 // ---------------------------------------------------------------------------- On it
@@ -573,6 +614,8 @@ val playerIndex: List<SettingEntry> by lazy {
         fun bg(name: Int, vararg which: PlayerBackground) = Needs(tr(R.string.turn_on_first, tr(name))) { it.playerBackground in which }
         val volumeShown = turnOn(tr(R.string.volume)) { it.shows(PlayerPart.VOLUME) }
         val edge = turnOn(tr(R.string.settings_player_edge_to_edge)) { it.fullBleedArtwork || it.videoFullBleed }
+        val canvasOn = turnOn(tr(R.string.canvas)) { it.canvasEnabled }
+        val canvasVideos = turnOn(tr(R.string.canvas_use_videos)) { it.canvasEnabled && it.behavior.canvas.useVideos }
         listOf(
             // Layout
             SettingEntry(page, g.layout, tr(R.string.layout), tr(R.string.player_layout_standard_cover_lyrics_minimal)),
@@ -629,7 +672,19 @@ val playerIndex: List<SettingEntry> by lazy {
                 page, g.cover, tr(R.string.settings_player_cover_animation),
                 tr(R.string.cover_flies_into_place) + " " + tr(R.string.cover_flies_back_too) + " " + tr(R.string.animation_transition_open_player_cover_mini),
             ),
-            SettingEntry(page, g.cover, tr(R.string.animated_covers), tr(R.string.canvas_motion_video_cover) + " " + tr(R.string.fill_the_player) + " " + tr(R.string.canvas_background_full_screen_behind)),
+            // 1.8.6: "Animated covers" is Canvas now (the old name and "Fill the player" still find it), with its sheet's rows.
+            SettingEntry(
+                page, g.cover, tr(R.string.canvas),
+                tr(R.string.canvas_keywords) + " " + tr(R.string.animated_covers) + " " + tr(R.string.canvas_motion_video_cover) + " " + tr(R.string.fill_the_player) + " " +
+                    tr(R.string.full_screen) + " " + tr(R.string.canvas_background_full_screen_behind),
+            ),
+            SettingEntry(page, g.cover, tr(R.string.canvas_use_videos), tr(R.string.canvas_use_videos_keywords), needs = canvasOn),
+            SettingEntry(page, g.cover, tr(R.string.canvas_both), tr(R.string.canvas_both_keywords), needs = canvasVideos),
+            SettingEntry(
+                page, g.cover, tr(R.string.canvas_keep_controls), tr(R.string.canvas_keep_controls_keywords),
+                needs = turnOn(tr(R.string.full_screen)) { it.canvasEnabled && it.canvasFillsBackground },
+            ),
+            SettingEntry(page, g.cover, tr(R.string.canvas_lighter), tr(R.string.canvas_lighter_keywords), needs = canvasVideos),
             // On it: one editor for what's on the player (found by each part's name too).
             SettingEntry(
                 page, g.onIt, tr(R.string.what_s_on_the_player),

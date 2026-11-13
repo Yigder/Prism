@@ -140,7 +140,11 @@ enum class EdgeToEdge(val cover: Boolean, val video: Boolean) {
     }
 }
 
-/** Animated covers + Fill the player. Stored: (enabled, fills). "Fills" without "enabled" does nothing: Off, kept. */
+/**
+ * Canvas (1.8.6; "Animated covers" before): Off / On the cover / Full screen. Stored: (enabled, fills), as before, so
+ * nobody's choice moves: [FILL_THE_PLAYER] is what was called "Fill the player". "Fills" without "enabled" does nothing:
+ * Off, kept.
+ */
 enum class AnimatedCovers {
     OFF, ON_THE_COVER, FILL_THE_PLAYER;
 
@@ -148,7 +152,7 @@ enum class AnimatedCovers {
         get() = when (this) {
             OFF -> tr(R.string.off)
             ON_THE_COVER -> tr(R.string.settings_player_on_the_cover)
-            FILL_THE_PLAYER -> tr(R.string.fill_the_player)
+            FILL_THE_PLAYER -> tr(R.string.full_screen)
         }
 
     fun toStored(was: Pair<Boolean, Boolean>): Pair<Boolean, Boolean> = keep(this, was, ::toMerged) {
@@ -161,7 +165,23 @@ enum class AnimatedCovers {
             stored.second -> FILL_THE_PLAYER
             else -> ON_THE_COVER
         }
+
+        /**
+         * Plan-canvas §11a R6: picking Full screen (from another choice) while "Use music videos" is off asks right there
+         * whether music videos may be used. Full screen is stored either way; nothing switches on by itself.
+         */
+        fun asksForVideos(was: AnimatedCovers, picked: AnimatedCovers, useVideos: Boolean): Boolean =
+            picked == FILL_THE_PLAYER && was != FILL_THE_PLAYER && !useVideos
     }
+}
+
+/** "When a song has both": the animated cover first (as before), or the music video's loop. */
+internal fun canvasBothWords(videoFirst: Boolean): String = if (videoFirst) tr(R.string.music_video_3) else tr(R.string.animated_cover)
+
+/** The Canvas row's line: the choice, and "Music videos" while they're used. */
+internal fun canvasWords(s: AppSettings): String {
+    val pick = AnimatedCovers.toMerged(s.canvasEnabled to s.canvasFillsBackground)
+    return if (pick != AnimatedCovers.OFF && s.behavior.canvas.useVideos) pick.label + " · " + tr(R.string.music_videos_label) else pick.label
 }
 
 /**
@@ -299,6 +319,7 @@ internal val playerSettings: List<PlayerSetting<*>> by lazy {
     val g = PlayerGroups
     val immersive = tr(R.string.settings_player_immersive_options)
     val lock = tr(R.string.settings_player_lock_options)
+    val canvasSheet = tr(R.string.canvas)
     fun <T> ps(keys: List<String>, group: String, row: Int, get: (AppSettings) -> T, words: (T) -> String, sheet: String? = null, set: (SettingsRepository, T) -> Unit) =
         PlayerSetting(keys, group, tr(row), sheet, get, words, set)
     fun flag(keys: List<String>, group: String, row: Int, get: (AppSettings) -> Boolean, sheet: String? = null, set: (SettingsRepository, Boolean) -> Unit) =
@@ -350,9 +371,14 @@ internal val playerSettings: List<PlayerSetting<*>> by lazy {
             { it.view.coverFlight to it.view.coverFlightBack }, { CoverAnimation.toMerged(it).label },
         ) { p, v -> p.setCoverFlight(v.first); p.setCoverFlightBack(v.second) },
         ps(
-            listOf("canvas_enabled", "canvas_fills_background"), g.cover, R.string.animated_covers,
+            listOf("canvas_enabled", "canvas_fills_background"), g.cover, R.string.canvas,
             { it.canvasEnabled to it.canvasFillsBackground }, { AnimatedCovers.toMerged(it).label },
         ) { p, v -> p.setCanvasEnabled(v.first); p.setCanvasFillsBackground(v.second) },
+        // 1.8.6: the rest of Canvas, in the Canvas row's sheet.
+        flag(listOf("canvas_use_videos"), g.cover, R.string.canvas_use_videos, { it.behavior.canvas.useVideos }, canvasSheet) { p, v -> p.setCanvasUseVideos(v) },
+        ps(listOf("canvas_video_first"), g.cover, R.string.canvas_both, { it.behavior.canvas.videoFirst }, ::canvasBothWords, canvasSheet) { p, v -> p.setCanvasVideoFirst(v) },
+        flag(listOf("canvas_keep_controls"), g.cover, R.string.canvas_keep_controls, { it.behavior.canvas.keepControls }, canvasSheet) { p, v -> p.setCanvasKeepControls(v) },
+        flag(listOf("canvas_lighter"), g.cover, R.string.canvas_lighter, { it.behavior.canvas.lighter }, canvasSheet) { p, v -> p.setCanvasLighter(v) },
         // On it
         ps(
             listOf("player_hidden_parts", "player_handle", "show_playing_from", "lyrics_on_player", "show_quality", "best_part_button", "player_shuffle_repeat", "hide_volume_bar", "show_output_device", "player_nav_band", "crossfade_mark", "blend_covers"),

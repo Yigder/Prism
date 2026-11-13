@@ -208,6 +208,8 @@ class PlayerPageTest {
         "lock_screen_paused", "lock_screen_hide_song", "desk_mode",
         // 1.8.4 (D53): new with this release, on the lock screen's sheet.
         "lock_screen_player_look",
+        // 1.8.6: Canvas's sheet.
+        "canvas_use_videos", "canvas_video_first", "canvas_keep_controls", "canvas_lighter",
     )
 
     @Test fun everyLedgerKeyHasItsSetting() {
@@ -240,7 +242,12 @@ class PlayerPageTest {
         // an edge-to-edge cover, the volume bar, Vinyl.
         prefs.setMix(true); prefs.setLockScreen(true); prefs.setImmersivePlayer(true); prefs.setVisualizer(VisualizerStyle.BARS)
         prefs.setFullBleedArtwork(true); prefs.setPartShown(PlayerPart.VOLUME, true); prefs.setPlayerLayout(PlayerLayout.VINYL)
-        until("the conditions are stored") { it.mix && it.behavior.lockScreen && it.immersivePlayer && it.fullBleedArtwork && it.shows(PlayerPart.VOLUME) && it.playerLayout == PlayerLayout.VINYL }
+        // Canvas in Full screen with music videos: every row of its sheet.
+        prefs.setCanvasFillsBackground(true); prefs.setCanvasUseVideos(true)
+        until("the conditions are stored") {
+            it.mix && it.behavior.lockScreen && it.immersivePlayer && it.fullBleedArtwork && it.shows(PlayerPart.VOLUME) && it.playerLayout == PlayerLayout.VINYL &&
+                it.canvasFillsBackground && it.behavior.canvas.useVideos
+        }
         showPage()
         val onPage = HashSet<String>()
         // What the picked background is tuned by takes one place: each background in turn.
@@ -257,7 +264,7 @@ class PlayerPageTest {
             inSheet[sheet] = rowsIn(compose.onNodeWithTag(SettingsTags.SHEET, useUnmergedTree = true).fetchSemanticsNode()).mapNotNull { firstText(it) }.toSet()
             closeSheet()
         }
-        assertEquals(setOf("Immersive options", "Lock screen options"), inSheet.keys)
+        assertEquals(setOf("Immersive options", "Lock screen options", "Canvas"), inSheet.keys)
         val missing = playerSettings.filter { p -> if (p.sheet == null) p.row !in onPage else p.row !in inSheet.getValue(p.sheet!!) }
         assertTrue("no row for: ${missing.map { it.keys to it.row }}", missing.isEmpty())
         assertTrue("the sheet's rows open from a row of the page", inSheet.keys.all { it in onPage })
@@ -300,10 +307,7 @@ class PlayerPageTest {
         until("Cover animation: opening only") { it.view.coverFlight && !it.view.coverFlightBack }
         assertEquals("Opening", rows().getValue("Cover animation").config[SettingsRowValue])
 
-        chip("Animated covers", "Fill the player")
-        until("Animated covers: fill") { it.canvasEnabled && it.canvasFillsBackground }
-        chip("Animated covers", "On the cover")
-        until("Animated covers: on the cover") { it.canvasEnabled && !it.canvasFillsBackground }
+        // (Canvas's three choices are in its sheet now: canvasIsOneRowWithItsChoicesInASheet.)
 
         // Edge to edge: Both shows the fit and "More room for the picture" under it; Video keeps only the latter.
         assertFalse("How the cover fits" in rows())
@@ -370,6 +374,129 @@ class PlayerPageTest {
         until("circle") { it.shapes.player == com.prism.music.data.prefs.CoverShape.CIRCLE }
     }
 
+    // ------------------------------------------------------------------ Canvas (1.8.6)
+
+    private fun sheetOpen() = compose.waitUntil(10_000) { tagged(SettingsTags.SHEET).isNotEmpty() }
+
+    /** The R6 question's buttons (the sheet's "Use music videos" row has the same words: a button is not a row). */
+    private fun button(text: String) = compose.onNode(
+        hasText(text) and androidx.compose.ui.test.hasClickAction() and SettingsTags.rowTypes.map { !hasTestTag(it) }.reduce { a, b -> a and b },
+    )
+
+    private fun asking() = compose.onAllNodes(hasText(tr(R.string.canvas_ask_title))).fetchSemanticsNodes().isNotEmpty()
+
+    @Test fun canvasIsOneRowWithItsChoicesInASheet() {
+        showPage()
+        // "Animated covers" is Canvas now: one Link row in Cover (the group stays at seven rows), saying the choice.
+        assertFalse("Animated covers" in rows())
+        val row = rows().getValue("Canvas")
+        assertEquals(SettingsTags.ROW_LINK, row.config[SemanticsProperties.TestTag])
+        assertEquals("On the cover", row.config[SettingsRowValue])
+        tap("Canvas")
+        sheetOpen()
+        // As Prism comes (on the cover, no music videos): the choice and "Use music videos" only.
+        assertTrue("Where it shows" in rows() && "Use music videos" in rows())
+        for (t in listOf("When a song has both", "Keep controls showing", "Lighter loops")) assertFalse(t, t in rows())
+        assertEquals("On the cover", rows().getValue("Where it shows").config[SettingsRowValue])
+
+        // Use music videos: stored, and its two rows come.
+        tap("Use music videos")
+        until("use_videos") { it.behavior.canvas.useVideos }
+        assertTrue("When a song has both" in rows() && "Lighter loops" in rows())
+        assertFalse("Keep controls showing" in rows())
+        assertEquals("Animated cover", rows().getValue("When a song has both").config[SettingsRowValue])
+        chip("When a song has both", "Music video")
+        until("video_first") { it.behavior.canvas.videoFirst }
+        tap("Lighter loops")
+        until("lighter") { it.behavior.canvas.lighter }
+
+        // Full screen (music videos are on: nothing is asked) brings "Keep controls showing".
+        chip("Where it shows", "Full screen")
+        until("full screen") { it.canvasEnabled && it.canvasFillsBackground }
+        assertFalse("nothing asked with music videos on", asking())
+        tap("Keep controls showing")
+        until("keep_controls") { it.behavior.canvas.keepControls }
+        assertEquals(CanvasPrefsAll, stored.behavior.canvas.copy(videosOnCellular = true))
+
+        // Off: none of the rows that depend on it; what they hold is kept.
+        chip("Where it shows", "Off")
+        until("off") { !it.canvasEnabled }
+        for (t in listOf("Use music videos", "When a song has both", "Keep controls showing", "Lighter loops")) assertFalse(t, t in rows())
+        assertTrue(stored.behavior.canvas.useVideos && stored.behavior.canvas.lighter)
+        closeSheet()
+        assertEquals("Off", rows().getValue("Canvas").config[SettingsRowValue])
+        assertTrue("it differs from how Prism comes", rows().getValue("Canvas").config[SettingsRowChanged])
+    }
+
+    private val CanvasPrefsAll = com.prism.music.data.prefs.CanvasPrefs(useVideos = true, videoFirst = true, keepControls = true, lighter = true, videosOnCellular = true)
+
+    @Test fun theCanvasRowSaysWhenMusicVideosAreUsed() {
+        prefs.setCanvasFillsBackground(true); prefs.setCanvasUseVideos(true)
+        until("full screen with videos") { it.canvasFillsBackground && it.behavior.canvas.useVideos }
+        showPage()
+        assertEquals("Full screen · Music videos", rows().getValue("Canvas").config[SettingsRowValue])
+        // Existing users see no change in what is selected: the old "Fill the player" is Full screen.
+        assertEquals("Full screen", com.prism.music.ui.screens.settings.AnimatedCovers.toMerged(true to true).label)
+    }
+
+    /** §11a R6: picking Full screen with music videos off asks; either answer leaves Full screen picked. */
+    @Test fun pickingFullScreenAsksAboutMusicVideos() {
+        showPage()
+        tap("Canvas")
+        sheetOpen()
+        assertFalse(asking())
+        chip("Where it shows", "Full screen")
+        until("full screen") { it.canvasEnabled && it.canvasFillsBackground }
+        compose.waitUntil(10_000) { asking() }
+        compose.onNodeWithText(tr(R.string.canvas_ask_text)).assertExists()
+        // "Not now": Full screen stays, music videos stay off.
+        button("Not now").performClick()
+        compose.waitUntil(10_000) { !asking() }
+        compose.waitForIdle()
+        assertTrue(stored.canvasEnabled && stored.canvasFillsBackground)
+        assertFalse(stored.behavior.canvas.useVideos)
+        assertEquals("Full screen", rows().getValue("Where it shows").config[SettingsRowValue])
+
+        // Picking it again from another choice asks again; "Use music videos" turns them on.
+        chip("Where it shows", "On the cover")
+        until("on the cover") { it.canvasEnabled && !it.canvasFillsBackground }
+        assertFalse("only Full screen asks", asking())
+        chip("Where it shows", "Full screen")
+        until("full screen again") { it.canvasFillsBackground }
+        compose.waitUntil(10_000) { asking() }
+        button("Use music videos").performClick()
+        until("music videos on") { it.behavior.canvas.useVideos }
+        compose.waitUntil(10_000) { !asking() }
+        assertTrue(stored.canvasEnabled && stored.canvasFillsBackground)
+
+        // With music videos on, Full screen picked again asks nothing.
+        chip("Where it shows", "On the cover")
+        until("on the cover") { !it.canvasFillsBackground }
+        chip("Where it shows", "Full screen")
+        until("full screen, third time") { it.canvasFillsBackground }
+        compose.waitForIdle()
+        assertFalse(asking())
+    }
+
+    @Test fun canvasSearchLines() {
+        val mine = com.prism.music.ui.screens.SettingsIndex.entries.filter { it.page == SettingsPageId.PLAYER && it.group == "Cover" }
+        fun line(t: String) = mine.single { it.title == t }
+        assertTrue(mine.none { it.title == "Animated covers" })
+        // The old name still finds it.
+        assertTrue(com.prism.music.ui.screens.SettingsIndex.search("animated covers").any { it.title == "Canvas" && it.page == SettingsPageId.PLAYER })
+        assertEquals(null, line("Canvas").needs)
+        val d = AppSettings()
+        val videos = d.copy(behavior = d.behavior.copy(canvas = d.behavior.canvas.copy(useVideos = true)))
+        assertTrue(line("Use music videos").needs!!.on(d))
+        assertFalse(line("Use music videos").needs!!.on(d.copy(canvasEnabled = false)))
+        for (t in listOf("When a song has both", "Lighter loops")) {
+            assertFalse(t, line(t).needs!!.on(d))
+            assertTrue(t, line(t).needs!!.on(videos))
+        }
+        assertFalse(line("Keep controls showing").needs!!.on(d))
+        assertTrue(line("Keep controls showing").needs!!.on(d.copy(canvasFillsBackground = true)))
+    }
+
     // ------------------------------------------------------------------ Reset this page
 
     @Test fun resetThisPageListsAndPutsBackLookAndOtherSettings() {
@@ -382,7 +509,7 @@ class PlayerPageTest {
         compose.onNodeWithTag(SettingsTags.RESET_ITEM).performClick()
         val listed = compose.onAllNodes(hasTestTag(SettingsTags.RESET_CHANGE)).fetchSemanticsNodes().map { it.config[SemanticsProperties.Text].joinToString { t -> t.text } }
         assertEquals(5, listed.size)
-        assertTrue("$listed", "Desk mode: On → Off" in listed && "Animated covers: Off → On the cover" in listed && "Right-hand time: Song length → Time left" in listed)
+        assertTrue("$listed", "Desk mode: On → Off" in listed && "Canvas: Off → On the cover" in listed && "Right-hand time: Song length → Time left" in listed)
         compose.onNodeWithTag(SettingsTags.RESET_CONFIRM).performClick()
         until("all back") { s -> playerSettings.none { it.changed(s) } }
     }

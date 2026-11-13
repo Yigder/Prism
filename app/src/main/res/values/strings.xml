@@ -5433,4 +5433,24 @@
     <string name="reorder_picked_up">Picked up, %1$d of %2$d. Up and down move it, Enter puts it down</string>
     <string name="reorder_put_down">Put down, %1$d of %2$d</string>
     <string name="hold_and_drag_or_the_grip">Hold and drag, or drag the grip</string>
+    <!-- 1.8.6 Canvas: the settings row on Player and its sheet, and its mobile-data chip on Downloads & data. -->
+    <string name="canvas">Canvas</string>
+    <string name="canvas_where">Where it shows</string>
+    <string name="canvas_use_videos">Use music videos</string>
+    <string name="canvas_use_videos_info">When a song has no animated cover, a short silent loop is cut from the song\'s own music video on YouTube. It is fetched once, on Wi-Fi, then plays from the phone: about 4 MB a song in Full screen, about 1.5 MB on the cover.</string>
+    <string name="canvas_both">When a song has both</string>
+    <string name="canvas_both_info">Which one plays first. The player\'s ⋯ menu can change it for one song.</string>
+    <string name="canvas_keep_controls">Keep controls showing</string>
+    <string name="canvas_keep_controls_info">In Full screen the controls fade away after a few seconds and come back on a tap. On, they stay.</string>
+    <string name="canvas_lighter">Lighter loops</string>
+    <string name="canvas_lighter_info">Loops from music videos at 480p: about 1 MB a song, softer in Full screen.</string>
+    <string name="canvas_ask_title">Use music videos?</string>
+    <string name="canvas_ask_text">Songs without an animated cover can show a short loop from their music video. Each loop is fetched once, on Wi-Fi: about 4 MB a song in Full screen.</string>
+    <string name="canvas_from_videos">Canvas from videos</string>
+    <string name="canvas_from_videos_info">Off, loops from music videos are fetched on Wi-Fi only. Loops already on the phone play either way.</string>
+    <string name="canvas_keywords">animated cover motion artwork moving picture loop full screen background</string>
+    <string name="canvas_use_videos_keywords">music video loop clip moving picture</string>
+    <string name="canvas_both_keywords">animated cover music video first order</string>
+    <string name="canvas_keep_controls_keywords">controls fade hide full screen tap</string>
+    <string name="canvas_lighter_keywords">quality 480p 720p 1080p data size smaller</string>
 </resources>

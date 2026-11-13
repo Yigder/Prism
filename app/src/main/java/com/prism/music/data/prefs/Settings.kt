@@ -399,12 +399,32 @@ data class BehaviorPrefs(
     val faceDownPause: Boolean = false,
     /** #464 (1.8.5): with the lyrics open, a tap on the small cover plays or pauses and a long press closes them; off, a tap closes them. */
     val lyricsCoverPlays: Boolean = false,
+    /** 1.8.6: Canvas's choices beyond Off / On the cover / Full screen ([AppSettings.canvasEnabled], [AppSettings.canvasFillsBackground]). */
+    val canvas: CanvasPrefs = CanvasPrefs(),
 ) {
     companion object {
         /** #404: how far [lyricsOffsetMs] goes either way. */
         val LYRICS_OFFSET_MS = -500..500
     }
 }
+
+/**
+ * 1.8.6 Canvas (plan-canvas §3.1, §3.6, §3.7, §11a R1): how a song's canvas is chosen and shown. Nested in
+ * [BehaviorPrefs] (`behavior.canvas`); all off by default, and none of it is part of a Look. Whether Canvas is on, and on
+ * the cover or full screen, stays in [AppSettings.canvasEnabled] and [AppSettings.canvasFillsBackground].
+ */
+data class CanvasPrefs(
+    /** A song without an animated cover may show a short silent loop cut from its music video. */
+    val useVideos: Boolean = false,
+    /** When a song has both: false, the animated cover first (as before); true, the music video's loop first. */
+    val videoFirst: Boolean = false,
+    /** Full screen only: the controls stay up (by default they fade after a few seconds and come back on a tap). */
+    val keepControls: Boolean = false,
+    /** Loops from videos at 480p, in place of 1080p full screen and 720p on the cover. */
+    val lighter: Boolean = false,
+    /** Loops from videos may be fetched over mobile data ("Use mobile data for" → "Canvas from videos"). */
+    val videosOnCellular: Boolean = false,
+)
 
 /** D57 (1.8.4): the Shuffle button goes off → shuffle → Smart Shuffle → off (as before), or only on and off. */
 enum class ShuffleButton(val label: String) {
@@ -1786,6 +1806,8 @@ data class AppSettings(
         reduceMotion = true,
         canvasEnabled = false,
         canvasFillsBackground = false,
+        // 1.8.6: no loops cut from music videos either (Canvas is off above; this keeps a reader of the nested value honest).
+        behavior = behavior.copy(canvas = behavior.canvas.copy(useVideos = false)),
         visualizer = VisualizerStyle.OFF,
         meshSpeed = 0f,
         playerBackground = if (playerBackground == PlayerBackground.BLUR || playerBackground == PlayerBackground.APPEARANCE) PlayerBackground.MESH else playerBackground,
@@ -2222,6 +2244,12 @@ class SettingsRepository(
         val finishLyric = booleanPreferencesKey("finish_lyric")
         val faceDownPause = booleanPreferencesKey("face_down_pause")
         val lyricsCoverPlays = booleanPreferencesKey("lyrics_cover_plays")
+        // 1.8.6 ([CanvasPrefs], in [BehaviorPrefs]).
+        val canvasUseVideos = booleanPreferencesKey("canvas_use_videos")
+        val canvasVideoFirst = booleanPreferencesKey("canvas_video_first")
+        val canvasKeepControls = booleanPreferencesKey("canvas_keep_controls")
+        val canvasLighter = booleanPreferencesKey("canvas_lighter")
+        val canvasVideosCellular = booleanPreferencesKey("canvas_videos_cellular")
         val lockScreenPlayerLook = booleanPreferencesKey("lock_screen_player_look")
         val albumHeroCover = booleanPreferencesKey("album_hero_cover")
         // 1.8.0 player editor ([PlayerParts]): the hidden parts are part of a Look, the menu's choices aren't.
@@ -2367,6 +2395,8 @@ class SettingsRepository(
                 "row_swipes", "lyrics_offset_ms", "keep_shuffle", "shuffle_button", "car_lyrics_lines", "locate_playing",
                 // 1.8.5: Replay's notices and game, pausing face down, and the small cover's tap over the lyrics (#464).
                 "recap_notify", "milestone_notify", "finish_lyric", "face_down_pause", "lyrics_cover_plays",
+                // 1.8.6 ([CanvasPrefs]): where a canvas comes from, its controls, its quality and its data: behaviour, not a look.
+                "canvas_use_videos", "canvas_video_first", "canvas_keep_controls", "canvas_lighter", "canvas_videos_cellular",
             )
         }
     }
@@ -2709,6 +2739,13 @@ class SettingsRepository(
                 finishLyric = p[K.finishLyric] ?: d.behavior.finishLyric,
                 faceDownPause = p[K.faceDownPause] ?: d.behavior.faceDownPause,
                 lyricsCoverPlays = p[K.lyricsCoverPlays] ?: d.behavior.lyricsCoverPlays,
+                canvas = CanvasPrefs(
+                    useVideos = p[K.canvasUseVideos] ?: d.behavior.canvas.useVideos,
+                    videoFirst = p[K.canvasVideoFirst] ?: d.behavior.canvas.videoFirst,
+                    keepControls = p[K.canvasKeepControls] ?: d.behavior.canvas.keepControls,
+                    lighter = p[K.canvasLighter] ?: d.behavior.canvas.lighter,
+                    videosOnCellular = p[K.canvasVideosCellular] ?: d.behavior.canvas.videosOnCellular,
+                ),
             ),
             tv = TvPrefs(
                 ambientMinutes = (p[K.tvAmbientMinutes] ?: d.tv.ambientMinutes).coerceIn(0, 60),
@@ -3447,6 +3484,12 @@ class SettingsRepository(
     fun setFinishLyric(v: Boolean) = edit { it[K.finishLyric] = v }
     fun setFaceDownPause(v: Boolean) = edit { it[K.faceDownPause] = v }
     fun setLyricsCoverPlays(v: Boolean) = edit { it[K.lyricsCoverPlays] = v }
+    // 1.8.6 Canvas ([CanvasPrefs]).
+    fun setCanvasUseVideos(v: Boolean) = edit { it[K.canvasUseVideos] = v }
+    fun setCanvasVideoFirst(v: Boolean) = edit { it[K.canvasVideoFirst] = v }
+    fun setCanvasKeepControls(v: Boolean) = edit { it[K.canvasKeepControls] = v }
+    fun setCanvasLighter(v: Boolean) = edit { it[K.canvasLighter] = v }
+    fun setCanvasVideosOnCellular(v: Boolean) = edit { it[K.canvasVideosCellular] = v }
     fun setShuffleButton(v: ShuffleButton) = edit { it[K.shuffleButton] = v.name }
     fun setCarLyricsLines(v: CarLyricsLines) = edit { it[K.carLyricsLines] = v.name }
     fun setLocatePlaying(v: Boolean) = edit { it[K.locatePlaying] = v }

@@ -50,7 +50,8 @@ class Needs(val hint: String, val on: (com.prism.music.data.prefs.AppSettings) -
 object SettingNeeds {
     fun turnOn(name: String, on: (com.prism.music.data.prefs.AppSettings) -> Boolean) = Needs(tr(R.string.turn_on_first, name), on)
     val immersive = turnOn(tr(R.string.immersive_mode)) { it.immersivePlayer }
-    val canvas = turnOn(tr(R.string.animated_covers)) { it.canvasEnabled }
+    // 1.8.6: the setting is called Canvas now.
+    val canvas = turnOn(tr(R.string.canvas)) { it.canvasEnabled }
     val canvasSave = turnOn(tr(R.string.animated_covers_and_save_with_downloads)) { it.canvasEnabled && it.canvasWithDownloads }
     val holdSeek = turnOn(tr(R.string.hold_previous_next_to_seek)) { it.holdSeekSeconds > 0 }
     val songsOnly = turnOn(tr(R.string.songs_not_videos)) { it.radioSongsOnly }
