@@ -28,6 +28,8 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -81,6 +83,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.BlendMode
@@ -92,7 +95,9 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -128,6 +133,7 @@ import com.prism.music.ui.components.shareTarget
 import com.prism.music.ui.components.tickWhileShown
 import com.prism.music.ui.theme.LocalContainer
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -577,6 +583,31 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
     // The animated cover plays behind the whole player instead of in the cover (not with full-bleed artwork, which
     // already shows it edge to edge).
     val canvasBehind = settings.canvasFillsBackground && !heroMode && !videoMode && !wide
+    // 1.8.6 Canvas, Full screen: after a few seconds without a touch the controls fade away, leaving the title, the
+    // artist and a thin progress line over the picture; a tap brings them back ([canvasControlsMayFade] says when not).
+    val screenReader by rememberTouchExploration()
+    val canvasFades = canvasControlsMayFade(
+        fullScreen = canvasBehind, hasCanvas = canvas != null, keepControls = canvasPrefs.keepControls, playing = isPlaying,
+        covered = covered, panelOpen = lyricsOpen || queueOpen || statsOpen, dragging = volume.dragging,
+        screenReader = screenReader, reduceMotion = settings.reduceMotion,
+    )
+    var canvasQuiet by remember { mutableStateOf(false) }
+    val canvasTouches = remember { kotlinx.coroutines.flow.MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
+    LaunchedEffect(canvasFades) {
+        canvasQuiet = false
+        if (canvasFades) kotlinx.coroutines.flow.merge(kotlinx.coroutines.flow.flowOf(Unit), canvasTouches).collectLatest {
+            canvasQuiet = false
+            delay(CANVAS_CONTROLS_MS)
+            canvasQuiet = true
+        }
+    }
+    val canvasCtlT = animateFloatAsState(if (canvasQuiet) 0f else 1f, tween(if (canvasQuiet) 700 else 200), label = "canvasControls")
+    // How much of the controls shows (read where it's drawn, so the fade recomposes nothing).
+    val ctl: () -> Float = { canvasCtlT.value }
+    // The controls' height: the kept title rides down into their place while they're away.
+    var deckHeightPx by remember { mutableStateOf(0) }
+    val keptRoomPx = with(LocalDensity.current) { 30.dp.toPx() }
+    val keptDrop: () -> Float = { (1f - ctl()) * (deckHeightPx - keptRoomPx).coerceAtLeast(0f) }
     // Full-bleed video (#120): the video runs edge to edge from the top of the screen and fades into the background,
     // in the full-bleed cover's place; the box it would sit in keeps only its buttons.
     val videoBehind = settings.videoFullBleed && videoMode && !wide
@@ -737,7 +768,15 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                 scaleX = 1f - f * 0.06f; scaleY = 1f - f * 0.06f
                 shape = RoundedCornerShape((f * 140).dp); clip = f > 0f
             }
-            .background(PlayerFallbackBackdrop),
+            .background(PlayerFallbackBackdrop)
+            // A touch or a key anywhere keeps the controls up over a full-screen canvas (seen on its way down, taken from nobody).
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false, pass = androidx.compose.ui.input.pointer.PointerEventPass.Initial)
+                    if (!canvasQuiet) canvasTouches.tryEmit(Unit)
+                }
+            }
+            .onPreviewKeyEvent { canvasTouches.tryEmit(Unit); false },
     ) {
         // ------------------------------------------------ Backdrop
         when (settings.playerBackground) {
@@ -799,7 +838,12 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                 clip, canvasSaved, isPlaying, Modifier.fillMaxSize(), hold = covered,
                 presentationAlpha = { (1f - 2f * p()).coerceIn(0f, 1f) },
             )
-            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Black.copy(alpha = 0.25f), 0.5f to Color.Black.copy(alpha = 0.45f), 1f to Color.Black.copy(alpha = 0.75f))))
+            // Darkened under the type: lighter while the controls are away, stronger under the lyrics and the queue.
+            val video = clip.clip != null
+            Box(Modifier.fillMaxSize().testTag("canvasScrim").drawBehind {
+                val s = canvasScrim(ctl(), fullBlur, video)
+                drawRect(Brush.verticalGradient(0f to Color.Black.copy(alpha = s[0]), 0.5f to Color.Black.copy(alpha = s[1]), 1f to Color.Black.copy(alpha = s[2])))
+            })
         }
         if (videoBehind && heroHeight > 0.dp && !collapsePastHalf) {
             MusicVideoSurface(
@@ -996,7 +1040,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
         ) else
         Column(Modifier.fillMaxSize().windowInsetsPadding(statusBarRoom()).navigationBarsPadding().then(skipGesture), horizontalAlignment = Alignment.CenterHorizontally) {
             // ------------------------------------------------ Handle + caption
-            Box(Modifier.fillMaxWidth().height(DISMISS_STRIP).then(dismissGesture).inked()) {
+            Box(Modifier.fillMaxWidth().height(DISMISS_STRIP).then(dismissGesture).graphicsLayer { alpha = ctl() }.inked()) {
                 // Settings → Player → Show on the player → Handle at the top (Reddit, 1.7.9.1): off, the strip still
                 // takes the swipe down.
                 if (settings.playerHandle) Box(
@@ -1106,6 +1150,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                                 val idle = artScale + (1f - artScale) * p()
                                 scaleX = idle; scaleY = idle
                                 translationX = swipe.value * (1f - p())
+                                alpha = ctl()
                             }
                             .smallCoverTaps(
                                 lyricsOpen, queueOpen || statsOpen, settings.behavior.lyricsCoverPlays, isPlaying,
@@ -1203,6 +1248,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                                 }
                             }
                             .height(headerHeight)
+                            .graphicsLayer { translationY = keptDrop() }
                             .then(sleeveGesture)
                             // #320: dark over the White background.
                             .inked(),
@@ -1262,6 +1308,8 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                                 }
                             }
                         }
+                        // The title's buttons go with the controls over a full-screen canvas; the title and the artist stay.
+                        Row(Modifier.graphicsLayer { alpha = ctl() }, verticalAlignment = Alignment.CenterVertically) {
                         Spacer(Modifier.width(10.dp))
                         // A Smart Shuffle pick: keep it in the playlist, or turn it down.
                         val smartPicks by c.queue.smartPicks.collectAsState()
@@ -1277,7 +1325,21 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                             Spacer(Modifier.width(8.dp))
                         }
                         if (settings.showsMenuButton() || collapsePastHalf) CircleGlyph(PrismIcons.More, tr(R.string.song_options)) { showActions = true }
+                        }
                     }
+                    // The thin progress line kept under the title while the controls are away.
+                    if (canvasFades) Box(
+                        Modifier.fillMaxWidth().height(2.dp).testTag("canvasProgress")
+                            .offset { IntOffset(0, (titleTop() + headerHeight + 8.dp).roundToPx()) }
+                            .graphicsLayer { translationY = keptDrop(); alpha = 1f - ctl() }
+                            .drawBehind {
+                                val total = pc.duration
+                                val done = if (total > 0) (position.value.toFloat() / total).coerceIn(0f, 1f) else 0f
+                                val r = androidx.compose.ui.geometry.CornerRadius(size.height / 2)
+                                drawRoundRect(Color.White.copy(alpha = 0.28f), cornerRadius = r)
+                                drawRoundRect(Color.White.copy(alpha = 0.92f), size = androidx.compose.ui.geometry.Size(size.width * done, size.height), cornerRadius = r)
+                            },
+                    )
 
                     // ---- Lyrics and queue panels, under the collapsed header
                     if (lyricsOpen && panelsSettled) {
@@ -1349,7 +1411,10 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                         !settings.behavior.gesturesEverywhere || lyricsOpen || queueOpen || statsOpen -> Modifier
                         else -> sleeveGesture.then(doubleTapSeek)
                     }
-                    Column(swipes.then(coverGestures).testTag("playerDeck").inked(), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        swipes.then(coverGestures).testTag("playerDeck").onSizeChanged { deckHeightPx = it.height }.graphicsLayer { alpha = ctl() }.inked(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
                         // #293: closer together over a full-bleed picture ("More room for the picture").
                         val tightDeck = bleedRoomy && !lyricsOpen && !queueOpen && !statsOpen
                         val deckGap = if (tightDeck) 8.dp else if (roomyCover) 12.dp else 18.dp
@@ -1427,6 +1492,12 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                 )
             }
         }
+        // The controls away over a full-screen canvas: a tap anywhere brings them back (and presses nothing under it);
+        // the swipes still skip and close.
+        if (canvasQuiet && !wide) Box(
+            Modifier.fillMaxSize().testTag("canvasWake").then(skipGesture).then(dismissGesture)
+                .pointerInput(Unit) { detectTapGestures(onTap = { canvasTouches.tryEmit(Unit) }) },
+        )
         // #250 on Android 15 and later, where a window's navigation bar color isn't drawn: the band is the player's own.
         if (drawsNavBand(android.os.Build.VERSION.SDK_INT, navBand)) PlayerNavBand(inkLight, Modifier.align(Alignment.BottomCenter))
     }
