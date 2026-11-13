@@ -57,6 +57,10 @@ internal fun canvasFullScreen(fills: Boolean, videoMode: Boolean, wide: Boolean)
  */
 internal fun canvasMenuShown(hasCanvas: Boolean, switchedOff: Boolean): Boolean = hasCanvas || switchedOff
 
+/** "Pick another video" is offered for a song (not a file, a podcast…) while Canvas is on, uses music videos and isn't off for the song. */
+internal fun canvasVideoPickShown(canvasOn: Boolean, useVideos: Boolean, isSong: Boolean, switchedOff: Boolean): Boolean =
+    canvasOn && useVideos && isSong && !switchedOff
+
 /**
  * Someone who had Canvas on before 1.8.6 is asked once, with the player open, whether music videos may be used
  * (a new install comes with them on, see `setOnboarded`). Never while Canvas is off.

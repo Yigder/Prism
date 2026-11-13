@@ -186,7 +186,7 @@ private val gradientCache = object : LinkedHashMap<String, CoverGradient>(0, 0.7
 fun rememberCoverGradient(url: String?): CoverGradient? {
     val context = LocalContext.current
     val held = remember { mutableStateOf<CoverGradient?>(null) }
-    var gradient by remember(url) { mutableStateOf(url?.let(gradientCache::get) ?: held.value) }
+    var gradient by remember(url) { mutableStateOf(if (url == null) null else gradientCache[url] ?: held.value) }
     LaunchedEffect(gradient) { held.value = gradient }
     LaunchedEffect(url) {
         if (url == null || gradientCache[url] != null) return@LaunchedEffect
@@ -202,6 +202,8 @@ fun rememberCoverGradient(url: String?): CoverGradient? {
                 return@LaunchedEffect
             }
         }
+        // A cover that can't be had: not the last song's colours for the whole of this one.
+        gradient = lastPictureWhile(gradient, newFailed = true)
     }
     return gradient
 }

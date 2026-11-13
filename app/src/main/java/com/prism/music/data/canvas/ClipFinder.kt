@@ -35,6 +35,8 @@ class ClipFinder(private val net: Net) {
          * "Pleaser" by Wallows with its lyric video, which is refused, while its music video is one search away).
          */
         suspend fun otherVideos(song: Song, not: Set<String>): List<String> = emptyList()
+        /** Videos the listener may pick from for the song ("Pick another video"), YouTube's own pairing first. */
+        suspend fun videoChoices(song: Song): List<VideoChoice> = emptyList()
         /** YouTube Music's own word for the video, as it says it ("MUSIC_VIDEO_TYPE_OMV"), or null. */
         suspend fun videoType(videoId: String): String?
         suspend fun player(videoId: String): PlayerInfo
@@ -42,6 +44,20 @@ class ClipFinder(private val net: Net) {
         suspend fun frames(board: Storyboard): Frames
         suspend fun heatmap(videoId: String): Heatmap?
     }
+
+    /** One video offered under "Pick another video": its id, its title and who posted it. */
+    data class VideoChoice(val id: String, val title: String, val by: String)
+
+    /** The videos offered for [song] under "Pick another video" (none the listener said "Not this video" to). */
+    suspend fun choices(song: Song, old: CanvasClipEntity?): List<VideoChoice> =
+        if (!ClipGate.isSong(song)) emptyList() else net.videoChoices(song).filter { it.id !in old?.rejected().orEmpty() }
+
+    /**
+     * The row for a video the listener picked themselves: its title and type are theirs to judge, so only what can't
+     * make a loop refuses it (not playable, no stream, a still picture). Marked as picked: a later search keeps it.
+     */
+    suspend fun forVideo(song: Song, video: String, old: CanvasClipEntity?, height: Int, now: Long = System.currentTimeMillis()): CanvasClipEntity =
+        tryVideo(song, video, old?.copy(picked = false), height, null, now, own = true).row.let { if (it.videoId != null) it.copy(picked = true) else it }
 
     /** A storyboard's frames, and how many bytes its sheets took. */
     class Frames(val grids: List<Grid>, val bytes: Long)
@@ -62,7 +78,7 @@ class ClipFinder(private val net: Net) {
         val rejected = old?.rejected().orEmpty()
         // A part the listener picked: its video is asked first, so a new search can't take the part away.
         val picked = old?.takeIf { it.picked }?.videoId?.takeIf { it !in rejected && !song.isVideo }
-        val first = picked?.let { tryVideo(song, it, old, height, chorusMs, now) }
+        val first = picked?.let { tryVideo(song, it, old, height, chorusMs, now, own = true) }
         if (first != null && first.row.videoId != null) return first
         val bytes = first?.boardBytes ?: 0L
         val video = if (song.isVideo) song.id else net.findVideo(song)
@@ -147,6 +163,7 @@ class ClipFinder(private val net: Net) {
             ClipFinder(object : Net {
                 override suspend fun findVideo(song: Song) = ytm.findMusicVideo(song)
                 override suspend fun otherVideos(song: Song, not: Set<String>) = ytm.otherMusicVideos(song, not) { ClipGate.titleSays(song.title, it) }
+                override suspend fun videoChoices(song: Song) = ytm.musicVideoChoices(song).map { VideoChoice(it.id, it.title, it.artistText) }
 
                 // The WEB_REMIX player answer carries the type even where that client can't play the video.
                 override suspend fun videoType(videoId: String) =

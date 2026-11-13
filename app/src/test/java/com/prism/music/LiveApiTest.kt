@@ -377,4 +377,18 @@ class LiveApiTest {
         }
         assertTrue("at least two songs have animated cover art", hits >= 2)
     }
+
+    /** Owner, 2026-11-13: "The Burden (Interlude)" by Memphis May Fire played The Beatles' animated cover. */
+    @Test
+    fun aSongsAnimatedCoverIsItsOwn() = runBlocking {
+        val repo = com.prism.music.data.canvas.CanvasRepository(http)
+        for (q in listOf("The Burden (Interlude) Memphis May Fire", "The Sinner Memphis May Fire", "Be Careful What You Wish For Memphis May Fire")) {
+            for (s in ytm.search(q, SearchFilter.SONGS).items.filterIsInstance<SongItem>().take(2).map { it.song }) {
+                val canvas = repo.canvasFor(s)
+                log("canvas for '${s.title}' by ${s.primaryArtist} (${s.album?.title}, ${s.id}): $canvas")
+                val by = canvas?.artist ?: continue
+                assertTrue("'${s.title}' by ${s.primaryArtist} got ${canvas.album} by $by", by.contains(s.primaryArtist, ignoreCase = true))
+            }
+        }
+    }
 }

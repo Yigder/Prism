@@ -208,6 +208,16 @@ private fun stripBalanced(parts: List<com.prism.music.data.prefs.DeckPart>, gaps
 internal fun heroTarget(heroMode: Boolean, picture: Boolean, canvas: Boolean): Boolean = heroMode && (picture || canvas)
 
 /**
+ * The last song's picture stays under the new one only while that one loads (#244). A song whose own picture can't be
+ * had (no address, or it failed) drops it: it stayed for the whole song, another artist's cover on this one (owner,
+ * 2026-11-13: The Beatles' cover on a Memphis May Fire song).
+ */
+internal const val COVER_RETRIES = 3
+internal const val COVER_RETRY_MS = 2_000L
+
+internal fun <T> lastPictureWhile(last: T?, newFailed: Boolean): T? = if (newFailed) null else last
+
+/**
  * #250: the player draws the band behind the navigation buttons itself on Android 15 and later ([sdk] 35+), where a
  * window's navigation bar color is ignored for apps targeting 35+; below that the window's color is the band.
  */
@@ -588,8 +598,15 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
     val artUrl = hiRes(songArt, 1200)
     // Decoded at full size whatever size the cover is first laid out at (#86): opened mid-animation or with lyrics
     // open it starts out small, and the picture decoded for that size was then stretched over the whole cover.
-    val artRequest = remember(artUrl, settings.fullBleedArtwork) { playerCoverRequest(context, artUrl, settings.fullBleedArtwork) }
+    // A cover that failed to load is asked for again a few times (it wasn't: one dropped connection left the song
+    // without its picture until the next song).
+    var artTry by remember(artUrl) { mutableStateOf(0) }
+    var artFailed by remember(artUrl) { mutableStateOf(false) }
+    val artRequest = remember(artUrl, settings.fullBleedArtwork, artTry) { playerCoverRequest(context, artUrl, settings.fullBleedArtwork) }
     var artLoaded by remember(artUrl) { mutableStateOf(false) }
+    LaunchedEffect(artUrl, artFailed, artTry) {
+        if (artFailed && artUrl != null && artTry < COVER_RETRIES) { delay(COVER_RETRY_MS); artFailed = false; artTry++ }
+    }
     // Vinyl: the cover is a record (its own shape, no edge-to-edge banner).
     val vinyl = layout == com.prism.music.data.prefs.PlayerLayout.VINYL && !videoMode
     // Cassette (1.7.4): the cover on a tape, its reels turning.
@@ -916,7 +933,10 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                 }
                 AsyncImage(
                     artRequest, null, contentScale = if (fit) ContentScale.Fit else ContentScale.Crop,
-                    onState = { if (it is AsyncImagePainter.State.Success) { artLoaded = true; heroPicture = artRequest } },
+                    onState = {
+                        if (it is AsyncImagePainter.State.Success) { artLoaded = true; heroPicture = artRequest }
+                        else if (it is AsyncImagePainter.State.Error) { artFailed = true; heroPicture = lastPictureWhile(heroPicture, newFailed = true) }
+                    },
                     modifier = Modifier.matchParentSize(),
                 )
             }

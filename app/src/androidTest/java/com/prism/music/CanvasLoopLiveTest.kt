@@ -89,7 +89,9 @@ class CanvasLoopLiveTest {
         val c = Fixture.container
         c.settings.setPerformanceMode(false); c.settings.setReduceMotion(false); c.settings.setImmersivePlayer(false); c.settings.setFullBleedArtwork(false)
         c.settings.setCanvasEnabled(true); c.settings.setCanvasFillsBackground(true); c.settings.setCanvasUseVideos(true)
-        c.settings.setCanvasVideoFirst(true); c.settings.setCanvasKeepControls(false)
+        // cover=true: animated covers first, as a new install has it (what shows is in the screenshot and the log).
+        val coverFirst = args.getString("cover") == "true"
+        c.settings.setCanvasVideoFirst(!coverFirst); c.settings.setCanvasKeepControls(false)
         Fixture.launch()
         list!!.forEachIndexed { i, words ->
             val song = runCatching { withContext(Dispatchers.IO) { c.ytm.search(words, SearchFilter.SONGS).items.filterIsInstance<SongItem>().first().song } }.getOrNull()
@@ -106,6 +108,7 @@ class CanvasLoopLiveTest {
             val took = System.currentTimeMillis() - asked
             val row = c.canvasClips.row(song.id)
             val shown = CanvasStats.showing?.startsWith("file://") == true
+            if (coverFirst) android.util.Log.i("CanvasEye", "$i showing ${CanvasStats.showing}; cover ${c.canvas.cached(song)}")
             // A song with no loop: which video was looked at (the row keeps none), to see why by its title.
             if (!shown) android.util.Log.i("CanvasEye", "$i looked at video ${runCatching { withContext(Dispatchers.IO) { c.ytm.findMusicVideo(song) } }.getOrNull()} for song ${song.id}")
             android.util.Log.i(

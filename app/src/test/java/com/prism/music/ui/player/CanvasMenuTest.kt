@@ -114,8 +114,8 @@ class CanvasMenuTest {
         val playing = PlayerParts().menuLayout(all).groups.first { it.first == MenuGroup.PLAYING }.second
         val at = playing.indexOf(MenuAction.ANIMATED_COVER)
         assertEquals(
-            listOf(MenuAction.ANIMATED_COVER, MenuAction.CANVAS_PART, MenuAction.CANVAS_USE, MenuAction.CANVAS_NOT_THIS_VIDEO, MenuAction.SAVE_ANIMATED_COVER),
-            playing.subList(at, at + 5),
+            listOf(MenuAction.ANIMATED_COVER, MenuAction.CANVAS_PART, MenuAction.CANVAS_VIDEO, MenuAction.CANVAS_USE, MenuAction.CANVAS_NOT_THIS_VIDEO, MenuAction.SAVE_ANIMATED_COVER),
+            playing.subList(at, at + 6),
         )
         // A layout saved before: the switch hidden under More, under its stored name; the new rows show.
         val old = PlayerParts(menuHidden = setOf(MenuAction.valueOf("ANIMATED_COVER")))

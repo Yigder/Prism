@@ -667,7 +667,10 @@ enum class MenuAction(val group: MenuGroup, val fromPlayer: Boolean = false, val
     /** "Canvas" for this song, on or off (named for the animated cover it was before 1.8.6: names are stored). */
     ANIMATED_COVER(MenuGroup.PLAYING),
     /** 1.8.6 Canvas, for one song: another part of its video's loop, which source it uses, and "Not this video". */
-    CANVAS_PART(MenuGroup.PLAYING), CANVAS_USE(MenuGroup.PLAYING), CANVAS_NOT_THIS_VIDEO(MenuGroup.PLAYING),
+    CANVAS_PART(MenuGroup.PLAYING),
+    /** Which video the song's loop is cut from, picked by the listener (owner, 2026-11-13: as a song has "Play a different version"). */
+    CANVAS_VIDEO(MenuGroup.PLAYING),
+    CANVAS_USE(MenuGroup.PLAYING), CANVAS_NOT_THIS_VIDEO(MenuGroup.PLAYING),
     SAVE_ANIMATED_COVER(MenuGroup.PLAYING),
     STATS(MenuGroup.HELP), MARK_STUTTER(MenuGroup.HELP);
 

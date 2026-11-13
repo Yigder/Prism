@@ -111,6 +111,7 @@ fun PlayerOptionsSheet(
     val clipRow by androidx.compose.runtime.produceState<com.prism.music.data.db.CanvasClipEntity?>(null, song.id, clipChanges) { value = c.canvasClips.row(song.id) }
     var canvasParts by remember { mutableStateOf(false) }
     var canvasUse by remember { mutableStateOf(false) }
+    var canvasVideos by remember { mutableStateOf(false) }
 
     var outputs by remember { mutableStateOf(false) }
     var credits by remember { mutableStateOf(false) }
@@ -138,6 +139,7 @@ fun PlayerOptionsSheet(
     // Edit this menu, in its place; done, the menu comes back as it now is.
     if (editing) { MenuEditorSheet { editing = false }; return }
     if (canvasParts) { CanvasPartsSheet(song) { canvasParts = false; onDismiss() }; return }
+    if (canvasVideos) { CanvasVideosSheet(song, clipRow?.videoId) { canvasVideos = false; onDismiss() }; return }
     if (canvasUse) { CanvasUseSheet(song, canvasUseNow(c.settings.current, clipRow)) { canvasUse = false; onDismiss() }; return }
 
     val isLiked = song.id in liked
@@ -275,6 +277,11 @@ fun PlayerOptionsSheet(
         MenuAction.BEST_PART,
         ActionItem(PrismIcons.Flame, tr(R.string.your_best_part), value = c.bestParts.mine(song.id)?.let { "%d:%02d".format(it / 60_000, it / 1000 % 60) }) { BestPartEditor.open = true },
     )
+    // Which video the song's loop comes from: offered for every song while Canvas uses music videos, also one with no
+    // loop yet (the listener may know a video Prism didn't find or wouldn't take).
+    if (canvasVideoPickShown(settings.canvasEnabled, settings.behavior.canvas.useVideos, com.prism.music.data.canvas.ClipGate.isSong(song), song.id in hidden)) {
+        put(MenuAction.CANVAS_VIDEO, ActionItem(PrismIcons.Video, tr(R.string.canvas_pick_video), keepOpen = true) { canvasVideos = true })
+    }
     if (hasCanvas && !local) {
         // Canvas for this song, on or off: both kinds (animated cover and video loop) go for the song.
         val canvasOn = song.id !in hidden
@@ -387,6 +394,7 @@ internal fun menuIcon(a: MenuAction): ImageVector = when (a) {
     MenuAction.BEST_PART -> PrismIcons.Flame
     MenuAction.ANIMATED_COVER -> PrismIcons.AnimatedCover
     MenuAction.CANVAS_PART -> PrismIcons.Carousel
+    MenuAction.CANVAS_VIDEO -> PrismIcons.Video
     MenuAction.CANVAS_USE -> PrismIcons.Video
     MenuAction.CANVAS_NOT_THIS_VIDEO -> PrismIcons.Block
     MenuAction.SAVE_ANIMATED_COVER -> PrismIcons.Download
@@ -429,6 +437,7 @@ internal fun menuLabel(a: MenuAction): String = when (a) {
     MenuAction.BEST_PART -> tr(R.string.your_best_part)
     MenuAction.ANIMATED_COVER -> tr(R.string.canvas)
     MenuAction.CANVAS_PART -> tr(R.string.canvas_pick_part)
+    MenuAction.CANVAS_VIDEO -> tr(R.string.canvas_pick_video)
     MenuAction.CANVAS_USE -> tr(R.string.canvas_use)
     MenuAction.CANVAS_NOT_THIS_VIDEO -> tr(R.string.canvas_not_this_video)
     MenuAction.SAVE_ANIMATED_COVER -> tr(R.string.save_animated_cover)

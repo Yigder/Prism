@@ -1,7 +1,9 @@
 package com.prism.music
 
 import com.prism.music.ui.player.heroTarget
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -23,6 +25,14 @@ class HeroCoverTest {
         org.junit.Assert.assertEquals(0.86f, com.prism.music.ui.player.pausedCoverScale(playing = false, shrinkWhenPaused = true, ownReduceMotion = stored.reduceMotion), 0.001f)
         org.junit.Assert.assertEquals(1f, com.prism.music.ui.player.pausedCoverScale(playing = false, shrinkWhenPaused = true, ownReduceMotion = true), 0.001f)
         org.junit.Assert.assertEquals(1f, com.prism.music.ui.player.pausedCoverScale(playing = true, shrinkWhenPaused = true, ownReduceMotion = false), 0.001f)
+    }
+
+    /** Owner, 2026-11-13: a song whose cover didn't load kept the last song's (The Beatles') for the whole song. */
+    @Test fun theLastSongsPictureGoesWhenThisSongsCantBeHad() {
+        assertEquals("while this one loads", "last", com.prism.music.ui.player.lastPictureWhile("last", newFailed = false))
+        assertNull("it failed, or the song has none", com.prism.music.ui.player.lastPictureWhile("last", newFailed = true))
+        // With nothing to show, the full-bleed cover comes down to the square one and its placeholder.
+        assertFalse(heroTarget(heroMode = true, picture = false, canvas = false))
     }
 
     @Test fun nothingToShowYetOrNotFullBleed() {

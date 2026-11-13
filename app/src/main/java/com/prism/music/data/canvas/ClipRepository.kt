@@ -82,6 +82,29 @@ class ClipRepository(private val dao: CanvasClipDao, private val finder: ClipFin
         return true
     }
 
+    /** The videos "Pick another video" offers for the song (a search; empty offline), and which one it uses now. */
+    suspend fun videos(song: Song): List<ClipFinder.VideoChoice> = try {
+        finder.choices(song, dao.get(song.id))
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        emptyList()
+    }
+
+    /**
+     * "Pick another video": the song's loop is cut from [videoId] from now on (the listener's pick: a new search never
+     * replaces it), and the song uses its video even where its animated cover would come first. False when that video
+     * can't make a loop (a still picture, not playable) or couldn't be asked about: the song keeps what it had.
+     */
+    suspend fun pickVideo(song: Song, videoId: String, height: Int, now: Long = System.currentTimeMillis()): Boolean = lock(song.id).withLock {
+        val old = dao.get(song.id)
+        val row = try { finder.forVideo(song, videoId, old, height, now) } catch (e: CancellationException) { throw e } catch (e: Exception) { return@withLock false }
+        if (row.videoId == null) return@withLock false
+        dao.put(row.copy(prefer = CanvasSource.VIDEO.stored))
+        bump()
+        true
+    }
+
     /**
      * "Not this video": the song's video is never offered for it again (a later search skips it), its loop goes, and so
      * do the files kept of it; the song shows its animated cover if it has one, else its cover. False when it has no loop.

@@ -58,6 +58,15 @@ class CanvasControlsTest {
         assertFalse("a song that never had one", canvasMenuShown(hasCanvas = false, switchedOff = false))
     }
 
+    /** Owner, 2026-11-13: a song's video can be picked as its version can; also for a song that has no loop yet. */
+    @Test fun pickAnotherVideoIsOfferedForEverySongWhileCanvasUsesVideos() {
+        assertTrue(canvasVideoPickShown(canvasOn = true, useVideos = true, isSong = true, switchedOff = false))
+        assertFalse(canvasVideoPickShown(canvasOn = false, useVideos = true, isSong = true, switchedOff = false))
+        assertFalse("animated covers only", canvasVideoPickShown(canvasOn = true, useVideos = false, isSong = true, switchedOff = false))
+        assertFalse("a file, a podcast", canvasVideoPickShown(canvasOn = true, useVideos = true, isSong = false, switchedOff = false))
+        assertFalse("Canvas is off for this song", canvasVideoPickShown(canvasOn = true, useVideos = true, isSong = true, switchedOff = true))
+    }
+
     @Test fun someoneUpdatingWithCanvasOnIsAskedOnceInThePlayer() {
         assertTrue(canvasAsksOnce(canvasOn = true, answered = false, playerOpen = true))
         assertFalse("answered, by the first run, the question or the switch", canvasAsksOnce(canvasOn = true, answered = true, playerOpen = true))

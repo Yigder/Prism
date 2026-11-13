@@ -849,6 +849,17 @@ class YouTubeMusic(
         return listOfNotNull(picked)
     }
 
+    /**
+     * The videos a listener may pick from for a song's canvas ("Pick another video"): YouTube's own pairing first, then
+     * what a video search for the song finds, as it finds them (nothing is judged here: the listener is choosing).
+     */
+    suspend fun musicVideoChoices(song: Song): List<Song> {
+        val own = runCatching { pairing(song.id)?.counterparts?.get(song.id) }.getOrNull()
+        if (song.title.isBlank()) return emptyList()
+        val found = search("${song.title} ${song.primaryArtist}".trim(), SearchFilter.VIDEOS).items.filterIsInstance<SongItem>().map { it.song }
+        return (found.filter { it.id == own } + found.filter { it.id != own }).distinctBy { it.id }.take(10)
+    }
+
     private fun log(message: String) { runCatching { android.util.Log.i("PrismVideo", message) } }
 
     suspend fun lyrics(browseId: String): String? {

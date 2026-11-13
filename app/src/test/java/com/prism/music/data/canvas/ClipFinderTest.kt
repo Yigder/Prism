@@ -103,6 +103,22 @@ class ClipFinderTest {
         assertTrue(ClipGate.titleSays("Pleaser", "Wallows - Pleaser (Lyric Video)"))
     }
 
+    /** "Pick another video": the listener's own pick is theirs to judge, and a later look keeps it. */
+    @Test fun aVideoTheListenerPickedIsUsedAndKept() = runBlocking {
+        val net = FakeNet("v1", mapOf(video("v1"), video("fan", type = "MUSIC_VIDEO_TYPE_UGC", title = "Dai Dai (fan edit, lyrics)"), video("pic", grids = still(120))), others = listOf("v1"))
+        val f = finder(net)
+        val first = f.find(song, null, 1080, now = 5)
+        val picked = f.forVideo(song, "fan", first, 1080, now = 6)
+        assertEquals("fan", picked.videoId)
+        assertTrue(picked.picked)
+        // Looked at again later: still theirs, though the search would say v1.
+        assertEquals("fan", f.find(song, picked, 1080, now = 7).videoId)
+        // A still picture can't make a loop, whoever picks it.
+        assertNull(f.forVideo(song, "pic", first, 1080, now = 6).videoId)
+        // Videos they said "Not this video" to are not offered.
+        assertTrue(f.choices(song, null).isEmpty())
+    }
+
     @Test fun aGoodFirstVideoIsNotSearchedPast() = runBlocking {
         val net = FakeNet("v1", mapOf(video("v1")), others = listOf("v2"))
         assertEquals("v1", finder(net).find(song, null, 1080, now = 5).videoId)

@@ -143,11 +143,14 @@ internal suspend fun decodeSmall(context: android.content.Context, url: String, 
 fun rememberArtworkMesh(url: String?): ArtworkMesh? {
     val context = LocalContext.current
     val held = remember { mutableStateOf<ArtworkMesh?>(null) }
-    var mesh by remember(url) { mutableStateOf(url?.let(meshCache::get) ?: held.value) }
+    // A song with no cover at all has no colours of its own: not the last song's.
+    var mesh by remember(url) { mutableStateOf(if (url == null) null else meshCache[url] ?: held.value) }
     LaunchedEffect(mesh) { held.value = mesh }
     LaunchedEffect(url) {
         if (url == null || meshCache[url] != null) return@LaunchedEffect
-        buildMesh(context, url)?.let { mesh = it }
+        // A cover that can't be had: not the last song's colours for the whole of this one.
+        val built = buildMesh(context, url)
+        mesh = built ?: lastPictureWhile(mesh, newFailed = true)
     }
     return mesh
 }

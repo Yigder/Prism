@@ -5454,6 +5454,9 @@
     <string name="canvas_keep_controls_keywords">controls fade hide full screen tap</string>
     <string name="canvas_lighter_keywords">quality 480p 720p 1080p data size smaller</string>
     <string name="canvas_pick_part">Pick another part</string>
+    <string name="canvas_pick_video">Pick another video</string>
+    <string name="canvas_video_no_loop">That video can\'t make a loop</string>
+    <string name="canvas_no_videos">No videos found for this song</string>
     <string name="canvas_use">Use</string>
     <string name="canvas_not_this_video">Not this video</string>
     <string name="tour_186_canvas_title">Canvas</string>

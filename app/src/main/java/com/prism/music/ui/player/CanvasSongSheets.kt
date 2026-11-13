@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.MaterialTheme
@@ -122,6 +123,65 @@ fun CanvasPartsSheet(song: Song, onDismiss: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+/**
+ * "Pick another video": the videos found for the song, YouTube's own first, each with its picture, title and who posted
+ * it; the one in use is marked. A tap cuts the song's loop from that video (it is the listener's pick from then on).
+ */
+@Composable
+fun CanvasVideosSheet(song: Song, current: String?, onDismiss: () -> Unit) {
+    val c = LocalContainer.current
+    val context = LocalContext.current
+    val videos by produceState<List<com.prism.music.data.canvas.ClipFinder.VideoChoice>?>(null, song.id) { value = c.canvasClips.videos(song) }
+    ActionSheet(com.prism.music.data.PlaylistCovers.artOf(song), onDismiss) { close ->
+        Eyebrow(tr(R.string.canvas_pick_video), Modifier.padding(start = 22.dp, bottom = 8.dp))
+        val list = videos ?: return@ActionSheet
+        if (list.isEmpty()) {
+            Text(tr(R.string.canvas_no_videos), Modifier.padding(horizontal = 22.dp, vertical = 12.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            return@ActionSheet
+        }
+        Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 14.dp).testTag("canvasVideos"),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            list.forEach { v ->
+                VideoStill(v, current = v.id == current) {
+                    close {
+                        c.scope.launch {
+                            val ok = c.canvasClips.pickVideo(song, v.id, com.prism.music.data.canvas.canvasHeight(c.settings.current))
+                            if (!ok) withContext(Dispatchers.Main) { android.widget.Toast.makeText(context, tr(R.string.canvas_video_no_loop), android.widget.Toast.LENGTH_SHORT).show() }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun VideoStill(video: com.prism.music.data.canvas.ClipFinder.VideoChoice, current: Boolean, onClick: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val shape = com.prism.music.ui.theme.LocalUi.current.tile
+    Column(
+        Modifier.clip(shape).selectable(current, role = Role.Button, onClick = onClick).padding(4.dp).testTag("canvasVideo:${video.id}"),
+    ) {
+        Box(
+            Modifier.size(160.dp, 90.dp).clip(shape).background(scheme.onSurface.copy(alpha = 0.08f))
+                .then(if (current) Modifier.spectrumRing(shape, 2.dp) else Modifier),
+        ) {
+            coil3.compose.AsyncImage("https://i.ytimg.com/vi/${video.id}/mqdefault.jpg", null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            video.title, Modifier.width(160.dp), style = MaterialTheme.typography.labelMedium, maxLines = 2,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, color = if (current) scheme.onSurface else scheme.onSurfaceVariant,
+        )
+        Text(
+            video.by, Modifier.width(160.dp).padding(top = 2.dp), style = MaterialTheme.typography.labelSmall, maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, color = scheme.onSurfaceVariant,
+        )
     }
 }
 
