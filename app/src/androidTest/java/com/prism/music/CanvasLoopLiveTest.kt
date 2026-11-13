@@ -70,6 +70,8 @@ class CanvasLoopLiveTest {
         val row = c.canvasClips.row(song.id)
         println("CanvasLoop: ${song.title} (${song.id}) row=$row shown after $took ms")
         android.util.Log.i("CanvasLoop", "${song.title} (${song.id}) shown after $took ms, row $row")
+        android.util.Log.i("CanvasLoop", "second look: ${com.prism.music.data.canvas.ClipDecode.last}; kept ${c.clipFiles.recentBytes / 1024} KB")
+        assertTrue("the loop was looked at on its real frames (${com.prism.music.data.canvas.ClipDecode.last})", row?.refined == true)
         assertNotNull("a row for the song", row)
         assertNotNull("a music video for it (${row?.why})", row?.videoId)
         assertTrue("the loop shows from its kept file (showing ${CanvasStats.showing}, error ${CanvasStats.lastError})", CanvasStats.showing?.startsWith("file://") == true)

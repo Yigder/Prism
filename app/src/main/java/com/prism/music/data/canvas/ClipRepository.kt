@@ -101,6 +101,7 @@ class ClipRepository(private val dao: CanvasClipDao, private val finder: ClipFin
      */
     suspend fun artworkFor(
         song: Song, height: Int, saved: Boolean, allowed: () -> Boolean, chorusMs: Long? = null, now: Long = System.currentTimeMillis(),
+        retried: Boolean = false,
     ): CanvasArtwork? {
         var row = dao.get(song.id)
         // A "no loop" is asked again after a week (a video may have been posted); a loop that was found stays.
@@ -114,13 +115,41 @@ class ClipRepository(private val dao: CanvasClipDao, private val finder: ClipFin
             got = fetcher.fetch(clip.videoId, clip.startMs, clip.endMs, height, saved, allowed)
         }
         if (got !is ClipFetch.Got) return null
-        val loop = loopIn(clip, got.startMs, got.endMs, got.keyFramesMs).copy(height = got.height)
+        var loop = loopIn(clip, got.startMs, got.endMs, got.keyFramesMs).copy(height = got.height)
         val current = row ?: return null
-        if (loop.startMs != current.startMs || loop.endMs != current.endMs || got.height != current.height || got.itag != current.itag) {
-            dao.put(current.copy(startMs = loop.startMs, endMs = loop.endMs, height = got.height, itag = got.itag))
+        // The second look, on the real frames, once per loop and before it is ever shown (a flashing loop never is).
+        if (!loop.refined && got.file.path !in unreadable) {
+            val judged = try { refiner?.refine(got.file, loop) } catch (e: CancellationException) { throw e } catch (e: Exception) { null }
+            when {
+                judged == null -> if (refiner != null) unreadable += got.file.path
+                judged.flashing -> {
+                    // Another part of the same video, once; if that flashes too (or there is none), the cover.
+                    val next = current.otherParts().firstOrNull { it != current.startMs }
+                    if (next == null || retried) {
+                        dao.put(clipRow(song.id, null, NoClip.FLASHING, current, now, videoType = current.videoType))
+                        return null
+                    }
+                    dao.put(current.copy(
+                        startMs = next, endMs = next + PICK_LENGTH_MS, refined = false, picked = false,
+                        windows = current.otherParts().filter { it != next && it != current.startMs }.joinToString(","),
+                    ))
+                    return artworkFor(song, height, saved, allowed, chorusMs, now, retried = true)
+                }
+                else -> loop = loop.copy(endMs = judged.endMs.coerceIn(loop.startMs + 1, got.endMs.coerceAtLeast(loop.startMs + 1)), cropX = judged.cropX ?: loop.cropX, refined = true)
+            }
+        }
+        if (loop.startMs != current.startMs || loop.endMs != current.endMs || got.height != current.height || got.itag != current.itag ||
+            loop.cropX != current.cropX || loop.refined != current.refined
+        ) {
+            dao.put(current.copy(startMs = loop.startMs, endMs = loop.endMs, height = got.height, itag = got.itag, cropX = loop.cropX, refined = loop.refined))
         }
         return CanvasArtwork(url = fileUrl(got.file, loop), title = song.title, artist = song.artistText, album = song.album?.title, clip = loop)
     }
+
+    /** Reads a kept loop's real frames ([ClipDecode] on a phone); set by the app, absent in most tests. */
+    var refiner: ClipRefiner? = null
+    /** Files this phone couldn't read frames from: not tried again until Prism restarts. */
+    private val unreadable = java.util.Collections.synchronizedSet(HashSet<String>())
 
     private suspend fun find(song: Song, old: CanvasClipEntity?, height: Int, chorusMs: Long?, now: Long): CanvasClipEntity? = try {
         finder.find(song, old, height, chorusMs, now).also { dao.put(it) }

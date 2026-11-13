@@ -1097,7 +1097,7 @@ class AppContainer(val app: Application) {
             db.canvasClips(),
             com.prism.music.data.canvas.ClipFinder.create(ytm, innerTube, http),
             com.prism.music.data.canvas.ClipFetcher(streamHttp, { id -> kotlinx.coroutines.withContext(Dispatchers.IO) { innerTube.visionOsPlayer(id) } }, clipFiles),
-        ).apply { files = clipFiles }
+        ).apply { files = clipFiles; refiner = com.prism.music.data.canvas.ClipDecode }
     }
     /** 1.8.6: the next two songs' loops got ready on Wi-Fi, and downloads' kept with them (plan-canvas 4.8). */
     val canvasAhead by lazy {
