@@ -3022,6 +3022,7 @@
     <string name="start_a_session">Start a session</string>
     <string name="find_songs">Find songs</string>
     <string name="add_songs">Add songs</string>
+    <string name="search_songs_hint">Search songs</string>
     <string name="show_the_player">Show the player</string>
     <string name="on_2">On</string>
     <string name="song_options">Song options</string>

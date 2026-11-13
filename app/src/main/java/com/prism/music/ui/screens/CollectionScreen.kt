@@ -728,6 +728,8 @@ internal fun CollectionContent(type: CollectionType, live: LiveCollection, initi
     var sharing by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
+    // Add songs to this owned playlist, from a search sheet (no leaving the page).
+    var addSongsSheet by remember { mutableStateOf(false) }
     // Duplicates found (1.8.3), shown in a sheet to take the extra copies out.
     var dupes by remember { mutableStateOf<List<com.prism.music.data.Duplicates.Group>?>(null) }
     var title by remember(page.id) { mutableStateOf(page.title) }
@@ -989,6 +991,12 @@ internal fun CollectionContent(type: CollectionType, live: LiveCollection, initi
                 downloading = downloadingCount > 0,
                 onDownload = toggleDownloads,
                 onShare = { sharing = true },
+                onAddSongs = when {
+                    type == CollectionType.PLAYLIST && live.page.owned -> ({ addSongsSheet = true })
+                    // A smart playlist's songs are what its rules find.
+                    type == CollectionType.PRISM && smartRules == null -> ({ addSongsSheet = true })
+                    else -> null
+                },
                 onMore = { pageMenu = true },
             )
         }
@@ -1035,6 +1043,7 @@ internal fun CollectionContent(type: CollectionType, live: LiveCollection, initi
                     })
                 } else if ((type == CollectionType.PLAYLIST && live.page.owned) || type == CollectionType.PRISM) add(SheetItem(PrismIcons.Edit, tr(R.string.edit_details)) { editing = true })
                 if (canRearrange) add(SheetItem(PrismIcons.SwapVertical, tr(R.string.rearrange_songs)) { startRearranging() })
+                if (type == CollectionType.PLAYLIST && live.page.owned || type == CollectionType.PRISM && smartRules == null) add(SheetItem(PrismIcons.PlaylistAdd, tr(R.string.add_songs)) { addSongsSheet = true })
                 // A sleep or kids' playlist: plays as usual, but doesn't shape recommendations.
                 if (type == CollectionType.PLAYLIST) {
                     val listId = page.playlistId ?: page.id.removePrefix("VL")
@@ -1067,6 +1076,8 @@ internal fun CollectionContent(type: CollectionType, live: LiveCollection, initi
                 extraTitle = when (type) { CollectionType.ALBUM -> tr(R.string.this_album); CollectionType.DOWNLOADS -> tr(R.string.downloads); else -> tr(R.string.this_playlist) },
             ) { pageMenu = false }
         }
+
+        if (addSongsSheet) AddSongsSheet(page.id, title) { addSongsSheet = false }
 
         dupes?.let { groups ->
             DuplicatesSheet(groups, youTube = type == CollectionType.PLAYLIST, onDismiss = { dupes = null }) { extras ->
@@ -1226,6 +1237,7 @@ private fun CollectionTopBar(
     downloading: Boolean,
     onDownload: () -> Unit,
     onShare: () -> Unit,
+    onAddSongs: (() -> Unit)? = null,
     onMore: () -> Unit,
 ) {
     val nav = LocalNavigator.current
@@ -1245,6 +1257,7 @@ private fun CollectionTopBar(
                     // Named for what a tap does (it removes once everything's downloaded, #212), not for the state it shows.
                     } else com.prism.music.ui.components.RoundAction(downloadIcon, if (downloadIcon == PrismIcons.DownloadDone) tr(R.string.remove_downloads) else tr(R.string.download_all), glass = true, onClick = onDownload)
                 }
+                onAddSongs?.let { com.prism.music.ui.components.RoundAction(PrismIcons.PlaylistAdd, tr(R.string.add_songs), glass = true, onClick = it) }
                 com.prism.music.ui.components.RoundAction(PrismIcons.Share, tr(R.string.share), glass = true, onClick = onShare)
                 com.prism.music.ui.components.RoundAction(PrismIcons.More, tr(R.string.more), glass = true, onClick = onMore)
             }
@@ -1506,6 +1519,105 @@ private fun EditPlaylistDialog(title: String, description: String, privacy: Stri
         confirmButton = { PrismTextButton(onClick = { onSave(t.trim().ifBlank { title }, d.trim(), p) }) { Text(tr(R.string.save)) } },
         dismissButton = { PrismTextButton(onClick = onDismiss) { Text(tr(R.string.cancel)) } },
     )
+}
+
+/**
+ * Search and add songs to an owned playlist (or a Prism playlist, kept on the phone) without leaving the page. A song
+ * that went in shows a tick; the page reloads itself (see [com.prism.music.data.LibraryRepository.playlistChanged] and
+ * [com.prism.music.data.PrismLibrary.lists]), so the added song appears in the list behind the sheet.
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun AddSongsSheet(playlistId: String, playlistTitle: String, onDismiss: () -> Unit) {
+    val c = LocalContainer.current
+    val local = com.prism.music.data.PrismLibrary.isPrismList(playlistId)
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var query by remember { mutableStateOf("") }
+    var results by remember { mutableStateOf<List<Song>>(emptyList()) }
+    var searching by remember { mutableStateOf(false) }
+    var searchedQuery by remember { mutableStateOf("") }
+    var addedIds by remember { mutableStateOf(setOf<String>()) }
+    // Debounced search: each keystroke restarts the wait, so typing fires one search, on a background thread
+    // as the search page does it. A cancelled wait must stay cancelled (a swallowed CancellationException
+    // would let a stale search overwrite the fresh one).
+    LaunchedEffect(query) {
+        val q = query.trim()
+        if (q.isEmpty()) { results = emptyList(); searching = false; searchedQuery = ""; return@LaunchedEffect }
+        kotlinx.coroutines.delay(350)
+        searching = true
+        try {
+            val found = withContext(Dispatchers.Default) { c.ytm.search(q, com.prism.music.data.innertube.SearchFilter.SONGS) }
+            results = found.items.filterIsInstance<com.prism.music.data.model.SongItem>().map { it.song }
+            searchedQuery = q
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            results = emptyList()
+            searchedQuery = q
+        } finally {
+            searching = false
+        }
+    }
+    fun add(song: Song) {
+        if (song.id in addedIds) return
+        if (local) {
+            if (c.prismLibrary.add(playlistId, listOf(song)) > 0) addedIds = addedIds + song.id
+            Toast.makeText(context, tr(if (song.id in addedIds) R.string.added_to else R.string.already_in, playlistTitle), Toast.LENGTH_SHORT).show()
+            return
+        }
+        scope.launch {
+            runCatching { withContext(Dispatchers.Default) { c.ytm.addSongsToPlaylist(playlistId, listOf(song.id)) } }
+                .onSuccess { outcome ->
+                    when {
+                        outcome.added > 0 -> {
+                            addedIds = addedIds + song.id
+                            c.library.playlistChanged(playlistId)
+                            Toast.makeText(context, tr(R.string.added_to, playlistTitle), Toast.LENGTH_SHORT).show()
+                        }
+                        outcome.alreadyThere > 0 -> {
+                            addedIds = addedIds + song.id
+                            Toast.makeText(context, tr(R.string.already_in, playlistTitle), Toast.LENGTH_SHORT).show()
+                        }
+                        else -> Toast.makeText(context, tr(R.string.couldn_t_add_it_to_the), Toast.LENGTH_SHORT).show()
+                    }
+                }
+                .onFailure { Toast.makeText(context, tr(R.string.couldn_t_add_it_to_the), Toast.LENGTH_SHORT).show() }
+        }
+    }
+    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(Modifier.fillMaxHeight(0.85f).padding(bottom = 28.dp)) {
+            Text(tr(R.string.add_songs), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(horizontal = 24.dp))
+            Spacer(Modifier.height(8.dp))
+            com.prism.music.ui.components.SearchField(
+                query, tr(R.string.search_songs_hint), { query = it }, Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            )
+            if (searching) {
+                Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.Center) {
+                    CircularProgressIndicator(Modifier.size(24.dp))
+                }
+            } else if (query.isNotBlank() && results.isEmpty() && searchedQuery == query.trim()) {
+                EmptyState(PrismIcons.Search, tr(R.string.no_matches), tr(R.string.nothing_in_matches, playlistTitle, query.trim()))
+            }
+            LazyColumn(Modifier.weight(1f, fill = false)) {
+                items(results, key = { it.id }) { song ->
+                    val added = song.id in addedIds
+                    Row(
+                        Modifier.fillMaxWidth().clickable { add(song) }.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Artwork(song.thumbnail, Modifier.size(48.dp), RoundedCornerShape(8.dp), size = 120)
+                        Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                            Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyLarge)
+                            Text(song.artistText, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        IconButton(onClick = { add(song) }, enabled = !added) {
+                            Icon(if (added) PrismIcons.Check else PrismIcons.Add, if (added) null else tr(R.string.add_songs))
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 /** Choose a playlist's picture: a photo, or one of its songs' covers. Kept in Prism on this phone. */
