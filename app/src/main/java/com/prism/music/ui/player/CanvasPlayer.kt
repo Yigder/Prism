@@ -91,13 +91,24 @@ fun CanvasPlayer(
     // closed).
     val held = remember { CanvasPlayers.take(context, c, url) }
     val player = held.player
+    // Where the picture sits in the view now: for a loop from a music video, by the scene playing (each has its own crop).
+    val placed = remember { floatArrayOf(Float.NaN, 0f, 0f, 0f) }
+    val place: (TextureView) -> Unit = { tv ->
+        val loop = clip.canvas.clip
+        val x = loop?.let { it.cropAt(it.startMs + player.currentPosition.coerceAtLeast(0)) } ?: 0.5f
+        // Only when something changed: this runs for every frame of a loop with scenes.
+        if (placed[0] != x || placed[1] != clip.aspect || placed[2] != tv.width.toFloat() || placed[3] != tv.height.toFloat()) {
+            placed[0] = x; placed[1] = clip.aspect; placed[2] = tv.width.toFloat(); placed[3] = tv.height.toFloat()
+            tv.cropTo(clip.aspect, loop, x)
+        }
+    }
     androidx.compose.runtime.SideEffect { held.source.clip = url; held.source.keep = saved }
     DisposableEffect(held) { onDispose { CanvasPlayers.give(held) } }
     DisposableEffect(player) {
         val listener = object : Player.Listener {
             override fun onVideoSizeChanged(videoSize: VideoSize) {
                 clip.videoSize(videoSize.width * videoSize.pixelWidthHeightRatio, videoSize.height)
-                texture?.cropTo(clip.aspect, clip.canvas.clip)
+                texture?.let(place)
             }
 
             override fun onPlayerError(error: PlaybackException) {
@@ -121,6 +132,7 @@ fun CanvasPlayer(
     LaunchedEffect(url) {
         clip.rendered = false
         still = null
+        placed[0] = Float.NaN
         endMessage[0]?.cancel(); endMessage[0] = null
         // Told a quarter second before each end of a video loop (animated covers loop by themselves, cut for it).
         fun watchTheEnd() {
@@ -135,7 +147,7 @@ fun CanvasPlayer(
         if (CanvasPlayers.playing(player, url)) {
             val v = player.videoSize
             clip.videoSize(v.width * v.pixelWidthHeightRatio, v.height)
-            texture?.cropTo(clip.aspect, clip.canvas.clip)
+            texture?.let(place)
             // Somewhere in the middle of its loop: the first frame is kept the next time round.
             restart.reset(atStart = false)
             watchTheEnd()
@@ -205,7 +217,7 @@ fun CanvasPlayer(
                     override fun onSurfaceTextureAvailable(s: SurfaceTexture, w: Int, h: Int) { delegate?.onSurfaceTextureAvailable(s, w, h) }
                     override fun onSurfaceTextureSizeChanged(s: SurfaceTexture, w: Int, h: Int) {
                         delegate?.onSurfaceTextureSizeChanged(s, w, h)
-                        cropTo(clip.aspect, clip.canvas.clip)
+                        place(this@apply)
                     }
                     override fun onSurfaceTextureDestroyed(s: SurfaceTexture): Boolean {
                         clip.rendered = false
@@ -213,7 +225,9 @@ fun CanvasPlayer(
                     }
                     override fun onSurfaceTextureUpdated(s: SurfaceTexture) {
                         delegate?.onSurfaceTextureUpdated(s)
-                        if (clip.frame()) { cropTo(clip.aspect, clip.canvas.clip); CanvasStats.showing = clip.url }
+                        if (clip.frame()) { place(this@apply); CanvasStats.showing = clip.url }
+                        // A loop of several scenes: each has its own crop, changed on the cut.
+                        else if (clip.canvas.clip?.crops?.isNotEmpty() == true) place(this@apply)
                         CanvasStats.frames++
                         // The loop's first frame is on screen: keep it as a picture, once, for the restarts to come.
                         if (restart.frameDrawn() && still == null) still = firstFrameOf(this@apply, clip.aspect)
@@ -239,7 +253,7 @@ fun CanvasPlayer(
             // in the window, and dragging the ⋯ sheet over an animated cover kept sticking.
             frame.visibility = if (hold) android.view.View.INVISIBLE else android.view.View.VISIBLE
             tv.alpha = alpha * presentationAlpha()
-            tv.cropTo(clip.aspect, clip.canvas.clip)
+            place(tv)
             if (Build.VERSION.SDK_INT >= 31) tv.bottomFade(bottomFade) else frame.fade = bottomFade
             // The kept first frame, placed exactly where the video draws it.
             val picture = still
@@ -247,7 +261,7 @@ fun CanvasPlayer(
             firstFrame.alpha = if (picture == null) 0f else stillAlpha * alpha * presentationAlpha()
             firstFrame.visibility = if (picture == null || stillAlpha <= 0f) android.view.View.GONE else android.view.View.VISIBLE
             if (picture != null && tv.width > 0 && clip.aspect > 0f) {
-                val t = cropTransform(tv.width.toFloat(), tv.height.toFloat(), clip.aspect, clip.canvas.clip?.bars ?: com.prism.music.data.canvas.Bars.NONE, clip.canvas.clip?.cropX ?: 0.5f)
+                val t = cropTransform(tv.width.toFloat(), tv.height.toFloat(), clip.aspect, clip.canvas.clip?.bars ?: com.prism.music.data.canvas.Bars.NONE, clip.canvas.clip?.let { it.cropAt(it.startMs) } ?: 0.5f)
                 firstFrame.imageMatrix = Matrix().apply {
                     setScale(tv.width.toFloat() / picture.width * t[0], tv.height.toFloat() / picture.height * t[1])
                     postTranslate(t[2], t[3])
@@ -471,9 +485,9 @@ internal object CanvasPlayers {
  * Crop the video into the view (a TextureView stretches by default): centred for an animated cover; for a loop from a
  * music video ([loop]) its black bars are cut off first and the crop sits where the loop says ([VideoClip.cropX]).
  */
-internal fun TextureView.cropTo(clipAspect: Float, loop: com.prism.music.data.canvas.VideoClip? = null) {
+internal fun TextureView.cropTo(clipAspect: Float, loop: com.prism.music.data.canvas.VideoClip? = null, cropX: Float? = null) {
     if (width <= 0 || height <= 0 || clipAspect <= 0f) { setTransform(Matrix()); return }
-    val t = cropTransform(width.toFloat(), height.toFloat(), clipAspect, loop?.bars ?: com.prism.music.data.canvas.Bars.NONE, loop?.cropX ?: 0.5f)
+    val t = cropTransform(width.toFloat(), height.toFloat(), clipAspect, loop?.bars ?: com.prism.music.data.canvas.Bars.NONE, cropX ?: loop?.cropX ?: 0.5f)
     val m = Matrix()
     m.setScale(t[0], t[1])
     m.postTranslate(t[2], t[3])

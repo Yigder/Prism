@@ -23,7 +23,7 @@ object ClipDecode : ClipRefiner {
     /** At most this long on one loop. */
     private const val BUDGET_MS = 12_000L
     /** Faces are looked for about this often, in a picture this wide. */
-    private const val FACE_EVERY_MS = 900L
+    private const val FACE_EVERY_MS = 450L
     private const val FACE_W = 480
     private const val MAX_FACES = 3
 
@@ -39,10 +39,10 @@ object ClipDecode : ClipRefiner {
         if (read.frames.size < 30) { last = "only ${read.frames.size} frames from ${file.name}"; return@withContext null }
         val r = ClipRefine.judge(read.frames, read.faces, start, loop.bars)
         last = "${read.frames.size} frames, ${read.faces.size} faces, ${r.cutsMs.size} cuts, ${if (r.flashing) "flashing" else "calm"}, " +
-            "ends ${r.endMs - start} ms in, crop ${r.cropX ?: "kept"}, ${System.currentTimeMillis() - began} ms" +
+            "ends ${r.endMs - start} ms in, crop ${r.cropX ?: "kept"}, scenes ${r.crops.joinToString(" ") { "${it.fromMs - start}:${it.cropX}" }}, ${System.currentTimeMillis() - began} ms" +
             read.faces.joinToString(prefix = " [", postfix = "]") { "${it.timeMs - start}:${(it.x * 100).toInt()}/${(it.size * 100).toInt()}/${(it.confidence * 100).toInt()}" }
         // Back on the video's clock.
-        r.copy(endMs = r.endMs + loop.fileStartMs, cutsMs = r.cutsMs.map { it + loop.fileStartMs })
+        r.copy(endMs = r.endMs + loop.fileStartMs, cutsMs = r.cutsMs.map { it + loop.fileStartMs }, crops = r.crops.map { it.copy(fromMs = it.fromMs + loop.fileStartMs) })
     }
 
     private class Read(val frames: List<ClipRefine.Frame>, val faces: List<ClipRefine.Face>)
@@ -50,7 +50,10 @@ object ClipDecode : ClipRefiner {
     private fun read(file: File, fromMs: Long, toMs: Long, deadline: Long): Read {
         val extractor = MediaExtractor()
         var codec: MediaCodec? = null
-        val frames = ArrayList<ClipRefine.Frame>(300); val faces = ArrayList<ClipRefine.Face>()
+        val frames = ArrayList<ClipRefine.Frame>(300); val faces = java.util.Collections.synchronizedList(ArrayList<ClipRefine.Face>())
+        // Faces are looked for beside the decoding (two at a time), so they add little to the wait.
+        val lookers = java.util.concurrent.Executors.newFixedThreadPool(2)
+        val looks = ArrayList<java.util.concurrent.Future<*>>()
         try {
             extractor.setDataSource(file.absolutePath)
             val track = (0 until extractor.trackCount).firstOrNull { extractor.getTrackFormat(it).getString(MediaFormat.KEY_MIME)?.startsWith("video/") == true }
@@ -83,17 +86,19 @@ object ClipDecode : ClipRefiner {
                     val ms = info.presentationTimeUs / 1000
                     if (info.size > 0 && ms in fromMs..toMs) codec.getOutputImage(o)?.use { image ->
                         frames += ClipRefine.Frame(ms, grid(image))
-                        if (ms >= nextFace) { nextFace = ms + FACE_EVERY_MS; faces += facesIn(image, ms) }
+                        if (ms >= nextFace) { nextFace = ms + FACE_EVERY_MS; grey(image)?.let { g -> looks += lookers.submit { faces += facesIn(g, ms) } } }
                     }
                     codec.releaseOutputBuffer(o, false)
                     if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) done = true
                 }
             }
+            looks.forEach { runCatching { it.get(3, java.util.concurrent.TimeUnit.SECONDS) } }
         } finally {
+            lookers.shutdownNow()
             runCatching { codec?.stop() }; runCatching { codec?.release() }; runCatching { extractor.release() }
         }
         frames.sortBy { it.timeMs }
-        return Read(frames, faces)
+        return Read(frames, faces.sortedBy { it.timeMs })
     }
 
     /** The picture's brightness on the grid: four points to a cell. */
@@ -113,11 +118,11 @@ object ClipDecode : ClipRefiner {
         return out
     }
 
-    /** The faces in a frame, found on a small grey copy of it. */
-    private fun facesIn(image: Image, ms: Long): List<ClipRefine.Face> {
+    /** A small grey copy of a frame, for the face finder (made here, while the decoder's picture is still ours). */
+    private fun grey(image: Image): Bitmap? {
         val plane = image.planes[0]; val buf = plane.buffer
         val crop = image.cropRect; val w = crop.width(); val h = crop.height()
-        if (w < 64 || h < 64) return emptyList()
+        if (w < 64 || h < 64) return null
         // The finder wants an even width and RGB 565.
         val bw = FACE_W; val bh = (FACE_W.toLong() * h / w).toInt().coerceAtLeast(2) and 1.inv()
         val pixels = IntArray(bw * bh)
@@ -130,6 +135,12 @@ object ClipDecode : ClipRefiner {
         }
         val bitmap = Bitmap.createBitmap(bw, bh, Bitmap.Config.RGB_565)
         bitmap.setPixels(pixels, 0, bw, 0, 0, bw, bh)
+        return bitmap
+    }
+
+    /** The faces in a frame's grey copy (which is let go of here). */
+    private fun facesIn(bitmap: Bitmap, ms: Long): List<ClipRefine.Face> {
+        val bw = bitmap.width; val bh = bitmap.height
         val found = arrayOfNulls<FaceDetector.Face>(MAX_FACES)
         val n = FaceDetector(bw, bh, MAX_FACES).findFaces(bitmap, found)
         bitmap.recycle()

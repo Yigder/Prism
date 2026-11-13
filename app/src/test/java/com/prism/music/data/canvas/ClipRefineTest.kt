@@ -138,6 +138,43 @@ class ClipRefineTest {
         assertTrue(ClipRefine.judge(inside, emptyList(), 2_000, Bars.NONE).flashing)
     }
 
+    // ------------------------------------------------------------------ A crop for each scene
+
+    private fun bandMiddle(x: Float) = x * (1f - ClipRefine.BAND) + ClipRefine.BAND / 2f
+
+    @Test fun eachSceneGetsItsOwnCropWhereItsFacesAgree() {
+        // Three scenes: the singer on the left, a street with nobody, the singer on the right.
+        val faces = listOf(face(200, 0.2f), face(650, 0.22f), face(1_100, 0.2f), face(5_200, 0.8f), face(5_650, 0.78f))
+        val crops = ClipRefine.sceneCrops(faces, startMs = 0, endMs = 7_000, cutsMs = listOf(2_000, 5_000), bars = Bars.NONE)
+        assertEquals(listOf(0L, 2_000L, 5_000L), crops.map { it.fromMs })
+        assertEquals(0.2f, bandMiddle(crops[0].cropX), 0.03f)
+        assertTrue("nobody in it: the loop's own crop", crops[1].cropX < 0f)
+        assertEquals(0.8f, bandMiddle(crops[2].cropX), 0.03f)
+        // Read back through the loop: each scene from its cut on, the empty one at the loop's crop.
+        val loop = VideoClip("v", 0, 7_000, 1080, cropX = 0.5f, crops = crops)
+        assertEquals(crops[0].cropX, loop.cropAt(0), 0.001f); assertEquals(crops[0].cropX, loop.cropAt(1_999), 0.001f)
+        assertEquals(0.5f, loop.cropAt(2_000), 0.001f)
+        assertEquals(crops[2].cropX, loop.cropAt(5_000), 0.001f); assertEquals(crops[2].cropX, loop.cropAt(6_999), 0.001f)
+    }
+
+    @Test fun aSingleSceneOrNoFacesNeedsNoSceneCrops() {
+        assertEquals(emptyList<SceneCrop>(), ClipRefine.sceneCrops(listOf(face(200, 0.2f), face(650, 0.2f)), 0, 7_000, emptyList(), Bars.NONE))
+        assertEquals(emptyList<SceneCrop>(), ClipRefine.sceneCrops(emptyList(), 0, 7_000, listOf(3_000), Bars.NONE))
+        // One sighting in a scene is not enough to move it; cuts outside the loop make no scene.
+        assertEquals(emptyList<SceneCrop>(), ClipRefine.sceneCrops(listOf(face(200, 0.2f), face(3_500, 0.8f)), 0, 7_000, listOf(3_000), Bars.NONE))
+        assertEquals(emptyList<SceneCrop>(), ClipRefine.sceneCrops(listOf(face(200, 0.2f), face(650, 0.2f)), 0, 7_000, listOf(7_000, 9_000), Bars.NONE))
+    }
+
+    @Test fun sceneCropsAreKeptWithTheSongAndReadBack() {
+        val crops = listOf(SceneCrop(60_000, 0.25f), SceneCrop(62_480, -1f), SceneCrop(65_000, 1f))
+        assertEquals(crops, SceneCrop.decode(SceneCrop.encode(crops)))
+        assertEquals(emptyList<SceneCrop>(), SceneCrop.decode(""))
+        val row = clipRow("s", VideoClip("v1", 60_000, 67_000, 1080, crops = crops), null, null, now = 1)
+        assertEquals(crops, row.clip()!!.crops)
+        // Without any, a loop sits at its one crop throughout.
+        assertEquals(0.3f, VideoClip("v", 0, 7_000, 1080, cropX = 0.3f).cropAt(4_000), 0.001f)
+    }
+
     // ------------------------------------------------------------------ What the repository does with it
 
     private val song = Song("song1", "Dai Dai", listOf(ArtistRef("Shakira")), durationSec = 240)
@@ -208,6 +245,33 @@ class ClipRefineTest {
         dao.rows[song.id] = row(others = emptyList())
         assertNull(r.artworkFor(song, 1080, false, { false }))
         assertEquals(NoClip.FLASHING.name, dao.rows.getValue(song.id).why)
+    }
+
+    @Test fun aLoopThatIsMostlyAFaceFillingTheFrameIsACloseUp() {
+        // Sightings every 450 ms over a 7 s loop: large faces for five seconds of it.
+        val big = (0 until 11).map { face(1_500L + it * 450, 0.3f, size = 0.1f) }
+        assertTrue(ClipRefine.closeUp(big, 0, 7_000))
+        // The same faces small (a wide shot of the singer), large ones for a second only, or hardly any sightings: not one.
+        assertFalse(ClipRefine.closeUp(big.map { it.copy(size = 0.04f) }, 0, 7_000))
+        assertFalse(ClipRefine.closeUp(big.take(3) + (3 until 11).map { face(1_500L + it * 450, 0.3f, size = 0.04f) }, 0, 7_000))
+        assertFalse(ClipRefine.closeUp(big.take(2), 0, 7_000))
+    }
+
+    @Test fun aCloseUpGivesWayToTheNextPartOnceAndStaysToBePicked() = runBlocking {
+        keep(60_000, 72_000); keep(120_000, 132_000)
+        val dao = MemoryDao().apply { rows[song.id] = row() }
+        var looks = 0
+        val r = repo(dao) { _, loop -> looks++; ClipRefine.Refined(loop.startMs + 8_000, null, false, emptyList(), 9, closeUp = true) }
+        // No network allowed: what is there shows, close-up or not (another part could not be fetched).
+        assertEquals(60_000L, r.artworkFor(song, 1080, false, { false })!!.clip!!.startMs)
+        // Allowed: the next part, though it is a close-up too (once is enough), and the first one is still on the list.
+        dao.rows[song.id] = row()
+        val art = r.artworkFor(song, 1080, false, { true })
+        assertEquals(120_000L, art!!.clip!!.startMs); assertTrue(art.clip!!.refined)
+        assertEquals(listOf(60_000L), dao.rows.getValue(song.id).otherParts())
+        // The listener's own pick is never swapped.
+        dao.rows[song.id] = row().copy(picked = true)
+        assertEquals(60_000L, r.artworkFor(song, 1080, false, { true })!!.clip!!.startMs)
     }
 
     @Test fun aPhoneThatCannotReadTheFramesShowsTheLoopAsGuessedAndDoesNotKeepTrying() = runBlocking {

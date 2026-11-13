@@ -23,7 +23,28 @@ object ClipRefine {
     data class Face(val timeMs: Long, val x: Float, val size: Float, val confidence: Float)
 
     /** What the second look says. [cropX] null: no faces to go by, the finder's guess stays. */
-    data class Refined(val endMs: Long, val cropX: Float?, val flashing: Boolean, val cutsMs: List<Long>, val faces: Int)
+    data class Refined(
+        val endMs: Long, val cropX: Float?, val flashing: Boolean, val cutsMs: List<Long>, val faces: Int,
+        /** The crop scene by scene (from each cut on), for the scenes whose faces agree; empty when none does. */
+        val crops: List<SceneCrop> = emptyList(),
+        /** Most of the loop is a face filling the frame: an upright crop of it shows half a face, larger than life. */
+        val closeUp: Boolean = false,
+    )
+
+    /** A face this large (eye distance over the frame's width) fills an upright crop: seen on the A16, 2026-11-13. */
+    private const val CLOSE_FACE = 0.085f
+
+    /**
+     * True when more than half of the loop's time is close-ups: the stretches between sightings of a large face. A
+     * silent close-up of someone singing other words than the ones heard is also what looks most out of step.
+     */
+    fun closeUp(faces: List<Face>, startMs: Long, endMs: Long): Boolean {
+        val times = faces.map { it.timeMs }.distinct().sorted()
+        if (times.size < 3 || endMs <= startMs) return false
+        val step = (times.zipWithNext { a, b -> b - a }.minOrNull() ?: return false).coerceAtLeast(1)
+        val close = times.count { t -> faces.any { it.timeMs == t && it.size >= CLOSE_FACE } }
+        return close * step > (endMs - startMs) / 2
+    }
 
     /** A cut: this much of the brightness changes from one frame to the next (of 255), and far more than around it. */
     private const val CUT = 22f
@@ -98,8 +119,8 @@ object ClipRefine {
      * Where the crop sits (0 the picture's left edge, 1 its right: [VideoClip.cropX]) so that the faces are in an upright
      * band. Faces seen in one frame only are not trusted (the finder calls a lamp a face now and then): null then.
      */
-    fun cropX(faces: List<Face>, bars: Bars): Float? {
-        if (faces.map { it.timeMs }.distinct().size < 3) return null
+    fun cropX(faces: List<Face>, bars: Bars, sightings: Int = 3): Float? {
+        if (faces.map { it.timeMs }.distinct().size < sightings) return null
         val across = (1f - bars.left - bars.right).takeIf { it > 0.1f } ?: 1f
         val left = if (across == 1f) 0f else bars.left
         // The middle by weight: large, sure faces count most, and one face off to the side doesn't pull it.
@@ -127,7 +148,26 @@ object ClipRefine {
             end = cuts.lastOrNull { it < end && it - startMs >= ClipRepository.MIN_LOOP_MS } ?: break
         }
         val shown = from.filter { it.timeMs < end }
-        return Refined(end, cropX(faces.filter { it.timeMs in startMs until end }, bars), flashing(shown), cuts, faces.size)
+        val seen = faces.filter { it.timeMs in startMs until end }
+        val scenes = sceneCrops(seen, startMs, end, cuts, bars)
+        // With a crop per scene, the scenes that have none keep the finder's guess: the faces of the other scenes say
+        // nothing about them.
+        return Refined(end, if (scenes.isEmpty()) cropX(seen, bars) else null, flashing(shown), cuts, faces.size, scenes, closeUp(seen, startMs, end))
+    }
+
+    /**
+     * The crop scene by scene: a loop of several scenes has its people in a different place in each, and no one place
+     * serves them all. A scene gets its own when two sightings or more in it agree; the others are marked to use the
+     * loop's own (below 0). Empty when no scene has one, or the loop is a single scene (its crop is the loop's).
+     */
+    fun sceneCrops(faces: List<Face>, startMs: Long, endMs: Long, cutsMs: List<Long>, bars: Bars): List<SceneCrop> {
+        val starts = listOf(startMs) + cutsMs.filter { it > startMs && it < endMs }
+        if (starts.size < 2) return emptyList()
+        val crops = starts.mapIndexed { i, from ->
+            val to = starts.getOrElse(i + 1) { endMs }
+            SceneCrop(from, cropX(faces.filter { it.timeMs >= from && it.timeMs < to }, bars, sightings = 2) ?: -1f)
+        }
+        return if (crops.any { it.cropX >= 0f }) crops else emptyList()
     }
 }
 

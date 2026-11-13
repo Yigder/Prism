@@ -76,7 +76,7 @@ class ClipRepository(private val dao: CanvasClipDao, private val finder: ClipFin
             val at = o.indexOf(startMs)
             if (at >= 0) o.toMutableList().apply { set(at, row.startMs) } else listOf(row.startMs) + o
         }.filter { it != startMs }.distinct()
-        dao.put(row.copy(startMs = startMs, endMs = startMs + PICK_LENGTH_MS, refined = false, picked = true, windows = others.joinToString(",")))
+        dao.put(row.copy(startMs = startMs, endMs = startMs + PICK_LENGTH_MS, refined = false, picked = true, windows = others.joinToString(","), crops = ""))
         bump()
         return true
     }
@@ -104,10 +104,14 @@ class ClipRepository(private val dao: CanvasClipDao, private val finder: ClipFin
         retried: Boolean = false,
     ): CanvasArtwork? {
         var row = dao.get(song.id)
+        val t0 = System.nanoTime()
         // A "no loop" is asked again after a week (a video may have been posted); a loop that was found stays.
         if (needsFinding(row, now) && allowed()) row = find(song, row, height, chorusMs, now) ?: row
+        val t1 = System.nanoTime()
         var clip = row?.clip() ?: return null
         var got = fetcher.fetch(clip.videoId, clip.startMs, clip.endMs, height, saved, allowed)
+        val t2 = System.nanoTime()
+        lastTimes = "find ${(t1 - t0) / 1_000_000} ms, fetch ${(t2 - t1) / 1_000_000} ms" + if ((got as? ClipFetch.Got)?.fromNetwork == true) " (network)" else " (kept)"
         if (got is ClipFetch.None && got.why in GONE && allowed() && row?.picked != true) {
             // The video went away or changed under the row: look once more, and take what that finds.
             row = find(song, row, height, chorusMs, now) ?: return null
@@ -130,21 +134,34 @@ class ClipRepository(private val dao: CanvasClipDao, private val finder: ClipFin
                         return null
                     }
                     dao.put(current.copy(
-                        startMs = next, endMs = next + PICK_LENGTH_MS, refined = false, picked = false,
+                        startMs = next, endMs = next + PICK_LENGTH_MS, refined = false, picked = false, crops = "",
                         windows = current.otherParts().filter { it != next && it != current.startMs }.joinToString(","),
                     ))
                     return artworkFor(song, height, saved, allowed, chorusMs, now, retried = true)
                 }
-                else -> loop = loop.copy(endMs = judged.endMs.coerceIn(loop.startMs + 1, got.endMs.coerceAtLeast(loop.startMs + 1)), cropX = judged.cropX ?: loop.cropX, refined = true)
+                // Mostly a face filling the frame (half a face, upright): the next part is tried once, unless the listener
+                // picked this one. The part stays among the others, last, so "Pick another part" can still have it.
+                judged.closeUp && !retried && !current.picked && allowed() && current.otherParts().any { it != current.startMs } -> {
+                    val next = current.otherParts().first { it != current.startMs }
+                    dao.put(current.copy(
+                        startMs = next, endMs = next + PICK_LENGTH_MS, refined = false, crops = "",
+                        windows = (current.otherParts().filter { it != next && it != current.startMs } + current.startMs).joinToString(","),
+                    ))
+                    return artworkFor(song, height, saved, allowed, chorusMs, now, retried = true)
+                }
+                else -> loop = loop.copy(endMs = judged.endMs.coerceIn(loop.startMs + 1, got.endMs.coerceAtLeast(loop.startMs + 1)), cropX = judged.cropX ?: loop.cropX, refined = true, crops = judged.crops)
             }
         }
         if (loop.startMs != current.startMs || loop.endMs != current.endMs || got.height != current.height || got.itag != current.itag ||
-            loop.cropX != current.cropX || loop.refined != current.refined
+            loop.cropX != current.cropX || loop.refined != current.refined || SceneCrop.encode(loop.crops) != current.crops
         ) {
-            dao.put(current.copy(startMs = loop.startMs, endMs = loop.endMs, height = got.height, itag = got.itag, cropX = loop.cropX, refined = loop.refined))
+            dao.put(current.copy(startMs = loop.startMs, endMs = loop.endMs, height = got.height, itag = got.itag, cropX = loop.cropX, refined = loop.refined, crops = SceneCrop.encode(loop.crops)))
         }
         return CanvasArtwork(url = fileUrl(got.file, loop), title = song.title, artist = song.artistText, album = song.album?.title, clip = loop)
     }
+
+    /** How long the last loop took to find and fetch (Share diagnostics, the live test). */
+    @Volatile var lastTimes: String? = null; private set
 
     /** Reads a kept loop's real frames ([ClipDecode] on a phone); set by the app, absent in most tests. */
     var refiner: ClipRefiner? = null
@@ -183,7 +200,8 @@ class ClipRepository(private val dao: CanvasClipDao, private val finder: ClipFin
             val start = keys.minWithOrNull(compareBy<Long>({ kotlin.math.abs(it - want.startMs) }, { it })) ?: fileStartMs
             val end = if (want.refined && start == want.startMs) want.endMs.coerceIn(start + 1, fileEndMs.coerceAtLeast(start + 1))
             else (start + want.lengthMs.coerceIn(MIN_LOOP_MS, MAX_LOOP_MS)).coerceAtMost(fileEndMs.coerceAtLeast(start + 1))
-            return want.copy(startMs = start, endMs = end, fileStartMs = fileStartMs, refined = want.refined && start == want.startMs)
+            val kept = want.refined && start == want.startMs
+            return want.copy(startMs = start, endMs = end, fileStartMs = fileStartMs, refined = kept, crops = if (kept) want.crops else emptyList())
         }
 
         /** The file's address for the player; the loop's seconds ride along so another part of the same file is another clip. */

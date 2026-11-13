@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 12,
-    "identityHash": "594da919d9b6c368aabaa4a88cce76c9",
+    "identityHash": "7d3f70b02671f8c3b40d45ced0797347",
     "entities": [
       {
         "tableName": "songs",
@@ -940,7 +940,7 @@
       },
       {
         "tableName": "canvas_clips",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`songId` TEXT NOT NULL, `videoId` TEXT, `why` TEXT NOT NULL, `videoType` TEXT, `height` INTEGER NOT NULL, `itag` INTEGER NOT NULL, `startMs` INTEGER NOT NULL, `endMs` INTEGER NOT NULL, `cropX` REAL NOT NULL, `barLeft` REAL NOT NULL, `barTop` REAL NOT NULL, `barRight` REAL NOT NULL, `barBottom` REAL NOT NULL, `windows` TEXT NOT NULL, `refined` INTEGER NOT NULL, `picked` INTEGER NOT NULL, `rejectedVideos` TEXT NOT NULL, `prefer` TEXT, `checkedAt` INTEGER NOT NULL, PRIMARY KEY(`songId`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`songId` TEXT NOT NULL, `videoId` TEXT, `why` TEXT NOT NULL, `videoType` TEXT, `height` INTEGER NOT NULL, `itag` INTEGER NOT NULL, `startMs` INTEGER NOT NULL, `endMs` INTEGER NOT NULL, `cropX` REAL NOT NULL, `barLeft` REAL NOT NULL, `barTop` REAL NOT NULL, `barRight` REAL NOT NULL, `barBottom` REAL NOT NULL, `windows` TEXT NOT NULL, `refined` INTEGER NOT NULL, `picked` INTEGER NOT NULL, `rejectedVideos` TEXT NOT NULL, `prefer` TEXT, `checkedAt` INTEGER NOT NULL, `crops` TEXT NOT NULL, PRIMARY KEY(`songId`))",
         "fields": [
           {
             "fieldPath": "songId",
@@ -1052,6 +1052,12 @@
             "columnName": "checkedAt",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "crops",
+            "columnName": "crops",
+            "affinity": "TEXT",
+            "notNull": true
           }
         ],
         "primaryKey": {
@@ -1070,7 +1076,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '594da919d9b6c368aabaa4a88cce76c9')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7d3f70b02671f8c3b40d45ced0797347')"
     ]
   }
 }

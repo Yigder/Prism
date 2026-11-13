@@ -55,6 +55,7 @@ class CanvasLoopLiveTest {
         val words = args.getString("song") ?: "Rick Astley Never Gonna Give You Up"
         val song = withContext(Dispatchers.IO) { c.ytm.search(words, SearchFilter.SONGS).items.filterIsInstance<SongItem>().first().song }
         val before = CanvasStats.rounds to CanvasStats.errors
+        val played = System.currentTimeMillis()
         withContext(Dispatchers.Main) { c.player.playQueue(listOf(song), 0, QueueSource(QueueKind.SINGLE, "test")) }
         Fixture.context.startActivity(
             android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("prism://player"))
@@ -70,7 +71,8 @@ class CanvasLoopLiveTest {
         val row = c.canvasClips.row(song.id)
         println("CanvasLoop: ${song.title} (${song.id}) row=$row shown after $took ms")
         android.util.Log.i("CanvasLoop", "${song.title} (${song.id}) shown after $took ms, row $row")
-        android.util.Log.i("CanvasLoop", "second look: ${com.prism.music.data.canvas.ClipDecode.last}; kept ${c.clipFiles.recentBytes / 1024} KB")
+        android.util.Log.i("CanvasLoop", "times: ${c.canvasClips.lastTimes}; asked ${asked - played} ms after play")
+        android.util.Log.i("CanvasLoop", "second look:${com.prism.music.data.canvas.ClipDecode.last}; kept ${c.clipFiles.recentBytes / 1024} KB")
         assertTrue("the loop was looked at on its real frames (${com.prism.music.data.canvas.ClipDecode.last})", row?.refined == true)
         assertNotNull("a row for the song", row)
         assertNotNull("a music video for it (${row?.why})", row?.videoId)

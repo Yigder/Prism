@@ -31,11 +31,28 @@ data class VideoClip(
     val refined: Boolean = false,
     /** The video's time at the kept file's own 0 (the file holds whole fragments around the loop); 0 until fetched. */
     val fileStartMs: Long = 0,
+    /** The crop scene by scene (each from its cut on, in the video's time), where the faces in a scene agreed; else [cropX]. */
+    val crops: List<SceneCrop> = emptyList(),
 ) {
     val lengthMs: Long get() = endMs - startMs
 
+    /** Where the crop sits at [videoMs] of the video: the scene's own place if it has one, else the loop's. */
+    fun cropAt(videoMs: Long): Float = crops.lastOrNull { it.fromMs <= videoMs }?.cropX?.takeIf { it >= 0f } ?: cropX
+
     /** What the clip is kept under on the phone: it outlives YouTube's links, which expire in hours. */
     val key: String get() = "prism-clip://$videoId/$height/$startMs-$endMs"
+}
+
+/** One scene's crop: from [fromMs] of the video on (a cut), the crop sits at [cropX]; below 0 means the loop's own [VideoClip.cropX]. */
+@Serializable
+data class SceneCrop(val fromMs: Long, val cropX: Float) {
+    companion object {
+        fun encode(crops: List<SceneCrop>): String = crops.joinToString(",") { "${it.fromMs}:${it.cropX}" }
+        fun decode(stored: String): List<SceneCrop> = stored.split(',').mapNotNull { part ->
+            val ms = part.substringBefore(':').trim().toLongOrNull(); val x = part.substringAfter(':', "").trim().toFloatOrNull()
+            if (ms != null && x != null) SceneCrop(ms, x) else null
+        }
+    }
 }
 
 /** Black bars baked into a video, as shares of its width and height (0.125 top and bottom = a 21:9 film in 16:9). */
@@ -82,7 +99,7 @@ const val OFFICIAL = "OMV"
 const val CLIP_RECHECK_MS = 7L * 86_400_000L
 
 fun CanvasClipEntity.clip(): VideoClip? = videoId?.let {
-    VideoClip(it, startMs, endMs, height, cropX, Bars(barLeft, barTop, barRight, barBottom), refined)
+    VideoClip(it, startMs, endMs, height, cropX, Bars(barLeft, barTop, barRight, barBottom), refined, crops = SceneCrop.decode(crops))
 }
 
 fun CanvasClipEntity.otherParts(): List<Long> = windows.split(',').mapNotNull { it.trim().toLongOrNull() }
@@ -98,7 +115,7 @@ fun clipRow(
     height = clip?.height ?: 0, itag = itag, startMs = clip?.startMs ?: 0, endMs = clip?.endMs ?: 0, cropX = clip?.cropX ?: 0.5f,
     barLeft = clip?.bars?.left ?: 0f, barTop = clip?.bars?.top ?: 0f, barRight = clip?.bars?.right ?: 0f, barBottom = clip?.bars?.bottom ?: 0f,
     windows = otherParts.joinToString(","), refined = clip?.refined ?: false, picked = picked && clip != null,
-    rejectedVideos = old?.rejectedVideos.orEmpty(), prefer = old?.prefer, checkedAt = now,
+    rejectedVideos = old?.rejectedVideos.orEmpty(), prefer = old?.prefer, checkedAt = now, crops = SceneCrop.encode(clip?.crops.orEmpty()),
 )
 
 /**

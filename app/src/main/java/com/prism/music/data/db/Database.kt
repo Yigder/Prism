@@ -166,6 +166,8 @@ data class CanvasClipEntity(
     /** The listener's "Use:" for this song: "cover", "video", or null for the setting's order. */
     val prefer: String?,
     val checkedAt: Long,
+    /** Where the crop sits scene by scene, once the loop was looked at on its real frames ("ms:x,ms:x", the video's time); empty: [cropX] throughout. */
+    val crops: String = "",
 )
 
 /** A song's lyrics in Latin letters ([com.prism.music.data.lyrics.Romanizer]), keyed by song, lyrics and engine. */
@@ -880,7 +882,7 @@ abstract class PrismDatabase : RoomDatabase() {
             // 1.8.6: Canvas loops from music videos, a row a song.
             object : Migration(11, 12) {
                 override fun migrate(db: SupportSQLiteDatabase) {
-                    db.execSQL("CREATE TABLE IF NOT EXISTS `canvas_clips` (`songId` TEXT NOT NULL, `videoId` TEXT, `why` TEXT NOT NULL, `videoType` TEXT, `height` INTEGER NOT NULL, `itag` INTEGER NOT NULL, `startMs` INTEGER NOT NULL, `endMs` INTEGER NOT NULL, `cropX` REAL NOT NULL, `barLeft` REAL NOT NULL, `barTop` REAL NOT NULL, `barRight` REAL NOT NULL, `barBottom` REAL NOT NULL, `windows` TEXT NOT NULL, `refined` INTEGER NOT NULL, `picked` INTEGER NOT NULL, `rejectedVideos` TEXT NOT NULL, `prefer` TEXT, `checkedAt` INTEGER NOT NULL, PRIMARY KEY(`songId`))")
+                    db.execSQL("CREATE TABLE IF NOT EXISTS `canvas_clips` (`songId` TEXT NOT NULL, `videoId` TEXT, `why` TEXT NOT NULL, `videoType` TEXT, `height` INTEGER NOT NULL, `itag` INTEGER NOT NULL, `startMs` INTEGER NOT NULL, `endMs` INTEGER NOT NULL, `cropX` REAL NOT NULL, `barLeft` REAL NOT NULL, `barTop` REAL NOT NULL, `barRight` REAL NOT NULL, `barBottom` REAL NOT NULL, `windows` TEXT NOT NULL, `refined` INTEGER NOT NULL, `picked` INTEGER NOT NULL, `rejectedVideos` TEXT NOT NULL, `prefer` TEXT, `checkedAt` INTEGER NOT NULL, `crops` TEXT NOT NULL, PRIMARY KEY(`songId`))")
                 }
             },
         )
