@@ -595,9 +595,9 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
     // Cassette (1.7.4): the cover on a tape, its reels turning.
     val cassette = layout == com.prism.music.data.prefs.PlayerLayout.CASSETTE && !videoMode
     val heroMode = settings.fullBleedArtwork && !videoMode && !wide && !vinyl && !cassette
-    // The animated cover plays behind the whole player instead of in the cover (not with full-bleed artwork, which
-    // already shows it edge to edge).
-    val canvasBehind = settings.canvasFillsBackground && !heroMode && !videoMode && !wide
+    // Canvas, Full screen: the loop plays behind the whole player instead of in the cover, over the edge-to-edge
+    // banner too (which stays as the cover until the loop is up).
+    val canvasBehind = canvasFullScreen(settings.canvasFillsBackground, videoMode, wide)
     // 1.8.6 Canvas, Full screen: after a few seconds without a touch the controls fade away, leaving the title, the
     // artist and a thin progress line over the picture; a tap brings them back ([canvasControlsMayFade] says when not).
     val screenReader by rememberTouchExploration()
@@ -606,6 +606,16 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
         covered = covered, panelOpen = lyricsOpen || queueOpen || statsOpen, dragging = volume.dragging,
         screenReader = screenReader, reduceMotion = settings.reduceMotion,
     )
+    // Canvas was on before 1.8.6 and music videos were never decided: asked once, here (either answer is kept).
+    if (canvasAsksOnce(settings.canvasEnabled, remember(settings) { c.settings.canvasVideosAnswered }, playerOpen = !lyricsOpen && !queueOpen && !statsOpen)) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { c.settings.setCanvasUseVideos(false) },
+            title = { Text(tr(R.string.canvas_ask_title)) },
+            text = { Text(tr(R.string.canvas_ask_text)) },
+            confirmButton = { com.prism.music.ui.components.PrismTextButton(onClick = { c.settings.setCanvasUseVideos(true) }) { Text(tr(R.string.canvas_use_videos)) } },
+            dismissButton = { com.prism.music.ui.components.PrismTextButton(onClick = { c.settings.setCanvasUseVideos(false) }) { Text(tr(R.string.not_now)) } },
+        )
+    }
     // How much of the full-screen canvas is up (0 while it loads, or under a sheet): the album cover goes as it comes.
     var canvasBehindShown by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
     if (!canvasBehind || canvas == null) canvasBehindShown = 0f
@@ -722,7 +732,9 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
         if (showProviders) LyricsProviderSheet(lyricsState) { showProviders = false }
         if (showActions) PlayerOptionsSheet(
             song,
-            hasCanvas = songCanvas != null,
+            // A song whose Canvas was turned off here keeps the switch (owner, 2026-11-13: with only a video loop the
+            // row went with the loop, and there was no way to turn it back on).
+            hasCanvas = canvasMenuShown(songCanvas != null, song.id in canvasHidden),
             shownClip = canvas?.clip,
             statsShown = statsOpen,
             hasNext = hasNext,
@@ -882,7 +894,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                     .fillMaxWidth()
                     .height(heroHeight)
                     .graphicsLayer {
-                        alpha = heroVisible() * (1f - canvasCover)
+                        alpha = heroVisible() * (1f - canvasCover) * coverOverCanvas(canvasBehind, canvasBehindShown, p())
                         compositingStrategy = CompositingStrategy.Offscreen
                     }
                     .drawWithContent {
@@ -908,7 +920,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
                     modifier = Modifier.matchParentSize(),
                 )
             }
-            canvas?.takeIf { !collapsePastHalf }?.let { clip ->
+            if (!canvasBehind) canvas?.takeIf { !collapsePastHalf }?.let { clip ->
                 CanvasPlayer(
                     clip, canvasSaved, isPlaying,
                     Modifier.fillMaxWidth().height(heroHeight),

@@ -25,10 +25,12 @@ class ClipFinderTest {
 
     private class Video(val type: String?, val info: PlayerInfo, val grids: List<Grid>?, val heat: Heatmap?)
 
-    private class FakeNet(val found: String?, val videos: Map<String, Video>) : ClipFinder.Net {
+    private class FakeNet(val found: String?, val videos: Map<String, Video>, val others: List<String> = emptyList()) : ClipFinder.Net {
         val asked = mutableListOf<String>()
         var searches = 0
         override suspend fun findVideo(song: Song): String? { searches++; return found }
+        var otherSearches = 0
+        override suspend fun otherVideos(song: Song, not: Set<String>): List<String> { otherSearches++; return others.filter { it !in not } }
         override suspend fun videoType(videoId: String): String? { asked += "type:$videoId"; return videos.getValue(videoId).type }
         override suspend fun player(videoId: String): PlayerInfo { asked += "player:$videoId"; return videos.getValue(videoId).info }
         override suspend fun frames(board: Storyboard): ClipFinder.Frames {
@@ -62,6 +64,51 @@ class ClipFinderTest {
         assertTrue(net.asked.isEmpty())
     }
 
+    /** Owner, 2026-11-13: "Pleaser" by Wallows is paired with its lyric video; its music video is one search away. */
+    @Test fun aLyricVideoGivenFirstIsNotTheLastWord() = runBlocking {
+        val net = FakeNet("lyric", mapOf(video("lyric", title = "Wallows - Pleaser (Lyric Video)"), video("real", title = "Wallows - Pleaser (Official Video)")), others = listOf("real"))
+        val row = finder(net).find(song, null, 1080, now = 5)
+        assertEquals("real", row.videoId)
+        assertNull(row.why?.ifEmpty { null })
+        assertEquals(1, net.otherSearches)
+    }
+
+    /** Owner, 2026-11-13: "if the song has a video it should have a canvas". Its only official video is a lyric video: that one. */
+    @Test fun anOfficialLyricVideoIsUsedWhenThereIsNoOther() = runBlocking {
+        val lyric = video("lyric", title = "Wallows - Pleaser (Lyric Video)")
+        for (net in listOf(FakeNet("lyric", mapOf(lyric)), FakeNet("lyric", mapOf(lyric, video("audio", title = "Pleaser (Official Audio)")), others = listOf("lyric", "audio")))) {
+            val row = finder(net).find(song, null, 1080, now = 5)
+            assertEquals("lyric", row.videoId)
+            assertEquals(1, net.otherSearches)
+        }
+        // A still picture with the words on it is still a still.
+        val still = finder(FakeNet("lyric", mapOf(video("lyric", grids = still(120), title = "Wallows - Pleaser (Lyric Video)")))).find(song, null, 1080, now = 5)
+        assertNull(still.videoId)
+    }
+
+    /** The universal rule (owner, 2026-11-13): a song's own video makes a canvas whatever its title or type says. */
+    @Test fun theSongsOwnVideoIsUsedWhateverItIsCalledWhenThereIsNoBetter() = runBlocking {
+        for (title in listOf("Wallows - Pleaser (Live at Coachella)", "Pleaser (Visual) [Official Audio]", "Pleaser karaoke with lyrics")) {
+            assertEquals(title, "v", finder(FakeNet("v", mapOf(video("v", title = title)))).find(song, null, 1080, now = 5).videoId)
+        }
+        // Not marked as an official music video by YouTube Music: still the song's video.
+        assertEquals("v", finder(FakeNet("v", mapOf(video("v", type = "MUSIC_VIDEO_TYPE_UGC")))).find(song, null, 1080, now = 5).videoId)
+        // A better one, when the search has it, comes first.
+        val both = FakeNet("live", mapOf(video("live", title = "Pleaser (Live)"), video("real")), others = listOf("real"))
+        assertEquals("real", finder(both).find(song, null, 1080, now = 5).videoId)
+        // What can't make a loop is still refused: a still picture (most audio uploads), a video that can't be played.
+        assertEquals(NoClip.STILL.name, finder(FakeNet("v", mapOf(video("v", grids = still(120), title = "Pleaser (Official Audio)")))).find(song, null, 1080, now = 5).why)
+        assertNull(finder(FakeNet("v", mapOf(video("v", title = "Pleaser (Live)", status = "LOGIN_REQUIRED")))).find(song, null, 1080, now = 5).videoId)
+        // The words are still what the search for a better one goes by.
+        assertTrue(ClipGate.titleSays("Pleaser", "Wallows - Pleaser (Lyric Video)"))
+    }
+
+    @Test fun aGoodFirstVideoIsNotSearchedPast() = runBlocking {
+        val net = FakeNet("v1", mapOf(video("v1")), others = listOf("v2"))
+        assertEquals("v1", finder(net).find(song, null, 1080, now = 5).videoId)
+        assertEquals(0, net.otherSearches)
+    }
+
     @Test fun noVideoFound() = runBlocking {
         val row = finder(FakeNet(null, emptyMap())).find(song, null, 1080, now = 5)
         assertEquals(NoClip.NO_VIDEO.name, row.why)
@@ -75,22 +122,22 @@ class ClipFinderTest {
         assertEquals(0, net.searches)
     }
 
-    @Test fun notAnOfficialVideoStopsBeforeThePlayerIsAsked() = runBlocking {
-        val net = FakeNet("v1", mapOf(video("v1", type = "MUSIC_VIDEO_TYPE_OFFICIAL_SOURCE_MUSIC")))
+    /** An audio upload (YouTube's "art track"): a better video is searched for, and its own still picture is refused as a still. */
+    @Test fun anArtTrackIsAStillNotAMatterOfType() = runBlocking {
+        val net = FakeNet("v1", mapOf(video("v1", grids = still(120), type = "MUSIC_VIDEO_TYPE_ATV")))
         val row = finder(net).find(song, null, 1080, now = 5)
-        assertEquals(NoClip.NOT_OFFICIAL.name, row.why)
-        assertEquals("OFFICIAL_SOURCE_MUSIC", row.videoType)
-        assertEquals(listOf("type:v1"), net.asked)
+        assertEquals(NoClip.STILL.name, row.why)
+        assertEquals("ATV", row.videoType)
+        assertEquals(1, net.otherSearches)
     }
 
-    @Test fun noTypeAtAllIsNotOfficial() = runBlocking {
-        val row = finder(FakeNet("v1", mapOf(video("v1", type = null)))).find(song, null, 1080, now = 5)
-        assertEquals(NoClip.NOT_OFFICIAL.name, row.why)
+    @Test fun aVideoWithNoTypeAtAllIsStillTheSongsVideo() = runBlocking {
+        assertEquals("v1", finder(FakeNet("v1", mapOf(video("v1", type = null)))).find(song, null, 1080, now = 5).videoId)
     }
 
-    @Test fun anAudioUploadIsTurnedAwayByItsTitle() = runBlocking {
-        val row = finder(FakeNet("v1", mapOf(video("v1", title = "Shakira - Dai Dai (Official Audio)")))).find(song, null, 1080, now = 5)
-        assertEquals(NoClip.TITLE.name, row.why)
+    @Test fun anAudioUploadThatIsAStillIsTurnedAwayAsAStill() = runBlocking {
+        val row = finder(FakeNet("v1", mapOf(video("v1", grids = still(120), title = "Shakira - Dai Dai (Official Audio)")))).find(song, null, 1080, now = 5)
+        assertEquals(NoClip.STILL.name, row.why)
         assertEquals(OFFICIAL, row.videoType)
     }
 

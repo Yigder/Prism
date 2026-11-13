@@ -45,6 +45,25 @@ internal fun canvasScrim(controls: Float, panel: Float, video: Boolean): FloatAr
 }
 
 /**
+ * Canvas plays behind the whole player: "Full screen" is picked and the player is the upright one playing a song. The
+ * edge-to-edge cover does not stop it (it did until 1.8.6, when Full screen stayed a banner there and the controls
+ * never faded): the banner is the cover while the loop loads, then gives way to it.
+ */
+internal fun canvasFullScreen(fills: Boolean, videoMode: Boolean, wide: Boolean): Boolean = fills && !videoMode && !wide
+
+/**
+ * The song's Canvas switch is in the ⋯ menu while the song has a canvas, and stays there after it was switched off for
+ * the song (a song switched off has none to show, and the switch is the only way back).
+ */
+internal fun canvasMenuShown(hasCanvas: Boolean, switchedOff: Boolean): Boolean = hasCanvas || switchedOff
+
+/**
+ * Someone who had Canvas on before 1.8.6 is asked once, with the player open, whether music videos may be used
+ * (a new install comes with them on, see `setOnboarded`). Never while Canvas is off.
+ */
+internal fun canvasAsksOnce(canvasOn: Boolean, answered: Boolean, playerOpen: Boolean): Boolean = canvasOn && !answered && playerOpen
+
+/**
  * How much of the album cover shows on the player (0..1) while a canvas fills it (owner, 2026-11-13: "when canvas is
  * showing, the album artwork should not be seen"). It goes as the canvas comes in ([canvasShown] 0..1, so a song whose
  * canvas is still loading, or that has none, keeps its cover), and returns as the cover shrinks into the header over the

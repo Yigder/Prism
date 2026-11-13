@@ -106,6 +106,8 @@ class CanvasLoopLiveTest {
             val took = System.currentTimeMillis() - asked
             val row = c.canvasClips.row(song.id)
             val shown = CanvasStats.showing?.startsWith("file://") == true
+            // A song with no loop: which video was looked at (the row keeps none), to see why by its title.
+            if (!shown) android.util.Log.i("CanvasEye", "$i looked at video ${runCatching { withContext(Dispatchers.IO) { c.ytm.findMusicVideo(song) } }.getOrNull()} for song ${song.id}")
             android.util.Log.i(
                 "CanvasEye",
                 "$i \"${song.title}\" by ${song.artistText}: ${if (shown) "shown after $took ms" else "NO LOOP (${row?.why})"}; video ${row?.videoId} ${row?.videoType} " +
@@ -126,7 +128,7 @@ class CanvasLoopLiveTest {
         c.settings.setPerformanceMode(false)
         c.settings.setReduceMotion(false)
         c.settings.setImmersivePlayer(false)
-        c.settings.setFullBleedArtwork(false)
+        c.settings.setFullBleedArtwork(args.getString("bleed") == "true")
         c.settings.setCanvasEnabled(true)
         c.settings.setCanvasFillsBackground(true)
         c.settings.setCanvasUseVideos(true)

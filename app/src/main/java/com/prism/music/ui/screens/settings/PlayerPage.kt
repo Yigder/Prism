@@ -291,7 +291,7 @@ internal fun PlayerCoverRows() {
     SheetRow(
         tr(R.string.canvas), canvasWords(s),
         info = words(tr(R.string.motion_artwork_and_video_covers_turn), tr(R.string.the_moving_artwork_fills_the_whole)),
-        changed = listOf("canvas_enabled", "canvas_use_videos", "canvas_video_first", "canvas_keep_controls", "canvas_lighter").any { ch(it) },
+        changed = listOf("canvas_enabled", "canvas_use_videos", "canvas_videos_cellular", "canvas_video_first", "canvas_keep_controls", "canvas_lighter").any { ch(it) },
     ) { CanvasOptions() }
 }
 
@@ -315,6 +315,11 @@ private fun CanvasOptions() {
     if (on) SwitchRow(
         tr(R.string.canvas_use_videos), c.useVideos, info = tr(R.string.canvas_use_videos_info), changed = ch("canvas_use_videos"),
     ) { prefs.setCanvasUseVideos(it) }
+    // Its mobile-data switch sits with it (owner, 2026-11-13: everything Canvas under Canvas), not among the chips of
+    // Downloads & data's "Use mobile data for".
+    if (on && c.useVideos) SwitchRow(
+        tr(R.string.use_mobile_data), c.videosOnCellular, info = tr(R.string.canvas_from_videos_info), changed = ch("canvas_videos_cellular"),
+    ) { prefs.setCanvasVideosOnCellular(it) }
     if (on && c.useVideos) ChoiceRow(
         tr(R.string.canvas_both), listOf(false, true), c.videoFirst, ::canvasBothWords, info = tr(R.string.canvas_both_info), changed = ch("canvas_video_first"),
     ) { prefs.setCanvasVideoFirst(it) }
@@ -329,7 +334,7 @@ private fun CanvasOptions() {
         title = { Text(tr(R.string.canvas_ask_title)) },
         text = { Text(tr(R.string.canvas_ask_text)) },
         confirmButton = { PrismTextButton(onClick = { asking = false; prefs.setCanvasUseVideos(true) }) { Text(tr(R.string.canvas_use_videos)) } },
-        dismissButton = { PrismTextButton(onClick = { asking = false }) { Text(tr(R.string.not_now)) } },
+        dismissButton = { PrismTextButton(onClick = { asking = false; prefs.setCanvasUseVideos(false) }) { Text(tr(R.string.not_now)) } },
     )
 }
 
@@ -680,6 +685,7 @@ val playerIndex: List<SettingEntry> by lazy {
             ),
             SettingEntry(page, g.cover, tr(R.string.canvas_where)),
             SettingEntry(page, g.cover, tr(R.string.canvas_use_videos), tr(R.string.canvas_use_videos_keywords), needs = canvasOn),
+            SettingEntry(page, g.cover, tr(R.string.use_mobile_data), tr(R.string.canvas_from_videos) + " " + tr(R.string.cellular_mobile_data) + " " + tr(R.string.canvas), needs = canvasVideos),
             SettingEntry(page, g.cover, tr(R.string.canvas_both), tr(R.string.canvas_both_keywords), needs = canvasVideos),
             SettingEntry(
                 page, g.cover, tr(R.string.canvas_keep_controls), tr(R.string.canvas_keep_controls_keywords),

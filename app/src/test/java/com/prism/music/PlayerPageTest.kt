@@ -209,7 +209,7 @@ class PlayerPageTest {
         // 1.8.4 (D53): new with this release, on the lock screen's sheet.
         "lock_screen_player_look",
         // 1.8.6: Canvas's sheet.
-        "canvas_use_videos", "canvas_video_first", "canvas_keep_controls", "canvas_lighter",
+        "canvas_use_videos", "canvas_videos_cellular", "canvas_video_first", "canvas_keep_controls", "canvas_lighter",
     )
 
     @Test fun everyLedgerKeyHasItsSetting() {
@@ -396,13 +396,17 @@ class PlayerPageTest {
         sheetOpen()
         // As Prism comes (on the cover, no music videos): the choice and "Use music videos" only.
         assertTrue("Where it shows" in rows() && "Use music videos" in rows())
-        for (t in listOf("When a song has both", "Keep controls showing", "Lighter loops")) assertFalse(t, t in rows())
+        for (t in listOf("Use mobile data", "When a song has both", "Keep controls showing", "Lighter loops")) assertFalse(t, t in rows())
         assertEquals("On the cover", rows().getValue("Where it shows").config[SettingsRowValue])
 
         // Use music videos: stored, and its two rows come.
         tap("Use music videos")
         until("use_videos") { it.behavior.canvas.useVideos }
         assertTrue("When a song has both" in rows() && "Lighter loops" in rows())
+        // Its mobile-data switch is here with it (owner, 2026-11-13), off as Prism comes.
+        assertFalse(stored.behavior.canvas.videosOnCellular)
+        tap("Use mobile data")
+        until("videos_cellular") { it.behavior.canvas.videosOnCellular }
         assertFalse("Keep controls showing" in rows())
         assertEquals("Animated cover", rows().getValue("When a song has both").config[SettingsRowValue])
         chip("When a song has both", "Music video")
@@ -416,12 +420,12 @@ class PlayerPageTest {
         assertFalse("nothing asked with music videos on", asking())
         tap("Keep controls showing")
         until("keep_controls") { it.behavior.canvas.keepControls }
-        assertEquals(CanvasPrefsAll, stored.behavior.canvas.copy(videosOnCellular = true))
+        assertEquals(CanvasPrefsAll, stored.behavior.canvas)
 
         // Off: none of the rows that depend on it; what they hold is kept.
         chip("Where it shows", "Off")
         until("off") { !it.canvasEnabled }
-        for (t in listOf("Use music videos", "When a song has both", "Keep controls showing", "Lighter loops")) assertFalse(t, t in rows())
+        for (t in listOf("Use music videos", "Use mobile data", "When a song has both", "Keep controls showing", "Lighter loops")) assertFalse(t, t in rows())
         assertTrue(stored.behavior.canvas.useVideos && stored.behavior.canvas.lighter)
         closeSheet()
         assertEquals("Off", rows().getValue("Canvas").config[SettingsRowValue])

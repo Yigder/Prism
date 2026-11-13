@@ -82,8 +82,6 @@ enum class MobileUse(val label: String) {
     LYRICS(tr(R.string.lyrics)),
     /** `canvas_on_cellular`. Only shown with animated covers on. */
     ANIMATED_COVERS(tr(R.string.animated_covers)),
-    /** `canvas_videos_cellular` (1.8.6). Only shown while Canvas is on and uses music videos. */
-    CANVAS_VIDEOS(tr(R.string.canvas_from_videos)),
     /** `canvas_with_downloads_cellular`. Only shown while animated covers are saved with downloads. */
     SAVING_COVERS(tr(R.string.dd_use_saving_covers)),
     /** `mix_tempo_cellular`. Only shown with Normalize volume or Crossfade on. */
@@ -92,7 +90,10 @@ enum class MobileUse(val label: String) {
     SING(tr(R.string.sing)),
 }
 
-/** The stored switches behind "Use mobile data for", as they are stored (eight before 1.8.6's Canvas from videos). */
+/**
+ * The stored switches behind "Use mobile data for", as they are stored. Loops from music videos on mobile data
+ * (`canvas_videos_cellular`, 1.8.6) are not here: that switch is in Canvas's own sheet on the Player page.
+ */
 internal data class MobileDataStored(
     val noVideoOnData: Boolean,
     val preloadCellular: Boolean,
@@ -102,13 +103,11 @@ internal data class MobileDataStored(
     val canvasWithDownloadsCellular: Boolean,
     val mixTempoOnCellular: Boolean,
     val singOnCellular: Boolean,
-    /** 1.8.6: loops cut from music videos for Canvas ([com.prism.music.data.prefs.CanvasPrefs.videosOnCellular]). */
-    val canvasVideosCellular: Boolean,
 ) {
     companion object {
         fun of(s: AppSettings) = MobileDataStored(
             s.behavior.noVideoOnData, s.preloadCellular, s.smartDownloadsCellular, s.lyricsOnMobileData,
-            s.canvasOnCellular, s.canvasWithDownloadsCellular, s.mixTempoOnCellular, s.singOnCellular, s.behavior.canvas.videosOnCellular,
+            s.canvasOnCellular, s.canvasWithDownloadsCellular, s.mixTempoOnCellular, s.singOnCellular,
         )
     }
 }
@@ -120,7 +119,6 @@ internal fun mobileDataToMerged(stored: MobileDataStored): Set<MobileUse> = buil
     if (stored.smartDownloadsCellular) add(MobileUse.SMART_DOWNLOADS)
     if (stored.lyricsOnMobileData) add(MobileUse.LYRICS)
     if (stored.canvasOnCellular) add(MobileUse.ANIMATED_COVERS)
-    if (stored.canvasVideosCellular) add(MobileUse.CANVAS_VIDEOS)
     if (stored.canvasWithDownloadsCellular) add(MobileUse.SAVING_COVERS)
     if (stored.mixTempoOnCellular) add(MobileUse.MEASURING)
     if (stored.singOnCellular) add(MobileUse.SING)
@@ -136,7 +134,6 @@ internal fun mobileDataToStored(uses: Set<MobileUse>) = MobileDataStored(
     canvasWithDownloadsCellular = MobileUse.SAVING_COVERS in uses,
     mixTempoOnCellular = MobileUse.MEASURING in uses,
     singOnCellular = MobileUse.SING in uses,
-    canvasVideosCellular = MobileUse.CANVAS_VIDEOS in uses,
 )
 
 /**
@@ -148,7 +145,6 @@ internal fun mobileUsesShown(s: AppSettings): List<MobileUse> = MobileUse.entrie
         MobileUse.VIDEOS -> s.dataSaver
         MobileUse.SMART_DOWNLOADS -> s.smartDownloads
         MobileUse.ANIMATED_COVERS -> s.canvasEnabled
-        MobileUse.CANVAS_VIDEOS -> s.canvasEnabled && s.behavior.canvas.useVideos
         MobileUse.SAVING_COVERS -> s.canvasEnabled && s.canvasWithDownloads
         MobileUse.MEASURING -> s.normalize || s.mix
         MobileUse.LOAD_AHEAD, MobileUse.LYRICS, MobileUse.SING -> true
@@ -168,7 +164,6 @@ private fun usesInfo(shown: List<MobileUse>): String = tr(R.string.what_prism_ma
             MobileUse.SMART_DOWNLOADS -> tr(R.string.about_3_8_mb_a_song)
             MobileUse.LYRICS -> tr(R.string.off_prism_doesn_t_look_up)
             MobileUse.ANIMATED_COVERS -> tr(R.string.saved_covers_play_either_way)
-            MobileUse.CANVAS_VIDEOS -> tr(R.string.canvas_from_videos_info)
             MobileUse.SAVING_COVERS -> tr(R.string.otherwise_they_wait_for_wi_fi)
             MobileUse.MEASURING -> tr(R.string.normalize_volume_and_crossfade_measure_each)
             MobileUse.SING -> tr(R.string.sing_needs_each_song_whole_on)
@@ -245,7 +240,6 @@ fun DownloadsDataPage(bottomPadding: Dp, find: String? = null, showBack: Boolean
             }
             MobileUse.LYRICS -> prefs.setLyricsOnMobileData(on)
             MobileUse.ANIMATED_COVERS -> prefs.setCanvasOnCellular(on)
-            MobileUse.CANVAS_VIDEOS -> prefs.setCanvasVideosOnCellular(on)
             MobileUse.SAVING_COVERS -> {
                 prefs.setCanvasWithDownloadsCellular(on)
                 if (on) c.downloads.saveCanvases()

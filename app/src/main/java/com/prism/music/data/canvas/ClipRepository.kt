@@ -201,7 +201,14 @@ class ClipRepository(private val dao: CanvasClipDao, private val finder: ClipFin
         const val MAX_OTHER_PARTS = 4
 
         fun needsFinding(row: CanvasClipEntity?, now: Long): Boolean =
-            row == null || (row.videoId == null && now - row.checkedAt > CLIP_RECHECK_MS)
+            row == null || (row.videoId == null && (now - row.checkedAt > CLIP_RECHECK_MS || (row.why in ASK_AGAIN && row.checkedAt < RULES_CHANGED_AT)))
+
+        /**
+         * 1.8.6, before its release: a first video refused by its title or type now has another searched for, and an
+         * official lyric video is let through. A "no" of that kind given before then is asked again, not kept a week.
+         */
+        const val RULES_CHANGED_AT = 1794606067204L
+        private val ASK_AGAIN = setOf(NoClip.TITLE.name, NoClip.NOT_OFFICIAL.name)
 
         /**
          * The loop inside a kept file: it must start on a key frame (the phone decodes everything since the last one

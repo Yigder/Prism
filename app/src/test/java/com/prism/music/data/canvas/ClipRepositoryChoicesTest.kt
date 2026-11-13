@@ -184,6 +184,17 @@ class ClipRepositoryChoicesTest {
         assertEquals(4, r.changes.value)
     }
 
+    /** A "no" for the title or the type, given before the rules were widened, is asked again at once; others wait their week. */
+    @Test fun aRefusalFromBeforeTheWiderRulesIsAskedAgain() {
+        val before = ClipRepository.RULES_CHANGED_AT - 1_000
+        val after = ClipRepository.RULES_CHANGED_AT + 1_000
+        fun no(why: NoClip, at: Long) = clipRow(song.id, null, why, null, at)
+        assertTrue(ClipRepository.needsFinding(no(NoClip.TITLE, before), after))
+        assertTrue(ClipRepository.needsFinding(no(NoClip.NOT_OFFICIAL, before), after))
+        assertFalse("still, flashing, no video: their week", ClipRepository.needsFinding(no(NoClip.STILL, before), after))
+        assertFalse("refused under the new rules: its week", ClipRepository.needsFinding(no(NoClip.TITLE, after), after + 60_000))
+    }
+
     @Test fun useBeforeTheSongWasLookedUpKeepsTheChoiceAndStillLooksItUp() = runBlocking {
         val dao = MemoryDao()
         val r = repo(dao)

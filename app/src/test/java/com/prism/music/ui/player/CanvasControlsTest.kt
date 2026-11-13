@@ -43,6 +43,28 @@ class CanvasControlsTest {
         assertTrue("darker toward the bottom", away[0] < away[1] && away[1] < away[2])
     }
 
+    /** Owner, 2026-11-13: with the edge-to-edge cover, Full screen stayed a banner and the controls never faded. */
+    @Test fun fullScreenIsFullScreenWhateverTheCoverLayout() {
+        assertTrue("nothing about the cover's layout is asked", canvasFullScreen(fills = true, videoMode = false, wide = false))
+        assertFalse("on the cover", canvasFullScreen(fills = false, videoMode = false, wide = false))
+        assertFalse("a music video is playing", canvasFullScreen(fills = true, videoMode = true, wide = false))
+        assertFalse("sideways", canvasFullScreen(fills = true, videoMode = false, wide = true))
+    }
+
+    /** Owner, 2026-11-13: switched off for a song, the switch went too and Canvas couldn't be put back for it. */
+    @Test fun theSongsCanvasSwitchStaysAfterItIsSwitchedOff() {
+        assertTrue(canvasMenuShown(hasCanvas = true, switchedOff = false))
+        assertTrue("off for this song: nothing shows, the switch stays", canvasMenuShown(hasCanvas = false, switchedOff = true))
+        assertFalse("a song that never had one", canvasMenuShown(hasCanvas = false, switchedOff = false))
+    }
+
+    @Test fun someoneUpdatingWithCanvasOnIsAskedOnceInThePlayer() {
+        assertTrue(canvasAsksOnce(canvasOn = true, answered = false, playerOpen = true))
+        assertFalse("answered, by the first run, the question or the switch", canvasAsksOnce(canvasOn = true, answered = true, playerOpen = true))
+        assertFalse("Canvas off: nothing to ask", canvasAsksOnce(canvasOn = false, answered = false, playerOpen = true))
+        assertFalse("not over the lyrics or the queue", canvasAsksOnce(canvasOn = true, answered = false, playerOpen = false))
+    }
+
     @Test fun aVideoAndAListOverItGetMore() {
         val cover = canvasScrim(1f, 0f, video = false); val video = canvasScrim(1f, 0f, video = true); val lyrics = canvasScrim(1f, 1f, video = true)
         for (i in 0..2) { assertTrue(video[i] > cover[i]); assertTrue(lyrics[i] > video[i]); assertTrue(lyrics[i] <= 0.92f) }

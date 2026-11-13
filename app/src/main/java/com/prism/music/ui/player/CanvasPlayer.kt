@@ -120,8 +120,8 @@ fun CanvasPlayer(
             override fun onPositionDiscontinuity(old: Player.PositionInfo, new: Player.PositionInfo, reason: Int) {
                 if (reason != Player.DISCONTINUITY_REASON_AUTO_TRANSITION) return
                 CanvasStats.rounds++
-                if (restart.shown) CanvasStats.covered++
                 restart.wentRound()
+                if (restart.shown) CanvasStats.covered++
             }
 
             // Only the clip that is loaded now counts (a late word about the one before it is not this one's first frame).
@@ -138,11 +138,9 @@ fun CanvasPlayer(
         // Told a quarter second before each end of a video loop (animated covers loop by themselves, cut for it).
         fun watchTheEnd() {
             val loop = clip.canvas.clip ?: return
-            endMessage[0] = player.createMessage { _, _ -> restart.nearEnd() }
-                .setLooper(android.os.Looper.getMainLooper())
-                .setPosition((loop.lengthMs - RESTART_COVER_MS).coerceAtLeast(0L))
-                .setDeleteAfterDelivery(false)
-                .send()
+            // Nothing is shown before the end any more (owner, 2026-11-13: the first frame dissolving in over the last
+            // second read as a faded, doubled picture): the loop cuts, and the kept frame goes up as it goes round.
+            if (loop.lengthMs <= 0L) return
         }
         // The same clip as last time the player was open: it carries on, no new loading or decoder.
         if (CanvasPlayers.playing(player, url)) {
@@ -199,7 +197,7 @@ fun CanvasPlayer(
     val alpha by animateFloatAsState(if (clip.rendered) 1f else 0f, tween(if (clip.rendered) 500 else 320), label = "canvasAlpha")
     // In over the loop's last moments; gone at once when the real first frame is under it.
     val stillAlpha by animateFloatAsState(
-        if (restart.shown && still != null) 1f else 0f, if (restart.shown) tween(RESTART_DISSOLVE_MS) else androidx.compose.animation.core.snap(), label = "canvasRestart",
+        if (restart.shown && still != null) 1f else 0f, androidx.compose.animation.core.snap(), label = "canvasRestart",
     )
     val cover by rememberUpdatedState(onCoverChanged)
     // Held, the still cover shows in the clip's place (the video view is taken off screen, below).
@@ -288,16 +286,14 @@ internal object CanvasStats {
     @Volatile var frames = 0
 }
 
-/** How long before a video loop's end its kept first frame starts to dissolve in, and how long that takes. */
-internal const val RESTART_COVER_MS = 280L
-internal const val RESTART_DISSOLVE_MS = 220
 /** A restart that never drew its first frame (the phone held the picture, the clip failed): the kept frame goes anyway. */
 internal const val RESTART_GIVE_UP_MS = 1_500L
 
 /**
  * The cover over a video loop's restart (1.8.6): what happens in which order. The loop's first frame is kept as a
- * picture when it is drawn ([frameDrawn] says when); near each end the picture shows ([nearEnd]); the loop goes round
- * ([wentRound]), the decoder puts its first frame out ([firstFrameOut]), and the next frame drawn takes the picture off
+ * picture when it is drawn ([frameDrawn] says when); when the loop goes round ([wentRound]) the picture goes up at once,
+ * a cut and not a dissolve (it used to fade in over the loop's last quarter second, which looked like a faded, doubled
+ * picture); the decoder puts its first frame out ([firstFrameOut]), and the next frame drawn takes the picture off
  * again. A frame of the old round that is drawn late, between the two, must not take it off: that is the moment it hides.
  */
 internal class RestartCover {
@@ -316,8 +312,7 @@ internal class RestartCover {
      */
     fun reset(atStart: Boolean) { shown = false; kept = false; awaited = atStart; nextIsFirst = false; round = false; out = false }
 
-    fun nearEnd() { if (kept) shown = true }
-    fun wentRound() { round = true; out = false }
+    fun wentRound() { round = true; out = false; if (kept) shown = true }
     fun firstFrameOut() { if (round) out = true else if (awaited) { awaited = false; nextIsFirst = true } }
 
     /** A frame reached the screen. True when it is the loop's first and no picture of it is kept yet: keep it now. */

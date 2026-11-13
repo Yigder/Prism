@@ -21,6 +21,8 @@ object Fixture {
         container.settings.editNow {
             it[booleanPreferencesKey("onboarded")] = true
             it[booleanPreferencesKey("performance_offered")] = true
+            // 1.8.6: "Use music videos?" answered (no), so the player doesn't ask in the middle of a test.
+            it[booleanPreferencesKey("canvas_use_videos")] = false
             // A TV's welcome (1.8.0) seen too: tests start where a listener's day does.
             it[booleanPreferencesKey("tv_welcomed")] = true
         }

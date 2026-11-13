@@ -836,6 +836,19 @@ class YouTubeMusic(
         return picked
     }
 
+    /**
+     * The song's music video by search alone, leaving out [not] and any whose title [refused] (1.8.6 Canvas: where
+     * YouTube's own pairing is the lyric video or an audio upload, the music video is usually the next result).
+     */
+    suspend fun otherMusicVideos(song: Song, not: Set<String>, refused: (String) -> Boolean): List<String> {
+        if (song.artists.isEmpty() || song.title.isBlank()) return emptyList()
+        val found = search("${song.title} ${song.primaryArtist} official video", SearchFilter.VIDEOS).items
+            .filterIsInstance<SongItem>().map { it.song }.filter { it.id !in not && !refused(it.title) }
+        val picked = MusicVideoMatch.pick(song, found)
+        log("another video for ${song.id} \"${song.title}\": " + (picked ?: "none of") + " " + found.take(6).joinToString("; ") { "\"${it.title}\" ${it.id}" })
+        return listOfNotNull(picked)
+    }
+
     private fun log(message: String) { runCatching { android.util.Log.i("PrismVideo", message) } }
 
     suspend fun lyrics(browseId: String): String? {

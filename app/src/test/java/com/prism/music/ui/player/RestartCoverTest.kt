@@ -13,19 +13,29 @@ class RestartCoverTest {
         assertFalse(r.shown)
     }
 
+    /**
+     * Owner, 2026-11-13: the picture used to fade in over the loop's last quarter second, the first scene ghosting over
+     * the last one. Nothing shows while the loop still plays: the picture goes up when it goes round, as a cut.
+     */
+    @Test fun nothingShowsBeforeTheLoopGoesRound() {
+        val r = RestartCover().apply { reset(atStart = true); firstFrameOut() }
+        r.frameDrawn()
+        // The whole loop plays, to its last frame.
+        repeat(200) { r.frameDrawn(); assertFalse(r.shown) }
+        r.wentRound()
+        assertTrue(r.shown)
+    }
+
     @Test fun nothingShowsUntilAFrameIsKept() {
         val r = RestartCover().apply { reset(atStart = true); firstFrameOut() }
-        r.nearEnd()
+        r.wentRound()
         assertFalse(r.shown)
     }
 
-    @Test fun itShowsNearTheEndAndGoesWithTheRealFirstFrame() {
+    @Test fun itShowsAsTheLoopGoesRoundAndGoesWithTheRealFirstFrame() {
         val r = RestartCover().apply { reset(atStart = true); firstFrameOut() }
         r.frameDrawn()
-        r.nearEnd(); assertTrue(r.shown)
-        // The last frames of this round are still being drawn.
-        r.frameDrawn(); assertTrue(r.shown)
-        r.wentRound()
+        r.wentRound(); assertTrue(r.shown)
         // A late frame of the old round, drawn after the loop went back: the picture stays (this is the standstill it hides).
         r.frameDrawn(); assertTrue(r.shown)
         r.firstFrameOut(); assertTrue("out of the decoder, not on screen yet", r.shown)
@@ -36,15 +46,15 @@ class RestartCoverTest {
     @Test fun aClipPickedUpMidLoopKeepsItsFirstFrameNextTimeRound() {
         val r = RestartCover().apply { reset(atStart = false) }
         assertFalse(r.frameDrawn())
-        r.nearEnd(); assertFalse("no picture yet: this one restart is bare", r.shown)
-        r.wentRound(); r.firstFrameOut()
+        r.wentRound(); assertFalse("no picture yet: this one restart is bare", r.shown)
+        r.firstFrameOut()
         assertTrue(r.frameDrawn())
-        r.nearEnd(); assertTrue(r.shown)
+        r.wentRound(); assertTrue(r.shown)
     }
 
     @Test fun aFirstFrameThatNeverComesLetsGo() {
         val r = RestartCover().apply { reset(atStart = true); firstFrameOut() }
-        r.frameDrawn(); r.nearEnd(); r.wentRound()
+        r.frameDrawn(); r.wentRound()
         r.giveUp()
         assertFalse(r.shown)
         // The decoder's first frame of a start that isn't a restart (a new surface) changes nothing.
@@ -53,7 +63,7 @@ class RestartCoverTest {
 
     @Test fun aNewClipStartsOver() {
         val r = RestartCover().apply { reset(atStart = true); firstFrameOut() }
-        r.frameDrawn(); r.nearEnd()
+        r.frameDrawn(); r.wentRound()
         r.reset(atStart = true)
         assertFalse(r.shown)
         assertFalse("a frame of the clip before, drawn late, is not this one's first", r.frameDrawn())

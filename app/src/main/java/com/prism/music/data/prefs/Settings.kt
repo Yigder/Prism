@@ -3028,7 +3028,13 @@ class SettingsRepository(
         }
     }
 
-    fun setOnboarded(v: Boolean) = edit { it[K.onboarded] = v }
+    /**
+     * A new install comes with Canvas using music videos (owner, 2026-11-13: without them Canvas shows nothing for most
+     * songs). Someone updating from before 1.8.6 never passes here: they are asked once in the player ([canvasVideosAnswered]).
+     */
+    fun setOnboarded(v: Boolean) = edit { it[K.onboarded] = v; if (v && it[K.canvasUseVideos] == null) it[K.canvasUseVideos] = true }
+    /** Whether "Use music videos" was ever decided on this phone (by the first run, the question, or the switch). */
+    val canvasVideosAnswered: Boolean get() = raw[K.canvasUseVideos] != null
 
     /** Once (1.7): Home layouts saved before "Made for you" and "New releases" existed get them, after Quick picks. */
     fun addNewHomeSections() = edit { p ->

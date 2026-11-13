@@ -30,6 +30,11 @@ class ClipFinder(private val net: Net) {
     interface Net {
         /** The song's music video (YouTube's pairing, else a search), or null. */
         suspend fun findVideo(song: Song): String?
+        /**
+         * Other videos that may be the song's music video, best first, none of [not] (owner, 2026-11-13: YouTube pairs
+         * "Pleaser" by Wallows with its lyric video, which is refused, while its music video is one search away).
+         */
+        suspend fun otherVideos(song: Song, not: Set<String>): List<String> = emptyList()
         /** YouTube Music's own word for the video, as it says it ("MUSIC_VIDEO_TYPE_OMV"), or null. */
         suspend fun videoType(videoId: String): String?
         suspend fun player(videoId: String): PlayerInfo
@@ -66,16 +71,36 @@ class ClipFinder(private val net: Net) {
         // The search found the picked part's video again: it was just judged.
         if (first != null && video == picked) return first
         val tried = tryVideo(song, video, old, height, chorusMs, now)
-        return Found(tried.row, bytes + tried.boardBytes)
+        var spent = bytes + tried.boardBytes
+        // The video YouTube gave is a lyric video, an audio upload or not official: the real one may be a search away.
+        if (tried.row.videoId == null && tried.row.why in SEARCH_AGAIN && !song.isVideo) {
+            val others = try { net.otherVideos(song, rejected + video) } catch (e: kotlinx.coroutines.CancellationException) { throw e } catch (e: Exception) { emptyList() }
+            for (other in others.take(OTHER_VIDEOS)) {
+                val next = tryVideo(song, other, old, height, chorusMs, now)
+                spent += next.boardBytes
+                if (next.row.videoId != null) return Found(next.row, spent)
+            }
+        }
+        // No better video: the song's own, whatever it is called (a lyric video, a live take, not marked official).
+        if (tried.row.videoId == null && tried.row.why in SEARCH_AGAIN) {
+            val asItIs = tryVideo(song, video, old, height, chorusMs, now, own = true)
+            spent += asItIs.boardBytes
+            // Its own reason, when it has one (a still picture, not playable), says more than "its title".
+            return Found(asItIs.row, spent)
+        }
+        return Found(tried.row, spent)
     }
 
     /** One video through the gate (official, title, playable, not a still) and, if it passes, its window. */
-    private suspend fun tryVideo(song: Song, video: String, old: CanvasClipEntity?, height: Int, chorusMs: Long?, now: Long): Found {
+    private suspend fun tryVideo(song: Song, video: String, old: CanvasClipEntity?, height: Int, chorusMs: Long?, now: Long, own: Boolean = false): Found {
         fun no(why: NoClip, type: String?, bytes: Long = 0) = Found(clipRow(song.id, null, why, old, now, videoType = type), bytes)
         val type = net.videoType(video)?.removePrefix(TYPE_PREFIX)
-        if (type != OFFICIAL) return no(NoClip.NOT_OFFICIAL, type)
+        // [own]: the song's own video, with no better one found: its type and title are not held against it (owner,
+        // 2026-11-13: "if a song has a video, Canvas should be allowed. This should be a universal rule"). What is left
+        // is what can't make a loop at all: not playable, no stream, a still picture; and later, on its frames, flashing.
+        if (!own && type != OFFICIAL) return no(NoClip.NOT_OFFICIAL, type)
         val info = net.player(video)
-        if (ClipGate.titleSays(song.title, info.title)) return no(NoClip.TITLE, type)
+        if (!own && ClipGate.titleSays(song.title, info.title)) return no(NoClip.TITLE, type)
         if (!info.playable) return no(NoClip.RESTRICTED, type)
         val board = Storyboard.parse(info.storyboardSpec, info.lengthMs)
         val frames = board?.let { net.frames(it) }
@@ -109,6 +134,9 @@ class ClipFinder(private val net: Net) {
 
     companion object {
         private const val TYPE_PREFIX = "MUSIC_VIDEO_TYPE_"
+        /** A first video refused for these is not the last word: another is searched for ([Net.otherVideos]). */
+        private val SEARCH_AGAIN = setOf(NoClip.TITLE.name, NoClip.NOT_OFFICIAL.name)
+        private const val OTHER_VIDEOS = 2
         /** Fewer preview frames than this can't tell a still from a moving video. */
         private const val MIN_FRAMES = 8
         /** Storyboards are 0.21 MB at the median and 0.47 MB at most (100 sampled videos): more is not a storyboard. */
@@ -118,6 +146,7 @@ class ClipFinder(private val net: Net) {
         fun create(ytm: YouTubeMusic, api: InnerTube, http: OkHttpClient, decoder: SheetDecoder = BitmapSheetDecoder): ClipFinder =
             ClipFinder(object : Net {
                 override suspend fun findVideo(song: Song) = ytm.findMusicVideo(song)
+                override suspend fun otherVideos(song: Song, not: Set<String>) = ytm.otherMusicVideos(song, not) { ClipGate.titleSays(song.title, it) }
 
                 // The WEB_REMIX player answer carries the type even where that client can't play the video.
                 override suspend fun videoType(videoId: String) =
@@ -195,24 +224,31 @@ object ClipGate {
      * title doesn't count (a live album's song may use its live video). "Visualizer" is allowed: the still check
      * decides. "Full song" only counts when the title doesn't also say video ("Full Video Song" is the video).
      */
-    fun titleSays(songTitle: String, videoTitle: String): Boolean {
+    fun titleSays(songTitle: String, videoTitle: String, lyricsOk: Boolean = false): Boolean {
         val song = songTitle.lowercase()
         val video = videoTitle.lowercase()
         fun counts(r: Regex) = r.containsMatchIn(video) && !r.containsMatchIn(song)
         if (WORDS.any(::counts)) return true
+        if (!lyricsOk && LYRIC_WORDS.any(::counts)) return true
         if (FULL_SONG.containsMatchIn(video) && !VIDEO.containsMatchIn(video) && !FULL_SONG.containsMatchIn(song)) return true
-        return SCRIPT.any { it in video && it !in song }
+        return (if (lyricsOk) SCRIPT - LYRIC_SCRIPT else SCRIPT).any { it in video && it !in song }
     }
 
     /** As in MusicVideoMatch: a word only where it stands alone ("live" is not in "alive", "stage" not in "backstage"). */
     private fun words(vararg w: String) = w.map { Regex("(?<![\\p{L}\\p{N}])${Regex.escape(it)}(?![\\p{L}\\p{N}])") }
 
     private val WORDS = words(
-        "audio", "lyric", "lyrics", "lyrical", "karaoke", "chords", "performance", "live", "stage", "cover", "fancam", "fan cam",
+        "audio", "karaoke", "chords", "performance", "live", "stage", "cover", "fancam", "fan cam",
         "recording", "jukebox", "bgm",
-        // Spanish, Portuguese, French, Italian.
-        "letra", "letras", "en vivo", "ao vivo", "en directo", "paroles", "testo",
+        // Spanish, Portuguese.
+        "en vivo", "ao vivo", "en directo",
     )
+    /**
+     * "Lyric video" and its like. An official one is let through when the song has no other video ([lyricsOk]; owner,
+     * 2026-11-13: "if the song has a video it should have a canvas"): the still check and the second look still apply.
+     */
+    private val LYRIC_WORDS = words("lyric", "lyrics", "lyrical", "letra", "letras", "paroles", "testo")
+    private val LYRIC_SCRIPT = setOf("가사", "歌詞", "歌词")
     private val FULL_SONG = words("full song").single()
     private val VIDEO = words("video").single()
 

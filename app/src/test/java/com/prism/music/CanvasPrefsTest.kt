@@ -46,6 +46,21 @@ class CanvasPrefsTest {
         assertEquals(AnimatedCovers.ON_THE_COVER, AnimatedCovers.toMerged(AppSettings().canvasEnabled to AppSettings().canvasFillsBackground))
     }
 
+    /** Owner, 2026-11-13: a new install comes with music videos on; someone updating is asked once (nothing stored yet). */
+    @Test fun aNewInstallComesWithMusicVideosOnAndAnUpdateIsUnanswered() = runBlocking {
+        assertFalse("nothing decided yet: the player asks once", repo.canvasVideosAnswered)
+        repo.setOnboarded(true)
+        assertTrue(read { it.behavior.canvas.useVideos }.onboarded)
+        withTimeout(5_000) { while (!repo.canvasVideosAnswered) kotlinx.coroutines.delay(20) }
+        // An answer given before stays: finishing the welcome again doesn't turn them back on.
+        repo.setCanvasUseVideos(false)
+        read { !it.behavior.canvas.useVideos }
+        repo.setOnboarded(true)
+        repo.editNow { }
+        assertFalse(read { true }.behavior.canvas.useVideos)
+        assertTrue(repo.canvasVideosAnswered)
+    }
+
     @Test fun eachIsStoredAndReadBackAlone() {
         val setters: List<Pair<(Boolean) -> Unit, (CanvasPrefs) -> Boolean>> = listOf(
             repo::setCanvasUseVideos to { c -> c.useVideos },

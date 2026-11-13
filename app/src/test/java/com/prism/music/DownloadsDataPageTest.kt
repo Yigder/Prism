@@ -428,36 +428,18 @@ class DownloadsDataPageTest : ListeningPageHarness(SettingsPageId.DOWNLOADS_DATA
         assertFalse(MobileUse.ANIMATED_COVERS.label in chips(useFor) || MobileUse.SAVING_COVERS.label in chips(useFor))
     }
 
-    /** 1.8.6: "Canvas from videos" is a chip of its own, offered only while Canvas is on and uses music videos. */
-    @Test fun canvasFromVideosIsAChipWhileCanvasUsesMusicVideos() {
-        show()
-        val label = t(R.string.canvas_from_videos)
-        assertEquals(label, MobileUse.CANVAS_VIDEOS.label)
-        assertFalse("music videos off: no chip", label in chips(useFor))
-        assertFalse("off as Prism comes", stored.behavior.canvas.videosOnCellular)
+    /** 1.8.6: loops from music videos on mobile data is in Canvas's sheet (Player page), not a chip here. */
+    @Test fun canvasFromVideosIsNotAChipHere() {
         container.settings.setCanvasUseVideos(true)
         until("music videos on") { it.behavior.canvas.useVideos }
-        assertTrue(label in chips(useFor))
-        // It writes its own switch and no other.
-        val before = MobileDataStored.of(stored)
-        chip(useFor, label)
-        until("canvas_videos_cellular") { it.behavior.canvas.videosOnCellular }
-        assertEquals(before.copy(canvasVideosCellular = true), MobileDataStored.of(stored))
-        assertTrue(label in valueOf(useFor))
-        assertTrue(row(useFor).fetchSemanticsNode().config[com.prism.music.ui.screens.settings.SettingsRowChanged])
-        // Canvas off: the chip goes, what it holds stays.
-        container.settings.setCanvasEnabled(false)
-        until("canvas off") { !it.canvasEnabled }
-        assertFalse(label in chips(useFor))
-        assertTrue(stored.behavior.canvas.videosOnCellular)
-        container.settings.setCanvasEnabled(true)
-        until("canvas on") { it.canvasEnabled }
-        // Reset this page puts it back too.
-        val lines = resetLines(confirm = true)
-        assertTrue(lines.toString(), lines.any { it.startsWith("$useFor: ") })
-        until("reset") { !it.behavior.canvas.videosOnCellular }
-        // Search finds the row by the chip.
-        assertTrue(SettingsIndex.search(label).any { it.title == useFor })
+        show()
+        assertFalse(t(R.string.canvas_from_videos) in chips(useFor))
+        // Turning it on elsewhere changes nothing here: no chip, and the row is not marked as changed for it.
+        val before = valueOf(useFor)
+        container.settings.setCanvasVideosOnCellular(true)
+        until("on mobile data") { it.behavior.canvas.videosOnCellular }
+        compose.waitForIdle()
+        assertEquals(before, valueOf(useFor))
     }
 
     @Test fun atLargeTextNothingIsCutOff() {
