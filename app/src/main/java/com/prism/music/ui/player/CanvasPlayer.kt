@@ -132,7 +132,18 @@ fun CanvasPlayer(
         lifecycle.addObserver(obs)
         onDispose { lifecycle.removeObserver(obs) }
     }
-    LaunchedEffect(foreground, isPlaying, hold) { player.playWhenReady = foreground && !hold }
+    // 1.8.6: Reduce motion, battery saver and a hot phone hold the picture on its frame (decoding stops, it isn't just
+    // hidden); so does a song paused for half a minute. Performance mode never gets here (it switches Canvas off).
+    val reduceMotion = com.prism.music.ui.theme.LocalAppSettings.current.reduceMotion
+    val strain = rememberPhoneStrain()
+    var pausedLong by remember { mutableStateOf(false) }
+    LaunchedEffect(isPlaying) {
+        pausedLong = false
+        if (!isPlaying) { kotlinx.coroutines.delay(PAUSED_HOLD_MS); pausedLong = true }
+    }
+    LaunchedEffect(foreground, hold, reduceMotion, strain.value, pausedLong) {
+        player.playWhenReady = canvasMoves(foreground, hold, reduceMotion, strain.value.powerSave, strain.value.hot, pausedLong)
+    }
 
     val alpha by animateFloatAsState(if (clip.rendered) 1f else 0f, tween(320), label = "canvasAlpha")
     val cover by rememberUpdatedState(onCoverChanged)
@@ -181,6 +192,50 @@ fun CanvasPlayer(
         },
         modifier = modifier,
     )
+}
+
+/** A paused song's canvas keeps moving this long, then holds its frame (plan-canvas §11a R7). */
+internal const val PAUSED_HOLD_MS = 30_000L
+
+/**
+ * Whether a canvas moves now (1.8.6). It holds its frame while the app is away or a sheet covers it (as before), with
+ * Reduce motion on (until 1.8.6 animated covers ignored it), in battery saver, while the phone is hot, and once the song
+ * has been paused for [PAUSED_HOLD_MS].
+ */
+internal fun canvasMoves(foreground: Boolean, hold: Boolean, reduceMotion: Boolean, powerSave: Boolean, hot: Boolean, pausedLong: Boolean): Boolean =
+    foreground && !hold && !reduceMotion && !powerSave && !hot && !pausedLong
+
+/** The phone asking to be spared: battery saver on, or running hot (Android 10+ says so; "severe" and up counts). */
+internal data class PhoneStrain(val powerSave: Boolean = false, val hot: Boolean = false)
+
+internal fun isHot(thermalStatus: Int): Boolean = thermalStatus >= 3 // PowerManager.THERMAL_STATUS_SEVERE
+
+@Composable
+private fun rememberPhoneStrain(): androidx.compose.runtime.State<PhoneStrain> {
+    val context = LocalContext.current.applicationContext
+    val state = remember { mutableStateOf(PhoneStrain()) }
+    DisposableEffect(context) {
+        val power = context.getSystemService(android.os.PowerManager::class.java)
+        fun read() {
+            state.value = PhoneStrain(
+                powerSave = power?.isPowerSaveMode == true,
+                hot = Build.VERSION.SDK_INT >= 29 && power != null && isHot(power.currentThermalStatus),
+            )
+        }
+        read()
+        val receiver = object : android.content.BroadcastReceiver() {
+            override fun onReceive(c: Context?, i: android.content.Intent?) = read()
+        }
+        androidx.core.content.ContextCompat.registerReceiver(
+            context, receiver, android.content.IntentFilter(android.os.PowerManager.ACTION_POWER_SAVE_MODE_CHANGED), androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+        val thermal = if (Build.VERSION.SDK_INT >= 29 && power != null) android.os.PowerManager.OnThermalStatusChangedListener { read() }.also { power.addThermalStatusListener(it) } else null
+        onDispose {
+            runCatching { context.unregisterReceiver(receiver) }
+            if (Build.VERSION.SDK_INT >= 29 && thermal != null) power?.removeThermalStatusListener(thermal)
+        }
+    }
+    return state
 }
 
 /**

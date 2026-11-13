@@ -92,6 +92,20 @@ class CanvasCropTest {
         assertFalse(moved.refined)
     }
 
+    @Test fun aCanvasHoldsItsFrameWhenThePhoneOrTheListenerAsks() {
+        fun moves(foreground: Boolean = true, hold: Boolean = false, reduce: Boolean = false, save: Boolean = false, hot: Boolean = false, paused: Boolean = false) =
+            canvasMoves(foreground, hold, reduce, save, hot, paused)
+        assertTrue(moves())
+        assertFalse("app in the background", moves(foreground = false))
+        assertFalse("a sheet over the player", moves(hold = true))
+        assertFalse("Reduce motion (animated covers ignored it until 1.8.6)", moves(reduce = true))
+        assertFalse("battery saver", moves(save = true))
+        assertFalse("a hot phone", moves(hot = true))
+        assertFalse("the song paused for half a minute", moves(paused = true))
+        // Android's thermal scale: none, light and moderate carry on; severe and worse hold.
+        assertEquals(listOf(false, false, false, true, true, true, true), (0..6).map { isHot(it) })
+    }
+
     @Test fun anotherPartOfTheSameFileIsAnotherClipToThePlayer() {
         val f = java.io.File("/data/x/abc.720.136.57891-75075.mp4")
         val a = ClipRepository.fileUrl(f, want); val b = ClipRepository.fileUrl(f, want.copy(startMs = 57_891))
