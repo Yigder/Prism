@@ -22,6 +22,79 @@ class ClipRepository(private val dao: CanvasClipDao, private val finder: ClipFin
     /** The row as it stands (diagnostics, the song's menu). */
     suspend fun row(songId: String): CanvasClipEntity? = dao.get(songId)
 
+    // ------------------------------------------------------------ The song's own choices (plan §3.8, the ⋯ menu)
+
+    /** The kept loops on the phone, for "Not this video" to drop that video's files ([ClipFiles.delete]); set by the app. */
+    var files: ClipFiles? = null
+
+    private val changed = kotlinx.coroutines.flow.MutableStateFlow(0)
+
+    /** Goes up each time the listener changes a song's row here, so the player looks at the song's canvas again. */
+    val changes: kotlinx.coroutines.flow.StateFlow<Int> = changed
+
+    private fun bump() {
+        while (true) { val v = changed.value; if (changed.compareAndSet(v, v + 1)) return }
+    }
+
+    /** The song's loop as "Pick another part" shows it: the part playing first, then the other good ones. */
+    data class Parts(val videoId: String, val current: Long, val others: List<Long>) {
+        val all: List<Long> get() = listOf(current) + others
+    }
+
+    /** The parts of the song's loop, or null when it has none. */
+    suspend fun parts(songId: String): Parts? {
+        val row = dao.get(songId) ?: return null
+        val video = row.videoId ?: return null
+        return Parts(video, row.startMs, row.otherParts().filter { it != row.startMs }.take(MAX_OTHER_PARTS))
+    }
+
+    /**
+     * "Use:" for one song ([source] null: back to the setting's order). Works before the song was ever looked up: the
+     * row then only holds the choice, and is looked up as if new.
+     */
+    suspend fun setChoice(songId: String, source: CanvasSource?) {
+        val row = dao.get(songId)
+        if (row == null && source == null) return
+        dao.put((row ?: clipRow(songId, null, NoClip.NO_VIDEO, null, now = 0)).copy(prefer = source?.stored))
+        bump()
+    }
+
+    /**
+     * "Pick another part": the loop becomes [PICK_LENGTH_MS] from [startMs] of the same video, picked by the listener (a
+     * new guess never replaces it) and cut again to the real frames when it is next fetched. The part it was takes the
+     * picked one's place among the others. False when the song has no loop.
+     */
+    suspend fun pickPart(songId: String, startMs: Long): Boolean {
+        val row = dao.get(songId) ?: return false
+        if (row.videoId == null || startMs < 0) return false
+        // The part already playing: kept as it is (already cut to its frames), only marked as the listener's.
+        if (startMs == row.startMs) {
+            if (!row.picked) { dao.put(row.copy(picked = true)); bump() }
+            return true
+        }
+        val others = row.otherParts().let { o ->
+            val at = o.indexOf(startMs)
+            if (at >= 0) o.toMutableList().apply { set(at, row.startMs) } else listOf(row.startMs) + o
+        }.filter { it != startMs }.distinct()
+        dao.put(row.copy(startMs = startMs, endMs = startMs + PICK_LENGTH_MS, refined = false, picked = true, windows = others.joinToString(",")))
+        bump()
+        return true
+    }
+
+    /**
+     * "Not this video": the song's video is never offered for it again (a later search skips it), its loop goes, and so
+     * do the files kept of it; the song shows its animated cover if it has one, else its cover. False when it has no loop.
+     */
+    suspend fun rejectVideo(songId: String, now: Long = System.currentTimeMillis()): Boolean {
+        val row = dao.get(songId) ?: return false
+        val video = row.videoId ?: return false
+        val rejected = (row.rejected() + video).joinToString(",")
+        dao.put(clipRow(songId, null, NoClip.REJECTED, row.copy(rejectedVideos = rejected), now, videoType = row.videoType))
+        files?.let { f -> kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { f.delete(video) } }
+        bump()
+        return true
+    }
+
     /**
      * The loop for [song] cut at up to [height] lines, or null: no video that passes, nothing on the phone and no
      * network allowed, or the fetch failed (the cover shows; it is asked again next time).
@@ -62,6 +135,10 @@ class ClipRepository(private val dao: CanvasClipDao, private val finder: ClipFin
         private val GONE = setOf(ClipFetch.Why.UNPLAYABLE, ClipFetch.Why.OUT_OF_RANGE, ClipFetch.Why.NO_STREAM)
         const val MIN_LOOP_MS = 5_000L
         const val MAX_LOOP_MS = 9_000L
+        /** A part the listener picks runs this long from where they tapped (cut to the real frames when fetched). */
+        const val PICK_LENGTH_MS = 8_000L
+        /** "Pick another part" shows the part playing and up to this many others. */
+        const val MAX_OTHER_PARTS = 4
 
         fun needsFinding(row: CanvasClipEntity?, now: Long): Boolean =
             row == null || (row.videoId == null && now - row.checkedAt > CLIP_RECHECK_MS)

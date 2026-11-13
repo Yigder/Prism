@@ -38,6 +38,25 @@ class VideoCanvasShapesTest {
         assertNull(pickSource(false, false, useVideos = true, videoFirst = false, songChoice = null))
     }
 
+    /**
+     * Every mix of setting ("Use music videos", "When a song has both"), the song's own "Use:" and what the song has
+     * (plan 4.6): only a song with both is decided by a choice, the song's first, then the setting's.
+     */
+    @Test fun everyMixOfSettingChoiceAndWhatTheSongHas() {
+        val bools = listOf(false, true)
+        for (hasCover in bools) for (hasClip in bools) for (useVideos in bools) for (videoFirst in bools)
+            for (choice in listOf(null, CanvasSource.COVER, CanvasSource.VIDEO)) {
+                val clip = hasClip && useVideos
+                val want = when {
+                    hasCover && clip -> choice ?: if (videoFirst) CanvasSource.VIDEO else CanvasSource.COVER
+                    hasCover -> CanvasSource.COVER
+                    clip -> CanvasSource.VIDEO
+                    else -> null
+                }
+                assertEquals("cover=$hasCover clip=$hasClip use=$useVideos first=$videoFirst choice=$choice", want, pickSource(hasCover, hasClip, useVideos, videoFirst, choice))
+            }
+    }
+
     @Test fun aRowGivesItsLoopBackWhole() {
         val row = clipRow("song", clip, null, old = null, now = 5L, videoType = OFFICIAL, itag = 137, otherParts = listOf(30_000L, 90_000L))
         assertEquals(clip, row.clip())

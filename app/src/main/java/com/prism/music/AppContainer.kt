@@ -1097,7 +1097,7 @@ class AppContainer(val app: Application) {
             db.canvasClips(),
             com.prism.music.data.canvas.ClipFinder.create(ytm, innerTube, http),
             com.prism.music.data.canvas.ClipFetcher(streamHttp, { id -> kotlinx.coroutines.withContext(Dispatchers.IO) { innerTube.visionOsPlayer(id) } }, clipFiles),
-        )
+        ).apply { files = clipFiles }
     }
     fun songCacheBytes(): Long = runCatching { playerCache.cacheSpace }.getOrDefault(0)
 
