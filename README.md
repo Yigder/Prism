@@ -15,9 +15,9 @@ Lyrics that light up word by word, mixes made on your phone, and no ads or track
 
 ### [⬇ Download Prism.apk](../../releases/latest/download/Prism.apk)
 
-[What's new](../../releases/latest) · [All changes](CHANGELOG.md) · [Watch the film](../../releases/download/v1.7.0/Prism-1.7-film.mp4)
+[What's new](../../releases/latest) · [All changes](CHANGELOG.md) · [Watch the film](../../releases/download/v1.8.6/Prism-1.8.6-film.mp4)
 
-<a href="../../releases/download/v1.7.0/Prism-1.7-film.mp4"><img src="docs/screenshots/preview.gif" width="720" alt="Prism 1.7: word-by-word lyrics on the player. Click to watch the full film."></a>
+<a href="../../releases/download/v1.8.6/Prism-1.8.6-film.mp4"><img src="docs/screenshots/canvas-loop.webp" width="720" alt="Prism 1.8.6 Canvas: a music video's loop fills the player and the controls fade away. Click to watch the one-minute film."></a>
 
 <img src="docs/screenshots/home.jpg" width="24%" alt="Home with the Replay card, shortcuts and Made for you">
 <img src="docs/screenshots/player.jpg" width="24%" alt="Now playing, colored by the album art">
@@ -53,19 +53,19 @@ Prism walks you through this on the setting's page. It uses the permission only 
 
 Canvas.
 
-- **Canvas:** a silent, looping picture on the cover or behind the whole player. It was called animated covers before.
-- **Loops from music videos** (off until you turn it on): a song without an animated cover can show a few seconds of its own official music video, fetched once on Wi-Fi.
+- **Canvas:** a few seconds of a song's own music video, silent and on a loop, behind the whole player. Prism cuts it on your phone and fetches it once on Wi-Fi.
 - **Full screen:** the controls fade away after a few seconds and come back on a tap.
-- **Your say, per song:** Canvas on or off, Pick another part, Not this video.
+- **Animated covers** keep their own switch and play in the cover as before.
+- **Your say, per song:** Canvas on or off, Pick another part, Pick another video, Not this video.
 - **Easy on the phone:** it holds still with Reduce motion, in battery saver and when the phone runs hot, and a loop that flashes is never shown.
-- **Also new:** "Hours by month" in Replay shows each month's hours on its bar.
+- **Also new:** Minimal, a black-and-white Look, and each month's hours on Replay's "Hours by month".
 
 Everything is worked out on your phone. See every change in the [changelog](CHANGELOG.md).
 
 <p align="center">
-<img src="docs/screenshots/replay-clock.jpg" width="32%" alt="Replay's listening clock: the week hour by hour, with the busiest hour and day named">
-<img src="docs/screenshots/replay-calendar.jpg" width="32%" alt="Replay's listening calendar: every day with music, shaded by how much was played">
-<img src="docs/screenshots/replay-milestones.jpg" width="32%" alt="Replay's milestones: a song's 50th play, with the date it was reached">
+<img src="docs/screenshots/canvas-full.jpg" width="32%" alt="Canvas: a loop from the song's music video behind the player's controls">
+<img src="docs/screenshots/canvas-quiet.jpg" width="32%" alt="A few seconds later the controls have faded: the loop, the title, the artist and a thin progress line">
+<img src="docs/screenshots/canvas-menu.jpg" width="32%" alt="The player's menu for a song: Animated cover, Canvas, Pick another part, Pick another video">
 </p>
 
 ## What Prism does
