@@ -210,6 +210,15 @@ object BuiltInLooks {
                 "transport_style" to "s:GLYPHS", "font_choice" to "s:CLEAN", "corners" to "s:SUBTLE",
             ),
         ),
+        // 1.8.6: the look the Canvas launch film was shot in. Black and white only: any colour is the music's own
+        // (covers, Canvas), never Prism's.
+        Look(
+            "minimal", tr(R.string.minimal), builtIn = true, note = tr(R.string.black_and_white_nothing_extra),
+            values = mapOf(
+                "theme_mode" to "s:DARK", "pure_black" to "b:1", "light_style" to "s:WHITE", "color_source" to "s:CUSTOM",
+                "accent" to color(0xFFFFFFFF), "surface_tint" to "s:NEUTRAL", "play_ring" to "b:0", "player_background" to "s:BLACK",
+            ),
+        ),
         // Waited for 1.7.4's Vinyl player (planned with the Looks in 1.7.3).
         Look(
             "vinyl", tr(R.string.vinyl), builtIn = true, note = tr(R.string.a_record_on_the_player_warm),

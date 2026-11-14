@@ -3181,6 +3181,7 @@
     <string name="mono_type_neon_light_sharp_corners">Mono yazı, neon ışık, keskin köşeler</string>
     <string name="rounded_type_extra_round_corners_pastels">Yuvarlak yazı, ekstra yuvarlak köşeler, pasteller</string>
     <string name="studio">Stüdyo</string>
+    <string name="black_and_white_nothing_extra">Siyah beyaz, sade oynatıcı, müziğin renginden başka renk yok</string>
     <string name="white_light_no_accent_compact_classic">Beyaz ışık, vurgu yok, kompakt, klasik kontroller</string>
     <string name="a_record_on_the_player_warm">Oynatıcıda bir plak, sıcak kehribar, serifli başlıklar</string>
     <string name="prism_1_6_s_look_its">Prism 1.6\'nın görünümü: simgeleri, kalın yazısı, sade kontrolleri, cam yok</string>

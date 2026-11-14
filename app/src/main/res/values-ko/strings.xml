@@ -3181,6 +3181,7 @@
     <string name="mono_type_neon_light_sharp_corners">고정폭 글꼴, 네온 빛, 각진 모서리</string>
     <string name="rounded_type_extra_round_corners_pastels">둥근 글꼴, 아주 둥근 모서리, 파스텔</string>
     <string name="studio">스튜디오</string>
+    <string name="black_and_white_nothing_extra">흑백, 단순한 플레이어, 음악의 색 외에는 색이 없음</string>
     <string name="white_light_no_accent_compact_classic">흰색 빛, 강조 색상 없음, 촘촘하게, 클래식 컨트롤</string>
     <string name="a_record_on_the_player_warm">플레이어 위의 레코드, 따뜻한 호박색, 세리프 제목</string>
     <string name="prism_1_6_s_look_its">Prism 1.6의 모양: 그때의 아이콘, 굵은 글자, 단순한 컨트롤, 유리 효과 없음</string>

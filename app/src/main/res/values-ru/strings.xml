@@ -3181,6 +3181,7 @@
     <string name="mono_type_neon_light_sharp_corners">Моноширинный шрифт, неоновый свет, острые углы</string>
     <string name="rounded_type_extra_round_corners_pastels">Округлый шрифт, очень круглые углы, пастель</string>
     <string name="studio">Студия</string>
+    <string name="black_and_white_nothing_extra">Чёрно-белый, простой плеер, никаких цветов, кроме цветов музыки</string>
     <string name="white_light_no_accent_compact_classic">Белый свет, без акцента, компактно, классические элементы управления</string>
     <string name="a_record_on_the_player_warm">Пластинка в плеере, тёплый янтарь, заголовки с засечками</string>
     <string name="prism_1_6_s_look_its">Вид Prism 1.6: его значки, жирный шрифт, простые элементы управления, без стекла</string>

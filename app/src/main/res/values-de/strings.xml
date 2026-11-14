@@ -3181,6 +3181,7 @@
     <string name="mono_type_neon_light_sharp_corners">Monospace-Schrift, Neonlicht, scharfe Ecken</string>
     <string name="rounded_type_extra_round_corners_pastels">Abgerundete Schrift, extra runde Ecken, Pastelltöne</string>
     <string name="studio">Studio</string>
+    <string name="black_and_white_nothing_extra">Schwarzweiß, ein schlichter Player, keine Farbe außer der der Musik</string>
     <string name="white_light_no_accent_compact_classic">Weißes Licht, kein Akzent, kompakt, klassische Bedienelemente</string>
     <string name="a_record_on_the_player_warm">Eine Schallplatte im Player, warmes Bernstein, Serifentitel</string>
     <string name="prism_1_6_s_look_its">Das Aussehen von Prism 1.6: seine Symbole, fette Schrift, schlichte Bedienelemente, kein Glas</string>

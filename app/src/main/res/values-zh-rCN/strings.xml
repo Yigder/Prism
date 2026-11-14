@@ -3181,6 +3181,7 @@
     <string name="mono_type_neon_light_sharp_corners">等宽字体、霓虹光线、锐利转角</string>
     <string name="rounded_type_extra_round_corners_pastels">圆润字体、超圆转角、粉彩色</string>
     <string name="studio">工作室</string>
+    <string name="black_and_white_nothing_extra">黑白、简洁的播放器、除了音乐本身的色彩外别无其他</string>
     <string name="white_light_no_accent_compact_classic">白光、无强调色、紧凑、经典控件</string>
     <string name="a_record_on_the_player_warm">播放器上的唱片、温暖的琥珀色、衬线标题</string>
     <string name="prism_1_6_s_look_its">Prism 1.6 的外观：它的图标、粗体文字、朴素控件、无玻璃效果</string>

@@ -3181,6 +3181,7 @@
     <string name="mono_type_neon_light_sharp_corners">Carattere mono, luce al neon, angoli netti</string>
     <string name="rounded_type_extra_round_corners_pastels">Carattere arrotondato, angoli extra arrotondati, colori pastello</string>
     <string name="studio">Studio</string>
+    <string name="black_and_white_nothing_extra">Bianco e nero, player semplice, nessun colore oltre a quello della musica</string>
     <string name="white_light_no_accent_compact_classic">Luce bianca, nessun accento, compatto, controlli classici</string>
     <string name="a_record_on_the_player_warm">Un disco nel player, ambra calda, titoli con grazie</string>
     <string name="prism_1_6_s_look_its">L\'aspetto di Prism 1.6: le sue icone, testo in grassetto, controlli semplici, niente vetro</string>

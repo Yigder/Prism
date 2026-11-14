@@ -3398,6 +3398,7 @@
     <string name="mono_type_neon_light_sharp_corners">Mono type, neon light, sharp corners</string>
     <string name="rounded_type_extra_round_corners_pastels">Rounded type, extra-round corners, pastels</string>
     <string name="studio">Studio</string>
+    <string name="black_and_white_nothing_extra">Black and white, a plain player, no colour but the music\'s</string>
     <string name="white_light_no_accent_compact_classic">White light, no accent, compact, classic controls</string>
     <string name="a_record_on_the_player_warm">A record on the player, warm amber, serif titles</string>
     <string name="prism_1_6_s_look_its">Prism 1.6\'s look: its icons, bold type, plain controls, no glass</string>
