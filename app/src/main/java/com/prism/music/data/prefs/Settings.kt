@@ -1379,7 +1379,8 @@ object HomeSections {
 
 /** The order lyric sources are tried in on a fresh install. */
 val defaultLyricsOrder = listOf(
-    LyricsSource.KUGOU, LyricsSource.QQ, LyricsSource.APPLE, LyricsSource.LYRICSPLUS, LyricsSource.BINI, LyricsSource.YTMUSIC,
+    // LyricsPlus has been more reliable for matching the requested recording than KuGou, so it wins when both have word timing.
+    LyricsSource.LYRICSPLUS, LyricsSource.APPLE, LyricsSource.BINI, LyricsSource.QQ, LyricsSource.KUGOU, LyricsSource.YTMUSIC,
     LyricsSource.NETEASE, LyricsSource.LRCLIB, LyricsSource.UNISON, LyricsSource.GENIUS, LyricsSource.EMBEDDED,
 )
 
@@ -2558,7 +2559,11 @@ class SettingsRepository(
                 // Sources added in an update slot in at their default position.
                 val merged = list.toMutableList()
                 LyricsSource.entries.forEachIndexed { i, src -> if (src !in merged) merged.add(i.coerceAtMost(merged.size), src) }
-                merged
+                // 1.8.4.1 shipped the default as KuGou, QQ, Apple, LyricsPlus. Migrate that untouched default so
+                // existing installs get the safer LyricsPlus-first choice; an order the listener already changed stays theirs.
+                if (merged.take(4) == listOf(LyricsSource.KUGOU, LyricsSource.QQ, LyricsSource.APPLE, LyricsSource.LYRICSPLUS))
+                    listOf(LyricsSource.LYRICSPLUS) + merged.filter { it != LyricsSource.LYRICSPLUS }
+                else merged
             } ?: d.lyricsOrder,
             lyricsOff = p[K.lyricsOff]?.split(",")?.mapNotNull { n -> LyricsSource.entries.firstOrNull { it.name == n } }?.toSet() ?: d.lyricsOff,
             preferSynced = p[K.preferSynced] ?: d.preferSynced,
