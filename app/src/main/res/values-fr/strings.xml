@@ -5487,9 +5487,9 @@
     <string name="canvas_use">Utiliser</string>
     <string name="canvas_not_this_video">Pas ce clip</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">Une image silencieuse en boucle derrière votre musique. Les pochettes animées ont un nouveau nom, et un titre qui n\'en a pas peut utiliser quelques secondes de son propre clip.</string>
+    <string name="tour_186_canvas_about">Une image silencieuse en boucle derrière votre musique : quelques secondes découpées dans le clip du titre lui-même. Les pochettes animées restent comme avant.</string>
     <string name="tour_186_canvas_point_1">Plein écran : la boucle remplit le lecteur. Les commandes s\'effacent et reviennent d\'un toucher.</string>
-    <string name="tour_186_canvas_point_2">« %1$s » est désactivé tant que vous ne l\'activez pas. Une boucle est téléchargée une fois, en Wi-Fi : environ 5 Mo par titre en plein écran.</string>
+    <string name="tour_186_canvas_two">« %1$s » et « %2$s » ont chacun leur propre interrupteur. Une boucle est téléchargée une fois, en Wi-Fi : environ 5 Mo par titre en plein écran.</string>
     <string name="tour_186_canvas_point_3">Le menu ⋯ du lecteur : « %1$s » ou « %2$s ».</string>
     <string name="tour_186_canvas_point_4">Elle se met en pause avec Réduire les animations, en mode économiseur de batterie et quand le téléphone chauffe.</string>
     <string name="tour_186_also_hours">Replay : « %1$s » affiche les heures sur chaque barre.</string>

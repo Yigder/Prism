@@ -5412,9 +5412,9 @@
     <string name="canvas_use">Verwenden</string>
     <string name="canvas_not_this_video">Nicht dieses Video</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">Ein stilles, sich wiederholendes Bild hinter deiner Musik. Animierte Cover haben einen neuen Namen, und ein Song ohne eins kann ein paar Sekunden aus seinem eigenen Musikvideo nutzen.</string>
+    <string name="tour_186_canvas_about">Ein stilles, sich wiederholendes Bild hinter deiner Musik: ein paar Sekunden, ausgeschnitten aus dem eigenen Musikvideo des Songs. Animierte Cover bleiben, wie sie waren.</string>
     <string name="tour_186_canvas_point_1">Vollbild: Die Schleife füllt den Player. Die Steuerung blendet aus und kommt mit einem Tippen zurück.</string>
-    <string name="tour_186_canvas_point_2">%1$s ist aus, bis du es einschaltest. Eine Schleife wird einmal im WLAN geladen: etwa 5 MB pro Song im Vollbild.</string>
+    <string name="tour_186_canvas_two">%1$s und %2$s haben jeweils einen eigenen Schalter. Eine Schleife wird einmal im WLAN geladen: etwa 5 MB pro Song im Vollbild.</string>
     <string name="tour_186_canvas_point_3">Das ⋯-Menü des Players: %1$s oder %2$s.</string>
     <string name="tour_186_canvas_point_4">Sie pausiert bei Bewegung reduzieren, im Energiesparmodus und wenn das Handy heiß wird.</string>
     <string name="tour_186_also_hours">Replay: %1$s zeigt die Stunden an jedem Balken.</string>

@@ -5412,9 +5412,9 @@
     <string name="canvas_use">इस्तेमाल</string>
     <string name="canvas_not_this_video">यह वीडियो नहीं</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">आपके संगीत के पीछे बिना आवाज़ की, लूप में चलती तस्वीर। एनिमेटेड कवर को नया नाम मिला है, और जिस गाने का कवर एनिमेटेड नहीं है, वह अपने म्यूज़िक वीडियो के कुछ सेकंड इस्तेमाल कर सकता है।</string>
+    <string name="tour_186_canvas_about">आपके संगीत के पीछे बिना आवाज़ की, लूप में चलती तस्वीर: गाने के अपने म्यूज़िक वीडियो से काटे गए कुछ सेकंड। एनिमेटेड कवर पहले जैसे ही रहते हैं।</string>
     <string name="tour_186_canvas_point_1">पूरी स्क्रीन: लूप पूरे प्लेयर में फैल जाता है। कंट्रोल गायब हो जाते हैं और टैप करने पर लौट आते हैं।</string>
-    <string name="tour_186_canvas_point_2">%1$s आपके चालू करने तक बंद रहता है। लूप Wi-Fi पर एक बार लाया जाता है: पूरी स्क्रीन में एक गाने का लगभग 5 MB।</string>
+    <string name="tour_186_canvas_two">%1$s और %2$s, दोनों का अपना-अपना स्विच है। लूप Wi-Fi पर एक बार लाया जाता है: पूरी स्क्रीन में एक गाने का लगभग 5 MB।</string>
     <string name="tour_186_canvas_point_3">प्लेयर का ⋯ मेन्यू: %1$s, या %2$s।</string>
     <string name="tour_186_canvas_point_4">यह मोशन कम करें के साथ, बैटरी सेवर में और फ़ोन गर्म होने पर रुक जाता है।</string>
     <string name="tour_186_also_hours">Replay: %1$s हर बार पर घंटे दिखाता है।</string>

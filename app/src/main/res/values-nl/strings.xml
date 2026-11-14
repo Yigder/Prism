@@ -5412,9 +5412,9 @@
     <string name="canvas_use">Gebruik</string>
     <string name="canvas_not_this_video">Niet deze video</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">Een stil, herhalend beeld achter je muziek. Geanimeerde covers hebben een nieuwe naam, en een nummer zonder kan een paar seconden van de eigen muziekvideo gebruiken.</string>
+    <string name="tour_186_canvas_about">Een stil, herhalend beeld achter je muziek: een paar seconden uit de eigen muziekvideo van het nummer geknipt. Geanimeerde covers blijven zoals ze waren.</string>
     <string name="tour_186_canvas_point_1">Volledig scherm: de loop vult de speler. De bediening verdwijnt en komt terug met een tik.</string>
-    <string name="tour_186_canvas_point_2">%1$s staat uit totdat je het aanzet. Een loop wordt eenmalig opgehaald via Wi-Fi: ongeveer 5 MB per nummer in Volledig scherm.</string>
+    <string name="tour_186_canvas_two">%1$s en %2$s hebben elk een eigen schakelaar. Een loop wordt eenmalig opgehaald via Wi-Fi: ongeveer 5 MB per nummer in Volledig scherm.</string>
     <string name="tour_186_canvas_point_3">Het ⋯-menu van de speler: %1$s, of %2$s.</string>
     <string name="tour_186_canvas_point_4">Het rust bij Minder beweging, in de batterijbesparing en als de telefoon heet wordt.</string>
     <string name="tour_186_also_hours">Replay: %1$s toont de uren bij elke balk.</string>

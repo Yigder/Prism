@@ -5487,9 +5487,9 @@
     <string name="canvas_use">Usa</string>
     <string name="canvas_not_this_video">Non questo video</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">Un\'immagine in loop, senza audio, dietro la tua musica. Le copertine animate hanno un nuovo nome, e un brano che non ne ha una può usare qualche secondo del proprio video musicale.</string>
+    <string name="tour_186_canvas_about">Un\'immagine in loop, senza audio, dietro la tua musica: qualche secondo ritagliato dal video musicale del brano stesso. Le copertine animate restano com\'erano.</string>
     <string name="tour_186_canvas_point_1">Schermo intero: il loop riempie il player. I controlli scompaiono e tornano con un tocco.</string>
-    <string name="tour_186_canvas_point_2">%1$s resta disattivato finché non lo attivi. Un loop viene scaricato una volta, con il Wi-Fi: circa 5 MB a brano a Schermo intero.</string>
+    <string name="tour_186_canvas_two">%1$s e %2$s hanno ciascuno il proprio interruttore. Un loop viene scaricato una volta, con il Wi-Fi: circa 5 MB a brano a Schermo intero.</string>
     <string name="tour_186_canvas_point_3">Il menu ⋯ del player: %1$s, oppure %2$s.</string>
     <string name="tour_186_canvas_point_4">Si ferma con Riduci movimento, con il risparmio energetico e quando il telefono si scalda.</string>
     <string name="tour_186_also_hours">Replay: %1$s mostra le ore su ogni barra.</string>

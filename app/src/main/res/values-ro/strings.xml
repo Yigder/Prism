@@ -5487,9 +5487,9 @@
     <string name="canvas_use">Folosește</string>
     <string name="canvas_not_this_video">Nu acest videoclip</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">O imagine silențioasă, în buclă, în spatele muzicii tale. Copertele animate au un nume nou, iar o melodie fără așa ceva poate folosi câteva secunde din propriul videoclip muzical.</string>
+    <string name="tour_186_canvas_about">O imagine silențioasă, în buclă, în spatele muzicii tale: câteva secunde tăiate din propriul videoclip muzical al melodiei. Copertele animate rămân cum erau.</string>
     <string name="tour_186_canvas_point_1">Ecran complet: bucla umple playerul. Controalele dispar și revin la o atingere.</string>
-    <string name="tour_186_canvas_point_2">%1$s este dezactivat până îl pornești. O buclă se descarcă o singură dată, pe Wi-Fi: aproximativ 5 MB pe melodie în Ecran complet.</string>
+    <string name="tour_186_canvas_two">%1$s și %2$s au fiecare propriul comutator. O buclă se descarcă o singură dată, pe Wi-Fi: aproximativ 5 MB pe melodie în Ecran complet.</string>
     <string name="tour_186_canvas_point_3">Meniul ⋯ al playerului: %1$s sau %2$s.</string>
     <string name="tour_186_canvas_point_4">Se oprește cu Reducerea mișcării, în economisirea bateriei și când telefonul se încălzește.</string>
     <string name="tour_186_also_hours">Replay: %1$s arată orele pe fiecare bară.</string>

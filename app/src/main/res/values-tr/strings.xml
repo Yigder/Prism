@@ -5412,9 +5412,9 @@
     <string name="canvas_use">Kullan</string>
     <string name="canvas_not_this_video">Bu video değil</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">Müziğinin arkasında sessiz, döngüsel bir görüntü. Hareketli kapakların adı değişti ve hareketli kapağı olmayan bir şarkı kendi müzik videosundan birkaç saniye kullanabilir.</string>
+    <string name="tour_186_canvas_about">Müziğinin arkasında sessiz, döngüsel bir görüntü: şarkının kendi müzik videosundan kesilmiş birkaç saniye. Hareketli kapaklar eskisi gibi kalır.</string>
     <string name="tour_186_canvas_point_1">Tam ekran: döngü oynatıcıyı kaplar. Kontroller kaybolur ve dokununca geri gelir.</string>
-    <string name="tour_186_canvas_point_2">%1$s, sen açana kadar kapalıdır. Döngü bir kez, Wi-Fi ile alınır: Tam ekranda şarkı başına yaklaşık 5 MB.</string>
+    <string name="tour_186_canvas_two">%1$s ile %2$s için ayrı ayrı birer anahtar var. Döngü bir kez, Wi-Fi ile alınır: Tam ekranda şarkı başına yaklaşık 5 MB.</string>
     <string name="tour_186_canvas_point_3">Oynatıcının ⋯ menüsü: %1$s veya %2$s.</string>
     <string name="tour_186_canvas_point_4">Hareketi azalt açıkken, pil tasarrufunda ve telefon ısındığında durur.</string>
     <string name="tour_186_also_hours">Replay: %1$s her çubukta saatleri gösterir.</string>

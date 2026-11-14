@@ -5562,9 +5562,9 @@
     <string name="canvas_use">Użyj</string>
     <string name="canvas_not_this_video">To nie ten teledysk</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">Cichy, zapętlony obraz za Twoją muzyką. Animowane okładki mają nową nazwę, a utwór bez niej może użyć kilku sekund własnego teledysku.</string>
+    <string name="tour_186_canvas_about">Cichy, zapętlony obraz za Twoją muzyką: kilka sekund wyciętych z teledysku samego utworu. Animowane okładki zostają takie, jakie były.</string>
     <string name="tour_186_canvas_point_1">Pełny ekran: pętla wypełnia odtwarzacz. Sterowanie znika i wraca po dotknięciu.</string>
-    <string name="tour_186_canvas_point_2">%1$s jest wyłączone, dopóki go nie włączysz. Pętla jest pobierana raz, przez Wi-Fi: około 5 MB na utwór w trybie Pełny ekran.</string>
+    <string name="tour_186_canvas_two">%1$s i %2$s mają osobne przełączniki. Pętla jest pobierana raz, przez Wi-Fi: około 5 MB na utwór w trybie Pełny ekran.</string>
     <string name="tour_186_canvas_point_3">Menu ⋯ odtwarzacza: %1$s lub %2$s.</string>
     <string name="tour_186_canvas_point_4">Odpoczywa przy opcji Ogranicz ruch, w oszczędzaniu baterii i gdy telefon się nagrzewa.</string>
     <string name="tour_186_also_hours">Replay: %1$s pokazuje godziny na każdym słupku.</string>

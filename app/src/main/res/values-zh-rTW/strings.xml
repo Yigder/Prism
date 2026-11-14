@@ -5337,9 +5337,9 @@
     <string name="canvas_use">使用</string>
     <string name="canvas_not_this_video">不是這支影片</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">音樂背後一段靜音的循環畫面。動態封面有了新名稱，沒有動態封面的歌曲可以使用自己音樂影片中的幾秒鐘。</string>
+    <string name="tour_186_canvas_about">音樂背後一段靜音的循環畫面：從歌曲自己的音樂影片中截取的幾秒鐘。動態封面維持原樣。</string>
     <string name="tour_186_canvas_point_1">全螢幕：循環畫面鋪滿播放器。控制項會淡出，輕觸後重新出現。</string>
-    <string name="tour_186_canvas_point_2">%1$s 在你開啟之前保持關閉。循環只在 Wi-Fi 下取得一次：全螢幕約 5 MB 每首。</string>
+    <string name="tour_186_canvas_two">%1$s 和 %2$s 各有自己的開關。循環只在 Wi-Fi 下取得一次：全螢幕約 5 MB 每首。</string>
     <string name="tour_186_canvas_point_3">播放器的 ⋯ 選單：%1$s，或 %2$s。</string>
     <string name="tour_186_canvas_point_4">開啟減少動態效果、省電模式以及手機過熱時，它會暫停。</string>
     <string name="tour_186_also_hours">Replay：%1$s 會在每根長條上顯示小時數。</string>

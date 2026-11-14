@@ -5337,9 +5337,9 @@
     <string name="canvas_use">使用</string>
     <string name="canvas_not_this_video">このビデオではない</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">音楽の後ろで流れる、音のないループ映像です。アニメーション カバーは新しい名前になり、持っていない曲はミュージック ビデオの数秒を使えます。</string>
+    <string name="tour_186_canvas_about">音楽の後ろで流れる、音のないループ映像です。曲自身のミュージック ビデオから切り出した数秒です。アニメーション カバーは今までどおりです。</string>
     <string name="tour_186_canvas_point_1">全画面：ループがプレーヤー全体に広がります。コントロールは消え、タップすると戻ります。</string>
-    <string name="tour_186_canvas_point_2">「%1$s」は、オンにするまでオフです。ループは Wi-Fi で一度だけ取得します。1 曲あたり、全画面で約 5 MB です。</string>
+    <string name="tour_186_canvas_two">「%1$s」と「%2$s」には、それぞれ専用のスイッチがあります。ループは Wi-Fi で一度だけ取得します。1 曲あたり、全画面で約 5 MB です。</string>
     <string name="tour_186_canvas_point_3">プレーヤーの ⋯ メニュー：「%1$s」または「%2$s」。</string>
     <string name="tour_186_canvas_point_4">「視覚効果を減らす」がオンのとき、バッテリーセーバー中、スマホが熱いときは停止します。</string>
     <string name="tour_186_also_hours">Replay：「%1$s」で各バーの時間が分かります。</string>

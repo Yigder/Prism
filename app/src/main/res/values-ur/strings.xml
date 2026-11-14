@@ -5412,9 +5412,9 @@
     <string name="canvas_use">استعمال</string>
     <string name="canvas_not_this_video">یہ ویڈیو نہیں</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">آپ کی موسیقی کے پیچھے ایک خاموش، لوپ ہوتی تصویر۔ اینیمیٹڈ کورز کا نیا نام ہے، اور جس گانے کا کور نہ ہو وہ اپنی میوزک ویڈیو کے چند سیکنڈ استعمال کر سکتا ہے۔</string>
+    <string name="tour_186_canvas_about">آپ کی موسیقی کے پیچھے ایک خاموش، لوپ ہوتی تصویر: گانے کی اپنی میوزک ویڈیو سے کاٹے گئے چند سیکنڈ۔ اینیمیٹڈ کورز پہلے جیسے ہی رہتے ہیں۔</string>
     <string name="tour_186_canvas_point_1">پوری اسکرین: لوپ پورے پلیئر پر چھا جاتا ہے۔ کنٹرولز غائب ہو جاتے ہیں اور ٹیپ کرنے پر واپس آتے ہیں۔</string>
-    <string name="tour_186_canvas_point_2">%1$s اس وقت تک بند رہتا ہے جب تک آپ اسے آن نہ کریں۔ لوپ ایک بار Wi-Fi پر حاصل ہوتا ہے: پوری اسکرین میں تقریباً 5 MB فی گانا۔</string>
+    <string name="tour_186_canvas_two">%1$s اور %2$s میں سے ہر ایک کا اپنا الگ سوئچ ہے۔ لوپ ایک بار Wi-Fi پر حاصل ہوتا ہے: پوری اسکرین میں تقریباً 5 MB فی گانا۔</string>
     <string name="tour_186_canvas_point_3">پلیئر کا ⋯ مینو: %1$s، یا %2$s۔</string>
     <string name="tour_186_canvas_point_4">یہ حرکت کم کریں کے ساتھ، بیٹری سیور میں اور فون گرم ہونے پر رک جاتا ہے۔</string>
     <string name="tour_186_also_hours">Replay: %1$s ہر بار پر گھنٹے دکھاتا ہے۔</string>

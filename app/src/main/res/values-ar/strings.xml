@@ -5712,9 +5712,9 @@
     <string name="canvas_use">استخدام</string>
     <string name="canvas_not_this_video">ليس هذا الفيديو</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">صورة صامتة متكررة خلف موسيقاك. للأغلفة المتحركة اسم جديد، ويمكن للأغنية التي ليس لها غلاف متحرك أن تستخدم بضع ثوانٍ من فيديوها الموسيقي.</string>
+    <string name="tour_186_canvas_about">صورة صامتة متكررة خلف موسيقاك: بضع ثوانٍ مقتطعة من الفيديو الموسيقي للأغنية نفسها. تبقى الأغلفة المتحركة كما كانت.</string>
     <string name="tour_186_canvas_point_1">ملء الشاشة: يملأ المقطع المشغّل. تختفي عناصر التحكم وتعود بنقرة.</string>
-    <string name="tour_186_canvas_point_2">%1$s متوقف حتى تشغّله. يُجلب المقطع مرة واحدة عبر Wi-Fi: نحو 5 MB للأغنية في وضع ملء الشاشة.</string>
+    <string name="tour_186_canvas_two">لكلٍّ من %1$s و%2$s مفتاح تشغيل خاص به. يُجلب المقطع مرة واحدة عبر Wi-Fi: نحو 5 MB للأغنية في وضع ملء الشاشة.</string>
     <string name="tour_186_canvas_point_3">قائمة ⋯ في المشغّل: %1$s، أو %2$s.</string>
     <string name="tour_186_canvas_point_4">يتوقف مع تقليل الحركة، وفي وضع توفير الطاقة، وعندما يسخن الهاتف.</string>
     <string name="tour_186_also_hours">Replay: يعرض %1$s الساعات على كل شريط.</string>

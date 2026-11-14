@@ -5487,9 +5487,9 @@
     <string name="canvas_use">Usar</string>
     <string name="canvas_not_this_video">Este video no</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">Una imagen en bucle y sin sonido detrás de tu música. Las portadas animadas tienen un nombre nuevo, y una canción sin ella puede usar unos segundos de su propio video musical.</string>
+    <string name="tour_186_canvas_about">Una imagen en bucle y sin sonido detrás de tu música: unos segundos recortados del propio video musical de la canción. Las portadas animadas siguen como estaban.</string>
     <string name="tour_186_canvas_point_1">Pantalla completa: el bucle llena el reproductor. Los controles se desvanecen y vuelven al tocar.</string>
-    <string name="tour_186_canvas_point_2">%1$s está desactivado hasta que lo actives. Un bucle se descarga una vez, con Wi-Fi: unos 5 MB por canción en pantalla completa.</string>
+    <string name="tour_186_canvas_two">%1$s y %2$s tienen cada uno su propio interruptor. Un bucle se descarga una vez, con Wi-Fi: unos 5 MB por canción en pantalla completa.</string>
     <string name="tour_186_canvas_point_3">El menú ⋯ del reproductor: %1$s o %2$s.</string>
     <string name="tour_186_canvas_point_4">Descansa con Reducir movimiento, con el ahorro de batería y cuando el teléfono se calienta.</string>
     <string name="tour_186_also_hours">Replay: %1$s muestra las horas en cada barra.</string>

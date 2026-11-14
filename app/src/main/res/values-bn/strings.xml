@@ -5412,9 +5412,9 @@
     <string name="canvas_use">ব্যবহার</string>
     <string name="canvas_not_this_video">এই ভিডিও নয়</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">আপনার গানের পেছনে একটি নিঃশব্দ, লুপে চলা ছবি। অ্যানিমেটেড কভারের নতুন নাম হয়েছে, আর যে গানের তা নেই সে তার নিজের মিউজিক ভিডিওর কয়েক সেকেন্ড ব্যবহার করতে পারে।</string>
+    <string name="tour_186_canvas_about">আপনার গানের পেছনে একটি নিঃশব্দ, লুপে চলা ছবি: গানটির নিজের মিউজিক ভিডিও থেকে কেটে নেওয়া কয়েক সেকেন্ড। অ্যানিমেটেড কভার আগের মতোই থাকে।</string>
     <string name="tour_186_canvas_point_1">পূর্ণ স্ক্রিন: লুপ পুরো প্লেয়ার জুড়ে চলে। কন্ট্রোল মিলিয়ে যায় আর ট্যাপ করলে ফিরে আসে।</string>
-    <string name="tour_186_canvas_point_2">আপনি চালু না করা পর্যন্ত %1$s বন্ধ থাকে। লুপ একবারই Wi-Fi-তে আনা হয়: পূর্ণ স্ক্রিনে গান প্রতি প্রায় 5 MB।</string>
+    <string name="tour_186_canvas_two">%1$s আর %2$s, দুটোরই নিজস্ব আলাদা সুইচ আছে। লুপ একবারই Wi-Fi-তে আনা হয়: পূর্ণ স্ক্রিনে গান প্রতি প্রায় 5 MB।</string>
     <string name="tour_186_canvas_point_3">প্লেয়ারের ⋯ মেনু: %1$s, অথবা %2$s।</string>
     <string name="tour_186_canvas_point_4">নড়াচড়া কমান চালু থাকলে, ব্যাটারি সেভারে আর ফোন গরম হলে এটি থেমে থাকে।</string>
     <string name="tour_186_also_hours">Replay: %1$s প্রতিটি বারে ঘণ্টা দেখায়।</string>

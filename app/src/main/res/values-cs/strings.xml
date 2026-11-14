@@ -5562,9 +5562,9 @@
     <string name="canvas_use">Použít</string>
     <string name="canvas_not_this_video">Ne toto video</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">Tichý, opakující se obraz za vaší hudbou. Animované obaly mají nový název a skladba bez něj může použít pár sekund svého hudebního videa.</string>
+    <string name="tour_186_canvas_about">Tichý, opakující se obraz za vaší hudbou: pár sekund vystřižených z hudebního videa samotné skladby. Animované obaly zůstávají, jak byly.</string>
     <string name="tour_186_canvas_point_1">Celá obrazovka: smyčka vyplní přehrávač. Ovládání zmizí a po klepnutí se vrátí.</string>
-    <string name="tour_186_canvas_point_2">%1$s je vypnuto, dokud to nezapneš. Smyčka se stáhne jednou přes Wi-Fi: asi 5 MB na skladbu na celou obrazovku.</string>
+    <string name="tour_186_canvas_two">%1$s a %2$s mají každé svůj vlastní přepínač. Smyčka se stáhne jednou přes Wi-Fi: asi 5 MB na skladbu na celou obrazovku.</string>
     <string name="tour_186_canvas_point_3">Nabídka ⋯ v přehrávači: %1$s nebo %2$s.</string>
     <string name="tour_186_canvas_point_4">Odpočívá při Omezit pohyb, v úsporném režimu baterie a když se telefon zahřeje.</string>
     <string name="tour_186_also_hours">Replay: %1$s ukáže hodiny na každém sloupci.</string>

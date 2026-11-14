@@ -695,11 +695,12 @@ private const val V1_8_6 = 64
         TourStep(
             // 1.8.6 Canvas. Opens the Player page at Cover, the group the Canvas row is in.
             V1_8_6, PrismIcons.AnimatedCover, tr(R.string.tour_186_canvas_title),
-            tr(R.string.tour_186_canvas_body),
+            tr(R.string.tour_186_canvas_about),
             listOf(
                 tr(R.string.tour_186_canvas_point_1),
-                tr(R.string.tour_186_canvas_point_2, tr(R.string.canvas_use_videos)),
-                tr(R.string.tour_186_canvas_point_3, tr(R.string.canvas_pick_part), tr(R.string.canvas_not_this_video)),
+                // Owner, 2026-11-13: Canvas (the loops from music videos) and Animated covers are two settings.
+                tr(R.string.tour_186_canvas_two, tr(R.string.canvas), tr(R.string.animated_covers)),
+                tr(R.string.tour_186_canvas_point_3, tr(R.string.canvas_pick_video), tr(R.string.canvas_pick_part)),
                 tr(R.string.tour_186_canvas_point_4),
             ),
             listOf(PrismIcons.Video, PrismIcons.Fullscreen),

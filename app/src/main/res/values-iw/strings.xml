@@ -5487,9 +5487,9 @@
     <string name="canvas_use">שימוש</string>
     <string name="canvas_not_this_video">לא הקליפ הזה</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">תמונה שקטה ומתחלפת בלופ מאחורי המוזיקה שלך. לעטיפות מונפשות יש שם חדש, ושיר בלי עטיפה כזו יכול להשתמש בכמה שניות מהקליפ שלו.</string>
+    <string name="tour_186_canvas_about">תמונה שקטה ומתחלפת בלופ מאחורי המוזיקה שלך: כמה שניות שנחתכו מהקליפ של השיר עצמו. עטיפות מונפשות נשארות כמו שהיו.</string>
     <string name="tour_186_canvas_point_1">מסך מלא: הלופ ממלא את הנגן. הפקדים נעלמים וחוזרים בהקשה.</string>
-    <string name="tour_186_canvas_point_2">\"%1$s\" כבוי עד שתפעילו אותו. כל לופ יורד פעם אחת, ב-Wi-Fi: כ-5 MB לשיר במסך מלא.</string>
+    <string name="tour_186_canvas_two">\"%1$s\" ו-\"%2$s\" כל אחד עם מתג משלו. כל לופ יורד פעם אחת, ב-Wi-Fi: כ-5 MB לשיר במסך מלא.</string>
     <string name="tour_186_canvas_point_3">בתפריט ⋯ של הנגן: \"%1$s\" או \"%2$s\".</string>
     <string name="tour_186_canvas_point_4">הוא נח כשהפחתת תנועה פועלת, בחיסכון בסוללה וכשהטלפון מתחמם.</string>
     <string name="tour_186_also_hours">Replay: \"%1$s\" מציג את השעות על כל עמודה.</string>

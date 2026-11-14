@@ -5337,9 +5337,9 @@
     <string name="canvas_use">Guna</string>
     <string name="canvas_not_this_video">Bukan video ini</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">Gambar senyap yang berulang di belakang muzik anda. Kulit beranimasi kini ada nama baharu, dan lagu tanpanya boleh menggunakan beberapa saat daripada video muziknya sendiri.</string>
+    <string name="tour_186_canvas_about">Gambar senyap yang berulang di belakang muzik anda: beberapa saat yang dipotong daripada video muzik lagu itu sendiri. Kulit beranimasi kekal seperti sedia ada.</string>
     <string name="tour_186_canvas_point_1">Skrin penuh: gelung memenuhi pemain. Kawalan pudar dan muncul semula apabila diketik.</string>
-    <string name="tour_186_canvas_point_2">%1$s dimatikan sehingga anda menghidupkannya. Gelung diambil sekali sahaja, melalui Wi-Fi: kira-kira 5 MB satu lagu dalam Skrin penuh.</string>
+    <string name="tour_186_canvas_two">%1$s dan %2$s masing-masing mempunyai suisnya sendiri. Gelung diambil sekali sahaja, melalui Wi-Fi: kira-kira 5 MB satu lagu dalam Skrin penuh.</string>
     <string name="tour_186_canvas_point_3">Menu ⋯ pemain: %1$s, atau %2$s.</string>
     <string name="tour_186_canvas_point_4">Ia berehat dengan Kurangkan gerakan, dalam penjimat bateri dan apabila telefon menjadi panas.</string>
     <string name="tour_186_also_hours">Replay: %1$s menunjukkan jam pada setiap bar.</string>

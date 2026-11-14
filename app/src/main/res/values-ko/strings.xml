@@ -5337,9 +5337,9 @@
     <string name="canvas_use">사용</string>
     <string name="canvas_not_this_video">이 영상 아님</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">음악 뒤에서 소리 없이 반복되는 그림이에요. 움직이는 커버는 새 이름을 얻었고, 커버가 없는 곡은 자신의 뮤직비디오에서 몇 초를 쓸 수 있어요.</string>
+    <string name="tour_186_canvas_about">음악 뒤에서 소리 없이 반복되는 그림이에요. 곡 자신의 뮤직비디오에서 잘라 낸 몇 초예요. 움직이는 커버는 그대로예요.</string>
     <string name="tour_186_canvas_point_1">전체 화면: 루프가 플레이어를 가득 채워요. 컨트롤은 사라졌다가 탭하면 다시 나타나요.</string>
-    <string name="tour_186_canvas_point_2">%1$s은(는) 직접 켜기 전까지 꺼져 있어요. 루프는 Wi-Fi에서 한 번만 가져오며, 전체 화면에서는 곡당 약 5MB예요.</string>
+    <string name="tour_186_canvas_two">%1$s, %2$s 각각 따로 스위치가 있어요. 루프는 Wi-Fi에서 한 번만 가져오며, 전체 화면에서는 곡당 약 5MB예요.</string>
     <string name="tour_186_canvas_point_3">플레이어의 ⋯ 메뉴: %1$s 또는 %2$s.</string>
     <string name="tour_186_canvas_point_4">동작 줄이기를 켜거나, 절전 모드이거나, 휴대전화가 뜨거울 때는 쉬어요.</string>
     <string name="tour_186_also_hours">Replay: %1$s이(가) 막대마다 시간을 보여줘요.</string>

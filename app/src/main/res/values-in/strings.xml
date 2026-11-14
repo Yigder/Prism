@@ -5337,9 +5337,9 @@
     <string name="canvas_use">Pakai</string>
     <string name="canvas_not_this_video">Bukan video ini</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">Gambar loop tanpa suara di balik musikmu. Sampul animasi punya nama baru, dan lagu yang tidak punya bisa memakai beberapa detik dari video musiknya sendiri.</string>
+    <string name="tour_186_canvas_about">Gambar loop tanpa suara di balik musikmu: beberapa detik yang dipotong dari video musik lagu itu sendiri. Sampul animasi tetap seperti semula.</string>
     <string name="tour_186_canvas_point_1">Layar penuh: loop memenuhi pemutar. Kontrol menghilang dan muncul lagi saat diketuk.</string>
-    <string name="tour_186_canvas_point_2">%1$s nonaktif sampai kamu mengaktifkannya. Loop diambil sekali lewat Wi-Fi: sekitar 5 MB per lagu di Layar penuh.</string>
+    <string name="tour_186_canvas_two">%1$s dan %2$s masing-masing punya sakelarnya sendiri. Loop diambil sekali lewat Wi-Fi: sekitar 5 MB per lagu di Layar penuh.</string>
     <string name="tour_186_canvas_point_3">Menu ⋯ di pemutar: %1$s, atau %2$s.</string>
     <string name="tour_186_canvas_point_4">Berhenti saat Kurangi gerakan aktif, di mode hemat baterai, dan saat ponsel panas.</string>
     <string name="tour_186_also_hours">Replay: %1$s menampilkan jam di setiap batang.</string>

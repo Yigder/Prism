@@ -5337,9 +5337,9 @@
     <string name="canvas_use">Dùng</string>
     <string name="canvas_not_this_video">Không phải video này</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">Một hình ảnh lặp, không tiếng phía sau âm nhạc của bạn. Ảnh bìa động có tên mới, và bài hát không có ảnh bìa động có thể dùng vài giây từ video nhạc của chính nó.</string>
+    <string name="tour_186_canvas_about">Một hình ảnh lặp, không tiếng phía sau âm nhạc của bạn: vài giây cắt từ video nhạc của chính bài hát. Ảnh bìa động vẫn như trước.</string>
     <string name="tour_186_canvas_point_1">Toàn màn hình: đoạn lặp phủ kín trình phát. Các nút điều khiển mờ đi và hiện lại khi chạm.</string>
-    <string name="tour_186_canvas_point_2">%1$s tắt cho đến khi bạn bật. Đoạn lặp được tải một lần, qua Wi-Fi: khoảng 5 MB mỗi bài ở chế độ Toàn màn hình.</string>
+    <string name="tour_186_canvas_two">%1$s và %2$s mỗi mục có công tắc riêng. Đoạn lặp được tải một lần, qua Wi-Fi: khoảng 5 MB mỗi bài ở chế độ Toàn màn hình.</string>
     <string name="tour_186_canvas_point_3">Menu ⋯ của trình phát: %1$s, hoặc %2$s.</string>
     <string name="tour_186_canvas_point_4">Nó tạm nghỉ khi bật Giảm chuyển động, khi tiết kiệm pin và khi điện thoại nóng.</string>
     <string name="tour_186_also_hours">Replay: %1$s hiển thị số giờ trên mỗi cột.</string>

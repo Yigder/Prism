@@ -153,8 +153,9 @@ class TourTest {
         assertTrue(pages.flatMap { it.points + it.body }.none { "%" in it })
         val canvas = pages.first()
         assertEquals(4, canvas.points.size)
-        assertTrue(canvas.points[1].contains(tr(R.string.canvas_use_videos)))
-        assertTrue(canvas.points[2].contains(tr(R.string.canvas_pick_part)) && canvas.points[2].contains(tr(R.string.canvas_not_this_video)))
+        // Owner, 2026-11-13: Canvas and Animated covers are two settings; the page names both switches.
+        assertTrue(canvas.points[1].contains(tr(R.string.canvas)) && canvas.points[1].contains(tr(R.string.animated_covers)))
+        assertTrue(canvas.points[2].contains(tr(R.string.canvas_pick_video)) && canvas.points[2].contains(tr(R.string.canvas_pick_part)))
         val (key, find) = parse(canvas.showMe!!)
         assertEquals(com.prism.music.ui.screens.settings.SettingsPageId.PLAYER.key, key)
         assertEquals(tr(R.string.cover), find)

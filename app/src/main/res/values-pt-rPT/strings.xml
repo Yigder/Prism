@@ -5487,9 +5487,9 @@
     <string name="canvas_use">Usar</string>
     <string name="canvas_not_this_video">Não é este vídeo</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">Uma imagem silenciosa em ciclo por trás da sua música. As capas animadas têm um novo nome, e uma música sem capa animada pode usar alguns segundos do seu próprio vídeo de música.</string>
+    <string name="tour_186_canvas_about">Uma imagem silenciosa em ciclo por trás da sua música: alguns segundos recortados do seu próprio vídeo de música. As capas animadas continuam como estavam.</string>
     <string name="tour_186_canvas_point_1">Ecrã inteiro: o ciclo preenche o leitor. Os controlos desaparecem e voltam com um toque.</string>
-    <string name="tour_186_canvas_point_2">%1$s está desativado até o ativar. Um ciclo é transferido uma só vez, em Wi-Fi: cerca de 5 MB por música em Ecrã inteiro.</string>
+    <string name="tour_186_canvas_two">%1$s e %2$s têm cada um o seu próprio interruptor. Um ciclo é transferido uma só vez, em Wi-Fi: cerca de 5 MB por música em Ecrã inteiro.</string>
     <string name="tour_186_canvas_point_3">O menu ⋯ do leitor: %1$s ou %2$s.</string>
     <string name="tour_186_canvas_point_4">Pára com Reduzir movimento, na poupança de bateria e quando o telemóvel aquece.</string>
     <string name="tour_186_also_hours">Replay: %1$s mostra as horas em cada barra.</string>

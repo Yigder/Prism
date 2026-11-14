@@ -5337,9 +5337,9 @@
     <string name="canvas_use">ใช้</string>
     <string name="canvas_not_this_video">ไม่ใช่วิดีโอนี้</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">ภาพลูปไร้เสียงอยู่เบื้องหลังเพลงของคุณ ปกเคลื่อนไหวมีชื่อใหม่ และเพลงที่ไม่มีปกแบบนี้ก็ใช้มิวสิกวิดีโอของตัวเองได้ไม่กี่วินาที</string>
+    <string name="tour_186_canvas_about">ภาพลูปไร้เสียงอยู่เบื้องหลังเพลงของคุณ เป็นช่วงสั้น ๆ ไม่กี่วินาทีที่ตัดมาจากมิวสิกวิดีโอของเพลงนั้นเอง ปกเคลื่อนไหวยังคงเหมือนเดิม</string>
     <string name="tour_186_canvas_point_1">เต็มหน้าจอ: ลูปเต็มทั้งเพลเยอร์ ปุ่มควบคุมจะหายไปและกลับมาเมื่อแตะ</string>
-    <string name="tour_186_canvas_point_2">%1$s ปิดอยู่จนกว่าคุณจะเปิด ลูปจะดึงมาครั้งเดียวผ่าน Wi-Fi: ประมาณ 5 MB ต่อเพลงในโหมดเต็มหน้าจอ</string>
+    <string name="tour_186_canvas_two">%1$s และ %2$s มีสวิตช์ของตัวเองแยกกัน ลูปจะดึงมาครั้งเดียวผ่าน Wi-Fi: ประมาณ 5 MB ต่อเพลงในโหมดเต็มหน้าจอ</string>
     <string name="tour_186_canvas_point_3">เมนู ⋯ ของเพลเยอร์: %1$s หรือ %2$s</string>
     <string name="tour_186_canvas_point_4">จะหยุดพักเมื่อใช้ลดการเคลื่อนไหว ในโหมดประหยัดแบตเตอรี่ และเมื่อโทรศัพท์ร้อน</string>
     <string name="tour_186_also_hours">Replay: %1$s แสดงชั่วโมงบนแต่ละแท่ง</string>

@@ -5412,9 +5412,9 @@
     <string name="canvas_use">استفاده</string>
     <string name="canvas_not_this_video">این ویدیو نه</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">یک تصویر بی‌صدا و تکرارشونده پشت موسیقی شما. کاورهای متحرک نام تازه‌ای دارند و آهنگی که کاور متحرک ندارد می‌تواند از چند ثانیه موزیک‌ویدیوی خودش استفاده کند.</string>
+    <string name="tour_186_canvas_about">یک تصویر بی‌صدا و تکرارشونده پشت موسیقی شما: چند ثانیه بریده‌شده از موزیک‌ویدیوی خود آهنگ. کاورهای متحرک مثل قبل می‌مانند.</string>
     <string name="tour_186_canvas_point_1">تمام‌صفحه: لوپ تمام پخش‌کننده را پر می‌کند. کنترل‌ها محو می‌شوند و با یک ضربه برمی‌گردند.</string>
-    <string name="tour_186_canvas_point_2">«%1$s» تا وقتی روشنش نکنید خاموش است. هر لوپ یک‌بار با Wi-Fi دریافت می‌شود: حدود ۵ MB برای هر آهنگ در حالت تمام‌صفحه.</string>
+    <string name="tour_186_canvas_two">«%1$s» و «%2$s» هر کدام کلید جداگانهٔ خود را دارند. هر لوپ یک‌بار با Wi-Fi دریافت می‌شود: حدود ۵ MB برای هر آهنگ در حالت تمام‌صفحه.</string>
     <string name="tour_186_canvas_point_3">منوی ⋯ پخش‌کننده: «%1$s» یا «%2$s».</string>
     <string name="tour_186_canvas_point_4">با «کاهش حرکت»، در حالت صرفه‌جویی باتری و وقتی گوشی داغ می‌شود، متوقف می‌ماند.</string>
     <string name="tour_186_also_hours">Replay: «%1$s» ساعت‌ها را روی هر ستون نشان می‌دهد.</string>

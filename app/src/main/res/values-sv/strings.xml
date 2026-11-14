@@ -5412,9 +5412,9 @@
     <string name="canvas_use">Använd</string>
     <string name="canvas_not_this_video">Inte den här videon</string>
     <string name="tour_186_canvas_title">Canvas</string>
-    <string name="tour_186_canvas_body">En tyst, loopande bild bakom din musik. Animerade omslag har fått ett nytt namn, och en låt utan ett sådant kan använda några sekunder av sin egen musikvideo.</string>
+    <string name="tour_186_canvas_about">En tyst, loopande bild bakom din musik: några sekunder klippta ur låtens egen musikvideo. Animerade omslag förblir som de var.</string>
     <string name="tour_186_canvas_point_1">Helskärm: loopen fyller spelaren. Kontrollerna tonas bort och kommer tillbaka vid en tryckning.</string>
-    <string name="tour_186_canvas_point_2">%1$s är av tills du slår på det. En loop hämtas en gång, på Wi-Fi: cirka 5 MB per låt i Helskärm.</string>
+    <string name="tour_186_canvas_two">%1$s och %2$s har varsin omkopplare. En loop hämtas en gång, på Wi-Fi: cirka 5 MB per låt i Helskärm.</string>
     <string name="tour_186_canvas_point_3">Spelarens ⋯-meny: %1$s eller %2$s.</string>
     <string name="tour_186_canvas_point_4">Den vilar vid Minska rörelse, i batterisparläge och när telefonen blir varm.</string>
     <string name="tour_186_also_hours">Replay: %1$s visar timmarna på varje stapel.</string>
