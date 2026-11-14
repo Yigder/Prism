@@ -24,8 +24,11 @@ object Fixture {
             // 1.8.6: "Use music videos?" answered (no), so the player doesn't ask in the middle of a test.
             it[booleanPreferencesKey("canvas_use_videos")] = false
             // A new install's own defaults (owner, 2026-11-13) pinned to how Prism came before, so a test that walks
-            // through the welcome after this (setOnboarded) sees what the suite was written against.
-            for (name in com.prism.music.data.prefs.NewInstall.on + com.prism.music.data.prefs.NewInstall.motion) it[booleanPreferencesKey(name)] = false
+            // through the welcome after this (setOnboarded) sees what the suite was written against. Only where the test
+            // hasn't set it already: a test that switched the cover's flight on before this had it switched off again.
+            for (name in com.prism.music.data.prefs.NewInstall.on + com.prism.music.data.prefs.NewInstall.motion) {
+                booleanPreferencesKey(name).let { k -> if (it[k] == null) it[k] = false }
+            }
             // A TV's welcome (1.8.0) seen too: tests start where a listener's day does.
             it[booleanPreferencesKey("tv_welcomed")] = true
         }
