@@ -4,18 +4,20 @@ What changed in each release. Older releases are described on the [Releases page
 
 ## 1.8.6
 
-### Canvas
+### Prism Canvas
 
-- **Canvas** (Settings → Player → Canvas): a song with a music video shows a few seconds of it, silent and cut to loop, full screen behind the player or on the cover. Prism finds the song's video, picks the part from its preview pictures and its most replayed moment, fetches those seconds once on Wi-Fi (about 5 MB a song in Full screen, about 2 MB on the cover) and plays them from the phone after that. Still pictures, videos that can't be played and loops that flash are left out.
-- **A new install comes with Canvas on, full screen.** If you are updating, nothing changes until the player asks you once whether to use music videos.
+Prism's own, designed and built from scratch for Prism: the phone finds the video, picks the part and cuts the loop itself.
+
+- **Prism Canvas** (Settings → Player → Canvas): a song with a music video shows a few seconds of it, silent and cut to loop, full screen behind the player or on the cover. Prism finds the song's video, picks the part from its preview pictures and its most replayed moment, fetches those seconds once on Wi-Fi (about 5 MB a song in Full screen, about 2 MB on the cover) and plays them from the phone after that. Still pictures, videos that can't be played and loops that flash are left out.
+- **A new install comes with Prism Canvas on, full screen.** If you are updating, nothing changes until the player asks you once whether to use music videos.
 - **Animated covers** have their own switch above Canvas. They play in the cover as before and never fill the player; each of the two can be on without the other.
 - **Full screen**: the loop fills the player, and after a few seconds the controls fade away, leaving the title, the artist and a thin progress line. A tap brings them back. "Keep controls showing" turns the fading off.
 - **Your say, per song**, in the player's ⋯ menu: Animated cover and Canvas on or off, Pick another part, Pick another video, Use (animated cover or music video, when a song has both) and Not this video.
 - **When a song has both**, the animated cover plays first unless you put the music video first.
 - **Looked at before it shows.** Each loop is checked on its real frames, on the phone: it ends on one of the video's own cuts, and a loop that flashes is never shown.
 - **Ready in time.** On Wi-Fi the next two songs' loops are fetched ahead, and a downloaded song keeps its loop for offline.
-- **Easy on the phone.** Canvas holds still with Reduce motion (animated covers now do too), in battery saver, when the phone runs hot, and after a song has been paused for half a minute. Performance mode switches it off. On mobile data, loops are only fetched if you allow it in Canvas's settings; Data saver never fetches them. "Lighter loops" keeps them smaller.
-- Share diagnostics says what Canvas showed for the song playing, and why not when it showed nothing.
+- **Easy on the phone.** Prism Canvas holds still with Reduce motion (animated covers now do too), in battery saver, when the phone runs hot, and after a song has been paused for half a minute. Performance mode switches it off. On mobile data, loops are only fetched if you allow it in Canvas's settings; Data saver never fetches them. "Lighter loops" keeps them smaller.
+- Share diagnostics says what Prism Canvas showed for the song playing, and why not when it showed nothing.
 
 ### New
 

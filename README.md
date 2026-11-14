@@ -17,7 +17,7 @@ Lyrics that light up word by word, mixes made on your phone, and no ads or track
 
 [What's new](../../releases/latest) · [All changes](CHANGELOG.md) · [Watch the film](../../releases/download/v1.8.6/Prism-1.8.6-film.mp4)
 
-<a href="../../releases/download/v1.8.6/Prism-1.8.6-film.mp4"><img src="docs/screenshots/canvas-loop.webp" width="720" alt="Prism 1.8.6 Canvas: a music video's loop fills the player and the controls fade away. Click to watch the one-minute film."></a>
+<a href="../../releases/download/v1.8.6/Prism-1.8.6-film.mp4"><img src="docs/screenshots/canvas-loop.webp" width="720" alt="Prism 1.8.6, Prism Canvas: a music video's loop fills the player and the controls fade away. Click to watch the one-minute film."></a>
 
 <img src="docs/screenshots/home.jpg" width="24%" alt="Home with the Replay card, shortcuts and Made for you">
 <img src="docs/screenshots/player.jpg" width="24%" alt="Now playing, colored by the album art">
@@ -51,9 +51,9 @@ Prism walks you through this on the setting's page. It uses the permission only 
 
 ## New in 1.8.6
 
-Canvas.
+Prism Canvas, Prism's own: designed and built from scratch for Prism.
 
-- **Canvas:** a few seconds of a song's own music video, silent and on a loop, behind the whole player. Prism cuts it on your phone and fetches it once on Wi-Fi.
+- **Prism Canvas:** a few seconds of a song's own music video, silent and on a loop, behind the whole player. Prism cuts it on your phone and fetches it once on Wi-Fi.
 - **Full screen:** the controls fade away after a few seconds and come back on a tap.
 - **Animated covers** keep their own switch and play in the cover as before.
 - **Your say, per song:** Canvas on or off, Pick another part, Pick another video, Not this video.
@@ -63,7 +63,7 @@ Canvas.
 Everything is worked out on your phone. See every change in the [changelog](CHANGELOG.md).
 
 <p align="center">
-<img src="docs/screenshots/canvas-full.jpg" width="32%" alt="Canvas: a loop from the song's music video behind the player's controls">
+<img src="docs/screenshots/canvas-full.jpg" width="32%" alt="Prism Canvas: a loop from the song's music video behind the player's controls">
 <img src="docs/screenshots/canvas-quiet.jpg" width="32%" alt="A few seconds later the controls have faded: the loop, the title, the artist and a thin progress line">
 <img src="docs/screenshots/canvas-menu.jpg" width="32%" alt="The player's menu for a song: Animated cover, Canvas, Pick another part, Pick another video">
 </p>
