@@ -48,8 +48,11 @@ internal fun canvasScrim(controls: Float, panel: Float, video: Boolean): FloatAr
  * Canvas plays behind the whole player: "Full screen" is picked and the player is the upright one playing a song. The
  * edge-to-edge cover does not stop it (it did until 1.8.6, when Full screen stayed a banner there and the controls
  * never faded): the banner is the cover while the loop loads, then gives way to it.
+ *
+ * Only a loop from a music video ([loop]) fills the player. An animated cover never does (owner, 2026-11-13: it "should
+ * look only like it used to"): it plays in the cover, or in the edge-to-edge banner, with the controls up.
  */
-internal fun canvasFullScreen(fills: Boolean, videoMode: Boolean, wide: Boolean): Boolean = fills && !videoMode && !wide
+internal fun canvasFullScreen(fills: Boolean, videoMode: Boolean, wide: Boolean, loop: Boolean): Boolean = fills && loop && !videoMode && !wide
 
 /**
  * The song's "Animated cover" switch in the ⋯ menu: while Canvas and "Animated covers" are on and the song has an

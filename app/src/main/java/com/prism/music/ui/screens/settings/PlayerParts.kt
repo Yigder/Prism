@@ -142,17 +142,11 @@ enum class EdgeToEdge(val cover: Boolean, val video: Boolean) {
 }
 
 /**
- * "Where it shows" (1.8.6), for animated covers and Canvas's loops alike: On the cover / Full screen. Stored:
+ * "Where it shows" (1.8.6), for Canvas's loops (an animated cover always plays in the cover): On the cover / Full screen. Stored:
  * `canvasFillsBackground`, as before ("Fill the player" is Full screen). Whether anything shows at all is the two
  * switches' ([com.prism.music.data.prefs.CanvasKinds]).
  */
 internal fun canvasPlaceWords(fills: Boolean): String = if (fills) tr(R.string.full_screen) else tr(R.string.settings_player_on_the_cover)
-
-/**
- * Plan-canvas §11a R6: picking Full screen (from On the cover) while Canvas's loops are off asks right there whether
- * music videos may be used. Full screen is stored either way; nothing switches on by itself.
- */
-internal fun canvasAsksForVideos(wasFills: Boolean, pickedFills: Boolean, videosShown: Boolean): Boolean = pickedFills && !wasFills && !videosShown
 
 /** "When a song has both": the animated cover first (as before), or the music video's loop. */
 internal fun canvasBothWords(videoFirst: Boolean): String = if (videoFirst) tr(R.string.music_video_3) else tr(R.string.animated_cover)

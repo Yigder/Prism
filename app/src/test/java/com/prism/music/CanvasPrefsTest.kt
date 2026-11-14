@@ -7,7 +7,6 @@ import com.prism.music.data.prefs.CanvasPrefs
 import com.prism.music.data.prefs.CanvasStored
 import com.prism.music.data.prefs.NewInstall
 import com.prism.music.data.prefs.SettingsRepository
-import com.prism.music.ui.screens.settings.canvasAsksForVideos
 import com.prism.music.ui.screens.settings.canvasPlaceWords
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -200,12 +199,8 @@ class CanvasPrefsTest {
         assertTrue(s.copy(performanceMode = true).behavior.canvas.useVideos)
     }
 
-    /** R6: only a pick of Full screen, from On the cover, with Canvas's loops off, asks. */
-    @Test fun whenFullScreenAsksForMusicVideos() {
+    @Test fun whereItShowsHasTwoChoices() {
         val b = listOf(false, true)
-        for (was in b) for (picked in b) for (videos in b) {
-            assertEquals("$was → $picked, videos $videos", picked && !was && !videos, canvasAsksForVideos(was, picked, videos))
-        }
         // "Where it shows" has two choices now (no Off: the two switches are what turn things off).
         assertEquals(listOf("On the cover", "Full screen"), b.map { canvasPlaceWords(it) })
     }

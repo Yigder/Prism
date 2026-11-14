@@ -45,10 +45,18 @@ class CanvasControlsTest {
 
     /** Owner, 2026-11-13: with the edge-to-edge cover, Full screen stayed a banner and the controls never faded. */
     @Test fun fullScreenIsFullScreenWhateverTheCoverLayout() {
-        assertTrue("nothing about the cover's layout is asked", canvasFullScreen(fills = true, videoMode = false, wide = false))
-        assertFalse("on the cover", canvasFullScreen(fills = false, videoMode = false, wide = false))
-        assertFalse("a music video is playing", canvasFullScreen(fills = true, videoMode = true, wide = false))
-        assertFalse("sideways", canvasFullScreen(fills = true, videoMode = false, wide = true))
+        assertTrue("nothing about the cover's layout is asked", canvasFullScreen(fills = true, videoMode = false, wide = false, loop = true))
+        assertFalse("on the cover", canvasFullScreen(fills = false, videoMode = false, wide = false, loop = true))
+        assertFalse("a music video is playing", canvasFullScreen(fills = true, videoMode = true, wide = false, loop = true))
+        assertFalse("sideways", canvasFullScreen(fills = true, videoMode = false, wide = true, loop = true))
+    }
+
+    /** Owner, 2026-11-13: "The animated cover should never have the full screen canvas look it should look only like it use to." */
+    @Test fun anAnimatedCoverNeverFillsThePlayer() {
+        assertFalse("an animated cover, or nothing yet", canvasFullScreen(fills = true, videoMode = false, wide = false, loop = false))
+        // So its controls stay up, and the album cover's place is its own.
+        assertFalse(canvasControlsMayFade(false, true, false, true, false, false, false, false, false))
+        assertEquals(1f, coverOverCanvas(false, 1f, 0f), 0.001f)
     }
 
     /** Owner, 2026-11-13: switched off for a song, the switch went too and Canvas couldn't be put back for it. */

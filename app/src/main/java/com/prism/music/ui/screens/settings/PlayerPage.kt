@@ -310,8 +310,7 @@ internal fun PlayerCoverAnimationRow() {
 
 /**
  * Canvas's sheet (plan-canvas §3.1, §3.6, §11a R1, R6): its switch (the loops from music videos) and the rows that only
- * apply to them, then where animated covers and loops show, while either is on. Picking Full screen while the loops are
- * off asks whether music videos may be used; either answer keeps Full screen.
+ * apply to them, where they show among them. Animated covers have their own switch on the page and are not placed here.
  */
 @Composable
 private fun CanvasOptions() {
@@ -319,7 +318,6 @@ private fun CanvasOptions() {
     val prefs = LocalContainer.current.settings
     val c = s.behavior.canvas
     val kinds = CanvasKinds.shown(s)
-    var asking by remember { mutableStateOf(false) }
     SwitchRow(
         tr(R.string.canvas), kinds.videos, info = tr(R.string.canvas_use_videos_info), changed = ch("canvas_use_videos"),
     ) { prefs.setCanvasKinds(covers = kinds.covers, videos = it) }
@@ -334,25 +332,15 @@ private fun CanvasOptions() {
     if (kinds.videos) SwitchRow(
         tr(R.string.canvas_lighter), c.lighter, info = tr(R.string.canvas_lighter_info), changed = ch("canvas_lighter"),
     ) { prefs.setCanvasLighter(it) }
-    // Where animated covers and loops show: for either of them, so it is here even while only Animated covers is on.
-    if (kinds.any) ChoiceRow(
+    // Where Canvas's loops show. Animated covers are not placed by it (owner, 2026-11-13: an animated cover "should
+    // never have the full screen canvas look"): they play in the cover, as they did before 1.8.6.
+    if (kinds.videos) ChoiceRow(
         tr(R.string.canvas_where), listOf(false, true), s.canvasFillsBackground, ::canvasPlaceWords,
         info = tr(R.string.the_moving_artwork_fills_the_whole), changed = ch("canvas_fills_background"),
-    ) { fills ->
-        prefs.setCanvasFillsBackground(fills)
-        if (canvasAsksForVideos(s.canvasFillsBackground, fills, kinds.videos)) asking = true
-    }
-    if (kinds.any && s.canvasFillsBackground) SwitchRow(
+    ) { prefs.setCanvasFillsBackground(it) }
+    if (kinds.videos && s.canvasFillsBackground) SwitchRow(
         tr(R.string.canvas_keep_controls), c.keepControls, info = tr(R.string.canvas_keep_controls_info), changed = ch("canvas_keep_controls"),
     ) { prefs.setCanvasKeepControls(it) }
-    // Either answer is the one-time question's answer too (canvas_use_videos is written).
-    if (asking) AlertDialog(
-        onDismissRequest = { asking = false },
-        title = { Text(tr(R.string.canvas_ask_title)) },
-        text = { Text(tr(R.string.canvas_ask_text)) },
-        confirmButton = { PrismTextButton(onClick = { asking = false; prefs.setCanvasKinds(videos = true) }) { Text(tr(R.string.canvas_use_videos)) } },
-        dismissButton = { PrismTextButton(onClick = { asking = false; prefs.setCanvasKinds(videos = false) }) { Text(tr(R.string.not_now)) } },
-    )
 }
 
 // ---------------------------------------------------------------------------- On it
@@ -638,8 +626,6 @@ val playerIndex: List<SettingEntry> by lazy {
         val volumeShown = turnOn(tr(R.string.volume)) { it.shows(PlayerPart.VOLUME) }
         val edge = turnOn(tr(R.string.settings_player_edge_to_edge)) { it.fullBleedArtwork || it.videoFullBleed }
         val canvasVideos = turnOn(tr(R.string.canvas)) { CanvasKinds.shown(it).videos }
-        // "Where it shows" is for either kind: the animated covers (on as Prism comes) or Canvas's loops.
-        val canvasAny = turnOn(tr(R.string.animated_covers)) { CanvasKinds.shown(it).any }
         // "When a song has both" asks for both kinds: the animated covers and Canvas's loops.
         val canvasBoth = Needs(tr(R.string.turn_on_first, tr(R.string.animated_covers) + " · " + tr(R.string.canvas))) {
             CanvasKinds.shown(it).let { k -> k.covers && k.videos }
@@ -709,11 +695,11 @@ val playerIndex: List<SettingEntry> by lazy {
             SettingEntry(
                 page, g.cover, tr(R.string.canvas_where),
                 tr(R.string.fill_the_player) + " " + tr(R.string.full_screen) + " " + tr(R.string.settings_player_on_the_cover) + " " + tr(R.string.canvas_background_full_screen_behind),
-                needs = canvasAny,
+                needs = canvasVideos,
             ),
             SettingEntry(
                 page, g.cover, tr(R.string.canvas_keep_controls), tr(R.string.canvas_keep_controls_keywords),
-                needs = turnOn(tr(R.string.full_screen)) { CanvasKinds.shown(it).any && it.canvasFillsBackground },
+                needs = turnOn(tr(R.string.full_screen)) { CanvasKinds.shown(it).videos && it.canvasFillsBackground },
             ),
             // On it: one editor for what's on the player (found by each part's name too).
             SettingEntry(

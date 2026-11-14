@@ -618,7 +618,7 @@ fun NowPlayingScreen(onCollapse: () -> Unit) {
     val heroMode = settings.fullBleedArtwork && !videoMode && !wide && !vinyl && !cassette
     // Canvas, Full screen: the loop plays behind the whole player instead of in the cover, over the edge-to-edge
     // banner too (which stays as the cover until the loop is up).
-    val canvasBehind = canvasFullScreen(settings.canvasFillsBackground, videoMode, wide)
+    val canvasBehind = canvasFullScreen(settings.canvasFillsBackground, videoMode, wide, loop = canvas?.clip != null)
     // 1.8.6 Canvas, Full screen: after a few seconds without a touch the controls fade away, leaving the title, the
     // artist and a thin progress line over the picture; a tap brings them back ([canvasControlsMayFade] says when not).
     val screenReader by rememberTouchExploration()
