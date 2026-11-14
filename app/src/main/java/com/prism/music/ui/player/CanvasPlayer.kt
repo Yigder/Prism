@@ -433,7 +433,15 @@ internal object CanvasPlayers {
 
     /** A kept player, the one already on [url] if there is one, else a new one. */
     fun take(context: Context, c: com.prism.music.AppContainer, url: String): Held {
-        (parked.firstOrNull { it.source.clip == url } ?: parked.lastOrNull())?.let { parked.remove(it); return it }
+        (parked.firstOrNull { it.source.clip == url } ?: parked.lastOrNull())?.let {
+            parked.remove(it)
+            // Kept for another clip (Next: the last song's canvas went while this one's was looked up): stopped first, so
+            // the new video view gets no frame of the old clip, nor a "first frame" word about it that reaches the app
+            // after the new clip is set and is taken for its first frame (A16, 1.8.6: the last song's frame was kept as
+            // the new loop's restart picture and stood over it each time it went round).
+            if (it.source.clip != url) it.player.stop()
+            return it
+        }
         val source = Source()
         // Clips come from the phone when they've played before (or were saved), else stream and are kept.
         val sources = DefaultMediaSourceFactory(c.canvasStore.playerSourceFactory({ source.clip }) { source.keep })
