@@ -137,8 +137,14 @@ class CanvasLoopLiveTest {
         c.settings.setCanvasUseVideos(true)
         c.settings.setCanvasVideoFirst(true)
         c.settings.setCanvasKeepControls(false)
+        // mono=true: the clean look the launch film is shot in (white light, black player, no spectrum ring).
+        if (args.getString("mono") == "true") {
+            c.settings.setThemeMode(com.prism.music.data.prefs.ThemeMode.DARK); c.settings.setPureBlack(true)
+            c.settings.setLightStyle(com.prism.music.data.prefs.LightStyle.WHITE); c.settings.setSurfaceTint(com.prism.music.data.prefs.SurfaceTint.NEUTRAL)
+            c.settings.setPlayRing(false); c.settings.setPlayerBackground(com.prism.music.data.prefs.PlayerBackground.BLACK)
+        }
         Fixture.launch()
-        val words = args.getString("song") ?: "Rick Astley Never Gonna Give You Up"
+        val words = (args.getString("song") ?: "Rick Astley Never Gonna Give You Up").replace('_', ' ')
         val song = withContext(Dispatchers.IO) { c.ytm.search(words, SearchFilter.SONGS).items.filterIsInstance<SongItem>().first().song }
         val before = CanvasStats.rounds to CanvasStats.errors
         val played = System.currentTimeMillis()
