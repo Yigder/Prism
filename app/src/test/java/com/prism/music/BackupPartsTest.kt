@@ -148,7 +148,67 @@ class BackupPartsTest {
         app.deleteDatabase("prism.db")
     }
 
+    /**
+     * #498 (1.8.7): a backup with only "Settings" ticked carried the YouTube Music sign-in, because the settings store's
+     * own file (files/datastore) counted as a setting. No choice of parts takes that file, and without "Accounts" no
+     * file in the backup holds the sign-in. Its values travel apart ([settingsTravelWithoutTheSignIn]).
+     */
+    @Test fun noBackupTakesTheSettingsStoresOwnFile() {
+        phone()
+        write("files/datastore/prism_settings.preferences_pb", "cookie SID=abc; SAPISID=secret; __Secure-1PSID=x")
+        write("files/diagnostics/audio.log", "Account: signed in")
+        write("files/crashes/last.txt", "a crash")
+        write("files/canvas_clips/a.mp4", "video")
+        write("shared_prefs/premium_quality.xml", "seen_for")
+        write("shared_prefs/widget_state.xml", "last song")
+        write("files/account/profile.json", "the account's own folder")
+        val all = BackupPart.entries
+        for (mask in 0 until (1 shl all.size)) {
+            val parts = all.filterIndexed { i, _ -> mask and (1 shl i) != 0 }.toSet()
+            val taken = Backup.filesToBackUp(data, files, parts)
+            val names = taken.map { it.relativeTo(data).invariantSeparatorsPath }
+            assertFalse("$parts takes the settings store: $names", names.any { it.startsWith("files/datastore/") })
+            assertFalse("$parts takes this phone's own state: $names", names.any {
+                it.startsWith("files/diagnostics/") || it.startsWith("files/crashes/") || it.startsWith("files/canvas_clips/") ||
+                    it == "shared_prefs/premium_quality.xml" || it == "shared_prefs/widget_state.xml"
+            })
+            taken.forEach { f -> assertFalse("$parts: ${f.name} holds the sign-in", f.readText().contains("SAPISID")) }
+            if (BackupPart.ACCOUNTS !in parts) assertFalse("$parts takes the account's folder", names.any { it.startsWith("files/account/") })
+        }
+        // What "Settings" is for still goes.
+        val settingsOnly = Backup.filesToBackUp(data, files, setOf(BackupPart.SETTINGS)).map { it.relativeTo(data).invariantSeparatorsPath }
+        assertTrue(settingsOnly.toString(), "shared_prefs/icon_style.xml" in settingsOnly && "files/looks/my-a.json" in settingsOnly)
+    }
+
+    /** A backup made by 1.7.8 to 1.8.6 with "Settings" holds that file: restored, this phone keeps its own sign-in. */
+    @Test fun anOlderSettingsBackupsStoreFileIsNotRestored() {
+        phone()
+        write("files/datastore/prism_settings.preferences_pb", "mine")
+        stage(
+            """{"format":2,"app":"${app.packageName}","parts":["SETTINGS"]}""",
+            "shared_prefs/icon_style.xml" to "new settings",
+            "files/datastore/prism_settings.preferences_pb" to "theirs, signed in",
+            "settings.json" to """{"theme_mode":"s:DARK"}""",
+        )
+        Backup.applyPending(app)
+        assertEquals("mine", read("files/datastore/prism_settings.preferences_pb"))
+        assertEquals("new settings", read("shared_prefs/icon_style.xml"))
+        // With "Accounts" too it still comes as values, never as the file.
+        stage(
+            """{"format":2,"app":"${app.packageName}","parts":["SETTINGS","ACCOUNTS"]}""",
+            "files/datastore/prism_settings.preferences_pb" to "theirs, signed in",
+            "settings.json" to """{"cookie":"s:SID=theirs"}""",
+        )
+        Backup.applyPending(app)
+        assertEquals("mine", read("files/datastore/prism_settings.preferences_pb"))
+        assertTrue(read("files/restore_settings.json")!!.contains("SID=theirs"))
+    }
+
     @Test fun everyPrefsFileHasAPart() {
+        assertEquals(null, Backup.filePart("datastore"))
+        assertEquals(null, Backup.filePart("diagnostics"))
+        assertEquals(null, Backup.prefsPart("premium_quality"))
+        assertEquals(BackupPart.HISTORY, Backup.prefsPart("milestones"))
         assertEquals(BackupPart.HISTORY, Backup.prefsPart("search"))
         assertEquals(BackupPart.LIBRARY, Backup.prefsPart("artist_prefs"))
         assertEquals(BackupPart.SETTINGS, Backup.prefsPart("icon_style"))
