@@ -153,6 +153,8 @@ fun GesturesButtonsPage(bottomPadding: Dp, find: String? = null, showBack: Boole
     val panelChanged = reset.add(tr(R.string.swipe_up_for_the_queue), s.behavior.panelSwipes, d.behavior.panelSwipes, onOff) { prefs.setPanelSwipes(it) }
     val tabsChanged = reset.add(tr(R.string.swipe_between_tabs), s.swipeTabs, d.swipeTabs, onOff) { prefs.setSwipeTabs(it) }
     val rowsChanged = reset.add(tr(R.string.gb_row_swipes), s.behavior.rowSwipes, d.behavior.rowSwipes, onOff) { prefs.setRowSwipes(it) }
+    val rowLeftChanged = reset.add(tr(R.string.swipe_left), s.behavior.rowSwipeLeft, d.behavior.rowSwipeLeft, { it.label }) { prefs.setRowSwipeLeft(it) }
+    val rowRightChanged = reset.add(tr(R.string.swipe_right), s.behavior.rowSwipeRight, d.behavior.rowSwipeRight, { it.label }) { prefs.setRowSwipeRight(it) }
     val coverPlaysChanged = reset.add(tr(R.string.gb_lyrics_cover_plays), s.behavior.lyricsCoverPlays, d.behavior.lyricsCoverPlays, onOff) { prefs.setLyricsCoverPlays(it) }
     val buttonsChanged = reset.add(tr(R.string.buttons), s.sessionButtons, d.sessionButtons, ::buttonsText) { prefs.setSessionButtons(it) }
     val notificationLyricsChanged = reset.add(tr(R.string.gb_lyrics_in_notification), s.carLyricsOnPhone, d.carLyricsOnPhone, onOff) { prefs.setCarLyricsOnPhone(it) }
@@ -195,6 +197,14 @@ fun GesturesButtonsPage(bottomPadding: Dp, find: String? = null, showBack: Boole
             SwitchRow(tr(R.string.swipe_between_tabs), s.swipeTabs, info = tr(R.string.a_sideways_swipe_on_a_tab), changed = tabsChanged) { prefs.setSwipeTabs(it) }
             // #406 (1.8.4): on is how Prism was.
             SwitchRow(tr(R.string.gb_row_swipes), s.behavior.rowSwipes, info = tr(R.string.gb_row_swipes_info), changed = rowsChanged) { prefs.setRowSwipes(it) }
+            if (s.behavior.rowSwipes) {
+                ChoiceRow(tr(R.string.swipe_left), com.prism.music.data.prefs.RowSwipeAction.entries, s.behavior.rowSwipeLeft, { it.label }, changed = rowLeftChanged) {
+                    prefs.setRowSwipeLeft(it)
+                }
+                ChoiceRow(tr(R.string.swipe_right), com.prism.music.data.prefs.RowSwipeAction.entries, s.behavior.rowSwipeRight, { it.label }, changed = rowRightChanged) {
+                    prefs.setRowSwipeRight(it)
+                }
+            }
             // #464 (1.8.5): off is how Prism was (a tap closes the lyrics).
             SwitchRow(tr(R.string.gb_lyrics_cover_plays), s.behavior.lyricsCoverPlays, info = tr(R.string.gb_lyrics_cover_plays_info), changed = coverPlaysChanged) { prefs.setLyricsCoverPlays(it) }
         }
@@ -330,7 +340,7 @@ val gesturesButtonsIndex: List<SettingEntry> by lazy {
         SettingEntry(page, touch, tr(R.string.haptics), tr(R.string.vibration_vibrate)),
         SettingEntry(page, touch, tr(R.string.swipe_up_for_the_queue), tr(R.string.gesture_one_hand_queue_lyrics_swipe)),
         SettingEntry(page, touch, tr(R.string.swipe_between_tabs), tr(R.string.tab_bar_swipe_gesture_sideways)),
-        SettingEntry(page, touch, tr(R.string.gb_row_swipes), tr(R.string.gb_row_swipes_keywords)),
+        SettingEntry(page, touch, tr(R.string.gb_row_swipes), tr(R.string.gb_row_swipes_keywords) + " " + tr(R.string.add_to_playlist)),
         SettingEntry(page, touch, tr(R.string.gb_lyrics_cover_plays), tr(R.string.gb_lyrics_cover_plays_keywords)),
         SettingEntry(page, outside, tr(R.string.buttons), tr(R.string.notification_lock_screen_android_auto_car)),
         SettingEntry(page, outside, tr(R.string.gb_lyrics_in_notification), tr(R.string.gb_lyrics_in_notification_keywords)),

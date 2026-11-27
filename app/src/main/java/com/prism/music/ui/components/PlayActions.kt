@@ -79,6 +79,17 @@ fun queuePlayable(c: AppContainer, context: android.content.Context, target: Pla
     Toast.makeText(context, com.prism.music.data.model.songCount(loaded.first.size) + " · " + (if (next) tr(R.string.playing_next) else tr(R.string.added_to_queue)), Toast.LENGTH_SHORT).show()
 }
 
+/** Loads an album, playlist or other playable row's songs before opening the playlist picker from a swipe. */
+fun addPlayableToPlaylist(c: AppContainer, context: android.content.Context, target: Playable, title: String, onSongs: (List<Song>?) -> Unit) = c.scope.launch(Dispatchers.Main) {
+    val songs = runCatching { whileLoading(context, title) { songsFor(c, target, shuffle = false, mix = false).first } }.getOrNull()
+    if (songs == null || songs.isEmpty()) {
+        Toast.makeText(context, if (songs == null) tr(R.string.couldn_t_load, title) else tr(R.string.nothing_to_play_in, title), Toast.LENGTH_SHORT).show()
+        onSongs(null)
+        return@launch
+    }
+    onSongs(songs)
+}
+
 /**
  * A long press's Play or Shuffle ([mix]: an artist's mix). #356: Shuffle on an 892-song playlist looked broken, the menu
  * closing on nothing for about 5 s while every page loaded. It says it's loading if it isn't there at once, starts from

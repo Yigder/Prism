@@ -5313,8 +5313,8 @@
     <string name="gb_work_not_lyrics">Anywhere but the lyrics</string>
     <string name="gb_work_cover_and_lyrics">On the cover and below the lyrics</string>
     <string name="gb_gestures_work_info">Where your swipes, double tap and long press work. Anywhere: also in the space around the buttons and bars, and on the controls below the open lyrics. Anywhere but the lyrics: around the buttons and bars, but not while the lyrics are open. The buttons and bars keep their own taps, and scrolling the lyrics stays just that. With \"Swipe up for the queue\" on, the player\'s lower half is for that swipe.</string>
-    <string name="gb_row_swipes">Swipe song rows to queue</string>
-    <string name="gb_row_swipes_info">Swipe a song right to play it next, left to add it to the queue.</string>
+    <string name="gb_row_swipes">Swipe on song tile</string>
+    <string name="gb_row_swipes_info">Choose what swiping a song tile left or right does.</string>
     <string name="gb_row_swipes_keywords">swipe song row list play next add to queue gesture</string>
     <string name="gb_lyrics_in_notification">Lyrics in the notification</string>
     <string name="gb_lyrics_in_notification_info">Shows the line being sung as the title on the lock screen, the notification and a watch, with or without a car.</string>

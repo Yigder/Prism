@@ -78,6 +78,7 @@ import com.prism.music.ui.components.Artwork
 import com.prism.music.ui.components.EmptyState
 import com.prism.music.ui.components.LoadingState
 import com.prism.music.ui.components.SectionHeader
+import com.prism.music.ui.components.SwipeToQueue
 import com.prism.music.ui.theme.LocalAppSettings
 import com.prism.music.ui.theme.LocalContainer
 import androidx.compose.runtime.ReadOnlyComposable
@@ -543,7 +544,9 @@ internal fun ReplayContent(
         item { SectionHeader(tr(R.string.top_songs_3)) }
         itemsIndexed(d.songs, key = { _, s -> s.songId }) { i, s ->
             val songs = remember(d) { d.songs.map { it.toSong() } }
-            ReplaySongRow(i, s) { c.player.playQueue(songs, i, QueueSource(QueueKind.REPLAY, tr(R.string.replay_2))) }
+            SwipeToQueue(s.toSong()) {
+                ReplaySongRow(i, s) { c.player.playQueue(songs, i, QueueSource(QueueKind.REPLAY, tr(R.string.replay_2))) }
+            }
         }
     }
     com.prism.music.ui.components.TopScrollEdge({ edge })
@@ -1118,7 +1121,11 @@ private fun HourSongs(period: Period, d: ClockData, hour: Int, is24: Boolean, lo
             else -> {
                 val queue = remember(list) { list.map { it.toSong() } }
                 val source = QueueSource(QueueKind.REPLAY, tr(R.string.replay_2))
-                list.forEachIndexed { i, s -> ReplaySongRow(i, s, Modifier.testTag(ReplayTags.CLOCK_SONG)) { c.player.playQueue(queue, i, source) } }
+                list.forEachIndexed { i, s ->
+                    SwipeToQueue(s.toSong(), Modifier.testTag(ReplayTags.CLOCK_SONG)) {
+                        ReplaySongRow(i, s) { c.player.playQueue(queue, i, source) }
+                    }
+                }
             }
         }
     }

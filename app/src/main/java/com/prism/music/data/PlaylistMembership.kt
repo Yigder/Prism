@@ -11,6 +11,8 @@ import java.util.concurrent.ConcurrentHashMap
 object PlaylistMembership {
     /** Songs added to a YouTube Music playlist from this phone since Prism started (its kept copy may not have them yet). */
     private val added = ConcurrentHashMap<String, MutableSet<String>>()
+    /** Songs removed from a YouTube Music playlist since its kept copy was read. */
+    private val removed = ConcurrentHashMap<String, MutableSet<String>>()
 
     /** One playlist, however its id is written ("VLPL…" opened from the library, "PL…" for adding). */
     internal fun key(id: String): String = id.removePrefix("VL")
@@ -18,11 +20,19 @@ object PlaylistMembership {
     /** [ids] went into the playlist [playlistId]. */
     fun noteAdded(playlistId: String, ids: Collection<String>) {
         if (ids.isEmpty()) return
+        removed[key(playlistId)]?.removeAll(ids.toSet())
         added.getOrPut(key(playlistId)) { ConcurrentHashMap.newKeySet() }.addAll(ids)
     }
 
+    /** [ids] were taken out of a YouTube Music playlist; its kept copy may still contain them. */
+    fun noteRemoved(playlistId: String, ids: Collection<String>) {
+        if (ids.isEmpty()) return
+        added[key(playlistId)]?.removeAll(ids.toSet())
+        removed.getOrPut(key(playlistId)) { ConcurrentHashMap.newKeySet() }.addAll(ids)
+    }
+
     /** Forgets this session's additions (signing out, switching accounts; tests). */
-    fun forget() = added.clear()
+    fun forget() { added.clear(); removed.clear() }
 
     /**
      * How many of [ids] each playlist in [contents] (playlist id → its songs' ids) holds, with this session's additions;
@@ -32,7 +42,8 @@ object PlaylistMembership {
         val wanted = ids.toSet()
         if (wanted.isEmpty()) return emptyMap()
         return contents.keys.mapNotNull { id ->
-            val has = (contents[id].orEmpty().toSet() + added[key(id)].orEmpty()).count { it in wanted }
+            val key = key(id)
+            val has = ((contents[id].orEmpty().toSet() + added[key].orEmpty()) - removed[key].orEmpty()).count { it in wanted }
             if (has > 0) id to has else null
         }.toMap()
     }

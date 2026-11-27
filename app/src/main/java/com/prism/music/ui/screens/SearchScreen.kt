@@ -534,7 +534,11 @@ private fun TopResults(
         }
         if (onPhoneHits.isNotEmpty()) {
             item("phone-h") { SectionHeader(tr(R.string.on_this_phone), onMore = onSeePhone) }
-            items(onPhoneHits, key = { "ph:" + it.id }) { s -> SongRow(s) { onSongs(onPhoneHits, onPhoneHits.indexOf(s)) } }
+            items(onPhoneHits, key = { "ph:" + it.id }) { s ->
+                com.prism.music.ui.components.SwipeToQueue(s) {
+                    SongRow(s) { onSongs(onPhoneHits, onPhoneHits.indexOf(s)) }
+                }
+            }
         }
         r.sections.forEach { (f, items) ->
             item("h:${f.name}") { SectionHeader(f.label, onMore = { onSeeAll(f) }) }
@@ -542,7 +546,9 @@ private fun TopResults(
                 SearchFilter.SONGS -> {
                     val songs = items.filterIsInstance<SongItem>().map { it.song }.distinctBy { it.id }
                     items(songs.take(4), key = { "s:" + it.id }) { s ->
-                        SongRow(s) { onSongs(songs, songs.indexOf(s)) }
+                        com.prism.music.ui.components.SwipeToQueue(s) {
+                            SongRow(s) { onSongs(songs, songs.indexOf(s)) }
+                        }
                     }
                 }
                 else -> item("c:${f.name}") {
@@ -558,14 +564,16 @@ private fun TopResults(
 @Composable
 private fun LyricHitRow(hit: com.prism.music.data.lyrics.LyricSearch.Hit, onClick: () -> Unit) {
     val current by LocalContainer.current.player.currentSong.collectAsState()
-    Column(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        SongRow(hit.song, playing = current?.id == hit.song.id, onClick = onClick)
-        Text(
-            "“${hit.line}”",
-            Modifier.padding(start = 78.dp, end = 20.dp, bottom = 6.dp).offset(y = (-4).dp),
-            style = MaterialTheme.typography.bodySmall.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
-            color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis,
-        )
+    com.prism.music.ui.components.SwipeToQueue(hit.song) {
+        Column(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
+            SongRow(hit.song, playing = current?.id == hit.song.id, onClick = onClick)
+            Text(
+                "“${hit.line}”",
+                Modifier.padding(start = 78.dp, end = 20.dp, bottom = 6.dp).offset(y = (-4).dp),
+                style = MaterialTheme.typography.bodySmall.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
+                color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
@@ -651,7 +659,9 @@ private fun SuggestionRow(
 @Composable
 fun ResultRow(item: BrowseItem, onLongClick: (() -> Unit)? = null, onClick: () -> Unit) {
     if (item is SongItem) {
-        SongRow(item.song, trailingInfo = if (item.song.isLive) tr(R.string.live_3) else if (item.song.isEpisode) tr(R.string.episode) else if (item.song.isVideo) tr(R.string.video) else null, onClick = onClick)
+        com.prism.music.ui.components.SwipeToQueue(item.song) {
+            SongRow(item.song, trailingInfo = if (item.song.isLive) tr(R.string.live_3) else if (item.song.isEpisode) tr(R.string.episode) else if (item.song.isVideo) tr(R.string.video) else null, onClick = onClick)
+        }
         return
     }
     val ui = com.prism.music.ui.theme.LocalUi.current

@@ -374,8 +374,12 @@ data class BehaviorPrefs(
     val localSkipFolders: Set<String> = emptySet(),
     /** #298 (1.8.2): playlists whose new songs download by themselves, by [com.prism.music.download.PlaylistDownloads.keepKey]. */
     val keptPlaylists: Set<String> = emptySet(),
-    /** #406 (1.8.4): swiping a song row adds it to the queue (as before); off, a row is just a row. */
+    /** #406 (1.8.4): swiping a song row does its chosen action; off, a row is just a row. */
     val rowSwipes: Boolean = true,
+    /** What swiping a song row to the left does. */
+    val rowSwipeLeft: RowSwipeAction = RowSwipeAction.ADD_TO_QUEUE,
+    /** What swiping a song row to the right does. */
+    val rowSwipeRight: RowSwipeAction = RowSwipeAction.PLAY_NEXT,
     /**
      * #404 (1.8.4): every song's lyrics this many ms earlier (positive) or later (negative), on top of each song's own
      * nudge; within [LYRICS_OFFSET_MS].
@@ -757,6 +761,13 @@ data class TvPrefs(
 
 /** Picture-in-picture for a playing video (1.7.8, #167). */
 enum class PipMode(val label: String) { AUTO(tr(R.string.when_you_leave_prism)), MENU(tr(R.string.only_with_its_button)) }
+
+/** What a song row does for each swipe direction. */
+enum class RowSwipeAction(val label: String) {
+    ADD_TO_QUEUE(tr(R.string.add_to_queue)),
+    PLAY_NEXT(tr(R.string.play_next)),
+    ADD_TO_PLAYLIST(tr(R.string.add_to_playlist)),
+}
 
 /** What Home's Recently played lists (1.7.8, #196). */
 enum class RecentShows(val label: String) { SONGS(tr(R.string.songs)), COLLECTIONS(tr(R.string.albums_playlists)) }
@@ -2397,6 +2408,8 @@ class SettingsRepository(
         val lockScreenHideSong = booleanPreferencesKey("lock_screen_hide_song")
         // 1.8.4 ([BehaviorPrefs.rowSwipes] and on; [ViewLook.lockScreenPlayerLook], [ViewLook.albumHeroCover]).
         val rowSwipes = booleanPreferencesKey("row_swipes")
+        val rowSwipeLeft = stringPreferencesKey("row_swipe_left")
+        val rowSwipeRight = stringPreferencesKey("row_swipe_right")
         val lyricsOffsetMs = intPreferencesKey("lyrics_offset_ms")
         val keepShuffle = booleanPreferencesKey("keep_shuffle")
         val shuffleButton = stringPreferencesKey("shuffle_button")
@@ -2880,6 +2893,8 @@ class SettingsRepository(
                 localSkipFolders = p[K.localSkipFolders]?.split('\n')?.filter { it.isNotBlank() }?.toSet() ?: d.behavior.localSkipFolders,
                 keptPlaylists = p[K.keptPlaylists]?.split('\n')?.filter { it.isNotBlank() }?.toSet() ?: d.behavior.keptPlaylists,
                 rowSwipes = p[K.rowSwipes] ?: d.behavior.rowSwipes,
+                rowSwipeLeft = p.enum(K.rowSwipeLeft, d.behavior.rowSwipeLeft),
+                rowSwipeRight = p.enum(K.rowSwipeRight, d.behavior.rowSwipeRight),
                 // A restored backup can hold any number.
                 lyricsOffsetMs = (p[K.lyricsOffsetMs] ?: d.behavior.lyricsOffsetMs).coerceIn(BehaviorPrefs.LYRICS_OFFSET_MS),
                 keepShuffle = p[K.keepShuffle] ?: d.behavior.keepShuffle,
@@ -3770,6 +3785,8 @@ class SettingsRepository(
     fun setLockScreenHideSong(v: Boolean) = edit { it[K.lockScreenHideSong] = v }
     // 1.8.4 (#406, #404, #416, D57, PR #400, D54, D53, D55).
     fun setRowSwipes(v: Boolean) = edit { it[K.rowSwipes] = v }
+    fun setRowSwipeLeft(v: RowSwipeAction) = edit { it[K.rowSwipeLeft] = v.name }
+    fun setRowSwipeRight(v: RowSwipeAction) = edit { it[K.rowSwipeRight] = v.name }
     fun setLyricsOffsetMs(v: Int) = edit { it[K.lyricsOffsetMs] = v.coerceIn(BehaviorPrefs.LYRICS_OFFSET_MS) }
     fun setKeepShuffle(v: Boolean) = edit { it[K.keepShuffle] = v }
     fun setRecapNotify(v: Boolean) = edit { it[K.recapNotify] = v }
